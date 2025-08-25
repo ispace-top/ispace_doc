@@ -1,192 +1,805 @@
+{% extends "modern_base.html" %}
 {% load static %}
 {% load i18n %}
-<!DOCTYPE html>
-<html>
-	<head>
-		<meta charset="utf-8">
-		<meta name=renderer  content=webkit>
-		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-        <title>后台管理{% if site_name != None and site_name != '' %} - {{site_name}} {% endif %} - 爱思文档</title>
-		<link rel="icon" href="{% static 'search/mrdoc_logo_300.png' %}" sizes="192x192" />
-		<!-- 依 赖 样 式 -->
-		<link rel="stylesheet" href="{% static 'PearAdminLayui/component/pear/css/pear.css' %}" />
-		<!-- 加 载 样 式-->
-		<link rel="stylesheet" href="{% static 'PearAdminLayui/admin/css/load.css' %}" />
-		<!-- 布 局 样 式 -->
-		<link rel="stylesheet" href="{% static 'PearAdminLayui/admin/css/admin.css' %}" />
-	</head>
-	<!-- 结 构 代 码 -->
-	<body class="layui-layout-body pear-admin">
-		<!-- 布 局 框 架 -->
-		<div class="layui-layout layui-layout-admin">
-			<div class="layui-header">
-				<!-- 顶 部 左 侧 功 能 -->
-				<ul class="layui-nav layui-layout-left">
-					<li class="collaspe layui-nav-item"><a href="#" class="layui-icon layui-icon-shrink-right"></a></li>
-					<li class="refresh layui-nav-item"><a href="#" class="layui-icon layui-icon-refresh-1" loading=600></a></li>
-				</ul>
-				<!-- 顶 部 右 侧 菜 单 -->
-				<div id="control" class="layui-layout-control"></div>
-				<ul class="layui-nav layui-layout-right">
-					<li class="layui-nav-item layui-hide-xs"><a href="#" class="fullScreen layui-icon layui-icon-screen-full"></a></li>
-					<li class="layui-nav-item layui-hide-xs"><a href="{% url 'pro_list' %}" class="layui-icon layui-icon-home" title="回到首页"></a></li>
-					<li class="layui-nav-item">
-						<!-- 头 像 -->
-						<a href="javascript:;">
-							<img src="{% static 'PearAdminLayui/avatar.svg' %}" class="layui-nav-img">
-							{% if request.user.first_name != '' %} {{request.user.first_name}} {% else %} {{request.user.username}}{% endif %}
-						</a>
-						<!-- 功 能 菜 单 -->
-						<dl class="layui-nav-child">
-							{% if request.user.is_superuser %}
-							<dd><a href="{% url 'user_center' %}">个人中心</a></dd>
-							{% endif %}
-							<dd><a href="{% url 'pro_list' %}">返回首页</a></dd>
-						  <dd><a href="javascript:void(0)" title="退出登录" onclick="Logout()">退出登录</a></dd>
-						</dl>
-					</li>
-					<!-- 主 题 配 置 -->
-					<li class="layui-nav-item setting"><a href="#" class="layui-icon layui-icon-more-vertical"></a></li>
-				</ul>
-			</div>
-			<!-- 侧 边 区 域 -->
-			<div class="layui-side layui-bg-black">
-				<!-- 顶 部 图 标 -->
-				<div class="layui-logo">
-					<img class="logo"></img>
-					<span class="title"></span>
-				</div>
-				<!-- 侧 边 菜 单 -->
-				<div class="layui-side-scroll">
-					<div id="sideMenu"></div>
-				</div>
-			</div>
-			<!-- 视 图 页 面 -->
-			<div class="layui-body">
-				<div id="content"></div>
-			</div>
-			<!-- 遮 盖 层 -->
-			<div class="pear-cover"></div>
-			<!-- 加 载 动 画-->
-			<div class="loader-main">
-				<div class="loader"></div>
-			</div>
-		</div>
-		<!-- 移 动 端 便 捷 操 作 -->
-		<div class="pear-collasped-pe collaspe">
-			<a href="#" class="layui-icon layui-icon-shrink-right"></a>
-		</div>
-		<!-- 依 赖 脚 本 -->
-		<script src="{% static 'PearAdminLayui/component/layui/layui.js' %}?version={{mrdoc_version}}"></script>
-		<script src="{% static 'PearAdminLayui/component/pear/pear.js' %}?version={{mrdoc_version}}"></script>
-		<!-- 框 架 初 始 化 -->
-		<script>
-			layui.use(['admin','jquery','convert','popup'], function() {
-				var admin = layui.admin;
-				var $ = layui.jquery;
-				var convert = layui.convert;
-				var popup = layui.popup;
-                var pear_admin_config = {
-                    "logo": {
-                        "title": "后台管理",
-                        "image": "{% static 'mrdoc_logo_ridus.png' %}"
-                    },
-                    "menu": {
-                        "data": "{% url 'admin_center_menu' %}",
-                        "accordion": true,
-                        "control": false,
-                        "select": "10"
-                    },
-                    "tab": {
-                        "muiltTab": true,
-                        "keepState": true,
-                        "tabMax": 30,
-                        "index": {
-                            "id": "10",
-                            "href": "{% url 'admin_overview' %}",
-                            "title": "仪表盘"
+
+{% block title %}后台管理{% if site_name != None and site_name != '' %} - {{site_name}} {% endif %} - iSpaceDoc{% endblock %}
+
+{% block extra_head %}
+<style>
+/* 后台管理专用样式 */
+.admin-layout {
+    display: flex;
+    min-height: 100vh;
+    background: var(--background-primary);
+}
+
+.admin-sidebar {
+    width: 260px;
+    background: var(--surface-primary);
+    border-right: 1px solid var(--border-primary);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    z-index: 100;
+    transition: all 0.3s ease;
+}
+
+.admin-sidebar.collapsed {
+    width: 64px;
+}
+
+.admin-logo {
+    padding: var(--spacing-lg);
+    border-bottom: 1px solid var(--border-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.admin-logo img {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+}
+
+.admin-logo .title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.admin-sidebar.collapsed .title {
+    display: none;
+}
+
+.admin-nav {
+    flex: 1;
+    padding: var(--spacing-md);
+    overflow-y: auto;
+}
+
+.nav-section {
+    margin-bottom: var(--spacing-lg);
+}
+
+.nav-section-title {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--spacing-sm);
+    padding: 0 var(--spacing-sm);
+}
+
+.nav-item {
+    margin-bottom: var(--spacing-xs);
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+    background: var(--surface-secondary);
+    color: var(--text-primary);
+}
+
+.nav-link.active {
+    background: var(--accent-primary);
+    color: white;
+}
+
+.nav-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.admin-main {
+    flex: 1;
+    margin-left: 260px;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+}
+
+.admin-sidebar.collapsed + .admin-main {
+    margin-left: 64px;
+}
+
+.admin-header {
+    height: 64px;
+    background: var(--surface-primary);
+    border-bottom: 1px solid var(--border-primary);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--spacing-lg);
+    position: sticky;
+    top: 0;
+    z-index: 99;
+}
+
+.admin-header-left {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.sidebar-toggle {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: var(--spacing-sm);
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.sidebar-toggle:hover {
+    background: var(--surface-secondary);
+    color: var(--text-primary);
+}
+
+.refresh-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: var(--spacing-sm);
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.refresh-btn:hover {
+    background: var(--surface-secondary);
+    color: var(--text-primary);
+}
+
+.admin-header-right {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.header-action {
+    color: var(--text-secondary);
+    text-decoration: none;
+    padding: var(--spacing-sm);
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.header-action:hover {
+    background: var(--surface-secondary);
+    color: var(--text-primary);
+}
+
+.user-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.user-trigger {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    color: var(--text-primary);
+}
+
+.user-trigger:hover {
+    background: var(--surface-secondary);
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--accent-primary);
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: var(--surface-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    padding: var(--spacing-sm) 0;
+    min-width: 150px;
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+}
+
+.dropdown-item {
+    display: block;
+    padding: var(--spacing-sm) var(--spacing-md);
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background: var(--surface-secondary);
+    color: var(--text-primary);
+}
+
+.admin-content {
+    flex: 1;
+    padding: var(--spacing-lg);
+    background: var(--background-secondary);
+    overflow-y: auto;
+}
+
+.content-tabs {
+    background: var(--surface-primary);
+    border-bottom: 1px solid var(--border-primary);
+    padding: 0 var(--spacing-lg);
+}
+
+.tab-list {
+    display: flex;
+    gap: var(--spacing-sm);
+    overflow-x: auto;
+}
+
+.tab-item {
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.tab-item:hover {
+    color: var(--text-primary);
+}
+
+.tab-item.active {
+    color: var(--accent-primary);
+    border-bottom-color: var(--accent-primary);
+}
+
+.tab-close {
+    opacity: 0.6;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.tab-close:hover {
+    opacity: 1;
+    background: var(--surface-secondary);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .admin-sidebar {
+        transform: translateX(-100%);
+    }
+    
+    .admin-sidebar.show {
+        transform: translateX(0);
+    }
+    
+    .admin-main {
+        margin-left: 0;
+    }
+    
+    .mobile-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 99;
+        display: none;
+    }
+    
+    .mobile-overlay.show {
+        display: block;
+    }
+}
+
+/* 加载动画 */
+.admin-loader {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    display: none;
+}
+
+.admin-loader.show {
+    display: block;
+}
+
+.loader-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border-primary);
+    border-top: 3px solid var(--accent-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 内容区域样式 */
+.content-frame {
+    min-height: 400px;
+    background: var(--surface-primary);
+    border-radius: 12px;
+    padding: var(--spacing-lg);
+    border: 1px solid var(--border-primary);
+}
+
+.error-message {
+    text-align: center;
+    padding: var(--spacing-xl);
+    color: var(--text-secondary);
+    font-size: 16px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    <!-- 侧边栏 -->
+    <div class="admin-sidebar" id="adminSidebar">
+        <div class="admin-logo">
+            <img src="{% static 'mrdoc_logo_ridus.png' %}" alt="Logo">
+            <span class="title">后台管理</span>
+        </div>
+        
+        <div class="admin-nav" id="adminNav">
+            <!-- 动态菜单将在这里加载 -->
+        </div>
+    </div>
+    
+    <!-- 主要内容区域 -->
+    <div class="admin-main">
+        <!-- 顶部导航 -->
+        <div class="admin-header">
+            <div class="admin-header-left">
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    <i class="icon">☰</i>
+                </button>
+                <button class="refresh-btn" onclick="refreshContent()">
+                    <i class="icon">⟳</i>
+                </button>
+            </div>
+            
+            <div class="admin-header-right">
+                <a href="#" class="header-action" onclick="toggleFullscreen()">
+                    <i class="icon">⛶</i>
+                </a>
+                <a href="{% url 'pro_list' %}" class="header-action" title="回到首页">
+                    <i class="icon">🏠</i>
+                </a>
+                
+                <div class="user-dropdown">
+                    <a href="javascript:;" class="user-trigger" onclick="toggleUserMenu()">
+                        <img src="{% static 'PearAdminLayui/avatar.svg' %}" class="user-avatar" alt="Avatar">
+                        <span>{% if request.user.first_name != '' %}{{ request.user.first_name }}{% else %}{{ request.user.username }}{% endif %}</span>
+                    </a>
+                    <div class="dropdown-menu" id="userMenu" style="display: none;">
+                        {% if request.user.is_superuser %}
+                        <a href="{% url 'user_center' %}" class="dropdown-item">个人中心</a>
+                        {% endif %}
+                        <a href="{% url 'pro_list' %}" class="dropdown-item">返回首页</a>
+                        <a href="javascript:void(0)" class="dropdown-item" onclick="logout()">退出登录</a>
+                    </div>
+                </div>
+                
+                <button class="header-action" onclick="openSettings()">
+                    <i class="icon">⚙</i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 标签页 -->
+        <div class="content-tabs">
+            <div class="tab-list" id="tabList">
+                <button class="tab-item active" data-tab="dashboard">仪表盘</button>
+            </div>
+        </div>
+        
+        <!-- 内容区域 -->
+        <div class="admin-content">
+            <div class="content-frame" id="contentFrame">
+                <!-- 动态内容将在这里加载 -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 移动端遮罩 -->
+<div class="mobile-overlay" id="mobileOverlay" onclick="closeMobileSidebar()"></div>
+
+<!-- 加载动画 -->
+<div class="admin-loader" id="adminLoader">
+    <div class="loader-spinner"></div>
+</div>
+
+<script>
+class AdminCenter {
+    constructor() {
+        this.sidebarCollapsed = false;
+        this.currentTab = 'dashboard';
+        this.tabs = new Map();
+        this.init();
+    }
+    
+    init() {
+        this.setupSidebar();
+        this.loadMenu();
+        this.loadDefaultTab();
+        this.setupEventListeners();
+    }
+    
+    setupSidebar() {
+        const toggle = document.getElementById('sidebarToggle');
+        const sidebar = document.getElementById('adminSidebar');
+        
+        toggle?.addEventListener('click', () => {
+            this.sidebarCollapsed = !this.sidebarCollapsed;
+            sidebar.classList.toggle('collapsed', this.sidebarCollapsed);
+        });
+    }
+    
+    async loadMenu() {
+        try {
+            const response = await fetch("{% url 'admin_center_menu' %}");
+            const menuData = await response.json();
+            this.renderMenu(menuData);
+        } catch (error) {
+            console.error('Failed to load menu:', error);
+            // 创建默认菜单
+            this.renderDefaultMenu();
+        }
+    }
+    
+    renderDefaultMenu() {
+        const nav = document.getElementById('adminNav');
+        const defaultMenu = [
+            { id: 'dashboard', title: '仪表盘', href: "{% url 'admin_overview' %}", icon: '📊' },
+            { id: 'users', title: '用户管理', href: '#', icon: '👤' },
+            { id: 'projects', title: '文集管理', href: '#', icon: '📚' },
+            { id: 'docs', title: '文档管理', href: '#', icon: '📄' },
+            { id: 'settings', title: '系统设置', href: '#', icon: '⚙️' }
+        ];
+        
+        let html = '<div class="nav-section"><div class="nav-section-title">管理功能</div>';
+        
+        defaultMenu.forEach(item => {
+            html += `
+                <div class="nav-item">
+                    <a href="javascript:void(0)" class="nav-link" data-id="${item.id}" data-href="${item.href}" data-title="${item.title}">
+                        <i class="nav-icon">${item.icon}</i>
+                        <span>${item.title}</span>
+                    </a>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        nav.innerHTML = html;
+        
+        // 绑定菜单点击事件
+        nav.addEventListener('click', (e) => {
+            const link = e.target.closest('.nav-link');
+            if (link) {
+                this.handleMenuClick(link);
+            }
+        });
+    }
+    
+    renderMenu(menuData) {
+        const nav = document.getElementById('adminNav');
+        if (!nav || !menuData) return;
+        
+        let html = '';
+        
+        // 处理不同的菜单数据格式
+        let items = [];
+        if (Array.isArray(menuData)) {
+            items = menuData;
+        } else if (menuData.data && Array.isArray(menuData.data)) {
+            items = menuData.data;
+        } else {
+            // 如果数据格式不匹配，使用默认菜单
+            this.renderDefaultMenu();
+            return;
+        }
+        
+        html += '<div class="nav-section"><div class="nav-section-title">管理功能</div>';
+        
+        items.forEach(item => {
+            const icon = this.getMenuIcon(item.icon);
+            html += `
+                <div class="nav-item">
+                    <a href="javascript:void(0)" class="nav-link" data-id="${item.id}" data-href="${item.href}" data-title="${item.title}">
+                        <i class="nav-icon">${icon}</i>
+                        <span>${item.title}</span>
+                    </a>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        nav.innerHTML = html;
+        
+        // 绑定菜单点击事件
+        nav.addEventListener('click', (e) => {
+            const link = e.target.closest('.nav-link');
+            if (link) {
+                this.handleMenuClick(link);
+            }
+        });
+    }
+    
+    getMenuIcon(iconClass) {
+        // 将LayUI图标类转换为简单的字符图标
+        const iconMap = {
+            'layui-icon-home': '🏠',
+            'layui-icon-user': '👤',
+            'layui-icon-set': '⚙️',
+            'layui-icon-file': '📄',
+            'layui-icon-chart': '📊',
+            'layui-icon-log': '📝',
+            'layui-icon-template-1': '📋',
+            'layui-icon-group': '👥',
+            'layui-icon-component': '🔧'
+        };
+        
+        return iconMap[iconClass] || '•';
+    }
+    
+    handleMenuClick(link) {
+        // 移除其他活动状态
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+        
+        const id = link.dataset.id;
+        const href = link.dataset.href;
+        const title = link.dataset.title;
+        
+        this.openTab(id, title, href);
+    }
+    
+    openTab(id, title, href) {
+        // 添加或激活标签页
+        if (!this.tabs.has(id)) {
+            this.tabs.set(id, { title, href });
+            this.addTabToUI(id, title);
+        }
+        
+        this.activateTab(id);
+        this.loadTabContent(href);
+    }
+    
+    addTabToUI(id, title) {
+        const tabList = document.getElementById('tabList');
+        
+        // 如果标签页已存在，不重复添加
+        if (tabList.querySelector(`[data-tab="${id}"]`)) {
+            return;
+        }
+        
+        const tab = document.createElement('button');
+        tab.className = 'tab-item';
+        tab.dataset.tab = id;
+        
+        if (id === 'dashboard') {
+            tab.innerHTML = title;
+        } else {
+            tab.innerHTML = `
+                ${title}
+                <span class="tab-close" onclick="adminCenter.closeTab('${id}', event)">×</span>
+            `;
+        }
+        
+        tab.addEventListener('click', () => {
+            if (!event.target.classList.contains('tab-close')) {
+                this.activateTab(id);
+            }
+        });
+        
+        tabList.appendChild(tab);
+    }
+    
+    activateTab(id) {
+        document.querySelectorAll('.tab-item').forEach(tab => {
+            tab.classList.toggle('active', tab.dataset.tab === id);
+        });
+        
+        this.currentTab = id;
+        
+        if (this.tabs.has(id)) {
+            this.loadTabContent(this.tabs.get(id).href);
+        }
+    }
+    
+    closeTab(id, event) {
+        event?.stopPropagation();
+        
+        // 不能关闭仪表盘标签页
+        if (id === 'dashboard') {
+            return;
+        }
+        
+        const tab = document.querySelector(`[data-tab="${id}"]`);
+        tab?.remove();
+        
+        this.tabs.delete(id);
+        
+        // 如果关闭的是当前标签页，激活仪表盘
+        if (this.currentTab === id) {
+            this.activateTab('dashboard');
+        }
+    }
+    
+    async loadTabContent(href) {
+        if (!href || href === '#') {
+            document.getElementById('contentFrame').innerHTML = '<div class="error-message">功能开发中...</div>';
+            return;
+        }
+        
+        const contentFrame = document.getElementById('contentFrame');
+        const loader = document.getElementById('adminLoader');
+        
+        try {
+            loader.classList.add('show');
+            
+            const response = await fetch(href);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            
+            const html = await response.text();
+            contentFrame.innerHTML = html;
+            
+            // 执行页面中的脚本
+            setTimeout(() => {
+                const scripts = contentFrame.querySelectorAll('script');
+                scripts.forEach(script => {
+                    try {
+                        const newScript = document.createElement('script');
+                        if (script.src) {
+                            newScript.src = script.src;
+                        } else {
+                            newScript.textContent = script.textContent;
                         }
-                    },
-                    "theme": {
-                        "defaultColor": "2",
-                        "defaultMenu": "dark-theme",
-                        "allowCustom": true
-                    },
-                    "colors": [{
-							"id": "1",
-							"color": "#2d8cf0"
-						},
-						{
-							"id": "2",
-							"color": "#5FB878"
-						},
-						{
-							"id": "3",
-							"color": "#1E9FFF"
-						}, {
-							"id": "4",
-							"color": "#FFB800"
-						}, {
-							"id": "5",
-							"color": "darkgray"
-						}
-					],
-                    "links": [{
-                            "icon": "layui-icon layui-icon-website",
-                            "title": "官方网站",
-                            "href": "https://mrdoc.pro"
-                        },
-                        {
-                            "icon": "layui-icon layui-icon-read",
-                            "title": "说明文档",
-                            "href": "https://doc.mrdoc.pro/project-7/"
-                        },
-                        {
-                            "icon": "layui-icon layui-icon-fonts-code",
-                            "title": "开源地址",
-                            "href": "https://gitee.com/zmister/MrDoc"
-                        },
-                        {
-                            "icon": "layui-icon layui-icon-survey",
-                            "title": "QQ群",
-                            "href": "http://shang.qq.com/wpa/qunwpa?idkey=143c23a4ffbd0ba9137d2bce3ee86c83532c05259a0542a69527e36615e64dba"
-                        },
-						{
-                            "icon": "layui-icon layui-icon-log",
-                            "title": "当前版本：{{mrdoc_version}}",
-                            "href": "https://gitee.com/zmister/MrDoc/tree/{{mrdoc_version}}/"
-                        }
-                    ],
-                    "other": {
-                        "keepLoad": 100
-					},
-					"header": {
-						"message": []
-					}
-                }
-				admin.setConfigType("json");
-				admin.render(pear_admin_config);
-			})
-		</script>
-		<script>
-			var $ = layui.jquery;
-			function Logout(){
-				$.ajax({
-					url:"{% url 'logout' %}",
-					method:'post',
-					headers: {"X-CSRFToken":'{{ csrf_token }}'},
-					success:function(r){
-						if(r.status){
-							window.location.href = '/'
-						}else{
-							layer.msg("注销失败")
-						}
-					},
-					error:function(){
-						layer.msg("注销失败")
-					}
-				})
-			}
-		</script>
-	</body>
-</html>
+                        document.body.appendChild(newScript);
+                        document.body.removeChild(newScript);
+                    } catch (e) {
+                        console.warn('Script execution failed:', e);
+                    }
+                });
+            }, 100);
+            
+        } catch (error) {
+            console.error('Failed to load content:', error);
+            contentFrame.innerHTML = '<div class="error-message">加载失败，请重试</div>';
+        } finally {
+            loader.classList.remove('show');
+        }
+    }
+    
+    loadDefaultTab() {
+        this.openTab('dashboard', '仪表盘', "{% url 'admin_overview' %}");
+    }
+    
+    setupEventListeners() {
+        // 移动端侧边栏
+        if (window.innerWidth <= 768) {
+            document.getElementById('sidebarToggle')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.getElementById('adminSidebar')?.classList.add('show');
+                document.getElementById('mobileOverlay')?.classList.add('show');
+            });
+        }
+    }
+}
+
+// 全局函数
+function refreshContent() {
+    if (window.adminCenter && window.adminCenter.currentTab) {
+        const tab = window.adminCenter.tabs.get(window.adminCenter.currentTab);
+        if (tab) {
+            window.adminCenter.loadTabContent(tab.href);
+        }
+    }
+}
+
+function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+    } else {
+        document.exitFullscreen();
+    }
+}
+
+function toggleUserMenu() {
+    const menu = document.getElementById('userMenu');
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+
+function logout() {
+    if (confirm('确定要退出登录吗？')) {
+        fetch("{% url 'logout' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status) {
+                window.location.href = '/';
+            } else {
+                alert('注销失败');
+            }
+        })
+        .catch(() => {
+            alert('注销失败');
+        });
+    }
+}
+
+function openSettings() {
+    // 打开设置面板
+    alert('设置功能开发中...');
+}
+
+function closeMobileSidebar() {
+    document.getElementById('adminSidebar')?.classList.remove('show');
+    document.getElementById('mobileOverlay')?.classList.remove('show');
+}
+
+// 初始化
+document.addEventListener('DOMContentLoaded', () => {
+    window.adminCenter = new AdminCenter();
+});
+
+// 点击其他地方关闭用户菜单
+document.addEventListener('click', (e) => {
+    const userDropdown = e.target.closest('.user-dropdown');
+    if (!userDropdown) {
+        const userMenu = document.getElementById('userMenu');
+        if (userMenu) {
+            userMenu.style.display = 'none';
+        }
+    }
+});
+</script>
+{% endblock %}
