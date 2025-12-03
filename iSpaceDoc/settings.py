@@ -21,7 +21,10 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # 配置文件和数据文件目录
 CONFIG_DIR = os.path.join(BASE_DIR, 'config')
 CONFIG = ConfigParser()
-CONFIG.read(os.path.join(CONFIG_DIR,'config.ini'),encoding='utf-8')
+
+# 从环境变量获取配置文件名，默认为config.ini
+config_file = os.environ.get('MRDOC_CONFIG', 'config.ini')
+CONFIG.read(os.path.join(CONFIG_DIR, config_file), encoding='utf-8')
 
 # 日志文件配置
 LOG_DIR = os.path.join(BASE_DIR,'log')

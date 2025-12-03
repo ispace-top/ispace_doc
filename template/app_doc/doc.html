@@ -1,4 +1,3 @@
-<!-- 继承自模板：app_doc/docs_base.html -->
 {% extends 'app_doc/docs_base.html' %}
 <!-- 引入静态文件 -->
 {% load static %}
@@ -66,9 +65,11 @@
 {% block children_content %}
     {% if doc.show_children %}
     {% load doc_filter %}
+    <ol>
     {% for children in doc.id|get_next_doc %}
-        <li style="list-style: disc;font-size: 15px;"><a href="{% url 'doc_id' doc_id=children.id %}" title="{{children.name}}">{{ children.name }}</a></li>
+        <li style="font-size: 15px;"><a href="{% url 'doc_id' doc_id=children.id %}" title="{{children.name}}">{{ children.name }}</a></li>
     {% endfor %}
+    </ol>
     {% endif %}
     
 {% endblock %}

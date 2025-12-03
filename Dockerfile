@@ -31,7 +31,8 @@ ENV PYTHONUNBUFFERED=0 \
     TZ=Asia/Shanghai \
     LISTEN_PORT=10086 \
     USER=admin \
-    PIP_NO_PROXY='*'
+    PIP_NO_PROXY='*' \
+    MRDOC_CONFIG=config-docker.ini
 
 # 替换 alpine 软件仓库的源并安装运行时依赖
 RUN set -x \
@@ -50,11 +51,11 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 COPY . /app/MrDoc/
 WORKDIR /app/MrDoc
 
-# 启动脚本权限
-RUN chmod +x docker_mrdoc.sh
+# 设置启动脚本权限
+RUN chmod +x entrypoint.sh test_django.py
 
 # 暴露端口
 EXPOSE 10086
 
 # 容器启动命令
-ENTRYPOINT ["sh", "docker_mrdoc.sh"]
+ENTRYPOINT ["./entrypoint.sh"]

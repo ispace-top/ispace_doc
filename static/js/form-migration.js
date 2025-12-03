@@ -251,6 +251,12 @@ class FormMigration {
      */
     addFormValidation() {
         document.querySelectorAll('form').forEach(form => {
+            // Skip forms that should not be validated by this general handler
+            // Specifically exclude the login form to prevent interference
+            if (form.hasAttribute('data-validate') && form.getAttribute('data-validate') === 'false') {
+                return;
+            }
+            
             form.addEventListener('submit', (e) => {
                 const inputs = form.querySelectorAll('.form-input, .form-textarea, .form-select');
                 let isValid = true;
