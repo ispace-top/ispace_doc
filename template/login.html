@@ -32,7 +32,7 @@
                     <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
                 </svg>
                 <svg class="theme-icon moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="display: none;">
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    <path d="M21 12.79A9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
             </button>
         </div>
@@ -62,7 +62,7 @@
         </div>
         {% endif %}
 
-        <form class="auth-form" method="POST" data-validate="false">
+        <form class="auth-form" method="POST" id="loginForm">
             {% csrf_token %}
             <div class="form-group">
                 <label for="username" class="form-label">用户名</label>
@@ -104,7 +104,7 @@
                     <img 
                         src="{% url 'check_code' %}" 
                         class="captcha-image" 
-                        onclick="this.src='{% url 'check_code' %}?t=' + Date.now()" 
+                        onclick="this.src=`{% url 'check_code' %}?t=${Date.now()}`;" 
                         title="点击刷新验证码"
                         alt="验证码"
                     >
@@ -337,4 +337,47 @@
     }
 }
 </style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const loginForm = document.getElementById('loginForm');
+    
+    if (loginForm) {
+        loginForm.addEventListener('submit', function(e) {
+            // 阻止默认提交行为
+            e.preventDefault();
+            
+            // 获取表单数据
+            const formData = new FormData(loginForm);
+            
+            // 提交表单数据
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                }
+            })
+            .then(response => response.text())
+            .then(html => {
+                // 如果返回的是重定向或主页内容，则跳转
+                if (html.includes('<!DOCTYPE html>') && 
+                    (html.includes('id="appHeader"') || html.includes('class="app-header"'))) {
+                    window.location.href = '/';
+                } else {
+                    // 否则重新加载当前页面以显示错误消息
+                    window.location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('登录请求失败:', error);
+                // 出现错误时也重新加载页面以显示服务器返回的错误
+                window.location.reload();
+            });
+        });
+    }
+});
+</script>
 {% endblock %}

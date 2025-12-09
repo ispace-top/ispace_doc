@@ -74,7 +74,7 @@
                     
                     {% if user.is_authenticated %}
                         <div class="user-menu-dropdown">
-                            <button class="user-menu-trigger">
+                            <button class="user-menu-trigger" onclick="toggleUserMenu()">
                                 <div class="user-avatar">
                                     {% if user.avatar %}
                                         <img src="{{ user.avatar.url }}" alt="{{ user.username }}">
@@ -204,6 +204,24 @@
                 moonIcon.style.display = 'none';
             }
         }
+        
+        // 用户菜单切换
+        function toggleUserMenu() {
+            const dropdown = document.querySelector('.user-menu-dropdown-content');
+            if (dropdown) {
+                dropdown.classList.toggle('show');
+            }
+        }
+        
+        // 点击其他地方关闭用户菜单
+        document.addEventListener('click', function(event) {
+            const userMenu = document.querySelector('.user-menu-dropdown');
+            const dropdown = document.querySelector('.user-menu-dropdown-content');
+            
+            if (userMenu && dropdown && !userMenu.contains(event.target)) {
+                dropdown.classList.remove('show');
+            }
+        });
         
         // 页面加载时应用保存的主题
         document.addEventListener('DOMContentLoaded', function() {

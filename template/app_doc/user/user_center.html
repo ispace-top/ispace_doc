@@ -6,9 +6,20 @@
 
 {% block head_extra %}
 <style>
-/* 个人中心样式 - 强制覆盖所有可能的CSS冲突 */
-/* 重置所有SVG的默认样式 */
-* svg, svg * {
+/* 个人中心样式 - 仅作用于当前页面，不影响全局样式 */
+/* 限制SVG样式作用范围，避免影响header等全局组件 */
+.user-center-page svg:not(.theme-icon):not(.dropdown-icon):not(.dropdown-item-icon) {
+    width: auto !important;
+    height: auto !important;
+    max-width: none !important;
+    max-height: none !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+}
+
+/* 更精确地限定SVG样式作用范围 */
+.user-center-page .user-sidebar svg,
+.user-center-page .user-main svg {
     width: auto !important;
     height: auto !important;
     max-width: none !important;
@@ -159,8 +170,8 @@
     font-weight: 500;
 }
 
-/* 强制控制图标大小 */
-.nav-icon {
+/* 限制图标大小只在导航范围内 */
+.user-center-page .nav-icon {
     width: 16px !important;
     height: 16px !important;
     min-width: 16px !important;
@@ -172,7 +183,7 @@
     display: block !important;
 }
 
-.nav-link.active .nav-icon {
+.user-center-page .nav-link.active .nav-icon {
     opacity: 1;
 }
 
@@ -264,7 +275,8 @@
     flex-shrink: 0 !important;
 }
 
-.stat-card-icon svg {
+/* 限制统计卡片图标大小只在统计卡片范围内 */
+.user-center-page .stat-card-icon svg {
     width: 24px !important;
     height: 24px !important;
     min-width: 24px !important;
@@ -379,6 +391,13 @@
     margin: 0 auto 16px;
     color: #6b7280;
     opacity: 0.5;
+}
+
+/* 限制空状态图标大小只在空状态范围内 */
+.user-center-page .empty-icon svg {
+    width: 64px !important;
+    height: 64px !important;
+    display: block !important;
 }
 
 .empty-title {
@@ -756,7 +775,7 @@
                     <div class="empty-state">
                         <div class="empty-icon">
                             <svg viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
+                                <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 010 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
                             </svg>
                         </div>
                         <h3 class="empty-title">功能开发中</h3>
@@ -776,8 +795,9 @@
 
 <!-- 强制修复图标大小的内联样式 -->
 <style>
-/* 最高优先级的图标大小修复 */
-.user-center-page svg {
+/* 最高优先级的图标大小修复 - 仅作用于当前页面，不影响全局header */
+.user-center-page .user-sidebar svg,
+.user-center-page .user-main svg {
     width: 16px !important;
     height: 16px !important;
     display: inline-block !important;
@@ -794,7 +814,7 @@
     height: 64px !important;
 }
 
-/* 确保没有其他样式干扰 */
+/* 确保没有其他样式干扰导航图标 */
 .user-center-page .nav-icon {
     width: 16px !important;
     height: 16px !important;

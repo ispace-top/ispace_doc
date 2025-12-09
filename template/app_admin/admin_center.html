@@ -9,20 +9,21 @@
 /* 后台管理专用样式 */
 .admin-layout {
     display: flex;
-    min-height: 100vh;
-    background: var(--background-primary);
+    min-height: calc(100vh - 64px); /* 减去顶部header高度 */
+    background: var(--bg-secondary);
+    margin-top: 64px; /* 为顶部header留出空间 */
 }
 
 .admin-sidebar {
     width: 260px;
-    background: var(--surface-primary);
+    background: var(--bg-primary);
     border-right: 1px solid var(--border-primary);
     display: flex;
     flex-direction: column;
     position: fixed;
     left: 0;
-    top: 0;
-    height: 100vh;
+    top: 64px; /* 与顶部header对齐 */
+    height: calc(100vh - 64px);
     z-index: 100;
     transition: all 0.3s ease;
 }
@@ -32,22 +33,22 @@
 }
 
 .admin-logo {
-    padding: var(--spacing-lg);
+    padding: var(--space-4);
     border-bottom: 1px solid var(--border-primary);
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
+    gap: var(--space-2);
 }
 
 .admin-logo img {
     width: 32px;
     height: 32px;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
 }
 
 .admin-logo .title {
-    font-size: 18px;
-    font-weight: 600;
+    font-size: var(--text-lg);
+    font-weight: var(--font-semibold);
     color: var(--text-primary);
     white-space: nowrap;
 }
@@ -58,47 +59,47 @@
 
 .admin-nav {
     flex: 1;
-    padding: var(--spacing-md);
+    padding: var(--space-3);
     overflow-y: auto;
 }
 
 .nav-section {
-    margin-bottom: var(--spacing-lg);
+    margin-bottom: var(--space-4);
 }
 
 .nav-section-title {
-    font-size: 12px;
+    font-size: var(--text-xs);
     color: var(--text-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin-bottom: var(--spacing-sm);
-    padding: 0 var(--spacing-sm);
+    margin-bottom: var(--space-2);
+    padding: 0 var(--space-2);
 }
 
 .nav-item {
-    margin-bottom: var(--spacing-xs);
+    margin-bottom: var(--space-1);
 }
 
 .nav-link {
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-sm);
-    border-radius: 8px;
+    gap: var(--space-2);
+    padding: var(--space-2);
+    border-radius: var(--radius-md);
     color: var(--text-secondary);
     text-decoration: none;
-    font-size: 14px;
+    font-size: var(--text-sm);
     transition: all 0.2s ease;
 }
 
 .nav-link:hover {
-    background: var(--surface-secondary);
+    background: var(--bg-hover);
     color: var(--text-primary);
 }
 
 .nav-link.active {
-    background: var(--accent-primary);
-    color: white;
+    background: var(--brand-light);
+    color: var(--brand-primary);
 }
 
 .nav-icon {
@@ -113,6 +114,7 @@
     display: flex;
     flex-direction: column;
     transition: all 0.3s ease;
+    padding-top: 0; /* 移除原来的padding-top */
 }
 
 .admin-sidebar.collapsed + .admin-main {
@@ -121,21 +123,35 @@
 
 .admin-header {
     height: 64px;
-    background: var(--surface-primary);
+    background: var(--bg-primary);
     border-bottom: 1px solid var(--border-primary);
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 0 var(--spacing-lg);
-    position: sticky;
-    top: 0;
+    justify-content: flex-start; /* 改为flex-start而不是space-between */
+    padding: 0 var(--space-4);
+    position: fixed;
+    top: 64px; /* 位于主header下方 */
+    left: 260px; /* 与sidebar右侧对齐 */
+    right: 0;
     z-index: 99;
+    transition: all 0.3s ease;
+}
+
+.admin-sidebar.collapsed ~ .admin-main .admin-header {
+    left: 64px;
 }
 
 .admin-header-left {
     display: flex;
     align-items: center;
-    gap: var(--spacing-md);
+    gap: var(--space-3);
+}
+
+.admin-header-right {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-left: auto; /* 添加这一行，将右侧内容推向右边 */
 }
 
 .sidebar-toggle {
@@ -143,13 +159,13 @@
     border: none;
     color: var(--text-secondary);
     cursor: pointer;
-    padding: var(--spacing-sm);
-    border-radius: 6px;
+    padding: var(--space-2);
+    border-radius: var(--radius-md);
     transition: all 0.2s ease;
 }
 
 .sidebar-toggle:hover {
-    background: var(--surface-secondary);
+    background: var(--bg-hover);
     color: var(--text-primary);
 }
 
@@ -158,32 +174,26 @@
     border: none;
     color: var(--text-secondary);
     cursor: pointer;
-    padding: var(--spacing-sm);
-    border-radius: 6px;
+    padding: var(--space-2);
+    border-radius: var(--radius-md);
     transition: all 0.2s ease;
 }
 
 .refresh-btn:hover {
-    background: var(--surface-secondary);
+    background: var(--bg-hover);
     color: var(--text-primary);
-}
-
-.admin-header-right {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
 }
 
 .header-action {
     color: var(--text-secondary);
     text-decoration: none;
-    padding: var(--spacing-sm);
-    border-radius: 6px;
+    padding: var(--space-2);
+    border-radius: var(--radius-md);
     transition: all 0.2s ease;
 }
 
 .header-action:hover {
-    background: var(--surface-secondary);
+    background: var(--bg-hover);
     color: var(--text-primary);
 }
 
@@ -195,9 +205,9 @@
 .user-trigger {
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-sm);
-    border-radius: 8px;
+    gap: var(--space-2);
+    padding: var(--space-2);
+    border-radius: var(--radius-md);
     cursor: pointer;
     transition: all 0.2s ease;
     text-decoration: none;
@@ -205,24 +215,24 @@
 }
 
 .user-trigger:hover {
-    background: var(--surface-secondary);
+    background: var(--bg-hover);
 }
 
 .user-avatar {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: var(--accent-primary);
+    background: var(--brand-primary);
 }
 
 .dropdown-menu {
     position: absolute;
     top: 100%;
     right: 0;
-    background: var(--surface-primary);
+    background: var(--bg-primary);
     border: 1px solid var(--border-primary);
-    border-radius: 8px;
-    padding: var(--spacing-sm) 0;
+    border-radius: var(--radius-md);
+    padding: var(--space-2) 0;
     min-width: 150px;
     box-shadow: var(--shadow-lg);
     z-index: 1000;
@@ -230,38 +240,39 @@
 
 .dropdown-item {
     display: block;
-    padding: var(--spacing-sm) var(--spacing-md);
+    padding: var(--space-2) var(--space-3);
     color: var(--text-secondary);
     text-decoration: none;
     transition: all 0.2s ease;
 }
 
 .dropdown-item:hover {
-    background: var(--surface-secondary);
+    background: var(--bg-hover);
     color: var(--text-primary);
 }
 
 .admin-content {
     flex: 1;
-    padding: var(--spacing-lg);
-    background: var(--background-secondary);
+    padding: var(--space-4);
+    background: var(--bg-secondary);
     overflow-y: auto;
+    margin-top: 64px; /* 为固定定位的admin-header留出空间 */
 }
 
 .content-tabs {
-    background: var(--surface-primary);
+    background: var(--bg-primary);
     border-bottom: 1px solid var(--border-primary);
-    padding: 0 var(--spacing-lg);
+    padding: 0 var(--space-4);
 }
 
 .tab-list {
     display: flex;
-    gap: var(--spacing-sm);
+    gap: var(--space-2);
     overflow-x: auto;
 }
 
 .tab-item {
-    padding: var(--spacing-sm) var(--spacing-md);
+    padding: var(--space-2) var(--space-3);
     background: none;
     border: none;
     color: var(--text-secondary);
@@ -271,7 +282,7 @@
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
+    gap: var(--space-2);
 }
 
 .tab-item:hover {
@@ -279,21 +290,21 @@
 }
 
 .tab-item.active {
-    color: var(--accent-primary);
-    border-bottom-color: var(--accent-primary);
+    color: var(--brand-primary);
+    border-bottom-color: var(--brand-primary);
 }
 
 .tab-close {
     opacity: 0.6;
     cursor: pointer;
     padding: 2px 4px;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     transition: all 0.2s ease;
 }
 
 .tab-close:hover {
     opacity: 1;
-    background: var(--surface-secondary);
+    background: var(--bg-hover);
 }
 
 /* 响应式设计 */
@@ -308,6 +319,10 @@
     
     .admin-main {
         margin-left: 0;
+    }
+    
+    .admin-header {
+        left: 0;
     }
     
     .mobile-overlay {
@@ -341,7 +356,7 @@
     width: 32px;
     height: 32px;
     border: 3px solid var(--border-primary);
-    border-top: 3px solid var(--accent-primary);
+    border-top: 3px solid var(--brand-primary);
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
@@ -354,19 +369,24 @@
 /* 内容区域样式 */
 .content-frame {
     min-height: 400px;
-    background: var(--surface-primary);
-    border-radius: 12px;
-    padding: var(--spacing-lg);
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
     border: 1px solid var(--border-primary);
 }
 
 .error-message {
     text-align: center;
-    padding: var(--spacing-xl);
+    padding: var(--space-6);
     color: var(--text-secondary);
-    font-size: 16px;
+    font-size: var(--text-base);
 }
 </style>
+{% endblock %}
+
+{% block header %}
+<!-- 使用基模板的header -->
+{{ block.super }}
 {% endblock %}
 
 {% block content %}
@@ -389,19 +409,32 @@
         <div class="admin-header">
             <div class="admin-header-left">
                 <button class="sidebar-toggle" id="sidebarToggle">
-                    <i class="icon">☰</i>
+                    <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
                 </button>
                 <button class="refresh-btn" onclick="refreshContent()">
-                    <i class="icon">⟳</i>
+                    <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <polyline points="1 20 1 14 7 14"></polyline>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                    </svg>
                 </button>
             </div>
             
             <div class="admin-header-right">
                 <a href="#" class="header-action" onclick="toggleFullscreen()">
-                    <i class="icon">⛶</i>
+                    <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                    </svg>
                 </a>
                 <a href="{% url 'pro_list' %}" class="header-action" title="回到首页">
-                    <i class="icon">🏠</i>
+                    <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
                 </a>
                 
                 <div class="user-dropdown">
@@ -419,7 +452,10 @@
                 </div>
                 
                 <button class="header-action" onclick="openSettings()">
-                    <i class="icon">⚙</i>
+                    <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
                 </button>
             </div>
         </div>
@@ -471,6 +507,9 @@ class AdminCenter {
         toggle?.addEventListener('click', () => {
             this.sidebarCollapsed = !this.sidebarCollapsed;
             sidebar.classList.toggle('collapsed', this.sidebarCollapsed);
+            
+            // 触发窗口resize事件，使图表等能正确调整大小
+            window.dispatchEvent(new Event('resize'));
         });
     }
     
@@ -801,5 +840,19 @@ document.addEventListener('click', (e) => {
         }
     }
 });
+
+// 窗口大小改变时的处理
+window.addEventListener('resize', () => {
+    // 在移动端和桌面端之间切换时，隐藏侧边栏
+    if (window.innerWidth > 768) {
+        document.getElementById('adminSidebar')?.classList.remove('show');
+        document.getElementById('mobileOverlay')?.classList.remove('show');
+    }
+});
 </script>
+{% endblock %}
+
+{% block footer %}
+<!-- 使用基模板的footer -->
+{{ block.super }}
 {% endblock %}
