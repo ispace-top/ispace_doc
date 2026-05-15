@@ -1,344 +1,539 @@
-{% extends 'app_admin/admin_base.html' %}
+{% extends "base.html" %}
 {% load static %}
 {% load i18n %}
 {% block title %}文集管理{% endblock %}
+
+{% block styles %}
+<style>
+    .admin-project-table-wrap { overflow-x: auto; }
+    .project-name-link {
+        color: var(--ispace-color-text-link);
+        text-decoration: none;
+    }
+    .project-name-link:hover { text-decoration: underline; }
+    .project-role-icon {
+        color: var(--ispace-color-text-quaternary);
+        margin-left: 2px;
+        font-size: var(--ispace-font-xs);
+    }
+    .project-top-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .project-top-toggle input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--ispace-color-brand-500);
+        cursor: pointer;
+    }
+    .project-toolbar {
+        display: flex;
+        align-items: center;
+        gap: var(--ispace-space-3);
+        flex-wrap: wrap;
+        margin-bottom: var(--ispace-space-4);
+    }
+    .project-toolbar .ispace-form-input {
+        max-width: 200px;
+    }
+    .project-collaborator-link {
+        color: var(--ispace-color-text-link);
+        font-size: var(--ispace-font-xs);
+        text-decoration: none;
+        margin-left: 4px;
+    }
+    .project-collaborator-link:hover { text-decoration: underline; }
+    .project-delete-input {
+        width: 95%;
+        margin-top: var(--ispace-space-3);
+    }
+    .project-modal-body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--ispace-space-3);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="layui-card">
-    <div class="layui-card-body">
-        <table id="project-table" lay-filter="project-table"></table>
-    </div>
+<div class="ispace-page-header">
+    <h1 class="ispace-page-title">文集管理</h1>
 </div>
 
-<!-- 表格工具栏 -->
-<script type="text/html" id="project-toolbar">
-    <div class="layui-input-inline">
-        <input type="text" name="project-search-kw" placeholder="" class="layui-input" >
+<div class="ispace-card">
+    <div class="ispace-card-body">
+        <div class="project-toolbar">
+            <input type="text" id="project-search-kw" placeholder="搜索文集" class="ispace-form-input">
+            <button class="ispace-btn ispace-btn-sm ispace-btn-secondary" id="search-btn">搜索</button>
+            <button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="add-project-btn">新增</button>
+            <button class="ispace-btn ispace-btn-danger ispace-btn-sm" id="batch-remove-btn">删除</button>
+            <span class="ispace-text-sm ispace-text-tertiary ispace-ml-auto" id="project-count-info"></span>
+        </div>
+
+        <div class="admin-project-table-wrap">
+            <table class="ispace-table" id="project-table">
+                <thead>
+                    <tr>
+                        <th style="width:36px;"><input type="checkbox" id="select-all-projects"></th>
+                        <th>文集名称</th>
+                        <th>文档数</th>
+                        <th>协作人数</th>
+                        <th>作者</th>
+                        <th>置顶</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="project-table-body">
+                </tbody>
+            </table>
+        </div>
+        <div id="project-pagination" class="ispace-pagination"></div>
     </div>
-    <button class="pear-btn pear-btn-sm" lay-event="search">
-        <i class="layui-icon layui-icon-search"></i>搜索
-    </button>
-    <button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="add">
-        <i class="layui-icon layui-icon-add-1"></i>新增
-    </button>
-    <button class="pear-btn pear-btn-danger pear-btn-sm" lay-event="batchRemove">
-        <i class="layui-icon layui-icon-delete"></i>删除
-    </button>
-    
-</script>
-
-<!-- 文集名称 -->
-<script type="text/html" id="project-name">
-    {% verbatim %}
-    <a href="/project-{{d.id}}/" target="_blank">
-        {{d.name}}
-        {{#if (d.role == 0) { }}
-        {{# }else if(d.role == 1){ }}
-        <span  tooltip="私密" placement="right"><i class="layui-icon layui-icon-password"></i></span>
-        {{# }else if(d.role == 2){ }}
-        <span  tooltip="指定用户" placement="right"><i class="layui-icon layui-icon-user"></i></span>
-        {{# }else if(d.role == 3){ }}
-        <span  tooltip="访问码" placement="right"><i class="layui-icon layui-icon-key"></i></span>
-        {{# } }}
-    </a>
-    {% endverbatim %}
-</script>
-
-<!-- 单个文集操作 -->
-<script type="text/html" id="project-bar">
-    {% verbatim %}
-    <!-- <a href="/manage_pro_doc_sort/{{d.id}}/" class="layui-btn layui-btn-primary pear-btn-sm" lay-event="sort"><i class="layui-icon layui-icon-cols"></i></a> -->
-    <!-- <a href="/modify_pro/?pro_id={{d.id}}" title="修改文集配置" class="layui-btn layui-btn-primary pear-btn-sm"><i class="layui-icon layui-icon-set"></i></a> -->
-    <button class="pear-btn pear-btn-danger pear-btn-sm" lay-event="remove"><i class="layui-icon layui-icon-delete"></i></button>
-    {% endverbatim %}
-</script>
-
-<!-- 文集权限 -->
-<script type="text/html" id="project-role">
-    {% verbatim %}
-    {{#if (d.role == 0) { }}
-    <span>公开</span>
-    {{# }else if(d.role == 1){ }}
-    <span>私密</span>
-    {{# }else if(d.role == 2){ }}
-    <span>指定用户</span>
-    {{# }else if(d.role == 3){ }}
-    <span>访问码</span>
-    {{# } }}
-    {% endverbatim %}
-</script>
-
-<!-- 协作人数 -->
-<script type="text/html" id="colla-cnt">
-    {% verbatim %}
-    <span>{{d.colla_total}}</span> <a href="/admin/project_colla_config/{{d.id}}/"  title="管理文集协作"><i class="layui-icon layui-icon-set"></i></a>
-    {% endverbatim %}
-</script>
-
-<!-- 创建时间 -->
-<script type="text/html" id="project-create-time">
-    {% verbatim %}
-    {{layui.util.toDateString(d.create_time,  "yyyy-MM-dd HH:mm:ss")}}
-    {% endverbatim %}
-</script>
-
-<!-- 文集置顶 -->
-<script type="text/html" id="is-top">
-    {% verbatim %}
-    <input type="checkbox" name="is_top" value="{{d.id}}" lay-skin="switch" lay-text="是|否" lay-filter="topActive" {{ d.is_top === true ? 'checked' : '' }}>
-    {% endverbatim %}
-</script>
-
+</div>
 {% endblock %}
-{% block custom_script %}
+
+{% block scripts %}
 <script>
-    layui.use(['table', 'form', 'jquery', 'layer'], function() {
-        let table = layui.table;
-        let form = layui.form;
-        let $ = layui.jquery;
-        let layer = layui.layer;
-        $.ajaxSetup({
-                data: {csrfmiddlewaretoken: '{{ csrf_token }}' },
-            });
-        let cols = [
-            [
-                {type: 'checkbox',width:20},
-                {title: '文集名称',field: 'name',align: 'left',templet:"#project-name",minWidth:200},
-                // {title: '简介',field: 'intro',align: 'left',templet:"#share-type"},
-                // {title: '权限',field: 'role',align: 'left',templet:"#project-role"},
-                {title: '文档数',field: 'doc_total',align: 'left',width:90},
-                {title: '协作人数',field: 'colla_total',align: 'left',templet:"#colla-cnt",width:90},
-                {title: '作者',field: 'create_user',align: 'left',width:90},
-                {title: '置顶',field: 'is_top',align: 'left',width:90,templet:"#is-top"},
-                {title: '创建时间',field: 'create_time',align: 'left',templet:"#project-create-time"},
-                {title: '操作',toolbar: '#project-bar',align: 'left',}
-            ]
-        ]
-        // 渲染表格
-        table.render({
-            elem: '#project-table',
-            method:'post',
-            where:{
-                'type':1
-            },
-            url: "{% url 'project_manage' %}",
-            page: true,
-            cols: cols,
-            skin: 'line',
-            toolbar: '#project-toolbar',
-            defaultToolbar: ['filter']
-        });
-        // 侦听文集删除按钮
-        table.on("tool(project-table)",function(obj){
-            if (obj.event === 'remove') {
-                // console.log(obj)
-                delProject(obj.data.id,obj.data.name)
-            }
-        });
-        // 侦听表格工具栏
-        table.on("toolbar(project-table)",function(obj){
-            if (obj.event === 'add') { // 新增文集
-                createProject();
-            }else if(obj.event === 'batchRemove'){ // 批量删除文集
-                batchRemove(obj)
-            }else if(obj.event === 'search'){ // 搜索文集
-                console.log('搜索文集')
-                table.reload('project-table',{
-                    where:{
-                    'type':1,'kw':$('input[name="project-search-kw"]').val()
-                },
-                })
-            } 
-        });
+(function() {
+    const API_URL = "{% url 'project_manage' %}";
+    const CREATE_URL = "{% url 'create_project' %}";
+    const MODIFY_URL = "{% url 'modify_project' %}";
+    const DEL_URL = "{% url 'admin_project_del' %}";
+    const ISTOP_URL = '{% url "admin_project_istop" %}';
+    const CSRF_TOKEN = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const ITEMS_PER_PAGE = 10;
+    let currentPage = 1;
+    let currentFilters = { type: 1 };
 
-        // 侦听文集置顶开关        
-        form.on('switch(topActive)', function(obj){
-            loading = layer.load(1)
-            $.ajax({
-                url:'{% url "admin_project_istop" %}',
-                type:'post',
-                data:{
-                    'id':this.value,'is_top':obj.elem.checked,
-                },
-                success: function(r) {
-                    layer.close(loading);
-                    if (r.status) {
-                        layer.msg('修改成功', {
-                            icon: 1,
-                            time: 1000
-                        },function(){
-                            table.reload("project-table")
-                        });
-                    } else {
-                        layer.msg(r.data, {
-                            icon: 2,
-                            time: 1000
-                        });
-                    }
-                },
-                error:function(){
-                    layer.close(loading);
-                    layer.msg("置顶失败")
-                }
-            })
-        });
-
-        //创建文集
-        createProject = function(){
-            layer.open({
-                type:1,
-                title:'新建文集',
-                area:'300px;',
-                id:'createPro',//配置ID
-                content:'<div style="padding: 20px;"><input class="layui-input" type="text" id="pname" style="margin-bottom:10px;" placeholder="输入文集名" required  lay-verify="required"><textarea name="desc" id="desc" placeholder="输入文集简介" class="layui-textarea"></textarea></div>',
-                btn:['确定','取消'], //添加按钮
-                btnAlign:'c', //按钮居中
-                yes:function (index,layero) {
-                    layer.load(1);
-                    data = {
-                        'pname':$("#pname").val(),
-                        'desc':$("#desc").val(),
-                    }
-                    $.post("{% url 'create_project' %}",data,function(r){
-                        layer.closeAll('loading'); //关闭loading
-                        if(r.status){
-                            //创建成功
-                            window.location.reload();
-                            //layer.close(index)
-                        }else{
-                            //创建失败，提示
-                            console.log(r)
-
-                        }
-                    })
-                },
-            });
+    function getCSRFHeaders() {
+        return {
+            'X-CSRFToken': CSRF_TOKEN,
+            'Content-Type': 'application/x-www-form-urlencoded',
         };
-        //修改文集
-        modifyProject = function(pro_id,pro_name,pro_intro){
-            layer.open({
-                type:1,
-                title:'修改文集',
-                area:'300px;',
-                id:'modifyPro',//配置ID
-                content:'<div style="padding: 20px;"><input class="layui-input" type="text" id="pname" style="margin-bottom:10px;" placeholder="输入文集名" required  lay-verify="required" value="'+pro_name+'"><textarea name="desc" id="desc" placeholder="输入文集简介" class="layui-textarea">'+pro_intro+'</textarea></div>',
-                btn:['确定','取消'], //添加按钮
-                btnAlign:'c', //按钮居中
-                yes:function (index,layero) {
-                    layer.load(1);
-                    data = {
-                        'pro_id':pro_id,
-                        'name':$("#pname").val(),
-                        'desc':$("#desc").val(),
-                    }
-                    $.post("{% url 'modify_project' %}",data,function(r){
-                        layer.closeAll('loading'); //关闭loading
-                        if(r.status){
-                            //修改成功
-                            window.location.reload();
-                            //layer.close(index)
-                        }else{
-                            //修改失败，提示
-                            // console.log(r)
-                            layer.msg(r.data)
-                        }
-                    })
-                },
+    }
+
+    function formatDateTime(dateStr) {
+        if (!dateStr) return '-';
+        const d = new Date(dateStr);
+        const pad = n => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    async function loadTable(page) {
+        if (page === undefined) page = currentPage;
+        currentPage = page;
+
+        const body = new URLSearchParams();
+        body.set('type', '1');
+        body.set('page', page);
+        body.set('limit', ITEMS_PER_PAGE);
+        body.set('csrfmiddlewaretoken', CSRF_TOKEN);
+        if (currentFilters.kw) body.set('kw', currentFilters.kw);
+
+        try {
+            const resp = await fetch(API_URL, {
+                method: 'POST',
+                headers: getCSRFHeaders(),
+                body: body.toString()
             });
-        };
-        //删除文集
-        delProject = function(pro_id,pro_name){
-            layer.open({
-                type:1,
-                title:'{% trans "删除文集" %}',
-                area:'300px;',
-                id:'delPro',//配置ID
-                content:'<div style="margin-left:10px;">你正在删除：<span style="font-weight:700;color:red;">【'+pro_name+'】</span><br><br>警告！此操作将<span style="font-weight:700;color:red;">删除此文集及文集下所有文档！</span>并且<span style="font-weight:700;color:red;">不可恢复！</span><br><br>请输入“DELETE”以再次确认删除。<br><input class="layui-input" style="width:95%;" id="confirm_delete_project" placeholder="DELETE"></div>',
-                btn:['{% trans "删除" %}','{% trans "取消" %}'], //添加按钮
-                btnAlign:'c', //按钮居中
-                yes:function (index,layero) {
-                    var confirm_delete = $("#confirm_delete_project").val()
-                    if(confirm_delete === 'DELETE'){
-                        layer.load(1);
-                        data = {
-                            'pro_id':pro_id,
-                        }
-                        $.post("{% url 'admin_project_del' %}",data,function(r){
-                            layer.closeAll(); //关闭loading
-                            if(r.status){
-                                layer.msg("{% trans '删除成功' %}", {
-                                    icon: 1,
-                                    time: 1000
-                                }, function() {
-                                    table.reload('project-table');
-                                });
-                            }else{
-                                //修改失败，提示
-                                console.log(r)
-                                layer.msg(r.data)
-                            }
-                        })
-                    }else{
-                        layer.msg("输入错误！")
-                    }
-                },
-            });
+            const result = await resp.json();
+            const rows = result.data || [];
+            const count = result.count || 0;
+
+            renderProjectRows(rows);
+            renderPagination(count, page);
+            document.getElementById('project-count-info').textContent = '共 ' + count + ' 个文集';
+        } catch (err) {
+            showError('获取文集列表失败');
         }
-        // 批量删除文集
-        batchRemove = function(obj) {
-            let data = table.checkStatus(obj.config.id).data;
-            if (data.length === 0) {
-                layer.msg("{% trans '未选中任何文集' %}", {
-                    icon: 3,
-                    time: 1000
+    }
+
+    function renderProjectRow(row) {
+        let roleIcon = '';
+        if (row.role == 1) {
+            roleIcon = '<span class="project-role-icon" title="私密">&#x1F512;</span>';
+        } else if (row.role == 2) {
+            roleIcon = '<span class="project-role-icon" title="指定用户">&#x1F464;</span>';
+        } else if (row.role == 3) {
+            roleIcon = '<span class="project-role-icon" title="访问码">&#x1F511;</span>';
+        }
+
+        const nameHtml = `<a class="project-name-link" href="/project-${row.id}/" target="_blank">${escapeHtml(row.name)}${roleIcon}</a>`;
+        const collaHtml = `<span>${row.colla_total || 0}</span> <a href="/admin/project_colla_config/${row.id}/" class="project-collaborator-link" title="管理文集协作">&#x2699;</a>`;
+        const topChecked = row.is_top ? 'checked' : '';
+        const topHtml = `<div class="project-top-toggle"><input type="checkbox" class="project-top-checkbox" value="${row.id}" ${topChecked}></div>`;
+
+        return `
+            <tr data-project-id="${row.id}">
+                <td><input type="checkbox" class="project-checkbox" value="${row.id}"></td>
+                <td>${nameHtml}</td>
+                <td>${row.doc_total || 0}</td>
+                <td>${collaHtml}</td>
+                <td>${escapeHtml(row.create_user || '-')}</td>
+                <td>${topHtml}</td>
+                <td class="ispace-text-sm">${formatDateTime(row.create_time)}</td>
+                <td>
+                    <button class="ispace-btn ispace-btn-danger ispace-btn-sm" data-action="delete" data-id="${row.id}" data-name="${escapeHtml(row.name)}">删除</button>
+                </td>
+            </tr>`;
+    }
+
+    function renderProjectRows(rows) {
+        const tbody = document.getElementById('project-table-body');
+        if (!rows.length) {
+            tbody.innerHTML = '<tr><td colspan="8" class="ispace-text-center ispace-text-tertiary" style="padding:40px;">暂无数据</td></tr>';
+            return;
+        }
+        tbody.innerHTML = rows.map(renderProjectRow).join('');
+    }
+
+    function renderPagination(count, page) {
+        const container = document.getElementById('project-pagination');
+        const totalPages = Math.ceil(count / ITEMS_PER_PAGE) || 1;
+        let html = '';
+
+        html += `<button class="ispace-pagination-btn" data-page="${page - 1}" ${page <= 1 ? 'disabled' : ''}>上一页</button>`;
+
+        const startPage = Math.max(1, page - 2);
+        const endPage = Math.min(totalPages, page + 2);
+
+        if (startPage > 1) {
+            html += `<button class="ispace-pagination-btn" data-page="1">1</button>`;
+            if (startPage > 2) html += '<span class="ispace-pagination-info">...</span>';
+        }
+        for (let i = startPage; i <= endPage; i++) {
+            html += `<button class="ispace-pagination-btn ${i === page ? 'ispace-active' : ''}" data-page="${i}">${i}</button>`;
+        }
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) html += '<span class="ispace-pagination-info">...</span>';
+            html += `<button class="ispace-pagination-btn" data-page="${totalPages}">${totalPages}</button>`;
+        }
+
+        html += `<button class="ispace-pagination-btn" data-page="${page + 1}" ${page >= totalPages ? 'disabled' : ''}>下一页</button>`;
+        container.innerHTML = html;
+
+        container.querySelectorAll('.ispace-pagination-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const p = parseInt(this.dataset.page);
+                if (p >= 1 && p <= totalPages && p !== currentPage) {
+                    loadTable(p);
+                }
+            });
+        });
+    }
+
+    function openCreateProjectModal() {
+        const modalId = 'create-project-modal';
+        let existing = document.getElementById(modalId);
+        if (existing) existing.remove();
+
+        const backdrop = document.createElement('div');
+        backdrop.className = 'ispace-modal-backdrop';
+        backdrop.id = modalId;
+        backdrop.innerHTML = `
+            <div class="ispace-modal ispace-modal-sm">
+                <div class="ispace-modal-header">
+                    <h3 class="ispace-modal-title">{% trans "新建文集" %}</h3>
+                    <button class="ispace-modal-close" data-ispace-modal-close>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="ispace-modal-body">
+                    <div class="project-modal-body">
+                        <input class="ispace-form-input" type="text" id="create-pname" placeholder="输入文集名" required>
+                        <textarea class="ispace-form-textarea" id="create-desc" placeholder="输入文集简介" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="ispace-modal-footer">
+                    <button class="ispace-btn ispace-btn-secondary" data-ispace-modal-close>{% trans "取消" %}</button>
+                    <button class="ispace-btn ispace-btn-primary" id="create-project-confirm">{% trans "确定" %}</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(backdrop);
+
+        function closeModal() {
+            iSpaceDoc.Modal.close(backdrop);
+            setTimeout(function() { backdrop.remove(); }, 300);
+        }
+
+        backdrop.querySelector('[data-ispace-modal-close]').addEventListener('click', closeModal);
+        backdrop.querySelector('#create-project-confirm').addEventListener('click', async function() {
+            const pname = document.getElementById('create-pname').value.trim();
+            const desc = document.getElementById('create-desc').value.trim();
+            if (!pname) { showWarning('请输入文集名'); return; }
+
+            const body = new URLSearchParams();
+            body.set('pname', pname);
+            body.set('desc', desc);
+            body.set('csrfmiddlewaretoken', CSRF_TOKEN);
+
+            try {
+                const resp = await fetch(CREATE_URL, {
+                    method: 'POST',
+                    headers: getCSRFHeaders(),
+                    body: body.toString()
                 });
-                return false;
-            }
-            let pro_id = "";
-            for (let i = 0; i < data.length; i++) {
-                pro_id += data[i].id + ",";
-            }
-            pro_id = pro_id.substr(0, pro_id.length - 1);
-            // console.log(pro_id)
-            layer.open({
-                type:1,
-                title:'{% trans "删除文集" %}',
-                area:'300px;',
-                id:'delPro',//配置ID
-                content:'<div style="margin-left:10px;">你正在批量删除文集！<br><br>警告！此操作将<span style="font-weight:700;color:red;">删除所选文集及文集下所有文档！</span>并且<span style="font-weight:700;color:red;">不可恢复！</span><br><br>请输入“DELETE”以再次确认删除。<br><input class="layui-input" style="width:95%;" id="confirm_batch_delete_project" placeholder="DELETE"></div>',
-                btn:['{% trans "批量删除" %}','{% trans "取消" %}'], //添加按钮
-                btnAlign:'c', //按钮居中
-                yes:function (index,layero) {
-                    var confirm_delete = $("#confirm_batch_delete_project").val()
-                    if(confirm_delete === 'DELETE'){
-                        let loading = layer.load();
-                        $.ajax({
-                            url: "{% url 'admin_project_del' %}",
-                            dataType: 'json',
-                            type: 'post',
-                            data:{'pro_id':pro_id,'range':'multi'},
-                            success: function(r) {
-                                layer.closeAll();
-                                if (r.status) {
-                                    layer.msg("{% trans '删除成功' %}", {
-                                        icon: 1,
-                                        time: 1000
-                                    }, function() {
-                                        table.reload('project-table');
-                                    });
-                                } else {
-                                    layer.msg(r.data, {
-                                        icon: 2,
-                                        time: 1000
-                                    });
-                                }
-                            }
-                        })
-                    }else{
-                        layer.msg("输入错误！")
-                    }
+                const result = await resp.json();
+                closeModal();
+                if (result.status) {
+                    showSuccess('{% trans "创建成功" %}');
+                    loadTable(1);
+                } else {
+                    showError(result.data || '创建失败');
                 }
-            });
+            } catch (err) {
+                closeModal();
+                showError('创建失败');
+            }
+        });
+
+        iSpaceDoc.Modal.open(backdrop);
+    }
+
+    function openModifyProjectModal(proId, proName, proIntro) {
+        const modalId = 'modify-project-modal';
+        let existing = document.getElementById(modalId);
+        if (existing) existing.remove();
+
+        const backdrop = document.createElement('div');
+        backdrop.className = 'ispace-modal-backdrop';
+        backdrop.id = modalId;
+        backdrop.innerHTML = `
+            <div class="ispace-modal ispace-modal-sm">
+                <div class="ispace-modal-header">
+                    <h3 class="ispace-modal-title">{% trans "修改文集" %}</h3>
+                    <button class="ispace-modal-close" data-ispace-modal-close>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="ispace-modal-body">
+                    <div class="project-modal-body">
+                        <input class="ispace-form-input" type="text" id="modify-pname" placeholder="输入文集名" value="${escapeHtml(proName)}" required>
+                        <textarea class="ispace-form-textarea" id="modify-desc" placeholder="输入文集简介" rows="3">${escapeHtml(proIntro)}</textarea>
+                    </div>
+                </div>
+                <div class="ispace-modal-footer">
+                    <button class="ispace-btn ispace-btn-secondary" data-ispace-modal-close>{% trans "取消" %}</button>
+                    <button class="ispace-btn ispace-btn-primary" id="modify-project-confirm">{% trans "确定" %}</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(backdrop);
+
+        function closeModal() {
+            iSpaceDoc.Modal.close(backdrop);
+            setTimeout(function() { backdrop.remove(); }, 300);
         }
-    })
+
+        backdrop.querySelector('[data-ispace-modal-close]').addEventListener('click', closeModal);
+        backdrop.querySelector('#modify-project-confirm').addEventListener('click', async function() {
+            const name = document.getElementById('modify-pname').value.trim();
+            const desc = document.getElementById('modify-desc').value.trim();
+
+            const body = new URLSearchParams();
+            body.set('pro_id', proId);
+            body.set('name', name);
+            body.set('desc', desc);
+            body.set('csrfmiddlewaretoken', CSRF_TOKEN);
+
+            try {
+                const resp = await fetch(MODIFY_URL, {
+                    method: 'POST',
+                    headers: getCSRFHeaders(),
+                    body: body.toString()
+                });
+                const result = await resp.json();
+                closeModal();
+                if (result.status) {
+                    showSuccess('{% trans "修改成功" %}');
+                    loadTable(currentPage);
+                } else {
+                    showError(result.data || '修改失败');
+                }
+            } catch (err) {
+                closeModal();
+                showError('修改失败');
+            }
+        });
+
+        iSpaceDoc.Modal.open(backdrop);
+    }
+
+    function openDeleteProjectModal(proId, proName, isBatch, idList) {
+        const modalId = 'delete-project-modal';
+        let existing = document.getElementById(modalId);
+        if (existing) existing.remove();
+
+        const warningHtml = isBatch
+            ? '你正在批量删除文集！<br><br>警告！此操作将<span style="font-weight:700;color:red;">删除所选文集及文集下所有文档！</span>并且<span style="font-weight:700;color:red;">不可恢复！</span>'
+            : '你正在删除：<span style="font-weight:700;color:red;">【' + escapeHtml(proName) + '】</span><br><br>警告！此操作将<span style="font-weight:700;color:red;">删除此文集及文集下所有文档！</span>并且<span style="font-weight:700;color:red;">不可恢复！</span>';
+
+        const confirmText = isBatch ? '{% trans "批量删除" %}' : '{% trans "删除" %}';
+
+        const backdrop = document.createElement('div');
+        backdrop.className = 'ispace-modal-backdrop';
+        backdrop.id = modalId;
+        backdrop.innerHTML = `
+            <div class="ispace-modal ispace-modal-sm">
+                <div class="ispace-modal-header">
+                    <h3 class="ispace-modal-title">{% trans "删除文集" %}</h3>
+                    <button class="ispace-modal-close" data-ispace-modal-close>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="ispace-modal-body">
+                    <div style="margin-left:10px;">${warningHtml}<br><br>请输入 "DELETE" 以再次确认删除。<br>
+                        <input class="ispace-form-input project-delete-input" id="confirm-delete-input" placeholder="DELETE">
+                    </div>
+                </div>
+                <div class="ispace-modal-footer">
+                    <button class="ispace-btn ispace-btn-secondary" data-ispace-modal-close>{% trans "取消" %}</button>
+                    <button class="ispace-btn ispace-btn-danger" id="delete-project-confirm">${confirmText}</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(backdrop);
+
+        function closeModal() {
+            iSpaceDoc.Modal.close(backdrop);
+            setTimeout(function() { backdrop.remove(); }, 300);
+        }
+
+        backdrop.querySelector('[data-ispace-modal-close]').addEventListener('click', closeModal);
+        backdrop.querySelector('#delete-project-confirm').addEventListener('click', async function() {
+            const confirmInput = document.getElementById('confirm-delete-input').value;
+            if (confirmInput !== 'DELETE') {
+                showWarning('输入错误！');
+                return;
+            }
+
+            const body = new URLSearchParams();
+            if (isBatch) {
+                body.set('pro_id', idList);
+                body.set('range', 'multi');
+            } else {
+                body.set('pro_id', proId);
+            }
+            body.set('csrfmiddlewaretoken', CSRF_TOKEN);
+
+            try {
+                const resp = await fetch(DEL_URL, {
+                    method: 'POST',
+                    headers: getCSRFHeaders(),
+                    body: body.toString()
+                });
+                const result = await resp.json();
+                closeModal();
+                if (result.status) {
+                    showSuccess('{% trans "删除成功" %}');
+                    loadTable(1);
+                } else {
+                    showError(result.data || '删除失败');
+                }
+            } catch (err) {
+                closeModal();
+                showError('删除失败');
+            }
+        });
+
+        iSpaceDoc.Modal.open(backdrop);
+    }
+
+    async function toggleIsTop(projectId, checked) {
+        const body = new URLSearchParams();
+        body.set('id', projectId);
+        body.set('is_top', checked ? 'true' : 'false');
+        body.set('csrfmiddlewaretoken', CSRF_TOKEN);
+
+        try {
+            const resp = await fetch(ISTOP_URL, {
+                method: 'POST',
+                headers: getCSRFHeaders(),
+                body: body.toString()
+            });
+            const result = await resp.json();
+            if (result.status) {
+                showSuccess('修改成功');
+                loadTable(currentPage);
+            } else {
+                showError(result.data || '置顶失败');
+                loadTable(currentPage);
+            }
+        } catch (err) {
+            showError('置顶失败');
+            loadTable(currentPage);
+        }
+    }
+
+    function batchRemove() {
+        const checkboxes = document.querySelectorAll('.project-checkbox:checked');
+        if (checkboxes.length === 0) {
+            showWarning("{% trans '未选中任何文集' %}");
+            return;
+        }
+        const ids = Array.from(checkboxes).map(function(cb) { return cb.value; });
+        openDeleteProjectModal(null, null, true, ids.join(','));
+    }
+
+    document.getElementById('project-table-body').addEventListener('click', function(e) {
+        const topCheckbox = e.target.closest('.project-top-checkbox');
+        if (topCheckbox) {
+            const projectId = topCheckbox.value;
+            toggleIsTop(projectId, topCheckbox.checked);
+            return;
+        }
+
+        const btn = e.target.closest('[data-action]');
+        if (!btn) return;
+
+        const action = btn.dataset.action;
+        const proId = btn.dataset.id;
+        const proName = btn.dataset.name;
+
+        if (action === 'delete') {
+            openDeleteProjectModal(proId, proName, false, null);
+        }
+    });
+
+    document.getElementById('select-all-projects').addEventListener('change', function() {
+        const checked = this.checked;
+        document.querySelectorAll('.project-checkbox').forEach(function(cb) {
+            cb.checked = checked;
+        });
+    });
+
+    document.getElementById('search-btn').addEventListener('click', function() {
+        currentFilters.kw = document.getElementById('project-search-kw').value.trim();
+        loadTable(1);
+    });
+
+    document.getElementById('project-search-kw').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            currentFilters.kw = this.value.trim();
+            loadTable(1);
+        }
+    });
+
+    document.getElementById('add-project-btn').addEventListener('click', openCreateProjectModal);
+    document.getElementById('batch-remove-btn').addEventListener('click', batchRemove);
+
+    loadTable(1);
+})();
 </script>
 {% endblock %}

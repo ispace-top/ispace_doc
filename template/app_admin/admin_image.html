@@ -1,327 +1,485 @@
-{% extends 'app_admin/admin_base.html' %}
+{% extends "base.html" %}
 {% load static %}
 {% load i18n %}
 {% block title %}图片管理{% endblock %}
-{% block custom_element %}
-<link href="{% static 'viewerjs/viewer.css' %}?version={{mrdoc_version}}" rel="stylesheet">
+
+{% block styles %}
+<style>
+    .admin-image-filter-row {
+        display: flex;
+        align-items: center;
+        gap: var(--ispace-space-4);
+        flex-wrap: wrap;
+        margin-bottom: var(--ispace-space-3);
+    }
+    .admin-image-filter-row .ispace-form-input {
+        max-width: 240px;
+    }
+    .admin-image-table-wrap { overflow-x: auto; }
+    .image-file-icon {
+        width: 20px;
+        height: 20px;
+        vertical-align: middle;
+        margin-right: 6px;
+    }
+    .image-name-cell {
+        display: flex;
+        align-items: center;
+    }
+    .image-preview-modal-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        max-width: 100%;
+        max-height: 70vh;
+    }
+    .image-preview-modal-content img {
+        max-width: 100%;
+        max-height: 70vh;
+        object-fit: contain;
+    }
+</style>
 {% endblock %}
+
 {% block content %}
-<div class="layui-card">
-    <div class="layui-card-body">
-        <div class="layui-card-header" style="margin-bottom: 10px;">
-            <div class="layui-row">
-                <span style="font-size:18px;">图片管理
-                </span>
-            </div>
-        </div>
+<div class="ispace-page-header">
+    <h1 class="ispace-page-title">图片管理</h1>
+</div>
 
-        <div class="layui-form">
-            <div class="layui-form-item">
-              <label class="layui-form-label">关键词</label>
-              <div class="layui-input-inline">
-                <input type="text" name="kw"  placeholder="请输入图片名称" autocomplete="off" class="layui-input">
-              </div>
-              <button class="pear-btn pear-btn-primary pear-btn-sm" id="search">搜索</button>
-            </div>
-            <div class="layui-form-item">
-              <label class="layui-form-label">用户</label>
-              <div class="layui-input-inline">
-                <div id="select-user"></div>
-              </div>
-              <button class="pear-btn pear-btn-primary pear-btn-sm" id="searchUser">筛选</button>
-            </div>
+<div class="ispace-card ispace-mb-4">
+    <div class="ispace-card-body">
+        <div class="admin-image-filter-row">
+            <label class="ispace-form-label" style="margin-bottom:0;">关键词</label>
+            <input type="text" id="image-kw" placeholder="请输入图片名称" class="ispace-form-input">
+            <button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="search-btn">搜索</button>
         </div>
-
-        <div class="layui-row" id="img-div">
-            <table class="layui-table"  id="img-list" lay-filter="img-table"></table>
+        <div class="admin-image-filter-row">
+            <label class="ispace-form-label" style="margin-bottom:0;">用户</label>
+            <div id="select-user"></div>
+            <button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="searchUser-btn">筛选</button>
         </div>
     </div>
 </div>
 
-<!-- 表格工具栏 -->
-<script type="text/html" id="img-toolbar">
-    <button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="scanImg">
-        扫描未使用图片
-    </button>
-    <button class="pear-btn pear-btn-danger pear-btn-sm" lay-event="batchRemove">
-        <i class="layui-icon layui-icon-delete"></i> 批量删除
-    </button>
-</script>
+<div class="ispace-card">
+    <div class="ispace-card-body">
+        <div class="ispace-flex-between ispace-mb-4">
+            <div class="ispace-flex-center ispace-gap-3">
+                <button class="ispace-btn ispace-btn-secondary ispace-btn-sm" id="scan-btn">扫描未使用图片</button>
+                <button class="ispace-btn ispace-btn-danger ispace-btn-sm" id="batch-remove-btn">批量删除</button>
+            </div>
+            <span class="ispace-text-sm ispace-text-tertiary" id="image-count-info"></span>
+        </div>
 
-<!-- 图片缩略图模板 -->
-<script type="text/html" id="imgShow">
-    {% verbatim %}
-    {{#if (d.file_name.endsWith('png')) { }}
-        <img src="/static/icon_img/img_png.svg" style="width:20px;height:20px" />
-    {{# }else if(d.file_name.endsWith('jpg')){ }}
-        <img src="/static/icon_img/img_jpg.svg" style="width:20px;height:20px" />
-    {{# }else if(d.file_name.endsWith('gif')){ }}
-        <img src="/static/icon_img/img_gif.svg" style="width:20px;height:20px" />
-    {{# }else if(d.file_name.endsWith('bmp')){ }}
-        <img src="/static/icon_img/img_bmp.svg" style="width:20px;height:20px" />
-    {{# }else{ }}
-        <img src="/static/icon_img/img_others.svg" style="width:20px;height:20px" />
-    {{# } }}
-    {{d.file_name}}
-    {% endverbatim %}
-</script>
-
-<!-- 上传时间 -->
-<script type="text/html" id="registerTime">
-    {% verbatim %}
-    {{layui.util.toDateString(d.create_time,  "yyyy-MM-dd HH:mm:ss")}}
-    {% endverbatim %}
-</script>
-
-<!-- 最后登录时间 -->
-<script type="text/html" id="lastLoginTime">
-    {% verbatim %}
-    {{layui.util.toDateString(d.last_login,  "yyyy-MM-dd HH:mm:ss")}}
-    {% endverbatim %}
-</script>
-
-<!-- 用户操作模板 -->
-<script type="text/html" id="userOpera">
-    {% verbatim %}
-    <button class="pear-btn pear-btn-normal pear-btn-sm" lay-event="preview" title="预览图片"><i class="pear-icon pear-icon-browse"></i></button>
-    <button class="pear-btn pear-btn-danger pear-btn-sm" lay-event="remove"><i class="layui-icon layui-icon-delete"></i></button>
-    {% endverbatim %}
-</script>
+        <div class="admin-image-table-wrap">
+            <table class="ispace-table" id="image-table">
+                <thead>
+                    <tr>
+                        <th style="width:36px;"><input type="checkbox" id="select-all-images"></th>
+                        <th>图片名称</th>
+                        <th>图片路径</th>
+                        <th>备注</th>
+                        <th>用户</th>
+                        <th>上传时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="image-table-body">
+                </tbody>
+            </table>
+        </div>
+        <div id="image-pagination" class="ispace-pagination"></div>
+    </div>
+</div>
 {% endblock %}
 
-{% block custom_script %}
-
+{% block scripts %}
+<script src="{% static 'xm-select/dist/xm-select.js' %}"></script>
 <script src="{% static 'viewerjs/viewer.min.js' %}"></script>
 <script>
-    layui.use(['table','jquery','form','layer','element','table'], function() {
-        let table = layui.table;
-        let form = layui.form;
-        let $ = layui.jquery;
-        let layer = layui.layer;
-        let element = layui.element;
-        $.ajaxSetup({
-            data: {csrfmiddlewaretoken: '{{ csrf_token }}' },
-            headers: {"X-CSRFToken":'{{ csrf_token }}'},
-        });
-        // 获取用户列表
-        getUserList = function(usergroup_list){
-            $.ajax({
-                url:"{% url 'api_usergroups_userlist' %}",
-                type:'get',
-                success:function(r){
-                    if(r.code === 0){
-                        select_user.update({
-                            data:r.data,
-                            autoRow: true,
-                        })
-                    }else{
-                        layer.msg("用户列表获取出错")
-                    }
-                },
-                error:function(){
-                    layer.msg("用户列表获取异常")
-                }
-            })
+(function() {
+    const API_URL = "{% url 'api_admin_imgs' %}";
+    const USER_LIST_URL = "{% url 'api_usergroups_userlist' %}";
+    const CSRF_TOKEN = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const ITEMS_PER_PAGE = 10;
+    let currentPage = 1;
+    let currentFilters = {};
+    let selectUser = null;
+
+    function getCSRFHeaders() {
+        return {
+            'X-CSRFToken': CSRF_TOKEN,
+            'Content-Type': 'application/x-www-form-urlencoded',
         };
-        //获取图片列表，执行表格渲染
-        table.render({
-            elem: '#img-list',
-            url: "{% url 'api_admin_imgs' %}",
-            method:'get',
-            where:{
-                'username':$("#username").val(),
-            },
-            page:true,
-            toolbar: '#img-toolbar',
-            cols: [[
-                {type: 'checkbox',width:20},
-                {field:'file_name',title:'图片名称',templet:'#imgShow'},
-                {field:'file_path',title:'图片路径',},
-                {field:'remark',title:'备注',width:100,},
-                {field:'username',title:'用户',width:140,},
-                {field:'create_time',title:'上传时间',width:160,templet:'#registerTime'},
-                {field:'oprate',title:'操作',width:180,templet:'#userOpera'},
-            ]],
-            skin: 'line',
+    }
+
+    function formatDateTime(dateStr) {
+        if (!dateStr) return '-';
+        const d = new Date(dateStr);
+        const pad = n => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    function getFileTypeIcon(fileName) {
+        if (!fileName) return '/static/icon_img/img_others.svg';
+        const ext = fileName.split('.').pop().toLowerCase();
+        const iconMap = {
+            'png': '/static/icon_img/img_png.svg',
+            'jpg': '/static/icon_img/img_jpg.svg',
+            'jpeg': '/static/icon_img/img_jpg.svg',
+            'gif': '/static/icon_img/img_gif.svg',
+            'bmp': '/static/icon_img/img_bmp.svg',
+            'svg': '/static/icon_img/img_others.svg',
+            'webp': '/static/icon_img/img_others.svg',
+        };
+        return iconMap[ext] || '/static/icon_img/img_others.svg';
+    }
+
+    async function loadTable(page) {
+        if (page === undefined) page = currentPage;
+        currentPage = page;
+
+        const params = new URLSearchParams();
+        params.set('page', page);
+        params.set('limit', ITEMS_PER_PAGE);
+        if (currentFilters.kw) params.set('kw', currentFilters.kw);
+        if (currentFilters.username) params.set('username', currentFilters.username);
+        if (currentFilters.mode) params.set('mode', currentFilters.mode);
+
+        try {
+            const resp = await fetch(`${API_URL}?${params.toString()}`);
+            const result = await resp.json();
+            if (result.code === 0) {
+                renderImageRows(result.data || []);
+                renderPagination(result.count || 0, page);
+                document.getElementById('image-count-info').textContent = '共 ' + (result.count || 0) + ' 张图片';
+            } else {
+                showError(result.data || '获取图片列表失败');
+            }
+        } catch (err) {
+            showError('获取图片列表失败');
+        }
+    }
+
+    function renderImageRows(rows) {
+        const tbody = document.getElementById('image-table-body');
+        if (!rows.length) {
+            tbody.innerHTML = '<tr><td colspan="7" class="ispace-text-center ispace-text-tertiary" style="padding:40px;">暂无数据</td></tr>';
+            return;
+        }
+        tbody.innerHTML = rows.map(function(row) {
+            const iconSrc = getFileTypeIcon(row.file_name);
+            return `
+                <tr data-image-id="${row.id}" data-image-path="${escapeHtml(row.file_path)}">
+                    <td><input type="checkbox" class="image-checkbox" value="${row.id}"></td>
+                    <td>
+                        <div class="image-name-cell">
+                            <img src="${iconSrc}" class="image-file-icon" alt="">
+                            ${escapeHtml(row.file_name)}
+                        </div>
+                    </td>
+                    <td class="ispace-text-sm ispace-text-tertiary">${escapeHtml(row.file_path || '-')}</td>
+                    <td>${escapeHtml(row.remark || '-')}</td>
+                    <td>${escapeHtml(row.username || '-')}</td>
+                    <td class="ispace-text-sm">${formatDateTime(row.create_time)}</td>
+                    <td>
+                        <button class="ispace-btn ispace-btn-secondary ispace-btn-sm" data-action="preview" data-id="${row.id}" data-path="${escapeHtml(row.file_path)}" title="预览">预览</button>
+                        <button class="ispace-btn ispace-btn-danger ispace-btn-sm" data-action="delete" data-id="${row.id}">删除</button>
+                    </td>
+                </tr>`;
+        }).join('');
+    }
+
+    function renderPagination(count, page) {
+        const container = document.getElementById('image-pagination');
+        const totalPages = Math.ceil(count / ITEMS_PER_PAGE) || 1;
+        let html = '';
+
+        html += `<button class="ispace-pagination-btn" data-page="${page - 1}" ${page <= 1 ? 'disabled' : ''}>上一页</button>`;
+
+        const startPage = Math.max(1, page - 2);
+        const endPage = Math.min(totalPages, page + 2);
+
+        if (startPage > 1) {
+            html += `<button class="ispace-pagination-btn" data-page="1">1</button>`;
+            if (startPage > 2) html += '<span class="ispace-pagination-info">...</span>';
+        }
+        for (let i = startPage; i <= endPage; i++) {
+            html += `<button class="ispace-pagination-btn ${i === page ? 'ispace-active' : ''}" data-page="${i}">${i}</button>`;
+        }
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) html += '<span class="ispace-pagination-info">...</span>';
+            html += `<button class="ispace-pagination-btn" data-page="${totalPages}">${totalPages}</button>`;
+        }
+
+        html += `<button class="ispace-pagination-btn" data-page="${page + 1}" ${page >= totalPages ? 'disabled' : ''}>下一页</button>`;
+        container.innerHTML = html;
+
+        container.querySelectorAll('.ispace-pagination-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const p = parseInt(this.dataset.page);
+                if (p >= 1 && p <= totalPages && p !== currentPage) {
+                    loadTable(p);
+                }
+            });
         });
-        // [文集权限指定用户]渲染用户多选下拉框
-        var select_user = xmSelect.render({
-            el:'#select-user',
+    }
+
+    function openImagePreview(imagePath) {
+        const modalId = 'image-preview-modal';
+        let existing = document.getElementById(modalId);
+        if (existing) existing.remove();
+
+        const backdrop = document.createElement('div');
+        backdrop.className = 'ispace-modal-backdrop';
+        backdrop.id = modalId;
+        backdrop.innerHTML = `
+            <div class="ispace-modal ispace-modal-lg" style="max-width:90vw;">
+                <div class="ispace-modal-header">
+                    <h3 class="ispace-modal-title">图片预览</h3>
+                    <button class="ispace-modal-close" data-ispace-modal-close>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="ispace-modal-body">
+                    <div class="image-preview-modal-content">
+                        <img src="${imagePath}" alt="预览图片" id="preview-image">
+                    </div>
+                </div>
+                <div class="ispace-modal-footer">
+                    <button class="ispace-btn ispace-btn-secondary" data-ispace-modal-close>关闭</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(backdrop);
+
+        backdrop.querySelector('[data-ispace-modal-close]').addEventListener('click', function() {
+            iSpaceDoc.Modal.close(backdrop);
+            setTimeout(function() { backdrop.remove(); }, 300);
+        });
+
+        const previewImg = document.getElementById('preview-image');
+        if (previewImg && typeof Viewer !== 'undefined') {
+            previewImg.addEventListener('load', function() {
+                new Viewer(previewImg, {
+                    inline: false,
+                    toolbar: false,
+                    navbar: false,
+                    title: false,
+                });
+            });
+        }
+
+        iSpaceDoc.Modal.open(backdrop);
+    }
+
+    async function delImage(id) {
+        const confirmed = await iSpaceDoc.confirm(
+            '警告：此操作将<span style="font-weight:700;color:red;">删除此图片且不可恢复！</span>',
+            { title: '删除图片' }
+        );
+        if (!confirmed) return;
+
+        try {
+            const resp = await fetch('/admin/api/img/' + id + '/', {
+                method: 'DELETE',
+                headers: getCSRFHeaders()
+            });
+            const result = await resp.json();
+            if (result.code == 0) {
+                showSuccess('删除成功');
+                loadTable(1);
+            } else {
+                showError(result.data || '删除失败');
+            }
+        } catch (err) {
+            showError('删除异常');
+        }
+    }
+
+    function scanImages() {
+        iSpaceDoc.confirm(
+            '扫描站点已上传但未在文档中引用的图片，此操作可能会花费一些时间，请耐心等待扫描完成。',
+            { title: '扫描未使用图片', confirmText: '开始扫描' }
+        ).then(function(confirmed) {
+            if (confirmed) {
+                currentFilters.mode = 'scan';
+                currentPage = 1;
+                loadTable(1);
+                delete currentFilters.mode;
+            }
+        });
+    }
+
+    function batchRemove() {
+        const checkboxes = document.querySelectorAll('.image-checkbox:checked');
+        if (checkboxes.length === 0) {
+            showWarning("{% trans '未选中任何图片' %}");
+            return;
+        }
+        const ids = Array.from(checkboxes).map(function(cb) { return cb.value; });
+        const idStr = ids.join(',');
+
+        const modalId = 'batch-delete-image-modal';
+        let existing = document.getElementById(modalId);
+        if (existing) existing.remove();
+
+        const backdrop = document.createElement('div');
+        backdrop.className = 'ispace-modal-backdrop';
+        backdrop.id = modalId;
+        backdrop.innerHTML = `
+            <div class="ispace-modal ispace-modal-sm">
+                <div class="ispace-modal-header">
+                    <h3 class="ispace-modal-title">{% trans "删除图片" %}</h3>
+                    <button class="ispace-modal-close" data-ispace-modal-close>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="ispace-modal-body">
+                    <div style="margin-left:10px;">你正在批量删除图片！<br><br>警告！此操作将<span style="font-weight:700;color:red;">删除所选图片！</span>并且<span style="font-weight:700;color:red;">不可恢复！</span><br><br>请输入 "DELETE" 以再次确认删除。<br>
+                        <input class="ispace-form-input" style="width:95%;margin-top:8px;" id="confirm-batch-delete-img" placeholder="DELETE">
+                    </div>
+                </div>
+                <div class="ispace-modal-footer">
+                    <button class="ispace-btn ispace-btn-secondary" data-ispace-modal-close>{% trans "取消" %}</button>
+                    <button class="ispace-btn ispace-btn-danger" id="batch-delete-img-confirm">{% trans "批量删除" %}</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(backdrop);
+
+        function closeModal() {
+            iSpaceDoc.Modal.close(backdrop);
+            setTimeout(function() { backdrop.remove(); }, 300);
+        }
+
+        backdrop.querySelector('[data-ispace-modal-close]').addEventListener('click', closeModal);
+        backdrop.querySelector('#batch-delete-img-confirm').addEventListener('click', async function() {
+            const confirmInput = document.getElementById('confirm-batch-delete-img').value;
+            if (confirmInput !== 'DELETE') {
+                showWarning('输入错误！');
+                return;
+            }
+
+            const body = new URLSearchParams();
+            body.set('id', idStr);
+            body.set('csrfmiddlewaretoken', CSRF_TOKEN);
+
+            try {
+                const resp = await fetch(API_URL, {
+                    method: 'DELETE',
+                    headers: getCSRFHeaders(),
+                    body: body.toString()
+                });
+                const result = await resp.json();
+                closeModal();
+                if (result.code == 0) {
+                    showSuccess("{% trans '删除成功' %}");
+                    loadTable(1);
+                } else {
+                    showError(result.data || '删除失败');
+                }
+            } catch (err) {
+                closeModal();
+                showError('删除异常');
+            }
+        });
+
+        iSpaceDoc.Modal.open(backdrop);
+    }
+
+    document.getElementById('image-table-body').addEventListener('click', function(e) {
+        const btn = e.target.closest('[data-action]');
+        if (!btn) return;
+
+        const action = btn.dataset.action;
+        const id = btn.dataset.id;
+        const imagePath = btn.dataset.path;
+
+        if (action === 'delete') {
+            delImage(id);
+        } else if (action === 'preview') {
+            let realpath = imagePath;
+            if (realpath && !realpath.startsWith('http')) {
+                realpath = '/' + realpath.replace(/^\//, '');
+            }
+            openImagePreview(realpath);
+        }
+    });
+
+    document.getElementById('select-all-images').addEventListener('change', function() {
+        const checked = this.checked;
+        document.querySelectorAll('.image-checkbox').forEach(function(cb) {
+            cb.checked = checked;
+        });
+    });
+
+    document.getElementById('search-btn').addEventListener('click', function() {
+        currentFilters.kw = document.getElementById('image-kw').value.trim();
+        loadTable(1);
+    });
+
+    document.getElementById('image-kw').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            currentFilters.kw = this.value.trim();
+            loadTable(1);
+        }
+    });
+
+    document.getElementById('searchUser-btn').addEventListener('click', function() {
+        if (selectUser) {
+            currentFilters.username = selectUser.getValue('valueStr');
+            loadTable(1);
+        }
+    });
+
+    document.getElementById('scan-btn').addEventListener('click', scanImages);
+    document.getElementById('batch-remove-btn').addEventListener('click', batchRemove);
+
+    function initXmSelect() {
+        selectUser = xmSelect.render({
+            el: '#select-user',
             filterable: true,
             radio: true,
             paging: true,
             pageSize: 20,
-            theme: {
-                color: '#333333',
-            },
-            data:[]
+            theme: { color: '#333333' },
+            data: []
         });
-        getUserList();
-        // 扫描未使用图片
-        scanImg = function(obj){
-            layer.open({
-                title:"扫描未使用图片",
-                content:"扫描站点已上传但未在文档中引用的图片，此操作可能会花费一些时间，请耐心等待扫描完成。",
-                yes:function(){
-                    // layer.load();
-                    table.reload('img-list',{
-                        where:{
-                            'mode':'scan',
-                        },
-                        page:{curr:1}
-                    })
-                    layer.closeAll()
-                }
-            })
-        };
-        // 删除图片
-        delImg = function(id){
-            layer.open({
-                type:1,
-                title:'删除文档',
-                area:'300px;',
-                id:'delPro',//配置ID
-                content:'<div style="margin-left:10px;">警告：操作将<span style="font-weight:700;color:red;">删除此图片且不可恢复！</span></div>',
-                btn:['确定','取消'], //添加按钮
-                btnAlign:'c', //按钮居中
-                yes:function (index,layero) {
-                    $.ajax({
-                        url:'/admin/api/img/'+id + '/',
-                        type:'delete',
-                        success:function(r){
-                            layer.closeAll()
-                            if(r.code == 0){
-                                layer.msg("删除成功",{icon:1},function(){
-                                    table.reload('img-list',{page:{curr:1}});
-                                })
-                                
-                            }else{
-                                layer.msg(r.data,{icon:2})
-                            }
-                        },
-                        error:function(){
-                            layer.closeAll()
-                            layer.mag("删除异常",{icon:2,})
-                        }
-                    })
-                },
-            })
+    }
 
-        };
-        // 批量删除图片
-        batchRemove = function(obj) {
-            let data = table.checkStatus(obj.config.id).data;
-            if (data.length === 0) {
-                layer.msg("{% trans '未选中任何图片' %}", {
-                    icon: 3,
-                    time: 1000
-                });
-                return false;
-            }
-            let pro_id = "";
-            for (let i = 0; i < data.length; i++) {
-                pro_id += data[i].id + ",";
-            }
-            pro_id = pro_id.substr(0, pro_id.length - 1);
-            // console.log(pro_id)
-            layer.open({
-                type:1,
-                title:'{% trans "删除图片" %}',
-                area:'300px;',
-                id:'delPro',//配置ID
-                content:'<div style="margin-left:10px;">你正在批量删除图片！<br><br>警告！此操作将<span style="font-weight:700;color:red;">删除所选图片！</span>并且<span style="font-weight:700;color:red;">不可恢复！</span><br><br>请输入“DELETE”以再次确认删除。<br><input class="layui-input" style="width:95%;" id="confirm_batch_delete_project" placeholder="DELETE"></div>',
-                btn:['{% trans "批量删除" %}','{% trans "取消" %}'], //添加按钮
-                btnAlign:'c', //按钮居中
-                yes:function (index,layero) {
-                    var confirm_delete = $("#confirm_batch_delete_project").val()
-                    if(confirm_delete === 'DELETE'){
-                        let loading = layer.load();
-                        $.ajax({
-                            url: "{% url 'api_admin_imgs' %}",
-                            dataType: 'json',
-                            type: 'delete',
-                            data:{'id':pro_id},
-                            success: function(r) {
-                                layer.closeAll();
-                                if (r.code == 0) {
-                                    layer.msg("{% trans '删除成功' %}", {
-                                        icon: 1,
-                                        time: 1000
-                                    }, function() {
-                                        table.reload('img-list',{page:{curr:1}});
-                                    });
-                                } else {
-                                    layer.msg(r.data, {
-                                        icon: 2,
-                                        time: 1000
-                                    });
-                                }
-                            }
-                        })
-                    }else{
-                        layer.msg("输入错误！")
-                    }
-                }
-            });
-        };
-        // 侦听文档操作按钮
-        table.on("tool(img-table)",function(obj){
-            if (obj.event === 'remove') {
-                // console.log(obj)
-                delImg(obj.data.id)
-            }else if(obj.event === 'preview'){
-                let realpath = obj.data.file_path; // url地址
-                let img = new Image(); // Image对象
-
-                img.onload = function () { // 重点：要用onload加载
-                    let width = img.width > 600?600:img.width,
-                        height = img.height > 600?600:img.height;
-                    let imgHtml = "<img src='"+ realpath +"' style='width:" + width +"px;height:auto;' />";
-                    layer.open({
-                        type:1, // 类型是1
-                        shade:0.2,
-                        offset:'auto',
-                        area:[width + 'px', height + 'px'],
-                        shadeClose:true,
-                        scrollbar: false,
-                        title: '', // 这里不要写文字
-                        content:imgHtml,
+    function loadUserList() {
+        fetch(USER_LIST_URL)
+            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                if (r.code === 0) {
+                    selectUser.update({
+                        data: r.data,
+                        autoRow: true,
                     });
-                };
-
-                img.src = realpath;
-            }
-        });
-        // 侦听表格工具栏
-        table.on("toolbar(img-table)",function(obj){
-            if(obj.event === 'batchRemove'){ // 批量删除图片
-                batchRemove(obj)
-            }else if(obj.event === 'scanImg'){ // 扫描未使用图片
-                scanImg(obj)
-            }else if(obj.event === 'search'){ // 搜索图片
-                table.reload('img-list',{
-                    where:{'kw':$('input[name="project-search-kw"]').val()
-                },
-                })
-            } 
-        });
-        // 监听搜索按钮
-        $("#search").click(function(){
-            table.reload('img-list',{
-                where:{
-                    'kw':$("input[name=kw]").val(),
-                },
+                } else {
+                    showError('用户列表获取出错');
+                }
             })
-        });
-        // 监听用户筛选按钮
-        $("#searchUser").click(function(){
-            table.reload('img-list',{
-                where:{
-                    'username':select_user.getValue('valueStr'),
-                },
-            })
-        });
+            .catch(function() {
+                showError('用户列表获取异常');
+            });
+    }
 
-    })
+    initXmSelect();
+    loadUserList();
+    loadTable(1);
+})();
 </script>
 {% endblock %}

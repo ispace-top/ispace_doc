@@ -1,7 +1,7 @@
 {% extends 'app_doc/editor/create_base.html' %}
 {% load static %}
 {% load i18n %}
-{% block title %}{{editor_type}}{% endblock %}
+{% block editor_title %}{{editor_type}}{% endblock %}
 
 {% block head_toolbar %}
     <ul class="layui-nav layui-form">
@@ -17,10 +17,10 @@
                 <dd><input type="checkbox" name="show-children" title="显示下级文档" lay-skin="primary"></dd>
             </dl>
         </li>
-        
+
         <li class="layui-nav-item mrdoc-import-doc-item">
           <a href="javascript:;"><i class="iconfont mrdoc-icon-import"></i><span class="layui-hide-xs">导入</span></a>
-          <dl class="layui-nav-child mrdoc-import-doc-child"> <!-- 二级菜单 -->
+          <dl class="layui-nav-child mrdoc-import-doc-child">
             {% if editor_mode == 4 %}
             <dd><a href="javascript:void(0);" id="import-excel">
                 <svg t="1608814405819" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="3399" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20"><defs><style type="text/css"></style></defs><path d="M0 0h475.904v335.36H0z" fill="#52adff" p-id="3400"></path><path d="M591.36 667.050667H1024V1024H591.36z" fill="#1892ff" p-id="3401"></path><path d="M0 450.730667h475.904V1024H0z" fill="#83c5fd" p-id="3402"></path><path d="M591.36 0H1024v551.68H591.36z" fill="#52afff" p-id="3403"></path></svg>
@@ -44,10 +44,10 @@
             {% endif %}
           </dl>
         </li>
-        
+
         <li class="layui-nav-item mrdoc-import-doc-item">
             <a href="javascript:;"><i class="iconfont mrdoc-icon-editor"></i><span class="layui-hide-xs">编辑器</span></a>
-            <dl class="layui-nav-child mrdoc-import-doc-child"> <!-- 二级菜单 -->
+            <dl class="layui-nav-child mrdoc-import-doc-child">
               <dd><a href="?pid={{pid}}&eid=1">EditorMD{% if editor_mode == 1 %}<span class="layui-badge-dot layui-bg-blue"> </span>{% endif %}</a></dd>
               <dd><a href="?pid={{pid}}&eid=2">Vditor{% if editor_mode == 2 %}<span class="layui-badge-dot layui-bg-blue"> </span>{% endif %}</a></dd>
               <dd><a href="?pid={{pid}}&eid=3">富文本{% if editor_mode == 3 %}<span class="layui-badge-dot layui-bg-blue"> </span>{% endif %}</a></dd>
@@ -58,18 +58,17 @@
 
         <li class="layui-nav-item mrdoc-import-doc-item">
             <a href="javascript:;"><i class="iconfont mrdoc-icon-manage"></i><span class="layui-hide-xs">管理</span></a>
-            <dl class="layui-nav-child mrdoc-import-doc-child"> <!-- 二级菜单 -->
+            <dl class="layui-nav-child mrdoc-import-doc-child">
                 <dd><a href="{% url 'pro_list' %}" target="_blank">首页</a></dd>
                 <dd><a href="{% url 'user_center' %}?tab=manage_project" target="_blank">文集管理</a></dd>
                 <dd><a href="{% url 'user_center' %}?tab=manage_doc" target="_blank">文档管理</a></dd>
-            </dl>  
+            </dl>
         </li>
 
         <button class="layui-btn layui-btn-sm layui-btn-normal layui-btn-radius pull-right" style="margin-top:10px;" title="保存文档为发布状态" id="pub_doc">发布</button>
         <button class="layui-btn layui-btn-sm layui-btn-primary layui-btn-radius pull-right" style="margin-top:10px;" title="保存文档为草稿状态" id="save_doc">存为草稿</button>
 
     </ul>
-
 {% endblock %}
 
 
@@ -113,11 +112,11 @@
                 <div class="layui-col-md12" style="margin-bottom: 10px;">
                     <span>点击文档树选择上级（可选）或</span>
                     <button class="layui-btn layui-btn-xs layui-btn-primary" id="clearParentDoc">取消上级</button>
-                    <input type="text" id="parent-doc" hidden> 
+                    <input type="text" id="parent-doc" hidden>
                 </div>
                 <div class="layui-col-md12">
                     <input type="number" class="layui-input" placeholder="输入文档排序值，默认9999" id="sort">
-                </div>    
+                </div>
             </div>
 
             <div class="layui-colla-content layui-show" style="max-height: 100%;overflow: hidden;overflow-y: hidden;overflow-x: scroll;">
@@ -127,7 +126,7 @@
     </div>
 {% endblock %}
 
-{% block content %}
+{% block editor_content %}
     <div class="create-doc-form">
         <div class="layui-form">
             <!-- 标题 -->
@@ -140,7 +139,7 @@
         </div>
     </div>
 
-    <div id="editor-md" class="layui-col-xs12">    
+    <div id="editor-md" class="layui-col-xs12">
         {% if editor_mode == 1 %}
         <textarea style="display:none;"></textarea>
         {% elif editor_mode == 4 %}
@@ -154,333 +153,335 @@
 {% endblock %}
 
 {% block custom_script %}
-    <script> 
-        form.val("left_form",{
-            "select_editor_mode":'{{editor_mode}}'
-        })
-        form.on('select(select_editor_mode)',function(data){
-            //console.log(data.value)
-            layer.open({
-                    type:0,
-                    title:'切换编辑器',
-                    area:'300px;',
-                    id:'change_editor',//配置ID
-                    content: "为确保格式兼容，切换编辑器将导致未保存内容丢失！",
-                    btn:['确定切换','取消'], //添加按钮
-                    btnAlign:'c', //按钮居中
-                    yes:function (index,layero) {
-                        eurl = "{% url 'create_doc' %}?pid={{pid}}&eid=" + data.value.toString();                        
-                        $(location).attr('href', eurl);
-                    },
-                    btn2: function(index, layero){
-                        //暂时不需要返回
-                    }
-                });
-        })
-        var tree = layui.tree;
-        var upload = layui.upload;
-        //选择文集
-        form.on('select(project)', function(data){
-            console.log('选择文集：',data.value); //得到被选中的值
-            if(data.value == -1){ //新建文集
-                layer.open({
-                    type:1,
-                    title:'新建文集',
-                    area:'300px;',
-                    id:'createPro',//配置ID
-                    content: $('#create-project-div'),
-                    btn:['确定','取消'], //添加按钮
-                    btnAlign:'c', //按钮居中
-                    yes:function (index,layero) {
-                        data = {
-                            'pname':$("#pname").val(),
-                            'desc':$("#desc").val(),
-                            'role':$("#project-role").val(),
-                        }
-                        $.post("{% url 'create_project' %}",data,function(r){
-                            if(r.status){
-                                var role_str = r.data.role == 0 ? '公开':'私密'
-                                //创建成功，更新文集select
-                                $("#self-project").append("<option value="+r.data.id+">["+role_str+"]《"+r.data.name+"》</option>");
-                                $("#project").val(r.data.id);
-                                form.render();
-                                layer.close(index);
-                            }else{
-                                //创建失败，提示
-                                console.log(r)
-                            }
-                        })
-                    },
-                });
-            }else{//获取文集的下级文档
-                $.post("{% url 'get_pro_doc_tree' %}",{'pro_id':data.value},function(r){
-                    if(r.status){
-                        var doc_tree = tree.render({
-                            elem:"#doc-tree",
-                            id:'docTree',
-                            // showCheckbox:true,
-                            onlyIconControl:true,
-                            data:r.data,
-                            text: {
-                                defaultNodeName: '未命名' //节点默认名称
-                                ,none: '文集暂无文档' //数据为空时的提示文本
-                                },
-                            click: function(obj){
-                                //console.log(obj.data); //得到当前点击的节点数据
-                                // console.log(obj.state); //得到当前节点的展开状态：open、close、normal
-                                // console.log(obj.elem); //得到当前节点元素
-                                if(obj.data.level != 3){
-                                    $('#parent-doc').val(obj.data.id);// 设置上级文档
-                                    $("div.layui-tree-set").each(function(i){
-                                        var $me = $(this)
-                                        if($me.data('id') == obj.data.id){
-                                            // console.log('点击了')
-                                            layer.msg("你选择了上级文档："+obj.data.title)
-                                            $me.find('span.layui-tree-txt').first().addClass('selected-parent-doc')
-                                        }else{
-                                            $me.find('span.layui-tree-txt').first().removeClass('selected-parent-doc')
-                                        }
-                                    });
-                                }else{
-                                    layer.msg("第三级文档不能作为上级文档")
-                                }
-                                
-                            }
-                        });
-                    }else{
-                        layer.msg("获取下级文档失败！")
-                    }
-                });
+<script>
+    // Initialize Layui form
+    form.val("left_form",{
+        "select_editor_mode":'{{editor_mode}}'
+    });
+
+    // Editor mode switching with confirmation
+    form.on('select(select_editor_mode)',function(data){
+        editorConfirm('切换编辑器', '为确保格式兼容，切换编辑器将导致未保存内容丢失！').then(function(confirmed){
+            if(confirmed){
+                var eurl = "{% url 'create_doc' %}?pid={{pid}}&eid=" + data.value.toString();
+                window.location.href = eurl;
             }
         });
-        //带pid参数自动选择文集
-        var sel_pro_list = $('dl.layui-anim dd');
-        for(var i = 0;i < sel_pro_list.length; i++){
+    });
+
+    var upload = layui.upload;
+
+    // Select project handler
+    form.on('select(project)', function(data){
+        console.log('选择文集：', data.value);
+        if(data.value == -1){ // Create new project
+            openEditorModal('新建文集', document.getElementById('create-project-div'), {
+                area: '400px',
+                onConfirm: function(bodyEl) {
+                    var pnameEl = bodyEl.querySelector('#pname');
+                    var descEl = bodyEl.querySelector('#desc');
+                    var roleEl = bodyEl.querySelector('#project-role');
+                    var postPayload = {
+                        'pname': pnameEl ? pnameEl.value : '',
+                        'desc': descEl ? descEl.value : '',
+                        'role': roleEl ? roleEl.value : '0'
+                    };
+                    postData("{% url 'create_project' %}", postPayload).then(function(r){
+                        if(r.status){
+                            var role_str = r.data.role == 0 ? '公开' : '私密';
+                            var selfProject = document.getElementById('self-project');
+                            if(selfProject){
+                                var opt = document.createElement('option');
+                                opt.value = r.data.id;
+                                opt.text = '[' + role_str + ']《' + r.data.name + '》';
+                                selfProject.appendChild(opt);
+                            }
+                            var projectSelect = document.getElementById('project');
+                            if(projectSelect) projectSelect.value = r.data.id;
+                            form.render();
+                            showSuccess('文集创建成功');
+                        } else {
+                            showError('创建文集失败');
+                            console.log(r);
+                        }
+                    });
+                }
+            });
+        } else {
+            // Load project doc tree
+            postData("{% url 'get_pro_doc_tree' %}", {'pro_id': data.value}).then(function(r){
+                if(r.status){
+                    var doc_tree = tree.render({
+                        elem:"#doc-tree",
+                        id:'docTree',
+                        onlyIconControl:true,
+                        data:r.data,
+                        text: {
+                            defaultNodeName: '未命名',
+                            none: '文集暂无文档'
+                        },
+                        click: function(obj){
+                            if(obj.data.level != 3){
+                                var parentDocEl = document.getElementById('parent-doc');
+                                if(parentDocEl) parentDocEl.value = obj.data.id;
+                                var treeSets = document.querySelectorAll("div.layui-tree-set");
+                                treeSets.forEach(function(el){
+                                    var elDataId = el.getAttribute('data-id');
+                                    if(elDataId == obj.data.id){
+                                        showInfo("你选择了上级文档：" + obj.data.title);
+                                        var txtEl = el.querySelector('span.layui-tree-txt');
+                                        if(txtEl) txtEl.classList.add('selected-parent-doc');
+                                    } else {
+                                        var txtEl2 = el.querySelector('span.layui-tree-txt');
+                                        if(txtEl2) txtEl2.classList.remove('selected-parent-doc');
+                                    }
+                                });
+                            } else {
+                                showWarning("第三级文档不能作为上级文档");
+                            }
+                        }
+                    });
+                } else {
+                    showError("获取下级文档失败！");
+                }
+            });
+        }
+    });
+
+    // Auto-select project by pid parameter
+    (function(){
+        var sel_pro_list = document.querySelectorAll('dl.layui-anim dd');
+        for(var i = 0; i < sel_pro_list.length; i++){
             if(sel_pro_list[i].getAttribute('lay-value') == '{{pid}}'){
                 var sel_pro = 'dd[lay-value=' + sel_pro_list[i].getAttribute('lay-value') + ']';
-                $('#project').siblings("div.layui-form-select").find('dl').find(sel_pro)[0].click();
+                var projectEl = document.getElementById('project');
+                if(projectEl){
+                    var dd = projectEl.parentElement.querySelector('dl').querySelector(sel_pro);
+                    if(dd) dd.click();
+                }
                 break;
             }
+        }
+    })();
+
+    // Create document function
+    window.createDoc = function(status){
+        disableButtons(true);
+        var content, pre_content;
+        if(editor_mode == 1){
+            content = editor.getHTML();
+            pre_content = editor.getMarkdown();
+        } else if(editor_mode == 2){
+            content = editor.getHTML();
+            pre_content = editor.getValue();
+        } else if(editor_mode == 3){
+            content = DOMPurify.sanitize(editor.getHTML(), {ADD_TAGS: ['iframe']});
+            pre_content = editor.getText();
+        } else if(editor_mode == 4){
+            content = '';
+            pre_content = JSON.stringify(getOptimizedSheets());
+        }
+
+        var docNameEl = document.getElementById('doc-name');
+        var projectEl = document.getElementById('project');
+        var parentDocEl = document.getElementById('parent-doc');
+        var sortEl = document.getElementById('sort');
+        var tagsEl = document.getElementById('tagsinputval');
+        var openChildrenEl = document.querySelector('input[name="open-children"]:checked');
+        var showChildrenEl = document.querySelector('input[name="show-children"]:checked');
+
+        var docName = docNameEl ? docNameEl.value : '';
+        var projectVal = projectEl ? projectEl.value : '';
+        var parentDoc = parentDocEl ? parentDocEl.value : '';
+        var sortVal = sortEl ? sortEl.value : '';
+        var tagsVal = tagsEl ? tagsEl.value : '';
+        var openChildren = openChildrenEl ? openChildrenEl.value : '';
+        var showChildren = showChildrenEl ? showChildrenEl.value : '';
+
+        if(docName == ""){
+            showError('请输入文档标题！');
+            disableButtons(false);
+            return;
+        }
+        if(projectVal == ""){
+            showError('请选择文集！');
+            disableButtons(false);
+            return;
+        }
+
+        showLoading();
+
+        var payload = {
+            'project': projectVal,
+            'parent_doc': parentDoc,
+            'doc_name': docName,
+            'doc_tag': tagsVal,
+            'content': content,
+            'pre_content': pre_content,
+            'sort': sortVal,
+            'editor_mode': '{{editor_mode}}',
+            'status': status,
+            'open_children': openChildren,
+            'show_children': showChildren
         };
 
-        //发布文档
-        createDoc = function(status){
-            $('button.layui-btn').attr("disabled",true);
-            $('button.layui-btn').addClass('layui-btn-disabled');
-            if(editor_mode == 1){
-                var content = editor.getHTML()
-                var pre_content = editor.getMarkdown()
-            }else if(editor_mode == 2){
-                var content = editor.getHTML()
-                var pre_content = editor.getValue()
-            }else if(editor_mode == 3){
-                var content = DOMPurify.sanitize(editor.getHTML(),{ADD_TAGS: ['iframe']})
-                var pre_content = editor.getText()
-            }else if(editor_mode == 4){
-                var content  = '';
-                var pre_content = JSON.stringify(getOptimizedSheets());
-            }
-
-            var data = {
-                'project':$("#project").val(),
-                'parent_doc':$("#parent-doc").val(),
-                'doc_name':$("#doc-name").val(),
-                'doc_tag':$("#tagsinputval").val(),
-                'content':content,
-                'pre_content':pre_content,
-                'sort':$("#sort").val(),
-                'editor_mode':'{{editor_mode}}',
-                'status':status,
-                'open_children':$('input:checkbox[name="open-children"]:checked').val(),
-                'show_children':$('input:checkbox[name="show-children"]:checked').val(),
-            }
-            // console.log(data)
-            if(data.doc_name == ""){
-                layer.msg('请输入文档标题！');
-                $('button.layui-btn').attr("disabled",false);
-                $('button.layui-btn').removeClass('layui-btn-disabled');
-            }
-            else if(data.project == ""){
-                layer.msg('请选择文集！');
-                $('button.layui-btn').attr("disabled",false);
-                $('button.layui-btn').removeClass('layui-btn-disabled');
-            }
-            else{
-                //发布按钮设为禁用
-                $("#create_doc").attr({"disabled":"disabled"});
-                layer.load(); // 加载提示
-                $.ajax({
-                    url:"{% url 'create_doc' %}",
-                    type:'post',
-                    data:data,
-                    success:function(r){
-                        if(r.status){
-                            //创建成功
-                            layer.closeAll("loading"); //关闭加载层
-                            window.localStorage.removeItem('mrdoc_doc_cache') // 清空文档缓存
-                            if(status === 1){
-                                layer.msg('发布成功',{time:1000},function(){
-                                    md_changed = false;
-                                    //跳转到文档修改
-                                    window.location.href = "/modify_doc/"+r.data.doc+"/";
-                                });
-                            }else{
-                                layer.msg('保存成功',{time:1000},function(){
-                                    md_changed = false;
-                                    //跳转到文档修改
-                                    window.location.href = "/modify_doc/"+r.data.doc+"/";
-                                });
-                            }
-                        }else{
-                            //创建失败
-                            layer.closeAll("loading"); //关闭加载层
-                            layer.msg('发布文档失败:'+r.data);
-                            //恢复按钮状态
-                            $('button.layui-btn').attr("disabled",false);
-                            $('button.layui-btn').removeClass('layui-btn-disabled');
-                        }
-                    },
-                    error:function(){
-                            //创建失败
-                            layer.closeAll("loading"); //关闭加载层
-                            layer.msg('发布文档异常！');
-                            //恢复按钮状态
-                            $('button.layui-btn').attr("disabled",false);
-                            $('button.layui-btn').removeClass('layui-btn-disabled');
-
-                    }
-                })
-            }
-        };
-
-        $("#pub_doc").click(function(){
-            createDoc(1);
-        })
-        $("#save_doc").click(function(){
-            createDoc(0);
-        })
-
-        //选择文档模板
-        $("#sel-doctemp").click(function(){
-            layer.open({
-            type: 1,
-            id:'temp-div',
-            content: $('#doctemp-list'),
-            //area:['530px','300px'],
-            area:['50%','50%'],
-            });
-        });
-        //清除所选上级文档
-        $("#clearParentDoc").click(function(){
-            $('#parent-doc').val("");
-            $("span.layui-tree-txt").each(function(i){
-                var $me = $(this)
-                $me.removeClass('selected-parent-doc')
-            });
-            layer.msg("你取消了当前文档的上级文档")
-        });
-        //插入模板
-        insertTemp = function(doctemp_id){
-            $.post("{% url 'get_doctemp' %}",{'doctemp_id':doctemp_id},function(r){
-                if(r.status){
-                    if(editor_mode == 1){
-                        editor.insertValue(r.data);
-                    }else if(editor_mode == 2){
-                        editor.insertValue(r.data);
-                    }
-                    layer.closeAll()
-                }else{
-                    layer.msg(r.data)
-                }
-            });
-        };
-        //插入本地文本文件
-        function insertLocalFile(input) {
-            var file = input.files[0];
-            //filename = file.name.split(".")[0]; // 文件名
-            //支持chrome IE10
-            if (window.FileReader) {
-                var reader = new FileReader();
-                reader.onload = function() {
-                    console.log(this.result);
-                    if(editor_mode == 1){
-                        editor.insertValue(this.result);
-                    }else if(editor_mode == 2){
-                        editor.setValue(this.result)
-                    }else if(editor_mode == 3){
-                        editor.addValue(this.result)
-                    }
-                    
-                }
-                reader.readAsText(file);
-            }
-            //支持IE 7 8 9 10
-            else if (typeof window.ActiveXObject != 'undefined'){
-                var xmlDoc;
-                xmlDoc = new ActiveXObject("Microsoft.XMLDOM");
-                xmlDoc.async = false;
-                xmlDoc.load(input.value);
-                console.log(xmlDoc.xml);
-                editor.insertValue(xmlDoc.xml);
-            }
-            //支持FF
-            else if (document.implementation && document.implementation.createDocument) {
-                var xmlDoc;
-                xmlDoc = document.implementation.createDocument("", "", null);
-                xmlDoc.async = false;
-                xmlDoc.load(input.value);
-                console.log(xmlDoc.xml);
-                editor.insertValue(xmlDoc.xml);
+        fetch("{% url 'create_doc' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: Object.keys(payload).map(function(k){
+                return encodeURIComponent(k) + '=' + encodeURIComponent(payload[k]);
+            }).join('&') + '&csrfmiddlewaretoken=' + encodeURIComponent(getCsrfToken())
+        }).then(function(response){
+            return response.json();
+        }).then(function(r){
+            hideLoading();
+            if(r.status){
+                window.localStorage.removeItem('mrdoc_doc_cache');
+                var msg = status === 1 ? '发布成功' : '保存成功';
+                showSuccess(msg);
+                setTimeout(function(){
+                    md_changed = false;
+                    window.location.href = "/modify_doc/" + r.data.doc + "/";
+                }, 1000);
             } else {
-                alert('error');
+                showError('发布文档失败:' + r.data);
+                disableButtons(false);
             }
-        };
-        //选择本地文本文件
-        function selectLocalFile(){
-            $("#insert-local-file").trigger("click");
-        };
+        }).catch(function(){
+            hideLoading();
+            showError('发布文档异常！');
+            disableButtons(false);
+        });
+    };
 
-        // 导入Excel
-        upload.render({
-            elem:'#import-excel',
-            url:'',
-            auto:false,
-            exts:'xlsx',
-            choose:function(obj){
-                obj.preview(function(index,file,result){
-                    LuckyExcel.transformExcelToLucky(file, function(exportJson, luckysheetfile){            
-                        luckysheet.create({
-                            container: 'luckysheet', // luckysheet is the container id
-                            data:exportJson.sheets,
-                            title:exportJson.info.name,
-                            userInfo:exportJson.info.name.creator,
-                            lang: 'zh',
-                            showGridLines:true,
-                            allowEdit:true,
-                            showinfobar: false, // 是否显示顶部信息栏
-                            showsheetbar: true, // 是否显示底部sheet页按钮
-                            showstatisticBar: true, // 是否显示底部计数栏
-                            sheetBottomConfig: true, // sheet页下方的添加行按钮和回到顶部按钮配置
-                            userInfo: false, // 右上角的用户信息展示样式
-                            // plugins: ['chart'],
-                            showstatisticBarConfig: {
-                                count:false,
-                                view:false,
-                                zoom:false,
-                            },
+    // Button event handlers
+    document.getElementById('pub_doc').addEventListener('click', function(){
+        createDoc(1);
+    });
+    document.getElementById('save_doc').addEventListener('click', function(){
+        createDoc(0);
+    });
 
-                        });
+    // Open document template modal
+    document.getElementById('sel-doctemp').addEventListener('click', function(){
+        openEditorModal('选择文档模板', document.getElementById('doctemp-list'), {area:'50%'});
+    });
+
+    // Clear parent doc selection
+    document.getElementById('clearParentDoc').addEventListener('click', function(){
+        var parentDocEl = document.getElementById('parent-doc');
+        if(parentDocEl) parentDocEl.value = '';
+        var treeTxts = document.querySelectorAll('span.layui-tree-txt');
+        treeTxts.forEach(function(el){
+            el.classList.remove('selected-parent-doc');
+        });
+        showInfo("你取消了当前文档的上级文档");
+    });
+
+    // Insert template into editor
+    window.insertTemp = function(doctemp_id){
+        postData("{% url 'get_doctemp' %}", {'doctemp_id': doctemp_id}).then(function(r){
+            if(r.status){
+                if(editor_mode == 1){
+                    editor.insertValue(r.data);
+                } else if(editor_mode == 2){
+                    editor.insertValue(r.data);
+                }
+                // Close all open modals
+                document.querySelectorAll('.ispace-modal-backdrop.ispace-active').forEach(function(el){
+                    el.classList.remove('ispace-active');
+                    setTimeout(function(){ el.remove(); }, 300);
+                });
+            } else {
+                showError(r.data);
+            }
+        });
+    };
+
+    // Insert local text file
+    function insertLocalFile(input) {
+        var file = input.files[0];
+        if (window.FileReader) {
+            var reader = new FileReader();
+            reader.onload = function() {
+                console.log(this.result);
+                if(editor_mode == 1){
+                    editor.insertValue(this.result);
+                } else if(editor_mode == 2){
+                    editor.setValue(this.result);
+                } else if(editor_mode == 3){
+                    editor.addValue(this.result);
+                }
+            };
+            reader.readAsText(file);
+        } else if (typeof window.ActiveXObject != 'undefined'){
+            var xmlDoc;
+            xmlDoc = new ActiveXObject("Microsoft.XMLDOM");
+            xmlDoc.async = false;
+            xmlDoc.load(input.value);
+            console.log(xmlDoc.xml);
+            editor.insertValue(xmlDoc.xml);
+        } else if (document.implementation && document.implementation.createDocument) {
+            var xmlDoc;
+            xmlDoc = document.implementation.createDocument("", "", null);
+            xmlDoc.async = false;
+            xmlDoc.load(input.value);
+            console.log(xmlDoc.xml);
+            editor.insertValue(xmlDoc.xml);
+        } else {
+            alert('error');
+        }
+    }
+
+    // Select local text file
+    window.selectLocalFile = function(){
+        var fileInput = document.getElementById('insert-local-file');
+        if(fileInput) fileInput.click();
+    };
+
+    // Import Excel (Luckysheet)
+    {% if editor_mode == 4 %}
+    upload.render({
+        elem:'#import-excel',
+        url:'',
+        auto:false,
+        exts:'xlsx',
+        choose:function(obj){
+            obj.preview(function(index, file, result){
+                LuckyExcel.transformExcelToLucky(file, function(exportJson, luckysheetfile){
+                    luckysheet.create({
+                        container: 'luckysheet',
+                        data:exportJson.sheets,
+                        title:exportJson.info.name,
+                        userInfo:exportJson.info.name.creator,
+                        lang: 'zh',
+                        showGridLines:true,
+                        allowEdit:true,
+                        showinfobar: false,
+                        showsheetbar: true,
+                        showstatisticBar: true,
+                        sheetBottomConfig: true,
+                        userInfo: false,
+                        showstatisticBarConfig: {
+                            count:false,
+                            view:false,
+                            zoom:false,
+                        },
                     });
                 });
-            },
-        })
+            });
+        },
+    });
 
-    </script>
-    <!-- 在线表格文档根据窗口高度调整表格高度 -->
-    {% if editor_mode == 4 %}
-    <script>
-        var lucksheet_height = $(window).height() - $(".doc-header").height() - $(".doc-info").height() - 70;
-        $("#luckysheet").height(lucksheet_height);
-    </script>
+    // Adjust Luckysheet height
+    (function(){
+        var lucksheet_height = window.innerHeight - 200;
+        var el = document.getElementById('luckysheet');
+        if(el) el.style.height = lucksheet_height + 'px';
+    })();
     {% endif %}
+</script>
 {% endblock %}

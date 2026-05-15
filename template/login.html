@@ -1,4 +1,4 @@
-{% extends "modern_base.html" %}
+{% extends "base.html" %}
 {% load static %}
 {% load i18n %}
 
@@ -7,35 +7,14 @@
 {% block body_class %}auth-page{% endblock %}
 
 {% block header %}
-<!-- Override header to hide user menu -->
-<header class="app-header" id="appHeader">
-    <div class="header-container">
-        <div class="header-left">
-            <a href="/" class="logo-link">
-                <div class="logo">
-                    <span class="logo-text">iSpaceDoc</span>
-                </div>
-            </a>
-        </div>
-        
-        <div class="header-right">
-            <button class="theme-toggle-btn" onclick="toggleGlobalTheme()" title="切换主题">
-                <svg class="theme-icon sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <circle cx="12" cy="12" r="5"></circle>
-                    <line x1="12" y1="1" x2="12" y2="3"></line>
-                    <line x1="12" y1="21" x2="12" y2="23"></line>
-                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                    <line x1="1" y1="12" x2="3" y2="12"></line>
-                    <line x1="21" y1="12" x2="23" y2="12"></line>
-                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                </svg>
-                <svg class="theme-icon moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="display: none;">
-                    <path d="M21 12.79A9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-            </button>
-        </div>
+<header class="ispace-app-header">
+    <div class="ispace-header-left">
+        <a href="/" class="ispace-header-logo">
+            <span class="ispace-header-logo-text">iSpaceDoc</span>
+        </a>
+    </div>
+    <div class="ispace-header-right">
+        {% include "includes/theme_toggle.html" %}
     </div>
 </header>
 {% endblock %}
@@ -66,11 +45,11 @@
             {% csrf_token %}
             <div class="form-group">
                 <label for="username" class="form-label">用户名</label>
-                <input 
-                    type="text" 
+                <input
+                    type="text"
                     id="username"
-                    name="username" 
-                    class="input" 
+                    name="username"
+                    class="input"
                     placeholder="请输入用户名"
                     value="{{ username|default:'' }}"
                     required
@@ -79,11 +58,11 @@
 
             <div class="form-group">
                 <label for="password" class="form-label">密码</label>
-                <input 
-                    type="password" 
+                <input
+                    type="password"
                     id="password"
-                    name="password" 
-                    class="input" 
+                    name="password"
+                    class="input"
                     placeholder="请输入密码"
                     required
                 >
@@ -93,18 +72,18 @@
             <div class="form-group">
                 <label for="check_code" class="form-label">验证码</label>
                 <div class="captcha-group">
-                    <input 
-                        type="text" 
+                    <input
+                        type="text"
                         id="check_code"
-                        name="check_code" 
-                        class="input" 
+                        name="check_code"
+                        class="input"
                         placeholder="请输入验证码"
                         required
                     >
-                    <img 
-                        src="{% url 'check_code' %}" 
-                        class="captcha-image" 
-                        onclick="this.src=`{% url 'check_code' %}?t=${Date.now()}`;" 
+                    <img
+                        src="{% url 'check_code' %}"
+                        class="captcha-image"
+                        onclick="this.src=`{% url 'check_code' %}?t=${Date.now()}`;"
                         title="点击刷新验证码"
                         alt="验证码"
                     >
@@ -155,7 +134,7 @@
 {% block styles %}
 <style>
 .auth-page {
-    background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-hover) 100%);
+    background: linear-gradient(135deg, var(--ispace-color-brand-500) 0%, var(--ispace-color-brand-600) 100%);
     min-height: 100vh;
 }
 
@@ -163,31 +142,31 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: calc(100vh - 64px);
-    padding: var(--space-6);
+    min-height: calc(100vh - var(--ispace-header-height));
+    padding: var(--ispace-space-6);
 }
 
 .auth-card {
-    background: var(--bg-primary);
-    border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-xl);
-    padding: var(--space-10);
+    background: var(--ispace-color-surface-0);
+    border-radius: var(--ispace-radius-xl);
+    box-shadow: var(--ispace-shadow-xl);
+    padding: var(--ispace-space-10);
     width: 100%;
     max-width: 420px;
-    border: 1px solid var(--border-primary);
+    border: 1px solid var(--ispace-color-border-medium);
 }
 
 .auth-header {
     text-align: center;
-    margin-bottom: var(--space-8);
+    margin-bottom: var(--ispace-space-8);
 }
 
 .auth-logo {
     width: 60px;
     height: 60px;
-    margin: 0 auto var(--space-4);
-    background: var(--brand-primary);
-    border-radius: var(--radius-full);
+    margin: 0 auto var(--ispace-space-4);
+    background: var(--ispace-color-brand-500);
+    border-radius: var(--ispace-radius-full);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -200,37 +179,56 @@
 }
 
 .auth-title {
-    font-size: var(--text-2xl);
-    font-weight: var(--font-semibold);
-    color: var(--text-primary);
-    margin: 0 0 var(--space-2) 0;
+    font-size: var(--ispace-font-2xl);
+    font-weight: var(--ispace-font-semibold);
+    color: var(--ispace-color-text-primary);
+    margin: 0 0 var(--ispace-space-2) 0;
 }
 
 .auth-subtitle {
-    color: var(--text-tertiary);
-    font-size: var(--text-sm);
+    color: var(--ispace-color-text-tertiary);
+    font-size: var(--ispace-font-sm);
     margin: 0;
 }
 
 .auth-form {
-    margin-bottom: var(--space-6);
+    margin-bottom: var(--ispace-space-6);
 }
 
 .form-group {
-    margin-bottom: var(--space-5);
+    margin-bottom: var(--ispace-space-5);
 }
 
 .form-label {
     display: block;
-    font-size: var(--text-sm);
-    font-weight: var(--font-medium);
-    color: var(--text-secondary);
-    margin-bottom: var(--space-2);
+    font-size: var(--ispace-font-sm);
+    font-weight: var(--ispace-font-medium);
+    color: var(--ispace-color-text-secondary);
+    margin-bottom: var(--ispace-space-2);
+}
+
+.input {
+    display: block;
+    width: 100%;
+    padding: var(--ispace-space-3) var(--ispace-space-4);
+    font-size: var(--ispace-font-sm);
+    color: var(--ispace-color-text-primary);
+    background: var(--ispace-color-surface-0);
+    border: 1px solid var(--ispace-color-border-medium);
+    border-radius: var(--ispace-radius-md);
+    transition: border-color var(--ispace-duration-fast) var(--ispace-ease-out);
+    outline: none;
+    box-sizing: border-box;
+}
+
+.input:focus {
+    border-color: var(--ispace-color-brand-500);
+    box-shadow: 0 0 0 2px var(--ispace-color-brand-100);
 }
 
 .captcha-group {
     display: flex;
-    gap: var(--space-3);
+    gap: var(--ispace-space-3);
     align-items: center;
 }
 
@@ -241,22 +239,43 @@
 .captcha-image {
     width: 120px;
     height: 40px;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border-secondary);
+    border-radius: var(--ispace-radius-md);
+    border: 1px solid var(--ispace-color-border-light);
     cursor: pointer;
     transition: border-color 0.2s ease;
 }
 
 .captcha-image:hover {
-    border-color: var(--brand-primary);
+    border-color: var(--ispace-color-brand-500);
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: var(--ispace-radius-md);
+    cursor: pointer;
+    font-weight: var(--ispace-font-medium);
+    transition: all var(--ispace-duration-fast) var(--ispace-ease-out);
+    text-decoration: none;
+}
+
+.btn-primary {
+    background: var(--ispace-color-brand-500);
+    color: #ffffff;
+}
+
+.btn-primary:hover {
+    background: var(--ispace-color-brand-600);
 }
 
 .btn-auth {
     width: 100%;
-    padding: var(--space-4) var(--space-6);
-    font-size: var(--text-base);
-    gap: var(--space-2);
-    margin-bottom: var(--space-2);
+    padding: var(--ispace-space-4) var(--ispace-space-6);
+    font-size: var(--ispace-font-base);
+    gap: var(--ispace-space-2);
+    margin-bottom: var(--ispace-space-2);
 }
 
 .btn-auth svg {
@@ -267,26 +286,26 @@
 .auth-links {
     display: flex;
     flex-direction: column;
-    gap: var(--space-3);
-    padding-top: var(--space-6);
-    border-top: 1px solid var(--border-primary);
+    gap: var(--ispace-space-3);
+    padding-top: var(--ispace-space-6);
+    border-top: 1px solid var(--ispace-color-border-medium);
 }
 
 .auth-link {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
-    color: var(--text-tertiary);
+    gap: var(--ispace-space-2);
+    color: var(--ispace-color-text-tertiary);
     text-decoration: none;
-    font-size: var(--text-sm);
-    padding: var(--space-2);
-    border-radius: var(--radius-md);
+    font-size: var(--ispace-font-sm);
+    padding: var(--ispace-space-2);
+    border-radius: var(--ispace-radius-md);
     transition: all 0.2s ease;
 }
 
 .auth-link:hover {
-    color: var(--brand-primary);
-    background-color: var(--brand-light);
+    color: var(--ispace-color-brand-500);
+    background-color: var(--ispace-color-brand-100);
 }
 
 .auth-link svg {
@@ -296,23 +315,23 @@
 }
 
 .auth-link-disabled {
-    color: var(--text-quaternary);
-    font-size: var(--text-sm);
+    color: var(--ispace-color-text-quaternary);
+    font-size: var(--ispace-font-sm);
     text-align: center;
-    padding: var(--space-2);
+    padding: var(--ispace-space-2);
 }
 
 .form-error {
-    background-color: var(--error-light);
-    color: var(--error);
-    padding: var(--space-4);
-    border-radius: var(--radius-md);
-    border: 1px solid var(--error);
-    margin-bottom: var(--space-6);
+    background-color: var(--ispace-color-error-bg);
+    color: var(--ispace-color-error-text);
+    padding: var(--ispace-space-4);
+    border-radius: var(--ispace-radius-md);
+    border: 1px solid var(--ispace-color-error-border);
+    margin-bottom: var(--ispace-space-6);
     display: flex;
     align-items: center;
-    gap: var(--space-2);
-    font-size: var(--text-sm);
+    gap: var(--ispace-space-2);
+    font-size: var(--ispace-font-sm);
 }
 
 .form-error svg {
@@ -323,14 +342,14 @@
 
 @media (max-width: 480px) {
     .auth-card {
-        padding: var(--space-6);
-        margin: var(--space-4);
+        padding: var(--ispace-space-6);
+        margin: var(--ispace-space-4);
     }
-    
+
     .captcha-group {
         flex-direction: column;
     }
-    
+
     .captcha-image {
         width: 100%;
         max-width: 200px;
@@ -343,16 +362,11 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('loginForm');
-    
+
     if (loginForm) {
         loginForm.addEventListener('submit', function(e) {
-            // 阻止默认提交行为
             e.preventDefault();
-            
-            // 获取表单数据
             const formData = new FormData(loginForm);
-            
-            // 提交表单数据
             fetch(window.location.href, {
                 method: 'POST',
                 body: formData,
@@ -360,20 +374,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     'X-CSRFToken': formData.get('csrfmiddlewaretoken')
                 }
             })
-            .then(response => response.text())
-            .then(html => {
-                // 如果返回的是重定向或主页内容，则跳转
-                if (html.includes('<!DOCTYPE html>') && 
-                    (html.includes('id="appHeader"') || html.includes('class="app-header"'))) {
-                    window.location.href = '/';
-                } else {
-                    // 否则重新加载当前页面以显示错误消息
-                    window.location.reload();
-                }
+            .then(function() {
+                window.location.reload();
             })
-            .catch(error => {
-                console.error('登录请求失败:', error);
-                // 出现错误时也重新加载页面以显示服务器返回的错误
+            .catch(function() {
                 window.location.reload();
             });
         });

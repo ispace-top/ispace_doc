@@ -1,330 +1,241 @@
-{% extends "modern_base.html" %}
+{% extends "base.html" %}
 {% load static %}
 {% load i18n %}
 
 {% block title %}后台管理{% if site_name != None and site_name != '' %} - {{site_name}} {% endif %} - iSpaceDoc{% endblock %}
 
-{% block extra_head %}
+{% block styles %}
 <style>
-/* 后台管理专用样式 */
 .admin-layout {
     display: flex;
-    min-height: calc(100vh - 64px); /* 减去顶部header高度 */
-    background: var(--bg-secondary);
-    margin-top: 64px; /* 为顶部header留出空间 */
+    min-height: 100vh;
+    background: var(--ispace-color-surface-50);
 }
-
 .admin-sidebar {
     width: 260px;
-    background: var(--bg-primary);
-    border-right: 1px solid var(--border-primary);
+    background: var(--ispace-color-surface-0);
+    border-right: 1px solid var(--ispace-color-border-light);
     display: flex;
     flex-direction: column;
     position: fixed;
     left: 0;
-    top: 64px; /* 与顶部header对齐 */
-    height: calc(100vh - 64px);
-    z-index: 100;
-    transition: all 0.3s ease;
+    top: 0;
+    height: 100vh;
+    z-index: var(--ispace-z-sidebar);
+    transition: all var(--ispace-duration-slow) var(--ispace-ease-out);
 }
-
-.admin-sidebar.collapsed {
-    width: 64px;
-}
-
+.admin-sidebar.collapsed { width: 64px; }
 .admin-logo {
-    padding: var(--space-4);
-    border-bottom: 1px solid var(--border-primary);
+    padding: var(--ispace-space-4);
+    border-bottom: 1px solid var(--ispace-color-border-light);
     display: flex;
     align-items: center;
-    gap: var(--space-2);
+    gap: var(--ispace-space-2);
+    height: var(--ispace-header-height);
 }
-
-.admin-logo img {
-    width: 32px;
-    height: 32px;
-    border-radius: var(--radius-md);
-}
-
+.admin-logo img { width: 32px; height: 32px; border-radius: var(--ispace-radius-md); }
 .admin-logo .title {
-    font-size: var(--text-lg);
-    font-weight: var(--font-semibold);
-    color: var(--text-primary);
+    font-size: var(--ispace-font-lg);
+    font-weight: var(--ispace-font-semibold);
+    color: var(--ispace-color-text-primary);
     white-space: nowrap;
 }
-
-.admin-sidebar.collapsed .title {
-    display: none;
-}
-
+.admin-sidebar.collapsed .title { display: none; }
 .admin-nav {
     flex: 1;
-    padding: var(--space-3);
+    padding: var(--ispace-space-3);
     overflow-y: auto;
 }
-
-.nav-section {
-    margin-bottom: var(--space-4);
-}
-
+.nav-section { margin-bottom: var(--ispace-space-4); }
 .nav-section-title {
-    font-size: var(--text-xs);
-    color: var(--text-tertiary);
+    font-size: var(--ispace-font-xs);
+    color: var(--ispace-color-text-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin-bottom: var(--space-2);
-    padding: 0 var(--space-2);
+    margin-bottom: var(--ispace-space-2);
+    padding: 0 var(--ispace-space-2);
 }
-
-.nav-item {
-    margin-bottom: var(--space-1);
-}
-
+.nav-item { margin-bottom: var(--ispace-space-1); }
 .nav-link {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-2);
-    border-radius: var(--radius-md);
-    color: var(--text-secondary);
+    gap: var(--ispace-space-2);
+    padding: var(--ispace-space-2);
+    border-radius: var(--ispace-radius-md);
+    color: var(--ispace-color-text-secondary);
     text-decoration: none;
-    font-size: var(--text-sm);
-    transition: all 0.2s ease;
+    font-size: var(--ispace-font-sm);
+    transition: all var(--ispace-duration-fast);
+    cursor: pointer;
 }
-
 .nav-link:hover {
-    background: var(--bg-hover);
-    color: var(--text-primary);
+    background: var(--ispace-color-surface-hover);
+    color: var(--ispace-color-text-primary);
 }
-
 .nav-link.active {
-    background: var(--brand-light);
-    color: var(--brand-primary);
+    background: var(--ispace-color-brand-50);
+    color: var(--ispace-color-brand-500);
 }
-
-.nav-icon {
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-}
-
+.nav-icon { width: 20px; height: 20px; flex-shrink: 0; }
 .admin-main {
     flex: 1;
     margin-left: 260px;
     display: flex;
     flex-direction: column;
-    transition: all 0.3s ease;
-    padding-top: 0; /* 移除原来的padding-top */
+    transition: all var(--ispace-duration-slow) var(--ispace-ease-out);
+    min-height: 100vh;
 }
-
-.admin-sidebar.collapsed + .admin-main {
-    margin-left: 64px;
-}
-
+.admin-sidebar.collapsed + .admin-main { margin-left: 64px; }
 .admin-header {
-    height: 64px;
-    background: var(--bg-primary);
-    border-bottom: 1px solid var(--border-primary);
+    height: var(--ispace-header-height);
+    background: var(--ispace-color-surface-0);
+    border-bottom: 1px solid var(--ispace-color-border-light);
     display: flex;
     align-items: center;
-    justify-content: flex-start; /* 改为flex-start而不是space-between */
-    padding: 0 var(--space-4);
-    position: fixed;
-    top: 64px; /* 位于主header下方 */
-    left: 260px; /* 与sidebar右侧对齐 */
-    right: 0;
-    z-index: 99;
-    transition: all 0.3s ease;
+    justify-content: flex-start;
+    padding: 0 var(--ispace-space-4);
+    position: sticky;
+    top: 0;
+    z-index: var(--ispace-z-sticky);
 }
-
-.admin-sidebar.collapsed ~ .admin-main .admin-header {
-    left: 64px;
-}
-
-.admin-header-left {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-}
-
-.admin-header-right {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    margin-left: auto; /* 添加这一行，将右侧内容推向右边 */
-}
-
-.sidebar-toggle {
+.admin-header-left { display: flex; align-items: center; gap: var(--ispace-space-3); }
+.admin-header-right { display: flex; align-items: center; gap: var(--ispace-space-3); margin-left: auto; }
+.sidebar-toggle, .refresh-btn {
     background: none;
     border: none;
-    color: var(--text-secondary);
+    color: var(--ispace-color-text-secondary);
     cursor: pointer;
-    padding: var(--space-2);
-    border-radius: var(--radius-md);
-    transition: all 0.2s ease;
+    padding: var(--ispace-space-2);
+    border-radius: var(--ispace-radius-md);
+    transition: all var(--ispace-duration-fast);
 }
-
-.sidebar-toggle:hover {
-    background: var(--bg-hover);
-    color: var(--text-primary);
+.sidebar-toggle:hover, .refresh-btn:hover {
+    background: var(--ispace-color-surface-hover);
+    color: var(--ispace-color-text-primary);
 }
-
-.refresh-btn {
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    cursor: pointer;
-    padding: var(--space-2);
-    border-radius: var(--radius-md);
-    transition: all 0.2s ease;
-}
-
-.refresh-btn:hover {
-    background: var(--bg-hover);
-    color: var(--text-primary);
-}
-
 .header-action {
-    color: var(--text-secondary);
+    color: var(--ispace-color-text-secondary);
     text-decoration: none;
-    padding: var(--space-2);
-    border-radius: var(--radius-md);
-    transition: all 0.2s ease;
+    padding: var(--ispace-space-2);
+    border-radius: var(--ispace-radius-md);
+    transition: all var(--ispace-duration-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: none;
+    background: none;
 }
-
 .header-action:hover {
-    background: var(--bg-hover);
-    color: var(--text-primary);
+    background: var(--ispace-color-surface-hover);
+    color: var(--ispace-color-text-primary);
 }
-
-.user-dropdown {
-    position: relative;
-    display: inline-block;
-}
-
+.user-dropdown { position: relative; display: inline-block; }
 .user-trigger {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-2);
-    border-radius: var(--radius-md);
+    gap: var(--ispace-space-2);
+    padding: var(--ispace-space-2);
+    border-radius: var(--ispace-radius-md);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--ispace-duration-fast);
     text-decoration: none;
-    color: var(--text-primary);
+    color: var(--ispace-color-text-primary);
+    border: none;
+    background: none;
 }
-
-.user-trigger:hover {
-    background: var(--bg-hover);
-}
-
-.user-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: var(--brand-primary);
-}
-
+.user-trigger:hover { background: var(--ispace-color-surface-hover); }
+.user-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--ispace-color-brand-500); }
 .dropdown-menu {
     position: absolute;
     top: 100%;
     right: 0;
-    background: var(--bg-primary);
-    border: 1px solid var(--border-primary);
-    border-radius: var(--radius-md);
-    padding: var(--space-2) 0;
+    background: var(--ispace-color-surface-0);
+    border: 1px solid var(--ispace-color-border-light);
+    border-radius: var(--ispace-radius-md);
+    padding: var(--ispace-space-2) 0;
     min-width: 150px;
-    box-shadow: var(--shadow-lg);
-    z-index: 1000;
+    box-shadow: var(--ispace-shadow-lg);
+    z-index: var(--ispace-z-dropdown);
 }
-
 .dropdown-item {
     display: block;
-    padding: var(--space-2) var(--space-3);
-    color: var(--text-secondary);
+    padding: var(--ispace-space-2) var(--ispace-space-3);
+    color: var(--ispace-color-text-secondary);
     text-decoration: none;
-    transition: all 0.2s ease;
+    transition: all var(--ispace-duration-fast);
+    cursor: pointer;
 }
-
 .dropdown-item:hover {
-    background: var(--bg-hover);
-    color: var(--text-primary);
+    background: var(--ispace-color-surface-hover);
+    color: var(--ispace-color-text-primary);
 }
-
-.admin-content {
-    flex: 1;
-    padding: var(--space-4);
-    background: var(--bg-secondary);
-    overflow-y: auto;
-    margin-top: 64px; /* 为固定定位的admin-header留出空间 */
-}
-
+.admin-content { flex: 1; padding: var(--ispace-space-4); background: var(--ispace-color-surface-50); overflow-y: auto; }
 .content-tabs {
-    background: var(--bg-primary);
-    border-bottom: 1px solid var(--border-primary);
-    padding: 0 var(--space-4);
+    background: var(--ispace-color-surface-0);
+    border-bottom: 1px solid var(--ispace-color-border-light);
+    padding: 0 var(--ispace-space-4);
 }
-
-.tab-list {
-    display: flex;
-    gap: var(--space-2);
-    overflow-x: auto;
-}
-
+.tab-list { display: flex; gap: var(--ispace-space-2); overflow-x: auto; }
 .tab-item {
-    padding: var(--space-2) var(--space-3);
+    padding: var(--ispace-space-2) var(--ispace-space-3);
     background: none;
     border: none;
-    color: var(--text-secondary);
+    color: var(--ispace-color-text-secondary);
     cursor: pointer;
     white-space: nowrap;
     border-bottom: 2px solid transparent;
-    transition: all 0.2s ease;
+    transition: all var(--ispace-duration-fast);
     display: flex;
     align-items: center;
-    gap: var(--space-2);
+    gap: var(--ispace-space-2);
 }
-
-.tab-item:hover {
-    color: var(--text-primary);
-}
-
-.tab-item.active {
-    color: var(--brand-primary);
-    border-bottom-color: var(--brand-primary);
-}
-
+.tab-item:hover { color: var(--ispace-color-text-primary); }
+.tab-item.active { color: var(--ispace-color-brand-500); border-bottom-color: var(--ispace-color-brand-500); }
 .tab-close {
     opacity: 0.6;
     cursor: pointer;
     padding: 2px 4px;
-    border-radius: var(--radius-sm);
-    transition: all 0.2s ease;
+    border-radius: var(--ispace-radius-sm);
+    transition: all var(--ispace-duration-fast);
 }
-
-.tab-close:hover {
-    opacity: 1;
-    background: var(--bg-hover);
+.tab-close:hover { opacity: 1; background: var(--ispace-color-surface-hover); }
+.content-frame {
+    min-height: 400px;
+    background: var(--ispace-color-surface-0);
+    border-radius: var(--ispace-radius-xl);
+    padding: var(--ispace-space-4);
+    border: 1px solid var(--ispace-color-border-light);
 }
+.error-message {
+    text-align: center;
+    padding: var(--ispace-space-6);
+    color: var(--ispace-color-text-secondary);
+    font-size: var(--ispace-font-base);
+}
+.admin-loader {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: var(--ispace-z-tooltip);
+    display: none;
+}
+.admin-loader.show { display: block; }
+.loader-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--ispace-color-border-light);
+    border-top: 3px solid var(--ispace-color-brand-500);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-/* 响应式设计 */
 @media (max-width: 768px) {
-    .admin-sidebar {
-        transform: translateX(-100%);
-    }
-    
-    .admin-sidebar.show {
-        transform: translateX(0);
-    }
-    
-    .admin-main {
-        margin-left: 0;
-    }
-    
-    .admin-header {
-        left: 0;
-    }
-    
+    .admin-sidebar { transform: translateX(-100%); }
+    .admin-sidebar.show { transform: translateX(0); }
+    .admin-main { margin-left: 0; }
     .mobile-overlay {
         position: fixed;
         inset: 0;
@@ -332,113 +243,51 @@
         z-index: 99;
         display: none;
     }
-    
-    .mobile-overlay.show {
-        display: block;
-    }
-}
-
-/* 加载动画 */
-.admin-loader {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 1000;
-    display: none;
-}
-
-.admin-loader.show {
-    display: block;
-}
-
-.loader-spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--border-primary);
-    border-top: 3px solid var(--brand-primary);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* 内容区域样式 */
-.content-frame {
-    min-height: 400px;
-    background: var(--bg-primary);
-    border-radius: var(--radius-xl);
-    padding: var(--space-4);
-    border: 1px solid var(--border-primary);
-}
-
-.error-message {
-    text-align: center;
-    padding: var(--space-6);
-    color: var(--text-secondary);
-    font-size: var(--text-base);
+    .mobile-overlay.show { display: block; }
 }
 </style>
 {% endblock %}
 
-{% block header %}
-<!-- 使用基模板的header -->
-{{ block.super }}
-{% endblock %}
-
-{% block content %}
+{% block layout %}
 <div class="admin-layout">
-    <!-- 侧边栏 -->
     <div class="admin-sidebar" id="adminSidebar">
         <div class="admin-logo">
             <img src="{% static 'mrdoc_logo_ridus.png' %}" alt="Logo">
             <span class="title">后台管理</span>
         </div>
-        
-        <div class="admin-nav" id="adminNav">
-            <!-- 动态菜单将在这里加载 -->
-        </div>
+        <div class="admin-nav" id="adminNav"></div>
     </div>
-    
-    <!-- 主要内容区域 -->
+
     <div class="admin-main">
-        <!-- 顶部导航 -->
         <div class="admin-header">
             <div class="admin-header-left">
                 <button class="sidebar-toggle" id="sidebarToggle">
                     <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="3" y1="6" x2="21" y2="6"></line>
-                        <line x1="3" y1="12" x2="21" y2="12"></line>
-                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
                     </svg>
                 </button>
-                <button class="refresh-btn" onclick="refreshContent()">
+                <button class="refresh-btn" id="refreshBtn">
                     <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="23 4 23 10 17 10"></polyline>
-                        <polyline points="1 20 1 14 7 14"></polyline>
-                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                        <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
                     </svg>
                 </button>
             </div>
-            
+
             <div class="admin-header-right">
-                <a href="#" class="header-action" onclick="toggleFullscreen()">
+                <a href="#" class="header-action" id="fullscreenBtn" title="全屏切换">
                     <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
                     </svg>
                 </a>
                 <a href="{% url 'pro_list' %}" class="header-action" title="回到首页">
                     <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
                     </svg>
                 </a>
-                
-                <div class="user-dropdown">
-                    <a href="javascript:;" class="user-trigger" onclick="toggleUserMenu()">
+
+                <div class="user-dropdown" id="userDropdown">
+                    <a href="javascript:;" class="user-trigger" id="userTrigger">
                         <img src="{% static 'PearAdminLayui/avatar.svg' %}" class="user-avatar" alt="Avatar">
                         <span>{% if request.user.first_name != '' %}{{ request.user.first_name }}{% else %}{{ request.user.username }}{% endif %}</span>
                     </a>
@@ -447,412 +296,366 @@
                         <a href="{% url 'user_center' %}" class="dropdown-item">个人中心</a>
                         {% endif %}
                         <a href="{% url 'pro_list' %}" class="dropdown-item">返回首页</a>
-                        <a href="javascript:void(0)" class="dropdown-item" onclick="logout()">退出登录</a>
+                        <a href="javascript:void(0)" class="dropdown-item" id="logoutBtn">退出登录</a>
                     </div>
                 </div>
-                
-                <button class="header-action" onclick="openSettings()">
+
+                <button class="header-action" id="settingsBtn" title="设置">
                     <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="3"></circle>
-                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
                     </svg>
                 </button>
             </div>
         </div>
-        
-        <!-- 标签页 -->
+
         <div class="content-tabs">
             <div class="tab-list" id="tabList">
                 <button class="tab-item active" data-tab="dashboard">仪表盘</button>
             </div>
         </div>
-        
-        <!-- 内容区域 -->
+
         <div class="admin-content">
-            <div class="content-frame" id="contentFrame">
-                <!-- 动态内容将在这里加载 -->
-            </div>
+            <div class="content-frame" id="contentFrame"></div>
         </div>
     </div>
 </div>
 
-<!-- 移动端遮罩 -->
-<div class="mobile-overlay" id="mobileOverlay" onclick="closeMobileSidebar()"></div>
+<div class="mobile-overlay" id="mobileOverlay"></div>
 
-<!-- 加载动画 -->
 <div class="admin-loader" id="adminLoader">
     <div class="loader-spinner"></div>
 </div>
-
-<script>
-class AdminCenter {
-    constructor() {
-        this.sidebarCollapsed = false;
-        this.currentTab = 'dashboard';
-        this.tabs = new Map();
-        this.init();
-    }
-    
-    init() {
-        this.setupSidebar();
-        this.loadMenu();
-        this.loadDefaultTab();
-        this.setupEventListeners();
-    }
-    
-    setupSidebar() {
-        const toggle = document.getElementById('sidebarToggle');
-        const sidebar = document.getElementById('adminSidebar');
-        
-        toggle?.addEventListener('click', () => {
-            this.sidebarCollapsed = !this.sidebarCollapsed;
-            sidebar.classList.toggle('collapsed', this.sidebarCollapsed);
-            
-            // 触发窗口resize事件，使图表等能正确调整大小
-            window.dispatchEvent(new Event('resize'));
-        });
-    }
-    
-    async loadMenu() {
-        try {
-            const response = await fetch("{% url 'admin_center_menu' %}");
-            const menuData = await response.json();
-            this.renderMenu(menuData);
-        } catch (error) {
-            console.error('Failed to load menu:', error);
-            // 创建默认菜单
-            this.renderDefaultMenu();
-        }
-    }
-    
-    renderDefaultMenu() {
-        const nav = document.getElementById('adminNav');
-        const defaultMenu = [
-            { id: 'dashboard', title: '仪表盘', href: "{% url 'admin_overview' %}", icon: '📊' },
-            { id: 'users', title: '用户管理', href: '#', icon: '👤' },
-            { id: 'projects', title: '文集管理', href: '#', icon: '📚' },
-            { id: 'docs', title: '文档管理', href: '#', icon: '📄' },
-            { id: 'settings', title: '系统设置', href: '#', icon: '⚙️' }
-        ];
-        
-        let html = '<div class="nav-section"><div class="nav-section-title">管理功能</div>';
-        
-        defaultMenu.forEach(item => {
-            html += `
-                <div class="nav-item">
-                    <a href="javascript:void(0)" class="nav-link" data-id="${item.id}" data-href="${item.href}" data-title="${item.title}">
-                        <i class="nav-icon">${item.icon}</i>
-                        <span>${item.title}</span>
-                    </a>
-                </div>
-            `;
-        });
-        
-        html += '</div>';
-        nav.innerHTML = html;
-        
-        // 绑定菜单点击事件
-        nav.addEventListener('click', (e) => {
-            const link = e.target.closest('.nav-link');
-            if (link) {
-                this.handleMenuClick(link);
-            }
-        });
-    }
-    
-    renderMenu(menuData) {
-        const nav = document.getElementById('adminNav');
-        if (!nav || !menuData) return;
-        
-        let html = '';
-        
-        // 处理不同的菜单数据格式
-        let items = [];
-        if (Array.isArray(menuData)) {
-            items = menuData;
-        } else if (menuData.data && Array.isArray(menuData.data)) {
-            items = menuData.data;
-        } else {
-            // 如果数据格式不匹配，使用默认菜单
-            this.renderDefaultMenu();
-            return;
-        }
-        
-        html += '<div class="nav-section"><div class="nav-section-title">管理功能</div>';
-        
-        items.forEach(item => {
-            const icon = this.getMenuIcon(item.icon);
-            html += `
-                <div class="nav-item">
-                    <a href="javascript:void(0)" class="nav-link" data-id="${item.id}" data-href="${item.href}" data-title="${item.title}">
-                        <i class="nav-icon">${icon}</i>
-                        <span>${item.title}</span>
-                    </a>
-                </div>
-            `;
-        });
-        
-        html += '</div>';
-        nav.innerHTML = html;
-        
-        // 绑定菜单点击事件
-        nav.addEventListener('click', (e) => {
-            const link = e.target.closest('.nav-link');
-            if (link) {
-                this.handleMenuClick(link);
-            }
-        });
-    }
-    
-    getMenuIcon(iconClass) {
-        // 将LayUI图标类转换为简单的字符图标
-        const iconMap = {
-            'layui-icon-home': '🏠',
-            'layui-icon-user': '👤',
-            'layui-icon-set': '⚙️',
-            'layui-icon-file': '📄',
-            'layui-icon-chart': '📊',
-            'layui-icon-log': '📝',
-            'layui-icon-template-1': '📋',
-            'layui-icon-group': '👥',
-            'layui-icon-component': '🔧'
-        };
-        
-        return iconMap[iconClass] || '•';
-    }
-    
-    handleMenuClick(link) {
-        // 移除其他活动状态
-        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-        link.classList.add('active');
-        
-        const id = link.dataset.id;
-        const href = link.dataset.href;
-        const title = link.dataset.title;
-        
-        this.openTab(id, title, href);
-    }
-    
-    openTab(id, title, href) {
-        // 添加或激活标签页
-        if (!this.tabs.has(id)) {
-            this.tabs.set(id, { title, href });
-            this.addTabToUI(id, title);
-        }
-        
-        this.activateTab(id);
-        this.loadTabContent(href);
-    }
-    
-    addTabToUI(id, title) {
-        const tabList = document.getElementById('tabList');
-        
-        // 如果标签页已存在，不重复添加
-        if (tabList.querySelector(`[data-tab="${id}"]`)) {
-            return;
-        }
-        
-        const tab = document.createElement('button');
-        tab.className = 'tab-item';
-        tab.dataset.tab = id;
-        
-        if (id === 'dashboard') {
-            tab.innerHTML = title;
-        } else {
-            tab.innerHTML = `
-                ${title}
-                <span class="tab-close" onclick="adminCenter.closeTab('${id}', event)">×</span>
-            `;
-        }
-        
-        tab.addEventListener('click', () => {
-            if (!event.target.classList.contains('tab-close')) {
-                this.activateTab(id);
-            }
-        });
-        
-        tabList.appendChild(tab);
-    }
-    
-    activateTab(id) {
-        document.querySelectorAll('.tab-item').forEach(tab => {
-            tab.classList.toggle('active', tab.dataset.tab === id);
-        });
-        
-        this.currentTab = id;
-        
-        if (this.tabs.has(id)) {
-            this.loadTabContent(this.tabs.get(id).href);
-        }
-    }
-    
-    closeTab(id, event) {
-        event?.stopPropagation();
-        
-        // 不能关闭仪表盘标签页
-        if (id === 'dashboard') {
-            return;
-        }
-        
-        const tab = document.querySelector(`[data-tab="${id}"]`);
-        tab?.remove();
-        
-        this.tabs.delete(id);
-        
-        // 如果关闭的是当前标签页，激活仪表盘
-        if (this.currentTab === id) {
-            this.activateTab('dashboard');
-        }
-    }
-    
-    async loadTabContent(href) {
-        if (!href || href === '#') {
-            document.getElementById('contentFrame').innerHTML = '<div class="error-message">功能开发中...</div>';
-            return;
-        }
-        
-        const contentFrame = document.getElementById('contentFrame');
-        const loader = document.getElementById('adminLoader');
-        
-        try {
-            loader.classList.add('show');
-            
-            const response = await fetch(href);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-            
-            const html = await response.text();
-            contentFrame.innerHTML = html;
-            
-            // 执行页面中的脚本
-            setTimeout(() => {
-                const scripts = contentFrame.querySelectorAll('script');
-                scripts.forEach(script => {
-                    try {
-                        const newScript = document.createElement('script');
-                        if (script.src) {
-                            newScript.src = script.src;
-                        } else {
-                            newScript.textContent = script.textContent;
-                        }
-                        document.body.appendChild(newScript);
-                        document.body.removeChild(newScript);
-                    } catch (e) {
-                        console.warn('Script execution failed:', e);
-                    }
-                });
-            }, 100);
-            
-        } catch (error) {
-            console.error('Failed to load content:', error);
-            contentFrame.innerHTML = '<div class="error-message">加载失败，请重试</div>';
-        } finally {
-            loader.classList.remove('show');
-        }
-    }
-    
-    loadDefaultTab() {
-        this.openTab('dashboard', '仪表盘', "{% url 'admin_overview' %}");
-    }
-    
-    setupEventListeners() {
-        // 移动端侧边栏
-        if (window.innerWidth <= 768) {
-            document.getElementById('sidebarToggle')?.addEventListener('click', (e) => {
-                e.preventDefault();
-                document.getElementById('adminSidebar')?.classList.add('show');
-                document.getElementById('mobileOverlay')?.classList.add('show');
-            });
-        }
-    }
-}
-
-// 全局函数
-function refreshContent() {
-    if (window.adminCenter && window.adminCenter.currentTab) {
-        const tab = window.adminCenter.tabs.get(window.adminCenter.currentTab);
-        if (tab) {
-            window.adminCenter.loadTabContent(tab.href);
-        }
-    }
-}
-
-function toggleFullscreen() {
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen();
-    } else {
-        document.exitFullscreen();
-    }
-}
-
-function toggleUserMenu() {
-    const menu = document.getElementById('userMenu');
-    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
-}
-
-function logout() {
-    if (confirm('确定要退出登录吗？')) {
-        fetch("{% url 'logout' %}", {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': '{{ csrf_token }}',
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status) {
-                window.location.href = '/';
-            } else {
-                alert('注销失败');
-            }
-        })
-        .catch(() => {
-            alert('注销失败');
-        });
-    }
-}
-
-function openSettings() {
-    // 打开设置面板
-    alert('设置功能开发中...');
-}
-
-function closeMobileSidebar() {
-    document.getElementById('adminSidebar')?.classList.remove('show');
-    document.getElementById('mobileOverlay')?.classList.remove('show');
-}
-
-// 初始化
-document.addEventListener('DOMContentLoaded', () => {
-    window.adminCenter = new AdminCenter();
-});
-
-// 点击其他地方关闭用户菜单
-document.addEventListener('click', (e) => {
-    const userDropdown = e.target.closest('.user-dropdown');
-    if (!userDropdown) {
-        const userMenu = document.getElementById('userMenu');
-        if (userMenu) {
-            userMenu.style.display = 'none';
-        }
-    }
-});
-
-// 窗口大小改变时的处理
-window.addEventListener('resize', () => {
-    // 在移动端和桌面端之间切换时，隐藏侧边栏
-    if (window.innerWidth > 768) {
-        document.getElementById('adminSidebar')?.classList.remove('show');
-        document.getElementById('mobileOverlay')?.classList.remove('show');
-    }
-});
-</script>
 {% endblock %}
 
-{% block footer %}
-<!-- 使用基模板的footer -->
-{{ block.super }}
+{% block scripts %}
+<script>
+(function() {
+    const CSRF_TOKEN = window.__ISPACEDOC__ && window.__ISPACEDOC__.csrfToken;
+
+    class AdminCenter {
+        constructor() {
+            this.sidebarCollapsed = false;
+            this.currentTab = 'dashboard';
+            this.tabs = new Map();
+            this.init();
+        }
+
+        init() {
+            this.setupSidebar();
+            this.loadMenu();
+            this.loadDefaultTab();
+            this.setupEventListeners();
+            this.setupGlobalEvents();
+        }
+
+        setupSidebar() {
+            const sidebar = document.getElementById('adminSidebar');
+            const toggle = document.getElementById('sidebarToggle');
+            if (toggle) {
+                toggle.addEventListener('click', () => {
+                    if (window.innerWidth <= 768) {
+                        sidebar.classList.add('show');
+                        document.getElementById('mobileOverlay').classList.add('show');
+                    } else {
+                        this.sidebarCollapsed = !this.sidebarCollapsed;
+                        sidebar.classList.toggle('collapsed', this.sidebarCollapsed);
+                        window.dispatchEvent(new Event('resize'));
+                    }
+                });
+            }
+
+            document.getElementById('mobileOverlay').addEventListener('click', () => {
+                document.getElementById('adminSidebar').classList.remove('show');
+                document.getElementById('mobileOverlay').classList.remove('show');
+            });
+        }
+
+        setupGlobalEvents() {
+            // Refresh button
+            document.getElementById('refreshBtn').addEventListener('click', () => {
+                if (this.currentTab && this.tabs.has(this.currentTab)) {
+                    this.loadTabContent(this.tabs.get(this.currentTab).href);
+                }
+            });
+
+            // Fullscreen toggle
+            document.getElementById('fullscreenBtn').addEventListener('click', (e) => {
+                e.preventDefault();
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen();
+                } else {
+                    document.exitFullscreen();
+                }
+            });
+
+            // User menu toggle
+            const userTrigger = document.getElementById('userTrigger');
+            const userMenu = document.getElementById('userMenu');
+            userTrigger.addEventListener('click', (e) => {
+                e.preventDefault();
+                userMenu.style.display = userMenu.style.display === 'none' ? 'block' : 'none';
+            });
+
+            // Logout
+            document.getElementById('logoutBtn').addEventListener('click', () => {
+                this.logout();
+            });
+
+            // Settings button
+            document.getElementById('settingsBtn').addEventListener('click', () => {
+                const settingsLink = document.querySelector('.nav-link[data-id="settings"]');
+                if (settingsLink) {
+                    this.handleMenuClick(settingsLink);
+                } else {
+                    showInfo('设置功能开发中...');
+                }
+            });
+
+            // Close user menu on outside click
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.user-dropdown')) {
+                    userMenu.style.display = 'none';
+                }
+            });
+
+            // Window resize
+            window.addEventListener('resize', () => {
+                if (window.innerWidth > 768) {
+                    const sidebar = document.getElementById('adminSidebar');
+                    if (sidebar) sidebar.classList.remove('show');
+                    const overlay = document.getElementById('mobileOverlay');
+                    if (overlay) overlay.classList.remove('show');
+                }
+            });
+        }
+
+        async loadMenu() {
+            try {
+                const response = await fetch("{% url 'admin_center_menu' %}");
+                const menuData = await response.json();
+                this.renderMenu(menuData);
+            } catch (error) {
+                console.error('Failed to load menu:', error);
+                this.renderDefaultMenu();
+            }
+        }
+
+        renderDefaultMenu() {
+            const nav = document.getElementById('adminNav');
+            const defaultMenu = [
+                { id: 'dashboard', title: '仪表盘', href: "{% url 'admin_overview' %}", icon: '\u{1F4CA}' },
+                { id: 'users', title: '用户管理', href: "{% url 'user_manage' %}", icon: '\u{1F464}' },
+                { id: 'projects', title: '文集管理', href: "{% url 'project_manage' %}", icon: '\u{1F4DA}' },
+                { id: 'docs', title: '文档管理', href: "{% url 'doc_manage' %}", icon: '\u{1F4C4}' },
+                { id: 'settings', title: '系统设置', href: "{% url 'sys_setting' %}", icon: '⚙️' }
+            ];
+
+            let html = '<div class="nav-section"><div class="nav-section-title">管理功能</div>';
+            defaultMenu.forEach((item) => {
+                html +=
+                    '<div class="nav-item">' +
+                    '    <a href="javascript:void(0)" class="nav-link" data-id="' + item.id + '" data-href="' + item.href + '" data-title="' + item.title + '">' +
+                    '        <i class="nav-icon">' + item.icon + '</i>' +
+                    '        <span>' + item.title + '</span>' +
+                    '    </a>' +
+                    '</div>';
+            });
+            html += '</div>';
+            nav.innerHTML = html;
+            this.bindNavClicks();
+        }
+
+        renderMenu(menuData) {
+            const nav = document.getElementById('adminNav');
+            if (!nav || !menuData) return;
+
+            let items = [];
+            if (Array.isArray(menuData)) {
+                items = menuData;
+            } else if (menuData.data && Array.isArray(menuData.data)) {
+                items = menuData.data;
+            } else {
+                this.renderDefaultMenu();
+                return;
+            }
+
+            let html = '<div class="nav-section"><div class="nav-section-title">管理功能</div>';
+            items.forEach((item) => {
+                const icon = this.getMenuIcon(item.icon);
+                html +=
+                    '<div class="nav-item">' +
+                    '    <a href="javascript:void(0)" class="nav-link" data-id="' + item.id + '" data-href="' + item.href + '" data-title="' + item.title + '">' +
+                    '        <i class="nav-icon">' + icon + '</i>' +
+                    '        <span>' + item.title + '</span>' +
+                    '    </a>' +
+                    '</div>';
+            });
+            html += '</div>';
+            nav.innerHTML = html;
+            this.bindNavClicks();
+        }
+
+        bindNavClicks() {
+            const nav = document.getElementById('adminNav');
+            nav.addEventListener('click', (e) => {
+                const link = e.target.closest('.nav-link');
+                if (link) { this.handleMenuClick(link); }
+            });
+        }
+
+        getMenuIcon(iconClass) {
+            const iconMap = {
+                'layui-icon-home': '\u{1F3E0}',
+                'layui-icon-user': '\u{1F464}',
+                'layui-icon-set': '⚙️',
+                'layui-icon-file': '\u{1F4C4}',
+                'layui-icon-chart': '\u{1F4CA}',
+                'layui-icon-log': '\u{1F4DD}',
+                'layui-icon-template-1': '\u{1F4CB}',
+                'layui-icon-group': '\u{1F465}',
+                'layui-icon-component': '\u{1F527}'
+            };
+            return iconMap[iconClass] || '•';
+        }
+
+        handleMenuClick(link) {
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            link.classList.add('active');
+            const id = link.dataset.id;
+            const href = link.dataset.href;
+            const title = link.dataset.title;
+            this.openTab(id, title, href);
+        }
+
+        openTab(id, title, href) {
+            if (!this.tabs.has(id)) {
+                this.tabs.set(id, { title: title, href: href });
+                this.addTabToUI(id, title);
+            }
+            this.activateTab(id);
+        }
+
+        addTabToUI(id, title) {
+            const tabList = document.getElementById('tabList');
+            if (tabList.querySelector('[data-tab="' + id + '"]')) return;
+
+            const tab = document.createElement('button');
+            tab.className = 'tab-item';
+            tab.dataset.tab = id;
+
+            if (id === 'dashboard') {
+                tab.innerHTML = title;
+            } else {
+                tab.innerHTML = title +
+                    ' <span class="tab-close" data-close="' + id + '">&times;</span>';
+            }
+
+            tab.addEventListener('click', (e) => {
+                if (e.target.classList.contains('tab-close')) {
+                    e.stopPropagation();
+                    this.closeTab(e.target.dataset.close);
+                } else {
+                    this.activateTab(id);
+                }
+            });
+
+            tabList.appendChild(tab);
+        }
+
+        activateTab(id) {
+            document.querySelectorAll('.tab-item').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.tab === id);
+            });
+            this.currentTab = id;
+            if (this.tabs.has(id)) {
+                this.loadTabContent(this.tabs.get(id).href);
+            }
+        }
+
+        closeTab(id) {
+            if (id === 'dashboard') return;
+            const tab = document.querySelector('[data-tab="' + id + '"]');
+            if (tab) tab.remove();
+            this.tabs.delete(id);
+            if (this.currentTab === id) {
+                this.activateTab('dashboard');
+            }
+        }
+
+        async loadTabContent(href) {
+            if (!href || href === '#') {
+                document.getElementById('contentFrame').innerHTML = '<div class="error-message">功能开发中...</div>';
+                return;
+            }
+
+            const contentFrame = document.getElementById('contentFrame');
+            const loader = document.getElementById('adminLoader');
+
+            try {
+                loader.classList.add('show');
+                const response = await fetch(href);
+                if (!response.ok) { throw new Error('HTTP ' + response.status); }
+                const html = await response.text();
+                contentFrame.innerHTML = html;
+
+                setTimeout(() => {
+                    const scripts = contentFrame.querySelectorAll('script');
+                    scripts.forEach(script => {
+                        try {
+                            const newScript = document.createElement('script');
+                            if (script.src) {
+                                newScript.src = script.src;
+                            } else {
+                                newScript.textContent = script.textContent;
+                            }
+                            document.body.appendChild(newScript);
+                            document.body.removeChild(newScript);
+                        } catch (e) {
+                            console.warn('Script execution failed:', e);
+                        }
+                    });
+                }, 100);
+            } catch (error) {
+                console.error('Failed to load content:', error);
+                contentFrame.innerHTML = '<div class="error-message">加载失败，请重试</div>';
+            } finally {
+                loader.classList.remove('show');
+            }
+        }
+
+        loadDefaultTab() {
+            this.openTab('dashboard', '仪表盘', "{% url 'admin_overview' %}");
+        }
+
+        setupEventListeners() {}
+
+        async logout() {
+            const confirmed = await iSpaceDoc.confirm('确定要退出登录吗？', { title: '退出登录' });
+            if (!confirmed) return;
+            try {
+                const response = await fetch("{% url 'logout' %}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': CSRF_TOKEN,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                if (data.status) {
+                    window.location.href = '/';
+                } else {
+                    showError('注销失败');
+                }
+            } catch (e) {
+                showError('注销失败');
+            }
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        window.adminCenter = new AdminCenter();
+    });
+})();
+</script>
 {% endblock %}

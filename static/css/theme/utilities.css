@@ -1,0 +1,135 @@
+/* ============================================================
+   iSpaceDoc Utilities
+   Spacing, text, display, visibility helpers
+   All values reference design tokens
+   ============================================================ */
+
+/* ---- Display ---- */
+.ispace-d-none { display: none !important; }
+.ispace-d-flex { display: flex !important; }
+.ispace-d-grid { display: grid !important; }
+.ispace-d-block { display: block !important; }
+.ispace-d-inline { display: inline !important; }
+.ispace-d-inline-flex { display: inline-flex !important; }
+
+/* ---- Flex helpers ---- */
+.ispace-flex-center { display: flex; align-items: center; justify-content: center; }
+.ispace-flex-between { display: flex; align-items: center; justify-content: space-between; }
+.ispace-flex-col { display: flex; flex-direction: column; }
+.ispace-flex-wrap { flex-wrap: wrap; }
+.ispace-gap-2 { gap: var(--ispace-space-2); }
+.ispace-gap-3 { gap: var(--ispace-space-3); }
+.ispace-gap-4 { gap: var(--ispace-space-4); }
+.ispace-gap-6 { gap: var(--ispace-space-6); }
+
+/* ---- Text alignment ---- */
+.ispace-text-left { text-align: left; }
+.ispace-text-center { text-align: center; }
+.ispace-text-right { text-align: right; }
+
+/* ---- Text size ---- */
+.ispace-text-xs { font-size: var(--ispace-font-xs); }
+.ispace-text-sm { font-size: var(--ispace-font-sm); }
+.ispace-text-base { font-size: var(--ispace-font-base); }
+.ispace-text-lg { font-size: var(--ispace-font-lg); }
+.ispace-text-xl { font-size: var(--ispace-font-xl); }
+.ispace-text-2xl { font-size: var(--ispace-font-2xl); }
+.ispace-text-3xl { font-size: var(--ispace-font-3xl); }
+
+/* ---- Font weight ---- */
+.ispace-font-light { font-weight: var(--ispace-font-light); }
+.ispace-font-normal { font-weight: var(--ispace-font-normal); }
+.ispace-font-medium { font-weight: var(--ispace-font-medium); }
+.ispace-font-semibold { font-weight: var(--ispace-font-semibold); }
+.ispace-font-bold { font-weight: var(--ispace-font-bold); }
+
+/* ---- Text color ---- */
+.ispace-text-primary { color: var(--ispace-color-text-primary); }
+.ispace-text-secondary { color: var(--ispace-color-text-secondary); }
+.ispace-text-tertiary { color: var(--ispace-color-text-tertiary); }
+.ispace-text-quaternary { color: var(--ispace-color-text-quaternary); }
+.ispace-text-link { color: var(--ispace-color-text-link); }
+.ispace-text-inverse { color: var(--ispace-color-text-inverse); }
+
+/* ---- Text truncation ---- */
+.ispace-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ispace-line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ispace-line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ---- Margin ---- */
+.ispace-m-0 { margin: var(--ispace-space-0); }
+.ispace-m-2 { margin: var(--ispace-space-2); }
+.ispace-m-4 { margin: var(--ispace-space-4); }
+.ispace-m-6 { margin: var(--ispace-space-6); }
+.ispace-mt-2 { margin-top: var(--ispace-space-2); }
+.ispace-mt-3 { margin-top: var(--ispace-space-3); }
+.ispace-mt-4 { margin-top: var(--ispace-space-4); }
+.ispace-mt-6 { margin-top: var(--ispace-space-6); }
+.ispace-mb-2 { margin-bottom: var(--ispace-space-2); }
+.ispace-mb-3 { margin-bottom: var(--ispace-space-3); }
+.ispace-mb-4 { margin-bottom: var(--ispace-space-4); }
+.ispace-mb-6 { margin-bottom: var(--ispace-space-6); }
+.ispace-ml-2 { margin-left: var(--ispace-space-2); }
+.ispace-ml-auto { margin-left: auto; }
+.ispace-mr-auto { margin-right: auto; }
+
+/* ---- Padding ---- */
+.ispace-p-0 { padding: var(--ispace-space-0); }
+.ispace-p-2 { padding: var(--ispace-space-2); }
+.ispace-p-4 { padding: var(--ispace-space-4); }
+.ispace-p-6 { padding: var(--ispace-space-6); }
+.ispace-px-4 { padding-left: var(--ispace-space-4); padding-right: var(--ispace-space-4); }
+.ispace-px-6 { padding-left: var(--ispace-space-6); padding-right: var(--ispace-space-6); }
+.ispace-py-2 { padding-top: var(--ispace-space-2); padding-bottom: var(--ispace-space-2); }
+.ispace-py-4 { padding-top: var(--ispace-space-4); padding-bottom: var(--ispace-space-4); }
+
+/* ---- Width / Height ---- */
+.ispace-w-full { width: 100%; }
+.ispace-h-full { height: 100%; }
+
+/* ---- Visibility ---- */
+.ispace-hidden { visibility: hidden; }
+.ispace-visible { visibility: visible; }
+.ispace-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---- Divider ---- */
+.ispace-divider {
+  border: none;
+  border-top: 1px solid var(--ispace-color-border-light);
+  margin: var(--ispace-space-4) 0;
+}
+
+/* ---- Responsive visibility ---- */
+@media (max-width: 768px) {
+  .ispace-d-none-mobile { display: none !important; }
+}
+
+@media (min-width: 769px) {
+  .ispace-d-none-desktop { display: none !important; }
+}

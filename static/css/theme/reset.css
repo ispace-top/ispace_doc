@@ -1,0 +1,112 @@
+/* ============================================================
+   iSpaceDoc CSS Reset
+   Minimal reset: box-sizing, margin, typography baseline
+   ============================================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--ispace-font-sans);
+  font-size: var(--ispace-font-base);
+  line-height: var(--ispace-leading-normal);
+  color: var(--ispace-color-text-primary);
+  background-color: var(--ispace-color-surface-50);
+  min-height: 100vh;
+}
+
+img, svg, video, canvas {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: var(--ispace-color-text-link);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+ul, ol {
+  list-style: none;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+input, button, textarea, select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: var(--ispace-font-semibold);
+  line-height: var(--ispace-leading-tight);
+  color: var(--ispace-color-text-primary);
+}
+
+/* Focus ring */
+:focus-visible {
+  outline: 2px solid var(--ispace-color-brand-500);
+  outline-offset: 2px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ispace-color-border-strong);
+  border-radius: var(--ispace-radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ispace-color-text-quaternary);
+}
+
+/* Skip link (a11y) */
+.ispace-skip-link {
+  position: absolute;
+  top: -100%;
+  left: var(--ispace-space-4);
+  z-index: var(--ispace-z-tooltip);
+  padding: var(--ispace-space-2) var(--ispace-space-4);
+  background: var(--ispace-color-brand-500);
+  color: var(--ispace-color-text-inverse);
+  border-radius: var(--ispace-radius-md);
+  font-size: var(--ispace-font-sm);
+}
+
+.ispace-skip-link:focus {
+  top: var(--ispace-space-2);
+}

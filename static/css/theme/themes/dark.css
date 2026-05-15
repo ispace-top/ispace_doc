@@ -1,0 +1,43 @@
+/* ============================================================
+   iSpaceDoc Theme: Dark
+   Overrides color tokens for dark mode.
+   Only redefine --ispace-color-* tokens.
+   ============================================================ */
+
+[data-ispace-theme="dark"] {
+  /* Surface */
+  --ispace-color-surface-0: #0f172a;
+  --ispace-color-surface-50: #1e293b;
+  --ispace-color-surface-100: #334155;
+  --ispace-color-surface-200: #475569;
+  --ispace-color-surface-hover: #1e293b;
+  --ispace-color-surface-active: #334155;
+
+  /* Text */
+  --ispace-color-text-primary: #f1f5f9;
+  --ispace-color-text-secondary: #cbd5e1;
+  --ispace-color-text-tertiary: #94a3b8;
+  --ispace-color-text-quaternary: #64748b;
+  --ispace-color-text-inverse: #0f172a;
+  --ispace-color-text-link: #60a5fa;
+
+  /* Border */
+  --ispace-color-border-light: #334155;
+  --ispace-color-border-medium: #475569;
+  --ispace-color-border-strong: #64748b;
+
+  /* Brand */
+  --ispace-color-brand-50: #1e3a8a;
+  --ispace-color-brand-100: #1e40af;
+  --ispace-color-brand-200: #1d4ed8;
+
+  /* Status */
+  --ispace-color-success-bg: #064e3b;
+  --ispace-color-success-text: #6ee7b7;
+  --ispace-color-warning-bg: #78350f;
+  --ispace-color-warning-text: #fcd34d;
+  --ispace-color-error-bg: #7f1d1d;
+  --ispace-color-error-text: #f87171;
+  --ispace-color-info-bg: #0c4a6e;
+  --ispace-color-info-text: #67e8f9;
+}

@@ -1,293 +1,366 @@
-{% extends 'app_doc/user/user_base.html' %}
+{% extends "base.html" %}
 {% load static %}
 {% load i18n %}
 {% block title %}{% trans "文集协作管理" %}{% endblock %}
 {% block content %}
-<div class="layui-card">
-    <div class="layui-card-body">
-        <div class="layui-row" style="margin-bottom: 10px;padding-left:15px;">
-            <span class="layui-breadcrumb" lay-separator=">">
+<div class="ispace-page-header ispace-flex-between">
+    <div>
+        <h1 class="ispace-page-title">{% trans "管理文集" %} <strong><a href="{% url 'pro_index' pro.id %}" target="_blank">《{{pro.name}}》</a></strong>的协作</h1>
+        <nav class="ispace-breadcrumb ispace-mt-2">
             <a href="{% url 'project_manage' %}">{% trans "文集管理" %}</a>
-            <a><cite>{% trans "协作管理" %}</cite></a>
-            </span>
-        </div>
+            <span class="ispace-breadcrumb-separator">/</span>
+            <span>{% trans "协作管理" %}</span>
+        </nav>
+    </div>
+</div>
 
-        <div class="layui-card-header" style="margin-bottom: 10px;">
-            <div class="layui-row">
-                <span style="font-size:18px;">{% trans "管理文集" %}<strong style="text-decoration:underline;"><a href="{% url 'pro_index' pro.id %}" target="_blank">《{{pro.name}}》</a></strong>的协作
-                </span>
+<div class="ispace-card ispace-mb-4">
+    <div class="ispace-card-body">
+        {% load project_filter %}
+        <div class="ispace-flex-center ispace-gap-4">
+            <div class="ispace-form-group" style="margin-bottom: 0;">
+                <label class="ispace-form-label">{% trans "文集名称" %}</label>
+                <input type="text" value="{{pro.name}}" disabled class="ispace-form-input" style="width: 240px;">
+            </div>
+            <div class="ispace-form-group" style="margin-bottom: 0;">
+                <label class="ispace-form-label">{% trans "协作人数" %}</label>
+                <input type="text" value="{{ pro.id | project_collaborator_cnt }}人" disabled class="ispace-form-input" style="width: 120px;">
+            </div>
+            <div class="ispace-form-group" style="margin-bottom: 0; align-self: flex-end;">
+                <button class="ispace-btn ispace-btn-primary ispace-btn-sm" type="button" onclick="addProjectColla('{{pro.id}}')">{% trans "添加" %}</button>
             </div>
         </div>
-        <div class="layui-row">
-            <form class="layui-form">
-                {% csrf_token %}
-                {% load project_filter %}
-                <div class="layui-form-item">
-                    <label class="layui-form-label">{% trans "文集名称" %}</label>
-                    <div class="layui-input-block">
-                    <input type="text" name="title" required value="{{pro.name}}"  disabled class="layui-input">
-                        <!--<span>{{pro.name}}</span>-->
-                    </div>
-                </div>
-                <div class="layui-form-item">
-                    <label class="layui-form-label">{% trans "协作人数：" %}</label>
-                    <div class="layui-input-inline">
-                        <input type="text" value="{{ pro.id | project_collaborator_cnt }}人" class="layui-input" disabled>
-                    </div>
-                    <div class="layui-form-mid layui-word-aux">
-                        <button class="pear-btn pear-btn-primary pear-btn-xs" type="button" onclick="addProjectColla('{{pro.id}}')">
-                            <i class="layui-icon layui-icon-addition"></i>{% trans "添加" %}
-                        </button>
-                    </div>
-                </div>
-            </form>
-        </div>
-        {% if collaborator.count != 0 %}
-        <div class="layui-tab layui-tab-brief" lay-filter="docDemoTabBrief">
-            <ul class="layui-tab-title">
-            <li class="layui-this">{% trans "协作用户" %}</li>
-            <li>{% trans "协作文档" %}</li>
-            </ul>
-            <div class="layui-tab-content">
-                <!-- 协作用户 -->
-                <div class="layui-tab-item layui-show">
-                    <div class="layui-row">
-                        <table class="layui-table">
-                            <thead>
-                                <tr>
-                                    <th>{% trans "用户名" %}</th>
-                                    <th>{% trans "协作权限" %}</th>
-                                    <th>{% trans "操作" %}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for colla in collaborator %}
-                                <tr>
-                                    <td>{{ colla.user }}</td>
-                                    <td>
-                                        {% if colla.role == 0 %}
-                                        {% trans "新建文档，修改、删除新建的文档" %}
-                                        {% else %}
-                                        {% trans "可操作所有文档" %}
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <a href="javascript:void(0);" onclick="modifyProjectColla('{{colla.user}}')" class="layui-btn layui-btn-xs layui-btn-normal">
-                                            <i class="layui-icon layui-icon-edit"></i>{% trans "修改" %}
-                                        </a>
-                                        <a href="javascript:void(0);" onclick="delProColla('{{colla.user}}')" class="layui-btn layui-btn-xs layui-btn-warm">
-                                            <i class="layui-icon layui-icon-delete"></i>{% trans "删除" %}
-                                        </a>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="layui-tab-item">
-                    <!-- 协作文档 -->
-                    <div class="layui-row">
-                        <table class="layui-table">
-                            <thead>
-                                <tr>
-                                    <th>{% trans "文档名称" %}</th>
-                                    <th>{% trans "创建用户" %}</th>
-                                    <th>{% trans "创建时间" %}</th>
-                                    <th>{% trans "操作" %}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for doc in colla_docs %}
-                                <tr>
-                                    <td><a href="{% url 'doc' doc.top_doc doc.id %}" target="_blank">{{ doc.name }}</a></td>
-                                    <td>{{ doc.create_user }}</td>
-                                    <th>{{ doc.create_time }}</th>
-                                    <td>
-                                        <a href="{% url 'modify_doc' doc.id %}" target="_blank" class="layui-btn layui-btn-xs layui-btn-normal">
-                                            <i class="layui-icon layui-icon-edit"></i>{% trans "修改" %}
-                                        </a>
-                                        <a href="javascript:void(0);" onclick="delDoc('{{doc.id}}');" class="layui-btn layui-btn-xs layui-btn-normal">
-                                            <i class="layui-icon layui-icon-delete"></i>{% trans "删除" %}
-                                        </a>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% endif %}
     </div>
 </div>
+
+{% if collaborator.count != 0 %}
+<div class="ispace-card">
+    <div class="ispace-card-header">
+        <div class="ispace-tabs" id="colla-tabs">
+            <button class="ispace-tab ispace-active" data-tab="user">{% trans "协作用户" %}</button>
+            <button class="ispace-tab" data-tab="doc">{% trans "协作文档" %}</button>
+        </div>
+    </div>
+    <div class="ispace-card-body">
+        <!-- 协作用户 -->
+        <div id="tab-user">
+            <table class="ispace-table">
+                <thead>
+                    <tr>
+                        <th>{% trans "用户名" %}</th>
+                        <th>{% trans "协作权限" %}</th>
+                        <th>{% trans "操作" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for colla in collaborator %}
+                    <tr>
+                        <td>{{ colla.user }}</td>
+                        <td>
+                            {% if colla.role == 0 %}
+                            {% trans "新建文档，修改、删除新建的文档" %}
+                            {% else %}
+                            {% trans "可操作所有文档" %}
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="javascript:void(0);" onclick="modifyProjectColla('{{colla.user}}')" class="ispace-btn ispace-btn-secondary ispace-btn-sm">{% trans "修改" %}</a>
+                            <a href="javascript:void(0);" onclick="delProColla('{{colla.user}}')" class="ispace-btn ispace-btn-danger ispace-btn-sm">{% trans "删除" %}</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <!-- 协作文档 -->
+        <div id="tab-doc" class="ispace-d-none">
+            <table class="ispace-table">
+                <thead>
+                    <tr>
+                        <th>{% trans "文档名称" %}</th>
+                        <th>{% trans "创建用户" %}</th>
+                        <th>{% trans "创建时间" %}</th>
+                        <th>{% trans "操作" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for doc in colla_docs %}
+                    <tr>
+                        <td><a href="{% url 'doc' doc.top_doc doc.id %}" target="_blank">{{ doc.name }}</a></td>
+                        <td>{{ doc.create_user }}</td>
+                        <td>{{ doc.create_time }}</td>
+                        <td>
+                            <a href="{% url 'modify_doc' doc.id %}" target="_blank" class="ispace-btn ispace-btn-secondary ispace-btn-sm">{% trans "修改" %}</a>
+                            <a href="javascript:void(0);" onclick="delDoc('{{doc.id}}');" class="ispace-btn ispace-btn-danger ispace-btn-sm">{% trans "删除" %}</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% csrf_token %}
 {% endblock %}
-{% block custom_script %}
+{% block scripts %}
 <script>
-    layui.use(['table', 'jquery','form', 'layer','element'], function() {
-        let table = layui.table;
-        let form = layui.form;
-        let $ = layui.jquery;
-        let layer = layui.layer;
-        let element = layer.element;
-        $.ajaxSetup({
-            data: {csrfmiddlewaretoken: '{{ csrf_token }}' },
-        });
-        //添加文集协作者
-        addProjectColla = function(pid){
-            layer.open({
-                type:1,
-                title:'添加文集协作者',
-                area:['400px','400px'],
-                id:'addProColla',//配置ID
-                content:$('#add-pro-colla-layer'),
-                btn:['确定','取消'], //添加按钮
-                btnAlign:'c', //按钮居中
-                success : function(index, layero) { // 成功弹出后回调
-                    form.render('radio'); // 刷新checkbox开关渲染(否则开关按钮会不显示)
-                },
-                yes:function (index,layero) {
-                    layer.load(1);
-                    data = {
-                        'types':0,
-                        'username':$("#user-select").val(),
-                        'role': $('input[name="add-role"]:checked').val()
-                    }
-                    $.post("{% url 'manage_pro_colla' pro.id %}",data,function(r){
-                        layer.closeAll('loading'); //关闭loading
-                        if(r.status){
-                            //添加成功
-                            window.location.reload();
-                            //layer.close(index)
-                        }else{
-                            //添加失败，提示
-                            // console.log(r)
-                            layer.msg(r.data)
-                        }
-                    })
-                },
-            })
+    /* ============================================================
+       CSRF Helper
+       ============================================================ */
+    function getCSRF() {
+        var el = document.querySelector('[name=csrfmiddlewaretoken]');
+        return el ? el.value : '';
+    }
+
+    /* ============================================================
+       Tab Switching
+       ============================================================ */
+    (function() {
+        var tabs = document.querySelectorAll('#colla-tabs .ispace-tab');
+        var panels = {
+            'user': document.getElementById('tab-user'),
+            'doc': document.getElementById('tab-doc')
         };
-        // 删除文集协作者
-        delProColla = function(user){
-            layer.open({
-                type:1,
-                title:'删除文集协作者',
-                area:'300px;',
-                id:'delProColla',//配置ID
-                content:'<div style="margin:10px;">确定将用户' + user+ '从文集协作者中删除？</div>',
-                btn:['确定','取消'], //添加按钮
-                btnAlign:'c', //按钮居中
-                yes:function (index,layero) {
-                    data = {
-                        'types':1,
-                        'username':user,
+
+        for (var i = 0; i < tabs.length; i++) {
+            tabs[i].addEventListener('click', function() {
+                var target = this.getAttribute('data-tab');
+                for (var j = 0; j < tabs.length; j++) {
+                    tabs[j].classList.remove('ispace-active');
+                }
+                this.classList.add('ispace-active');
+                for (var key in panels) {
+                    if (panels.hasOwnProperty(key)) {
+                        panels[key].classList.add('ispace-d-none');
                     }
-                    $.post("{% url 'manage_pro_colla' pro.id %}",data,function(r){
-                        if(r.status){
-                            //删除成功
-                            window.location.reload();
-                            //layer.close(index)
-                        }else{
-                            //删除失败，提示
-                            console.log(r)
-                            layer.msg(r.data)
-                        }
-                    })
-                },
-            })
-        };
-        // 修改文集协作者
-        modifyProjectColla = function(user){
-            layer.open({
-                type:1,
-                title:'修改'+ user + '的协作权限',
-                area:'400px;',
-                id:'modifyProColla',//配置ID
-                content:$('#modify-pro-colla-layer'),
-                btn:['确定','取消'], //添加按钮
-                btnAlign:'c', //按钮居中
-                success : function(index, layero) { // 成功弹出后回调
-                    form.render('radio'); // 刷新checkbox开关渲染(否则开关按钮会不显示)
-                },
-                yes:function (index,layero) {
-                    data = {
-                        'types':2,
-                        'username':user,
-                        'role': $('input[name="modify-role"]:checked').val()
-                    }
-                    $.post("{% url 'manage_pro_colla' pro.id %}",data,function(r){
-                        if(r.status){
-                            //修改成功
-                            window.location.reload();
-                            //layer.close(index)
-                        }else{
-                            //修改失败，提示
-                            console.log(r)
-                            layer.msg(r.data)
-                        }
-                    })
-                },
-            })
-        };
-        // 删除文档
-        delDoc = function(doc_id){
-            layer.open({
-                type:1,
-                title:'删除文档',
-                area:'300px;',
-                id:'delPro',//配置ID
-                content:'<div style="margin-left:10px;">警告：此操作将删除此文档！</div>',
-                btn:['确定','取消'], //添加按钮
-                btnAlign:'c', //按钮居中
-                yes:function (index,layero) {
-                    layer.load(1);
-                    data = {
-                        'doc_id':doc_id,
-                    }
-                    $.post("{% url 'del_doc' %}",data,function(r){
-                        layer.closeAll('loading')
-                        if(r.status){
-                            //修改成功
-                            window.location.reload();
-                            //layer.close(index)
-                        }else{
-                            //修改失败，提示
-                            console.log(r)
-                            layer.msg(r.data)
-                        }
-                    })
-                },
+                }
+                if (panels[target]) {
+                    panels[target].classList.remove('ispace-d-none');
+                }
             });
-        };
-    })
+        }
+    })();
+
+    /* ============================================================
+       Delete Collaborator
+       ============================================================ */
+    function delProColla(user) {
+        iSpaceDoc.confirm('确定将用户 ' + user + ' 从文集协作者中删除？', {
+            title: '删除文集协作者',
+            confirmText: '确定',
+            cancelText: '取消'
+        }).then(function(confirmed) {
+            if (!confirmed) return;
+            var body = new URLSearchParams();
+            body.append('types', '1');
+            body.append('username', user);
+            fetch("{% url 'manage_pro_colla' pro.id %}", {
+                method: 'POST',
+                body: body,
+                headers: { 'X-CSRFToken': getCSRF() }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                if (r.status) {
+                    window.location.reload();
+                } else {
+                    console.log(r);
+                    showError(r.data);
+                }
+            })
+            .catch(function() { showError('请求失败'); });
+        });
+    }
+
+    /* ============================================================
+       Delete Document
+       ============================================================ */
+    function delDoc(doc_id) {
+        iSpaceDoc.confirm('警告：此操作将删除此文档！', {
+            title: '删除文档',
+            confirmText: '确定',
+            cancelText: '取消'
+        }).then(function(confirmed) {
+            if (!confirmed) return;
+            var body = new URLSearchParams();
+            body.append('doc_id', doc_id);
+            fetch("{% url 'del_doc' %}", {
+                method: 'POST',
+                body: body,
+                headers: { 'X-CSRFToken': getCSRF() }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                if (r.status) {
+                    window.location.reload();
+                } else {
+                    console.log(r);
+                    showError(r.data);
+                }
+            })
+            .catch(function() { showError('请求失败'); });
+        });
+    }
+
+    /* ============================================================
+       Add Collaborator
+       ============================================================ */
+    function addProjectColla(pid) {
+        var modal = document.getElementById('add-pro-colla-modal');
+        if (!modal) { showError('弹窗模板未找到'); return; }
+        var userSelect = modal.querySelector('#user-select');
+        if (userSelect) userSelect.selectedIndex = 0;
+        var addRole = modal.querySelector('input[name="add-role"][value="0"]');
+        if (addRole) addRole.checked = true;
+        iSpaceDoc.Modal.open(modal);
+    }
+
+    /* ============================================================
+       Modify Collaborator
+       ============================================================ */
+    function modifyProjectColla(user) {
+        var modal = document.getElementById('modify-pro-colla-modal');
+        if (!modal) { showError('弹窗模板未找到'); return; }
+        var title = modal.querySelector('.ispace-modal-title');
+        if (title) title.textContent = '修改 ' + user + ' 的协作权限';
+        modal.setAttribute('data-modify-user', user);
+        var modifyRole = modal.querySelector('input[name="modify-role"][value="0"]');
+        if (modifyRole) modifyRole.checked = true;
+        iSpaceDoc.Modal.open(modal);
+    }
+
+    /* ============================================================
+       Modal Submit Handlers (bound once)
+       ============================================================ */
+    document.addEventListener('DOMContentLoaded', function() {
+        var addSubmit = document.getElementById('add-colla-submit');
+        if (addSubmit) {
+            addSubmit.addEventListener('click', function() {
+                var addModal = document.getElementById('add-pro-colla-modal');
+                var userSelect = document.getElementById('user-select');
+                var roleEl = addModal ? addModal.querySelector('input[name="add-role"]:checked') : null;
+                if (!userSelect || !userSelect.value) {
+                    showWarning('请选择用户');
+                    return;
+                }
+                var body = new URLSearchParams();
+                body.append('types', '0');
+                body.append('username', userSelect.value);
+                body.append('role', roleEl ? roleEl.value : '0');
+                fetch("{% url 'manage_pro_colla' pro.id %}", {
+                    method: 'POST',
+                    body: body,
+                    headers: { 'X-CSRFToken': getCSRF() }
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(r) {
+                    if (r.status) {
+                        window.location.reload();
+                    } else {
+                        showError(r.data);
+                    }
+                })
+                .catch(function() { showError('请求失败'); });
+            });
+        }
+
+        var modifySubmit = document.getElementById('modify-colla-submit');
+        if (modifySubmit) {
+            modifySubmit.addEventListener('click', function() {
+                var modifyModal = document.getElementById('modify-pro-colla-modal');
+                var user = modifyModal ? modifyModal.getAttribute('data-modify-user') : '';
+                var roleEl = modifyModal ? modifyModal.querySelector('input[name="modify-role"]:checked') : null;
+                var body = new URLSearchParams();
+                body.append('types', '2');
+                body.append('username', user);
+                body.append('role', roleEl ? roleEl.value : '0');
+                fetch("{% url 'manage_pro_colla' pro.id %}", {
+                    method: 'POST',
+                    body: body,
+                    headers: { 'X-CSRFToken': getCSRF() }
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(r) {
+                    if (r.status) {
+                        window.location.reload();
+                    } else {
+                        showError(r.data);
+                    }
+                })
+                .catch(function() { showError('请求失败'); });
+            });
+        }
+    });
 </script>
-<!-- 添加文集协作者layer弹出框 -->
-<div id="add-pro-colla-layer" style="display:none;">
-    <div style="margin:10px;" class="layui-form">
-        <select name="user-select" id="user-select" lay-verify="" lay-search>
-            <option value="">选择用户，可搜索</option>
-            {% for user in user_list %}
-            <option value="{{user.username}}">{{user.first_name}}({{user.username}})</option>
-            {% endfor %}
-        </select>
-        <div class="layui-form-item">
-          <!-- <div class="layui-input-inline"> -->
-            <input type="radio" name="add-role" value="0" title="初级权限 - 可新建文档，修改、删除自己创建的文档" checked>
-            <input type="radio" name="add-role" value="1" title="高级权限 - 可操作所有文档" >
-          <!-- </div> -->
+
+<!-- 添加文集协作者弹窗 -->
+<div class="ispace-modal-backdrop" id="add-pro-colla-modal">
+    <div class="ispace-modal ispace-modal-md">
+        <div class="ispace-modal-header">
+            <h3 class="ispace-modal-title">添加文集协作者</h3>
+            <button class="ispace-modal-close" data-ispace-modal-close>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+        <div class="ispace-modal-body">
+            <div class="ispace-form-group">
+                <label class="ispace-form-label">选择用户</label>
+                <select name="user-select" id="user-select" class="ispace-form-select">
+                    <option value="">选择用户，可搜索</option>
+                    {% for user in user_list %}
+                    <option value="{{user.username}}">{{user.first_name}}({{user.username}})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="ispace-form-group">
+                <label class="ispace-form-label">协作权限</label>
+                <label class="ispace-form-check ispace-mb-2">
+                    <input type="radio" name="add-role" value="0" checked>
+                    <span>初级权限 - 可新建文档，修改、删除自己创建的文档</span>
+                </label>
+                <label class="ispace-form-check">
+                    <input type="radio" name="add-role" value="1">
+                    <span>高级权限 - 可操作所有文档</span>
+                </label>
+            </div>
+        </div>
+        <div class="ispace-modal-footer">
+            <button class="ispace-btn ispace-btn-secondary" data-ispace-modal-close>取消</button>
+            <button class="ispace-btn ispace-btn-primary" id="add-colla-submit">确定</button>
         </div>
     </div>
 </div>
-<!-- 修改文集协作者权限layer弹出框 -->
-<div id="modify-pro-colla-layer" style="display:none;">
-    <div style="margin:10px;" class="layui-form">
-        <div class="layui-form-item">
-          <!-- <div class="layui-input-inline"> -->
-            <input type="radio" name="modify-role" value="0" title="初级权限 - 可新建文档，修改、删除自己创建的文档" checked>
-            <input type="radio" name="modify-role" value="1" title="高级权限 - 可操作所有文档" >
-          <!-- </div> -->
+
+<!-- 修改文集协作者权限弹窗 -->
+<div class="ispace-modal-backdrop" id="modify-pro-colla-modal">
+    <div class="ispace-modal ispace-modal-md">
+        <div class="ispace-modal-header">
+            <h3 class="ispace-modal-title">修改协作权限</h3>
+            <button class="ispace-modal-close" data-ispace-modal-close>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+        <div class="ispace-modal-body">
+            <div class="ispace-form-group">
+                <label class="ispace-form-label">协作权限</label>
+                <label class="ispace-form-check ispace-mb-2">
+                    <input type="radio" name="modify-role" value="0" checked>
+                    <span>初级权限 - 可新建文档，修改、删除自己创建的文档</span>
+                </label>
+                <label class="ispace-form-check">
+                    <input type="radio" name="modify-role" value="1">
+                    <span>高级权限 - 可操作所有文档</span>
+                </label>
+            </div>
+        </div>
+        <div class="ispace-modal-footer">
+            <button class="ispace-btn ispace-btn-secondary" data-ispace-modal-close>取消</button>
+            <button class="ispace-btn ispace-btn-primary" id="modify-colla-submit">确定</button>
         </div>
     </div>
 </div>

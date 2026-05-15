@@ -1,327 +1,249 @@
-{% extends 'app_doc/user/user_base.html' %}
+{% extends "base.html" %}
 {% load static %}
 {% load i18n %}
+
 {% block title %}{% trans "导入文集" %}{% endblock %}
+
 {% block content %}
-<div class="layui-card">
-    <div class="layui-card-body">
-    <div class="layui-row" style="padding-left:15px;">
-        <span class="layui-breadcrumb" lay-separator=">">
-          <a href="{% url 'import_project' %}">{% trans "导入文集" %}</a>
-          <a><cite>{% trans "导入本地文档到文集" %}</cite></a>
-        </span>
+<div class="ispace-page-header">
+    <nav class="ispace-breadcrumb ispace-mb-4">
+        <a href="{% url 'import_project' %}">{% trans "导入文集" %}</a>
+        <span class="ispace-breadcrumb-sep">&gt;</span>
+        <span>{% trans "导入本地文档到文集" %}</span>
+    </nav>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--ispace-space-4);">
+    <div class="ispace-content-card">
+        <h3 class="ispace-font-semibold ispace-mb-4">{% trans "文档文集设置" %}</h3>
+        <form id="project-settings">
+            <div class="ispace-mb-4">
+                <label class="ispace-form-label">选择文集 <span style="color:var(--ispace-color-error-text);">*</span></label>
+                <select name="project" class="ispace-form-input" required>
+                    <option value="">请选择一个文集（必选）</option>
+                    <optgroup label="自有文集">
+                    {% for p in project_list %}
+                        {% if p.role == 1 %}
+                        <option value="{{ p.id }}">[私密]《{{ p.name }}》</option>
+                        {% elif p.role == 2 %}
+                        <option value="{{ p.id }}">[指定用户]《{{ p.name }}》</option>
+                        {% elif p.role == 3 %}
+                        <option value="{{ p.id }}">[访问码]《{{ p.name }}》</option>
+                        {% else %}
+                        <option value="{{ p.id }}">[公开]《{{ p.name }}》</option>
+                        {% endif %}
+                    {% endfor %}
+                    </optgroup>
+                    {% if colla_project_list.count > 0 %}
+                    <optgroup label="协作文集">
+                    {% for p in colla_project_list %}
+                        <option value="{{ p.project.id }}">[协作]《{{ p.project.name }}》</option>
+                    {% endfor %}
+                    </optgroup>
+                    {% endif %}
+                </select>
+            </div>
+            <div class="ispace-mb-4">
+                <label class="ispace-form-label">文档模式</label>
+                <div class="ispace-flex-center ispace-gap-4 ispace-mt-2">
+                    <label class="ispace-flex-center ispace-gap-1" style="cursor:pointer;">
+                        <input type="radio" name="editor_mode" value="0" checked> 自动选择
+                    </label>
+                    <label class="ispace-flex-center ispace-gap-1" style="cursor:pointer;">
+                        <input type="radio" name="editor_mode" value="1"> Markdown
+                    </label>
+                    <label class="ispace-flex-center ispace-gap-1" style="cursor:pointer;">
+                        <input type="radio" name="editor_mode" value="3"> 富文本
+                    </label>
+                </div>
+            </div>
+        </form>
     </div>
+
+    <div class="ispace-content-card">
+        <h3 class="ispace-font-semibold ispace-mb-4">{% trans "文档上传" %}</h3>
+        <input type="file" id="local-doc-input" accept=".md,.txt,.docx" multiple style="display:none;">
+        <button type="button" id="import-local-doc" style="width:100%;min-height:113px;border:2px dashed var(--ispace-color-border-strong);border-radius:var(--ispace-radius-md);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--ispace-space-2);color:var(--ispace-color-text-tertiary);background:var(--ispace-color-surface-50);">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--ispace-color-text-quaternary);"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            点击上传本地文档，支持.md、.docx、.txt格式文件
+        </button>
     </div>
 </div>
 
-<!-- 导入本地文档到文集 -->
-<div class="layui-row layui-col-space10">
-    <!-- 文集设置 -->
-    <div class="layui-col-md6">
-        <div class="layui-card">
-            <div class="layui-card-body">
-                <div class="layui-card-header" style="margin-bottom: 10px;">
-                    <span style="font-size:18px;">{% trans "文档文集设置" %}</span>
-                </div>
-                <div>
-                    <div class="layui-form" lay-filter="project-settings">
-                        <div class="layui-form-item">
-                            <label class="layui-form-label">选择文集</label>
-                            <div class="layui-input-inline">
-                              <select name="project" lay-verify="required">
-                                <option value="">请选择一个文集（必选）</option>
-                                <!-- 自己的文集 -->
-                                <optgroup label="自有文集" id="self-project">
-                                {% for p in project_list %}
-                                    {% if p.role == 1 %}
-                                    <option value="{{ p.id }}">[私密]《{{ p.name }}》</option>
-                                    {% elif p.role == 2 %}
-                                    <option value="{{ p.id }}" >[指定用户]《{{ p.name }}》</option>
-                                    {% elif p.role == 3 %}
-                                    <option value="{{ p.id }}" >[访问码]《{{ p.name }}》</option>
-                                    {% else %}
-                                    <option value="{{ p.id }}" >[公开]《{{ p.name }}》</option>
-                                    {% endif %}
-                                {% endfor %}
-                                </optgroup>
-                                <!-- 协作的文集 -->
-                                {% if colla_project_list.count > 0 %}
-                                <optgroup label="协作文集">
-                                {% for p in colla_project_list %}
-                                    <option value="{{ p.project.id }}">[协作]《{{ p.project.name }}》</option>
-                                {% endfor %}
-                                </optgroup>
-                                {% endif %}
-                              </select>
-                            </div>
-                            <div class="layui-form-mid layui-word-aux"><span style="color:red;">*必选</span></div>
-                        </div>
-                        <div class="layui-form-item">
-                            <label class="layui-form-label">文档模式</label>
-                            <div class="layui-input-block">
-                              <input type="radio" name="editor_mode" value="0" title="自动选择" checked>
-                              <input type="radio" name="editor_mode" value="1" title="Markdown">
-                              <input type="radio" name="editor_mode" value="3" title="富文本">
-                            </div>
-                          </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+<div class="ispace-content-card ispace-mt-4">
+    <div class="ispace-flex-between ispace-mb-4">
+        <h3 class="ispace-font-semibold">{% trans "文档排序（文档导入后状态为草稿）" %}</h3>
+        <button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="save-sort-btn">{% trans "发布文档" %}</button>
     </div>
-    <!-- 文件上传 -->
-    <div class="layui-col-md6">
-        <div class="layui-card">
-            <div class="layui-card-body">
-                <div class="layui-card-header" style="margin-bottom: 10px;">
-                    <span style="font-size:18px;">{% trans "文档上传" %}</span>
-                </div>
-                <div>
-                    <button style="width: 100%;min-height: 113px;border-style:dashed;border-color: #999;cursor: pointer;" type="button" id="import-local-doc">
-                        <i class="layui-icon layui-icon-addition" style="font-size: 40px;color:#999"></i><br>
-                        点击上传本地文档，支持.md、.docx、.txt格式文件
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-<!-- 文档排序 -->
-<div class="layui-row">
-    <div class="layui-col-md12">
-        <div class="layui-card">
-            <div class="layui-card-body">
-                <div class="layui-card-header" style="margin-bottom: 10px;">
-                    <span style="font-size:18px;">{% trans "文档排序（文档导入后状态为草稿）" %}</span>
-                    <button class="pear-btn pear-btn-primary pear-btn-sm" style="float: right;" id="save-sort-btn">{% trans "发布文档" %}</button>
-                </div>
-                <div>
-                    <div id="nested" class="row">
-                        <ul id="nestedDemo" class="list-group col nested-sortable"></ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
-{% block custom_script %}
-<script src="{% static 'jquery/3.5.0/jquery.min.js' %}"></script>
-<script src="{% static 'layui/layui.js' %}"></script>
-<script>
-    $.ajaxSetup({
-        headers: {"X-CSRFToken":'{{ csrf_token }}'},
-    });
-    var upload = layui.upload,form=layui.form;
-    // 上传文件按钮点击事件
-    var uploadInst = upload.render({
-        elem: '#import-local-doc', //绑定元素
-        url: "{% url 'import_local_doc_api' %}", //上传接口
-        field:"local_doc",
-        multiple:true,
-        accept:'file',
-        exts:'md|txt|docx',
-        before: function(obj){ //obj参数包含的信息，跟 choose回调完全一致，可参见上文。
-            this.data = form.val("project-settings");
-            layer.load(); //上传loading
-        },
-        done: function(res){
-            layer.closeAll();
-            //上传完毕回调
-           if(res.code == 0){
-                let doc_toc_str = '<li data-sortable-id="'
-                    + res.data['doc_id'] 
-                    + '" class="list-group-item"><i class="iconfont mrdoc-icon-wendang"></i> '
-                    + res.data['doc_name'] 
-                    + '&nbsp;<a class="table-col-link" target="_blank" href="/doc/' + res.data['doc_id'] + '/">预览</a>'
-                    + '<ul class="list-group nested-sortable"></ul></li>'
-                $("#nestedDemo").append(doc_toc_str);
-                docSort();// 动态添加元素之后，调用一次
-           }else{
-               layer.msg(res.data,{'icon':2})
-           }
-        },
-        error: function(){
-            layer.closeAll();
-            //请求异常回调
-            layer.msg("上传失败",{icon:2});
-        }
-    });
-    // 发布文档
-    $("#save-sort-btn").on('click',function(){
-        layer.load(1)
-        let sort_data = {
-            'sort_data':JSON.stringify(serialize(root)),
-        }
-        // console.log(sort_data)
-        $.ajax({
-            url:"{% url 'import_local_doc_api' %}",
-            type:'put',
-            data:sort_data,
-            success:function(r){
-                layer.closeAll();
-                if(r.code == 0){
-                    layer.msg("发布成功",{icon:1},function(){
-                        window.location.reload();
-                    })
-                }else{
-                    layer.msg(r.data,{icon:2})
-                }
-            },
-            error:function(){
-                layer.closeAll();
-                layer.msg("发布失败",{icon:2})
-            }
-
-        });
-    });
-    // 删除文档
-    
-</script>
-<!-- 导入的文集文档排序模板div -->
-<style>
-    .row {
-        display: -ms-flexbox;
-        display: flex;
-        -ms-flex-wrap: wrap;
-        flex-wrap: wrap;
-        }
-
-    .list-group {
-        display: -ms-flexbox;
-        display: flex;
-        -ms-flex-direction: column;
-        flex-direction: column;
-        padding-left: 0;
-        margin-bottom: 0;
-    }
-    .col {
-        -ms-flex-preferred-size: 0;
-        flex-basis: 0;
-        -ms-flex-positive: 1;
-        flex-grow: 1;
-        max-width: 100%;
-        position: relative;
-        width: 100%;
-        padding-right: 15px;
-        padding-left: 15px;
-    }
-    .list-group-item:first-child {
-        border-top-left-radius: .25rem;
-        border-top-right-radius: .25rem;
-    }
-    .list-group-item {
-        position: relative;
-        display: block;
-        padding: .75rem 1.25rem;
-        margin-bottom: -1px;
-        background-color: #fff;
-        border: 1px solid rgba(0,0,0,.125);
-    }
-    .list-group-item:first-child {
-    border-top-left-radius: 0.25rem;
-    border-top-right-radius: 0.25rem;
-    }
-    
-    .list-group-item:last-child {
-      margin-bottom: 0;
-      border-bottom-right-radius: 0.25rem;
-      border-bottom-left-radius: 0.25rem;
-    }
-    
-    .list-group-item:hover, .list-group-item:focus {
-      z-index: 1;
-      text-decoration: none;
-    }
-    .list-group-item.disabled, .list-group-item:disabled {
-      color: #6c757d;
-      pointer-events: none;
-      background-color: #fff;
-    }
-    
-    .list-group-item.active {
-      z-index: 2;
-      color: #fff;
-      background-color: #007bff;
-      border-color: #007bff;
-    }
-    
-</style>
-<div id="import-project-sort" style="display: none;margin: 10px;" class="layui-form">
-    <div class="layui-row" style="padding-left: 14px;padding-bottom: 10px;">
-        <input class="layui-input" placeholder="请输入文集名称" name="project-name">
-    </div>
-    <div class="layui-row" style="padding-left: 14px;padding-bottom: 10px;">
-        <input class="layui-input" placeholder="请输入文集简介" name="project-desc">
-    </div>
-    <div class="layui-row" style="">
-        <div class="layui-form-item">
-            <label class="layui-form-label" style="width: auto;">文集状态</label>
-            <div class="layui-input-block">
-                <input type="radio" name="role" value="1" title="私密" checked>
-                <input type="radio" name="role" value="0" title="公开">
-            </div>
-          </div>
-    </div>
-    <div class="layui-row" style="padding-left: 14px;padding-bottom: 10px;">文档拖拽排序</div>
     <div id="nested" class="row">
         <ul id="nestedDemo" class="list-group col nested-sortable"></ul>
     </div>
 </div>
-<!-- 文档拖拽排序 -->
+{% endblock %}
+
+{% block styles %}
+<style>
+.row { display: flex; flex-wrap: wrap; }
+.col { flex: 1; max-width: 100%; position: relative; width: 100%; padding: 0 15px; }
+.list-group { display: flex; flex-direction: column; padding-left: 0; margin-bottom: 0; }
+.list-group-item {
+    position: relative; display: block; padding: 0.75rem 1.25rem; margin-bottom: -1px;
+    background: var(--ispace-color-surface-0); border: 1px solid var(--ispace-color-border-light);
+}
+.list-group-item:first-child { border-top-left-radius: 0.25rem; border-top-right-radius: 0.25rem; }
+.list-group-item:last-child { margin-bottom: 0; border-bottom-right-radius: 0.25rem; border-bottom-left-radius: 0.25rem; }
+.list-group-item:hover { background: var(--ispace-color-surface-50); }
+</style>
+{% endblock %}
+
+{% block scripts %}
 <script src="{% static 'sortablejs/Sortable.js' %}"></script>
 <script>
-    // 文档动态排序
-    function docSort(){
-        // Nested demo
+(function() {
+    var fileInput = document.getElementById('local-doc-input');
+    var importBtn = document.getElementById('import-local-doc');
+
+    importBtn.addEventListener('click', function() { fileInput.click(); });
+
+    fileInput.addEventListener('change', function() {
+        if (!fileInput.files.length) return;
+        var projectSelect = document.querySelector('#project-settings select[name="project"]');
+        if (!projectSelect.value) {
+            showWarning('请先选择文集！');
+            fileInput.value = '';
+            return;
+        }
+        uploadFiles(fileInput.files);
+    });
+
+    function getFormData(formEl) {
+        var fd = new FormData();
+        var project = formEl.querySelector('select[name="project"]').value;
+        var editorMode = formEl.querySelector('input[name="editor_mode"]:checked').value;
+        fd.append('project', project);
+        fd.append('editor_mode', editorMode);
+        return fd;
+    }
+
+    function getCsrfToken() {
+        var el = document.querySelector('[name=csrfmiddlewaretoken]');
+        return el ? el.value : '';
+    }
+
+    async function uploadFiles(files) {
+        var settingsForm = document.getElementById('project-settings');
+        showLoading('上传中...');
+
+        for (var i = 0; i < files.length; i++) {
+            var fd = new FormData();
+            fd.append('local_doc', files[i]);
+            fd.append('project', settingsForm.querySelector('select[name="project"]').value);
+            fd.append('editor_mode', settingsForm.querySelector('input[name="editor_mode"]:checked').value);
+
+            try {
+                var resp = await fetch("{% url 'import_local_doc_api' %}", {
+                    method: 'POST',
+                    body: fd,
+                    headers: { 'X-CSRFToken': getCsrfToken() }
+                });
+                var r = await resp.json();
+                hideLoading();
+                if (r.code === 0) {
+                    var li = document.createElement('li');
+                    li.setAttribute('data-sortable-id', r.data.doc_id);
+                    li.className = 'list-group-item';
+                    li.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>'
+                        + r.data.doc_name
+                        + ' <a class="ispace-btn ispace-btn-ghost ispace-btn-sm" target="_blank" href="/doc/' + r.data.doc_id + '/">预览</a>';
+                    var ul = document.createElement('ul');
+                    ul.className = 'list-group nested-sortable';
+                    li.appendChild(ul);
+                    document.getElementById('nestedDemo').appendChild(li);
+                    initSortable();
+                } else {
+                    showError(r.data);
+                }
+            } catch(e) {
+                hideLoading();
+                showError('上传失败');
+            }
+        }
+        fileInput.value = '';
+    }
+
+    // SortableJS
+    function initSortable() {
         var nestedSortables = [].slice.call(document.querySelectorAll('.nested-sortable'));
-        // Loop through each nested sortable element
         for (var i = 0; i < nestedSortables.length; i++) {
             new Sortable(nestedSortables[i], {
-                group: {
-                    name:'docsort',
-                    pull: function(event) {
-                        var deep = event.el.parentNode.parentNode.parentNode.parentNode.className;
-                        // if(deep == 'list-group nested-sortable') return false;
-                        return true;
-                    },
-                },
+                group: { name: 'docsort', pull: true },
                 animation: 150,
                 fallbackOnBody: true,
-                invertSwap:true,
+                invertSwap: true,
                 swapThreshold: 0.65,
             });
         }
-    };
-    
-    const nestedQuery = '.nested-sortable';
-    const identifier = 'sortableId';
-    const root = document.getElementById('nestedDemo');
+    }
+
+    var root = document.getElementById('nestedDemo');
     function serialize(sortable) {
-      var serialized = [];
-      var children = [].slice.call(sortable.children);
-      for (var i in children) {
-        var nested = children[i].querySelector(nestedQuery);
-        serialized.push({
-          id: children[i].dataset[identifier],
-          children: nested ? serialize(nested) : []
-        });
-      }
-      return serialized
+        var serialized = [];
+        var children = [].slice.call(sortable.children);
+        for (var i in children) {
+            var nested = children[i].querySelector('.nested-sortable');
+            serialized.push({
+                id: children[i].dataset['sortableId'],
+                children: nested ? serialize(nested) : []
+            });
+        }
+        return serialized;
     }
-    function getLevel(){
-        console.log(serialize(root))
-    }
-    // 展开收起左边目录
-    $(function(){
-        $("body").on('click','.switch-toc',SwitchToc)
+
+    initSortable();
+
+    // Save sort
+    document.getElementById('save-sort-btn').addEventListener('click', async function() {
+        showLoading('发布中...');
+        try {
+            var resp = await fetch("{% url 'import_local_doc_api' %}", {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({ sort_data: JSON.stringify(serialize(root)) })
+            });
+            var r = await resp.json();
+            hideLoading();
+            if (r.code === 0) {
+                showSuccess('发布成功');
+                setTimeout(function() { window.location.reload(); }, 1000);
+            } else {
+                showError(r.data);
+            }
+        } catch(e) {
+            hideLoading();
+            showError('发布失败');
+        }
     });
-    function SwitchToc(i){
-        console.log("点击了")
-        var $me = $(this);
-        $(this).next("ul").toggleClass("toc-close"); //切换展开收起样式
-        $(this).toggleClass("layui-icon-left layui-icon-down");//切换图标
-    };
-    form.render();
+
+    function showLoading(msg) {
+        var overlay = document.getElementById('editor-loading');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'editor-loading';
+            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;z-index:9999;';
+            overlay.innerHTML = '<div style="background:var(--ispace-color-surface-0);padding:24px 32px;border-radius:var(--ispace-radius-lg);text-align:center;"><div class="ispace-spinner"></div><p style="margin-top:12px;color:var(--ispace-color-text-secondary);"></p></div>';
+            document.body.appendChild(overlay);
+        }
+        overlay.querySelector('p').textContent = msg;
+        overlay.style.display = 'flex';
+    }
+
+    function hideLoading() {
+        var overlay = document.getElementById('editor-loading');
+        if (overlay) overlay.style.display = 'none';
+    }
+})();
 </script>
 {% endblock %}

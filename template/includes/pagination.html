@@ -1,0 +1,30 @@
+{% if page_obj and page_obj.paginator.num_pages > 1 %}
+<nav class="ispace-pagination" aria-label="分页导航">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}{% if query_string %}&{{ query_string }}{% endif %}"
+       class="ispace-pagination-btn" rel="prev">上一页</a>
+    {% else %}
+    <span class="ispace-pagination-btn" disabled>上一页</span>
+    {% endif %}
+
+    {% for num in page_obj.paginator.page_range %}
+        {% if num == page_obj.number %}
+        <span class="ispace-pagination-btn ispace-active">{{ num }}</span>
+        {% elif num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+        <a href="?page={{ num }}{% if query_string %}&{{ query_string }}{% endif %}"
+           class="ispace-pagination-btn">{{ num }}</a>
+        {% endif %}
+    {% endfor %}
+
+    <span class="ispace-pagination-info">
+        {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+    </span>
+
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if query_string %}&{{ query_string }}{% endif %}"
+       class="ispace-pagination-btn" rel="next">下一页</a>
+    {% else %}
+    <span class="ispace-pagination-btn" disabled>下一页</span>
+    {% endif %}
+</nav>
+{% endif %}

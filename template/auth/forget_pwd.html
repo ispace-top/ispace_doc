@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "找回密码" %} - {{ site_name|default:"iSpaceDoc" }}{% endblock %}
+
+{% block body_class %}ispace-auth-page{% endblock %}
+
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="ispace-auth-page">
+    <div class="ispace-auth-card">
+        <div class="ispace-auth-header">
+            <div class="ispace-auth-logo">
+                <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+                    <rect width="32" height="32" rx="8" fill="var(--ispace-color-brand-500)"/>
+                    <path d="M9 16L14 21L23 11" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <h1 class="ispace-auth-title">{% trans "找回密码" %}</h1>
+            <p class="ispace-auth-subtitle">{% trans "通过注册邮箱重置密码" %}</p>
+        </div>
+
+        {% if errormsg %}
+        <div class="ispace-alert ispace-alert-error ispace-mb-6" role="alert">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span>{{ errormsg }}</span>
+        </div>
+        {% endif %}
+
+        {% if successmsg %}
+        <div class="ispace-alert ispace-alert-success ispace-mb-6" role="alert">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            <span>{{ successmsg }}</span>
+        </div>
+        {% endif %}
+
+        <form class="ispace-auth-form" method="post" action="{% url 'forget_pwd' %}">
+            {% csrf_token %}
+
+            <div class="ispace-form-group">
+                <label class="ispace-form-label ispace-form-label-required" for="email">{% trans "注册邮箱" %}</label>
+                <input type="email" id="email" name="email"
+                       class="ispace-form-input" placeholder="{% trans '请输入注册时使用的邮箱' %}"
+                       required autocomplete="email" autofocus>
+            </div>
+
+            <div class="ispace-form-group">
+                <label class="ispace-form-label ispace-form-label-required" for="vcode">{% trans "邮箱验证码" %}</label>
+                <div class="ispace-flex-center ispace-gap-3">
+                    <input type="text" id="vcode" name="vcode"
+                           class="ispace-form-input" placeholder="{% trans '请输入邮箱验证码' %}"
+                           required maxlength="6" style="flex:1;">
+                    <button type="button" class="ispace-btn ispace-btn-secondary ispace-btn-sm" style="white-space:nowrap;"
+                            onclick="sendVcode()">{% trans "发送验证码" %}</button>
+                </div>
+                <p class="ispace-form-hint">{% trans "点击发送验证码，系统会将验证码发送至您的邮箱" %}</p>
+            </div>
+
+            <div class="ispace-form-group">
+                <label class="ispace-form-label ispace-form-label-required" for="password">{% trans "新密码" %}</label>
+                <input type="password" id="password" name="password"
+                       class="ispace-form-input" placeholder="{% trans '请输入新密码' %}"
+                       required autocomplete="new-password">
+            </div>
+
+            <button type="submit" class="ispace-btn ispace-btn-primary ispace-btn-lg" style="width:100%;">
+                {% trans "重置密码" %}
+            </button>
+        </form>
+
+        <div class="ispace-auth-footer">
+            <p><a href="{% url 'login' %}">&larr; {% trans "返回登录" %}</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block core_scripts %}{% endblock %}
+{% block inline_bootstrap %}{% endblock %}
+
+{% block scripts %}
+<script>
+function sendVcode() {
+    const email = document.getElementById('email').value.trim();
+    if (!email) {
+        showWarning('请先输入邮箱地址');
+        return;
+    }
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = '发送中...';
+
+    fetch('{% url "send_email_vcode" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: 'email=' + encodeURIComponent(email) + '&type=forget_pwd'
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.status) {
+            showSuccess('验证码已发送，请查收邮箱');
+        } else {
+            showError(data.msg || '发送失败');
+        }
+    })
+    .catch(function() { showError('发送失败，请重试'); })
+    .finally(function() {
+        btn.disabled = false;
+        btn.textContent = '发送验证码';
+    });
+}
+</script>
+{% endblock %}

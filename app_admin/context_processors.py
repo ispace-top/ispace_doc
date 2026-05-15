@@ -1,10 +1,30 @@
 # coding:utf-8
 # @文件: context_processer.py
-# @创建者：州的先生
-# #日期：2019/11/16
-# 博客地址：zmister.com
+# @创建者: 州的先生
+# #日期: 2019/11/16
+# 博客地址: zmister.com
+import glob
+import os
+
 from app_admin.models import SysSetting
 from django.conf import settings
+
+
+def _get_available_themes():
+    theme_dir = os.path.join(settings.BASE_DIR, 'static', 'css', 'theme', 'themes')
+    themes = []
+    if not os.path.isdir(theme_dir):
+        return themes
+    for f in glob.glob(os.path.join(theme_dir, '*.css')):
+        name = os.path.splitext(os.path.basename(f))[0]
+        themes.append({'id': name, 'name': name.replace('-', ' ').title()})
+    return themes
+
+
+def _resolve_active_theme(setting_dict):
+    """Determine theme from site setting, defaulting to 'light'."""
+    return setting_dict.get('site_theme', 'light') or 'light'
+
 
 # 系统设置 - 上下文变量
 def sys_setting(request):
@@ -19,4 +39,10 @@ def sys_setting(request):
     datas = SysSetting.objects.filter(types__in=["basic","doc"])
     for data in datas:
         setting_dict[data.name] = data.value
+
+    # 主题配置
+    setting_dict['active_theme'] = _resolve_active_theme(setting_dict)
+    setting_dict['active_theme_css'] = f'css/theme/themes/{setting_dict["active_theme"]}.css'
+    setting_dict['available_themes'] = _get_available_themes()
+
     return setting_dict

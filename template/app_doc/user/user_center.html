@@ -1,649 +1,151 @@
-{% extends "modern_base.html" %}
-{% load static %}
-{% load i18n %}
+{% extends "base.html" %}
+{% load static %}{% load i18n %}
 
-{% block title %}{% trans "个人中心" %}{% endblock %}
+{% block title %}{% trans "个人中心" %} - {{ site_name|default:"iSpaceDoc" }}{% endblock %}
 
-{% block head_extra %}
+{% block body_class %}ispace-page-body{% endblock %}
+
+{% block styles %}
 <style>
-/* 个人中心样式 - 仅作用于当前页面，不影响全局样式 */
-/* 限制SVG样式作用范围，避免影响header等全局组件 */
-.user-center-page svg:not(.theme-icon):not(.dropdown-icon):not(.dropdown-item-icon) {
-    width: auto !important;
-    height: auto !important;
-    max-width: none !important;
-    max-height: none !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-}
-
-/* 更精确地限定SVG样式作用范围 */
-.user-center-page .user-sidebar svg,
-.user-center-page .user-main svg {
-    width: auto !important;
-    height: auto !important;
-    max-width: none !important;
-    max-height: none !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-}
-
-/* 个人中心样式 - 使用固定值避免CSS变量问题 */
-.user-center-page {
-    min-height: calc(100vh - 120px);
-    background: #f8fafc;
-    padding: 24px 0;
-}
-
-.user-center-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 16px;
-    display: grid;
-    grid-template-columns: 300px 1fr;
-    gap: 32px;
-}
-
-/* 侧边栏 */
-.user-sidebar {
-    background: #ffffff;
-    border: 1px solid #f3f4f6;
-    border-radius: 12px;
-    padding: 24px;
-    height: fit-content;
-    position: sticky;
-    top: 24px;
-}
-
-.user-profile {
-    text-align: center;
-    margin-bottom: 32px;
-    padding-bottom: 24px;
-    border-bottom: 1px solid #f3f4f6;
-}
-
-.user-avatar {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    margin: 0 auto 16px;
-    background: #3b82f6;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 24px;
-    font-weight: 700;
-}
-
-.user-avatar img {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    object-fit: cover;
-}
-
-.user-name {
-    font-size: 20px;
-    font-weight: 600;
-    color: #0f172a;
-    margin-bottom: 8px;
-}
-
-.user-email {
-    color: #6b7280;
-    font-size: 14px;
-    margin-bottom: 16px;
-}
-
-.user-stats {
-    display: flex;
-    gap: 16px;
-    justify-content: center;
-}
-
-.stat-item {
-    text-align: center;
-}
-
-.stat-number {
-    display: block;
-    font-size: 18px;
-    font-weight: 700;
-    color: #3b82f6;
-}
-
-.stat-label {
-    font-size: 12px;
-    color: #6b7280;
-    margin-top: 4px;
-}
-
-/* 导航 */
-.user-nav ul {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-}
-
-.nav-section {
-    margin-bottom: 24px;
-}
-
-.nav-section:last-child {
-    margin-bottom: 0;
-}
-
-.nav-section-title {
-    font-size: 12px;
-    font-weight: 600;
-    color: #6b7280;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 12px;
-}
-
-.nav-item {
-    margin-bottom: 4px;
-}
-
-.nav-link {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px;
-    color: #374151;
-    text-decoration: none;
-    border-radius: 8px;
-    font-size: 14px;
-    transition: all 0.2s ease;
-}
-
-.nav-link:hover {
-    background: #f8fafc;
-    color: #0f172a;
-}
-
-.nav-link.active {
-    background: #eff6ff;
-    color: #3b82f6;
-    font-weight: 500;
-}
-
-/* 限制图标大小只在导航范围内 */
-.user-center-page .nav-icon {
-    width: 16px !important;
-    height: 16px !important;
-    min-width: 16px !important;
-    min-height: 16px !important;
-    max-width: 16px !important;
-    max-height: 16px !important;
-    flex-shrink: 0 !important;
-    opacity: 0.7;
-    display: block !important;
-}
-
-.user-center-page .nav-link.active .nav-icon {
-    opacity: 1;
-}
-
-.nav-badge {
-    background: #3b82f6;
-    color: white;
-    font-size: 12px;
-    font-weight: 500;
-    padding: 2px 6px;
-    border-radius: 50px;
-    margin-left: auto;
-    min-width: 18px;
-    text-align: center;
-    line-height: 1.2;
-}
-
-/* 主内容 */
-.user-main {
-    background: #ffffff;
-    border: 1px solid #f3f4f6;
-    border-radius: 12px;
-    min-height: 600px;
-    display: flex;
-    flex-direction: column;
-}
-
-.content-header {
-    padding: 24px 24px 16px;
-    border-bottom: 1px solid #f3f4f6;
-    background: #f8fafc;
-    border-radius: 12px 12px 0 0;
-}
-
-.content-title {
-    font-size: 24px;
-    font-weight: 600;
-    color: #0f172a;
-    margin-bottom: 8px;
-}
-
-.content-subtitle {
-    color: #374151;
-    font-size: 14px;
-}
-
-.content-body {
-    padding: 24px;
-    flex: 1;
-}
-
-/* 统计卡片 */
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-    margin-bottom: 32px;
-}
-
-.stat-card {
-    background: #f8fafc;
-    border: 1px solid #f3f4f6;
-    border-radius: 8px;
-    padding: 20px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    transition: all 0.2s ease;
-}
-
-.stat-card:hover {
-    border-color: #3b82f6;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.stat-card-icon {
-    width: 48px !important;
-    height: 48px !important;
-    min-width: 48px !important;
-    min-height: 48px !important;
-    max-width: 48px !important;
-    max-height: 48px !important;
-    background: #eff6ff;
-    border-radius: 8px;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    color: #3b82f6;
-    flex-shrink: 0 !important;
-}
-
-/* 限制统计卡片图标大小只在统计卡片范围内 */
-.user-center-page .stat-card-icon svg {
-    width: 24px !important;
-    height: 24px !important;
-    min-width: 24px !important;
-    min-height: 24px !important;
-    max-width: 24px !important;
-    max-height: 24px !important;
-    display: block !important;
-}
-
-.stat-card-content {
-    flex: 1;
-}
-
-.stat-card-number {
-    font-size: 24px;
-    font-weight: 700;
-    color: #0f172a;
-    line-height: 1;
-    margin-bottom: 4px;
-}
-
-.stat-card-label {
-    font-size: 14px;
-    color: #374151;
-}
-
-/* 表单 */
-.form-section {
-    margin-bottom: 32px;
-}
-
-.section-title {
-    font-size: 18px;
-    font-weight: 600;
-    color: #0f172a;
-    margin-bottom: 16px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid #f3f4f6;
-}
-
-.form-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 16px;
-}
-
-.form-group {
-    margin-bottom: 16px;
-}
-
-.form-label {
-    display: block;
-    font-size: 14px;
-    font-weight: 500;
-    color: #0f172a;
-    margin-bottom: 8px;
-}
-
-.form-input,
-.form-textarea,
-.form-select {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #f3f4f6;
-    border-radius: 8px;
-    background: #ffffff;
-    color: #0f172a;
-    font-size: 14px;
-    transition: all 0.2s ease;
-}
-
-.form-input:focus,
-.form-textarea:focus,
-.form-select:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.form-textarea {
-    min-height: 100px;
-    resize: vertical;
-}
-
-.btn-primary {
-    background: #3b82f6;
-    color: white;
-    border: 1px solid #3b82f6;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.btn-primary:hover {
-    background: #2563eb;
-    border-color: #2563eb;
-}
-
-/* 空状态 */
-.empty-state {
-    text-align: center;
-    padding: 48px 16px;
-    color: #374151;
-}
-
-.empty-icon {
-    width: 64px;
-    height: 64px;
-    margin: 0 auto 16px;
-    color: #6b7280;
-    opacity: 0.5;
-}
-
-/* 限制空状态图标大小只在空状态范围内 */
-.user-center-page .empty-icon svg {
-    width: 64px !important;
-    height: 64px !important;
-    display: block !important;
-}
-
-.empty-title {
-    font-size: 18px;
-    font-weight: 500;
-    color: #374151;
-    margin-bottom: 8px;
-}
-
-.empty-description {
-    font-size: 14px;
-    color: #6b7280;
-    margin-bottom: 24px;
-}
-
-.empty-action {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 20px;
-    background: #3b82f6;
-    color: white;
-    text-decoration: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    transition: all 0.2s ease;
-}
-
-.empty-action:hover {
-    background: #2563eb;
-    transform: translateY(-1px);
-}
-
-/* 响应式 */
-@media (max-width: 768px) {
-    .user-center-container {
-        grid-template-columns: 1fr;
-        gap: 16px;
-        padding: 0 12px;
-    }
-    
-    .user-sidebar {
-        position: static;
-        padding: 16px;
-    }
-    
-    .user-profile {
-        margin-bottom: 16px;
-        padding-bottom: 16px;
-    }
-    
-    .user-avatar {
-        width: 60px;
-        height: 60px;
-        font-size: 18px;
-    }
-    
-    .nav-section {
-        margin-bottom: 16px;
-    }
-    
-    .content-header {
-        padding: 16px;
-    }
-    
-    .content-body {
-        padding: 16px;
-    }
-    
-    .stats-grid {
-        grid-template-columns: 1fr;
-        gap: 12px;
-    }
-    
-    .form-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* 深色主题 */
-[data-theme="dark"] .user-center-page {
-    background: #1e293b;
-}
-
-[data-theme="dark"] .user-sidebar,
-[data-theme="dark"] .user-main {
-    background: #334155;
-    border-color: #475569;
-}
-
-[data-theme="dark"] .content-header {
-    background: #475569;
-}
-
-[data-theme="dark"] .user-name,
-[data-theme="dark"] .content-title {
-    color: #f1f5f9;
-}
-
-[data-theme="dark"] .nav-link {
-    color: #cbd5e1;
-}
-
-[data-theme="dark"] .nav-link:hover {
-    background: #475569;
-    color: #f1f5f9;
-}
-
-[data-theme="dark"] .nav-link.active {
-    background: #1e3a8a;
-    color: #3b82f6;
-}
-
-[data-theme="dark"] .stat-card {
-    background: #475569;
-    border-color: #64748b;
-}
-
-[data-theme="dark"] .form-input,
-[data-theme="dark"] .form-textarea,
-[data-theme="dark"] .form-select {
-    background: #475569;
-    border-color: #64748b;
-    color: #f1f5f9;
-}
+.ispace-profile-stats { display: flex; gap: var(--ispace-space-4); justify-content: center; }
+.ispace-profile-stat { text-align: center; cursor: default; }
+.ispace-profile-stat-number { display: block; font-size: var(--ispace-font-lg); font-weight: var(--ispace-font-bold); color: var(--ispace-color-brand-500); }
+.ispace-profile-stat-label { display: block; font-size: var(--ispace-font-xs); color: var(--ispace-color-text-tertiary); margin-top: var(--ispace-space-1); }
+
+.ispace-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--ispace-space-4); }
+@media (max-width: 768px) { .ispace-form-grid { grid-template-columns: 1fr; } }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="user-center-page">
-    <div class="user-center-container">
+<div class="ispace-page">
+    <div class="ispace-page-layout">
         <!-- 侧边栏 -->
-        <aside class="user-sidebar">
-            <div class="user-profile">
-                <div class="user-avatar">
+        <aside class="ispace-page-sidebar">
+            <div class="ispace-profile-card">
+                <div class="ispace-profile-avatar">
                     {% if user.avatar %}
                         <img src="{{ user.avatar.url }}" alt="{{ user.username }}">
                     {% else %}
                         {{ user.username|first|upper }}
                     {% endif %}
                 </div>
-                <h2 class="user-name">
+                <h2 class="ispace-profile-name">
                     {% if user.first_name %}{{ user.first_name }}{% else %}{{ user.username }}{% endif %}
                 </h2>
-                <p class="user-email">{{ user.email }}</p>
-                <div class="user-stats">
-                    <div class="stat-item">
-                        <span class="stat-number">{{ user_project_count|default:0 }}</span>
-                        <span class="stat-label">文集</span>
+                <p class="ispace-profile-email">{{ user.email }}</p>
+                <div class="ispace-profile-stats">
+                    <div class="ispace-profile-stat">
+                        <span class="ispace-profile-stat-number">{{ user_project_count|default:0 }}</span>
+                        <span class="ispace-profile-stat-label">{% trans "文集" %}</span>
                     </div>
-                    <div class="stat-item">
-                        <span class="stat-number">{{ user_doc_count|default:0 }}</span>
-                        <span class="stat-label">文档</span>
+                    <div class="ispace-profile-stat">
+                        <span class="ispace-profile-stat-number">{{ user_doc_count|default:0 }}</span>
+                        <span class="ispace-profile-stat-label">{% trans "文档" %}</span>
                     </div>
-                    <div class="stat-item">
-                        <span class="stat-number">{{ user_collect_count|default:0 }}</span>
-                        <span class="stat-label">收藏</span>
+                    <div class="ispace-profile-stat">
+                        <span class="ispace-profile-stat-number">{{ user_collect_count|default:0 }}</span>
+                        <span class="ispace-profile-stat-label">{% trans "收藏" %}</span>
                     </div>
                 </div>
             </div>
 
-            <nav class="user-nav">
-                <div class="nav-section">
-                    <h3 class="nav-section-title">个人资料</h3>
-                    <ul>
-                        <li class="nav-item">
-                            <a href="?tab=profile" class="nav-link {% if current_tab == 'profile' or not current_tab %}active{% endif %}">
-                                <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
-                                </svg>
-                                基本信息
+            <nav>
+                <div class="ispace-sidebar-section">
+                    <h3 class="ispace-sidebar-section-title">{% trans "个人资料" %}</h3>
+                    <ul class="ispace-sidebar-nav">
+                        <li class="ispace-sidebar-item">
+                            <a href="?tab=profile" class="ispace-sidebar-link {% if current_tab == 'profile' or not current_tab %}active{% endif %}">
+                                <span class="ispace-sidebar-icon">
+                                    <svg viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                                    </svg>
+                                </span>
+                                {% trans "基本信息" %}
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a href="?tab=settings" class="nav-link {% if current_tab == 'settings' %}active{% endif %}">
-                                <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
-                                </svg>
-                                账户设置
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-
-                <div class="nav-section">
-                    <h3 class="nav-section-title">内容管理</h3>
-                    <ul>
-                        <li class="nav-item">
-                            <a href="?tab=manage_project" class="nav-link {% if current_tab == 'manage_project' %}active{% endif %}">
-                                <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
-                                    <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/>
-                                </svg>
-                                我的文集
-                                {% if user_project_count %}
-                                    <span class="nav-badge">{{ user_project_count }}</span>
-                                {% endif %}
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="?tab=manage_doc" class="nav-link {% if current_tab == 'manage_doc' %}active{% endif %}">
-                                <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0v12h8V4H6z" clip-rule="evenodd"/>
-                                </svg>
-                                我的文档
-                                {% if user_doc_count %}
-                                    <span class="nav-badge">{{ user_doc_count }}</span>
-                                {% endif %}
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="?tab=manage_doc_temp" class="nav-link {% if current_tab == 'manage_doc_temp' %}active{% endif %}">
-                                <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h4a1 1 0 010 2H6.414l2.293 2.293a1 1 0 01-1.414 1.414L5 6.414V8a1 1 0 01-2 0V4zm9 1a1 1 0 010-2h4a1 1 0 011 1v4a1 1 0 01-2 0V5.414l-2.293 2.293a1 1 0 11-1.414-1.414L13.586 4H12zm-9 7a1 1 0 112 0v1.586l2.293-2.293a1 1 0 111.414 1.414L6.414 14H8a1 1 0 110 2H4a1 1 0 01-1-1v-4zm13-1a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 110-2h1.586l-2.293-2.293a1 1 0 111.414-1.414L16 13.586V12a1 1 0 011-1z" clip-rule="evenodd"/>
-                                </svg>
-                                文档模板
+                        <li class="ispace-sidebar-item">
+                            <a href="?tab=settings" class="ispace-sidebar-link {% if current_tab == 'settings' %}active{% endif %}">
+                                <span class="ispace-sidebar-icon">
+                                    <svg viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
+                                    </svg>
+                                </span>
+                                {% trans "账户设置" %}
                             </a>
                         </li>
                     </ul>
                 </div>
 
-                <div class="nav-section">
-                    <h3 class="nav-section-title">收藏与协作</h3>
-                    <ul>
-                        <li class="nav-item">
-                            <a href="?tab=collect_doc" class="nav-link {% if current_tab == 'collect_doc' %}active{% endif %}">
-                                <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
-                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                </svg>
-                                收藏文档
+                <div class="ispace-sidebar-section">
+                    <h3 class="ispace-sidebar-section-title">{% trans "内容管理" %}</h3>
+                    <ul class="ispace-sidebar-nav">
+                        <li class="ispace-sidebar-item">
+                            <a href="?tab=manage_project" class="ispace-sidebar-link {% if current_tab == 'manage_project' %}active{% endif %}">
+                                <span class="ispace-sidebar-icon">
+                                    <svg viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/>
+                                    </svg>
+                                </span>
+                                {% trans "我的文集" %}
+                                {% if user_project_count %}<span class="ispace-sidebar-badge">{{ user_project_count }}</span>{% endif %}
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a href="?tab=collect_project" class="nav-link {% if current_tab == 'collect_project' %}active{% endif %}">
-                                <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
-                                    <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
-                                </svg>
-                                收藏文集
+                        <li class="ispace-sidebar-item">
+                            <a href="?tab=manage_doc" class="ispace-sidebar-link {% if current_tab == 'manage_doc' %}active{% endif %}">
+                                <span class="ispace-sidebar-icon">
+                                    <svg viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0v12h8V4H6z" clip-rule="evenodd"/>
+                                    </svg>
+                                </span>
+                                {% trans "我的文档" %}
+                                {% if user_doc_count %}<span class="ispace-sidebar-badge">{{ user_doc_count }}</span>{% endif %}
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a href="?tab=colla_project" class="nav-link {% if current_tab == 'colla_project' %}active{% endif %}">
-                                <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
-                                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
-                                </svg>
-                                协作文集
+                        <li class="ispace-sidebar-item">
+                            <a href="?tab=manage_doc_temp" class="ispace-sidebar-link {% if current_tab == 'manage_doc_temp' %}active{% endif %}">
+                                <span class="ispace-sidebar-icon">
+                                    <svg viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h4a1 1 0 010 2H6.414l2.293 2.293a1 1 0 01-1.414 1.414L5 6.414V8a1 1 0 01-2 0V4zm9 1a1 1 0 010-2h4a1 1 0 011 1v4a1 1 0 01-2 0V5.414l-2.293 2.293a1 1 0 11-1.414-1.414L13.586 4H12zm-9 7a1 1 0 112 0v1.586l2.293-2.293a1 1 0 111.414 1.414L6.414 14H8a1 1 0 110 2H4a1 1 0 01-1-1v-4zm13-1a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 110-2h1.586l-2.293-2.293a1 1 0 111.414-1.414L16 13.586V12a1 1 0 011-1z" clip-rule="evenodd"/>
+                                    </svg>
+                                </span>
+                                {% trans "文档模板" %}
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="ispace-sidebar-section">
+                    <h3 class="ispace-sidebar-section-title">{% trans "收藏与协作" %}</h3>
+                    <ul class="ispace-sidebar-nav">
+                        <li class="ispace-sidebar-item">
+                            <a href="?tab=collect_doc" class="ispace-sidebar-link {% if current_tab == 'collect_doc' %}active{% endif %}">
+                                <span class="ispace-sidebar-icon">
+                                    <svg viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                    </svg>
+                                </span>
+                                {% trans "收藏文档" %}
+                            </a>
+                        </li>
+                        <li class="ispace-sidebar-item">
+                            <a href="?tab=collect_project" class="ispace-sidebar-link {% if current_tab == 'collect_project' %}active{% endif %}">
+                                <span class="ispace-sidebar-icon">
+                                    <svg viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                                    </svg>
+                                </span>
+                                {% trans "收藏文集" %}
+                            </a>
+                        </li>
+                        <li class="ispace-sidebar-item">
+                            <a href="?tab=colla_project" class="ispace-sidebar-link {% if current_tab == 'colla_project' %}active{% endif %}">
+                                <span class="ispace-sidebar-icon">
+                                    <svg viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
+                                    </svg>
+                                </span>
+                                {% trans "协作文集" %}
                             </a>
                         </li>
                     </ul>
@@ -652,139 +154,141 @@
         </aside>
 
         <!-- 主内容区域 -->
-        <main class="user-main">
-            <div class="content-header">
+        <main class="ispace-page-main">
+            <div class="ispace-content-header">
                 {% if current_tab == 'settings' %}
-                    <h1 class="content-title">账户设置</h1>
-                    <p class="content-subtitle">管理您的账户信息和偏好设置</p>
+                    <h1 class="ispace-content-title">{% trans "账户设置" %}</h1>
+                    <p class="ispace-content-subtitle">{% trans "管理您的账户信息和偏好设置" %}</p>
                 {% elif current_tab == 'manage_project' %}
-                    <h1 class="content-title">我的文集</h1>
-                    <p class="content-subtitle">管理您创建的所有文集</p>
+                    <h1 class="ispace-content-title">{% trans "我的文集" %}</h1>
+                    <p class="ispace-content-subtitle">{% trans "管理您创建的所有文集" %}</p>
                 {% elif current_tab == 'manage_doc' %}
-                    <h1 class="content-title">我的文档</h1>
-                    <p class="content-subtitle">管理您创建的所有文档</p>
+                    <h1 class="ispace-content-title">{% trans "我的文档" %}</h1>
+                    <p class="ispace-content-subtitle">{% trans "管理您创建的所有文档" %}</p>
                 {% elif current_tab == 'manage_doc_temp' %}
-                    <h1 class="content-title">文档模板</h1>
-                    <p class="content-subtitle">管理您的文档模板</p>
+                    <h1 class="ispace-content-title">{% trans "文档模板" %}</h1>
+                    <p class="ispace-content-subtitle">{% trans "管理您的文档模板" %}</p>
                 {% elif current_tab == 'collect_doc' %}
-                    <h1 class="content-title">收藏文档</h1>
-                    <p class="content-subtitle">您收藏的所有文档</p>
+                    <h1 class="ispace-content-title">{% trans "收藏文档" %}</h1>
+                    <p class="ispace-content-subtitle">{% trans "您收藏的所有文档" %}</p>
                 {% elif current_tab == 'collect_project' %}
-                    <h1 class="content-title">收藏文集</h1>
-                    <p class="content-subtitle">您收藏的所有文集</p>
+                    <h1 class="ispace-content-title">{% trans "收藏文集" %}</h1>
+                    <p class="ispace-content-subtitle">{% trans "您收藏的所有文集" %}</p>
                 {% elif current_tab == 'colla_project' %}
-                    <h1 class="content-title">协作文集</h1>
-                    <p class="content-subtitle">您参与协作的文集</p>
+                    <h1 class="ispace-content-title">{% trans "协作文集" %}</h1>
+                    <p class="ispace-content-subtitle">{% trans "您参与协作的文集" %}</p>
                 {% else %}
-                    <h1 class="content-title">个人资料</h1>
-                    <p class="content-subtitle">查看和编辑您的个人信息</p>
+                    <h1 class="ispace-content-title">{% trans "个人资料" %}</h1>
+                    <p class="ispace-content-subtitle">{% trans "查看和编辑您的个人信息" %}</p>
                 {% endif %}
             </div>
 
-            <div class="content-body">
+            <div class="ispace-content-body">
                 {% if current_tab == 'profile' or not current_tab %}
                     <!-- 统计卡片 -->
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-card-icon">
+                    <div class="ispace-stat-grid ispace-mb-6">
+                        <div class="ispace-stat-card">
+                            <div class="ispace-stat-icon ispace-stat-icon--brand">
                                 <svg viewBox="0 0 20 20" fill="currentColor">
                                     <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/>
                                 </svg>
                             </div>
-                            <div class="stat-card-content">
-                                <div class="stat-card-number">{{ user_project_count|default:0 }}</div>
-                                <div class="stat-card-label">创建的文集</div>
+                            <div class="ispace-stat-content">
+                                <div class="ispace-stat-value">{{ user_project_count|default:0 }}</div>
+                                <div class="ispace-stat-label">{% trans "创建的文集" %}</div>
                             </div>
                         </div>
-                        
-                        <div class="stat-card">
-                            <div class="stat-card-icon">
+
+                        <div class="ispace-stat-card">
+                            <div class="ispace-stat-icon ispace-stat-icon--success">
                                 <svg viewBox="0 0 20 20" fill="currentColor">
                                     <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0v12h8V4H6z" clip-rule="evenodd"/>
                                 </svg>
                             </div>
-                            <div class="stat-card-content">
-                                <div class="stat-card-number">{{ user_doc_count|default:0 }}</div>
-                                <div class="stat-card-label">创建的文档</div>
+                            <div class="ispace-stat-content">
+                                <div class="ispace-stat-value">{{ user_doc_count|default:0 }}</div>
+                                <div class="ispace-stat-label">{% trans "创建的文档" %}</div>
                             </div>
                         </div>
-                        
-                        <div class="stat-card">
-                            <div class="stat-card-icon">
+
+                        <div class="ispace-stat-card">
+                            <div class="ispace-stat-icon ispace-stat-icon--warning">
                                 <svg viewBox="0 0 20 20" fill="currentColor">
                                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                                 </svg>
                             </div>
-                            <div class="stat-card-content">
-                                <div class="stat-card-number">{{ user_collect_count|default:0 }}</div>
-                                <div class="stat-card-label">收藏的内容</div>
+                            <div class="ispace-stat-content">
+                                <div class="ispace-stat-value">{{ user_collect_count|default:0 }}</div>
+                                <div class="ispace-stat-label">{% trans "收藏的内容" %}</div>
                             </div>
                         </div>
                     </div>
 
                     <!-- 个人信息表单 -->
-                    <div class="form-section">
-                        <h2 class="section-title">基本信息</h2>
+                    <div>
+                        <div class="ispace-section-header">
+                            <h2 class="ispace-section-title">{% trans "基本信息" %}</h2>
+                        </div>
                         <form method="post" enctype="multipart/form-data">
                             {% csrf_token %}
-                            <div class="form-grid">
-                                <div class="form-group">
-                                    <label class="form-label">用户名</label>
-                                    <input type="text" class="form-input" value="{{ user.username }}" readonly>
+                            <div class="ispace-form-grid">
+                                <div class="ispace-form-group">
+                                    <label class="ispace-form-label">{% trans "用户名" %}</label>
+                                    <input type="text" class="ispace-form-input" value="{{ user.username }}" readonly>
                                 </div>
-                                <div class="form-group">
-                                    <label class="form-label">邮箱地址</label>
-                                    <input type="email" class="form-input" name="email" value="{{ user.email }}">
+                                <div class="ispace-form-group">
+                                    <label class="ispace-form-label">{% trans "邮箱地址" %}</label>
+                                    <input type="email" class="ispace-form-input" name="email" value="{{ user.email }}">
                                 </div>
-                                <div class="form-group">
-                                    <label class="form-label">真实姓名</label>
-                                    <input type="text" class="form-input" name="first_name" value="{{ user.first_name }}">
+                                <div class="ispace-form-group">
+                                    <label class="ispace-form-label">{% trans "真实姓名" %}</label>
+                                    <input type="text" class="ispace-form-input" name="first_name" value="{{ user.first_name }}">
                                 </div>
-                                <div class="form-group">
-                                    <label class="form-label">注册时间</label>
-                                    <input type="text" class="form-input" value="{{ user.date_joined|date:'Y-m-d H:i' }}" readonly>
+                                <div class="ispace-form-group">
+                                    <label class="ispace-form-label">{% trans "注册时间" %}</label>
+                                    <input type="text" class="ispace-form-input" value="{{ user.date_joined|date:'Y-m-d H:i' }}" readonly>
                                 </div>
                             </div>
-                            <button type="submit" class="btn-primary">保存更改</button>
+                            <button type="submit" class="ispace-btn ispace-btn-primary">{% trans "保存更改" %}</button>
                         </form>
                     </div>
 
                 {% elif current_tab == 'settings' %}
-                    <div class="form-section">
-                        <h2 class="section-title">密码修改</h2>
+                    <div>
+                        <div class="ispace-section-header">
+                            <h2 class="ispace-section-title">{% trans "密码修改" %}</h2>
+                        </div>
                         <form method="post">
                             {% csrf_token %}
-                            <div class="form-group">
-                                <label class="form-label">当前密码</label>
-                                <input type="password" class="form-input" name="old_password" required>
+                            <div class="ispace-form-group">
+                                <label class="ispace-form-label">{% trans "当前密码" %}</label>
+                                <input type="password" class="ispace-form-input" name="old_password" required>
                             </div>
-                            <div class="form-group">
-                                <label class="form-label">新密码</label>
-                                <input type="password" class="form-input" name="new_password1" required>
+                            <div class="ispace-form-group">
+                                <label class="ispace-form-label">{% trans "新密码" %}</label>
+                                <input type="password" class="ispace-form-input" name="new_password1" required>
                             </div>
-                            <div class="form-group">
-                                <label class="form-label">确认新密码</label>
-                                <input type="password" class="form-input" name="new_password2" required>
+                            <div class="ispace-form-group">
+                                <label class="ispace-form-label">{% trans "确认新密码" %}</label>
+                                <input type="password" class="ispace-form-input" name="new_password2" required>
                             </div>
-                            <button type="submit" class="btn-primary">修改密码</button>
+                            <button type="submit" class="ispace-btn ispace-btn-primary">{% trans "修改密码" %}</button>
                         </form>
                     </div>
 
                 {% else %}
                     <!-- 其他标签页的空状态 -->
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <svg viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 010 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
-                            </svg>
-                        </div>
-                        <h3 class="empty-title">功能开发中</h3>
-                        <p class="empty-description">此功能正在开发中，敬请期待。</p>
-                        <a href="?tab=profile" class="empty-action">
-                            <svg viewBox="0 0 20 20" fill="currentColor" style="width: 16px; height: 16px;">
+                    <div class="ispace-empty-state">
+                        <svg class="ispace-empty-state-icon" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 010 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                        <h3 class="ispace-empty-state-title">{% trans "功能开发中" %}</h3>
+                        <p class="ispace-empty-state-description">{% trans "此功能正在开发中，敬请期待。" %}</p>
+                        <a href="?tab=profile" class="ispace-btn ispace-btn-primary ispace-mt-6">
+                            <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
                                 <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd"/>
                             </svg>
-                            返回个人资料
+                            {% trans "返回个人资料" %}
                         </a>
                     </div>
                 {% endif %}
@@ -792,75 +296,4 @@
         </main>
     </div>
 </div>
-
-<!-- 强制修复图标大小的内联样式 -->
-<style>
-/* 最高优先级的图标大小修复 - 仅作用于当前页面，不影响全局header */
-.user-center-page .user-sidebar svg,
-.user-center-page .user-main svg {
-    width: 16px !important;
-    height: 16px !important;
-    display: inline-block !important;
-    vertical-align: middle !important;
-}
-
-.user-center-page .stat-card-icon svg {
-    width: 24px !important;
-    height: 24px !important;
-}
-
-.user-center-page .empty-icon svg {
-    width: 64px !important;
-    height: 64px !important;
-}
-
-/* 确保没有其他样式干扰导航图标 */
-.user-center-page .nav-icon {
-    width: 16px !important;
-    height: 16px !important;
-    flex-shrink: 0 !important;
-    opacity: 0.7 !important;
-}
-
-.user-center-page .nav-link.active .nav-icon {
-    opacity: 1 !important;
-}
-</style>
-
-<script>
-// JavaScript确保图标大小正确
-document.addEventListener('DOMContentLoaded', function() {
-    // 强制设置所有导航图标的大小
-    const navIcons = document.querySelectorAll('.user-center-page .nav-icon');
-    navIcons.forEach(icon => {
-        icon.style.setProperty('width', '16px', 'important');
-        icon.style.setProperty('height', '16px', 'important');
-        icon.style.setProperty('display', 'inline-block', 'important');
-    });
-    
-    // 强制设置统计卡片图标的大小
-    const statIcons = document.querySelectorAll('.user-center-page .stat-card-icon svg');
-    statIcons.forEach(icon => {
-        icon.style.setProperty('width', '24px', 'important');
-        icon.style.setProperty('height', '24px', 'important');
-        icon.style.setProperty('display', 'inline-block', 'important');
-    });
-    
-    // 调试信息
-    console.log('个人中心图标修复脚本已执行');
-    console.log('导航图标数量:', navIcons.length);
-    console.log('统计图标数量:', statIcons.length);
-    
-    // 检查图标的实际大小
-    setTimeout(() => {
-        navIcons.forEach((icon, index) => {
-            const rect = icon.getBoundingClientRect();
-            console.log(`导航图标${index + 1}实际大小: ${rect.width}x${rect.height}px`);
-            if (rect.width > 20 || rect.height > 20) {
-                console.warn(`导航图标${index + 1}大小异常！`);
-            }
-        });
-    }, 500);
-});
-</script>
 {% endblock %}

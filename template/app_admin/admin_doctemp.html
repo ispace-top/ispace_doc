@@ -1,126 +1,97 @@
-{% extends 'app_admin/admin_base.html' %}
+{% extends "base.html" %}
 {% load static %}
 {% load i18n %}
 {% block title %}文档模板管理{% endblock %}
+{% block styles %}
+<style>
+    .doctemp-search { width: 240px; }
+    .doctemp-empty { text-align: center; padding: var(--ispace-space-12); color: var(--ispace-color-text-tertiary); }
+</style>
+{% endblock %}
 {% block content %}
-<div class="layui-card">
-    <div class="layui-card-body">
-        <div class="layui-card-header" style="margin-bottom: 10px;">
-        <div class="layui-row">
-            <span style="font-size:18px;">文档模板管理
-            </span>
-        </div>
-        </div>
-        <div class="layui-row">
-            <form action="{% url 'doctemp_manage' %}" method="get">
-            <div class="layui-form-item">
-                <div class="layui-input-inline">
-                    <input type="text" name="kw" id="kw"  placeholder="输入文档模板内容" autocomplete="off" class="layui-input">
-                </div>
-                <button class="pear-btn pear-btn-primary pear-btn-sm" type="submit"><i class="layui-icon layui-icon-search"></i>搜索</button>
-                <a href="{% url 'create_doctemp' %}" target="_blank" class="pear-btn pear-btn-primary pear-btn-sm"><i class="layui-icon layui-icon-addition"></i>新建文档模板</a>
+<div class="ispace-page-header">
+    <h1 class="ispace-page-title">文档模板管理</h1>
+</div>
+
+<div class="ispace-card">
+    <div class="ispace-card-body">
+        <form action="{% url 'doctemp_manage' %}" method="get" class="ispace-flex-between ispace-mb-4">
+            <div class="ispace-flex-center ispace-gap-2">
+                <input type="text" name="kw" id="kw" placeholder="输入文档模板内容" autocomplete="off" class="ispace-form-input doctemp-search">
+                <button class="ispace-btn ispace-btn-primary ispace-btn-sm" type="submit">搜索</button>
+                <a href="{% url 'create_doctemp' %}" target="_blank" class="ispace-btn ispace-btn-primary ispace-btn-sm">新建文档模板</a>
             </div>
-            </form>
-        </div>
-        <div class="layui-row">
-            <table class="layui-table"  id="doctemp-list" lay-skin="nob" lay-even>
-                <colgroup>
+        </form>
+
+        <table class="ispace-table" id="doctemp-list">
+            <colgroup>
                 <col width="200">
                 <col width="200">
                 <col>
-        </colgroup>
-        <thead>
-            <tr>
-            <th>模板名称</th>
-                <th>创建人</th>
-            <th>创建时间</th>
-            <th>操作</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for temp in doctemps %}
-            <tr>
-            <td>{{ temp.name }}</td>
-                <td>{{ temp.create_user }}</td>
-            <td>{{ temp.create_time }}</td>
-            <td>
-                <a href="{% url 'modify_doctemp' doctemp_id=temp.id %}" target="_blank" class="pear-btn pear-btn-primary pear-btn-xs">
-                    <i class="layui-icon layui-icon-edit"></i>修改
-                    </a>
-                <a href="javascript:void(0);" onclick="delTemp('{{temp.id}}');" class="pear-btn pear-btn-danger pear-btn-xs">
-                    <i class="layui-icon layui-icon-delete"></i>删除
-                </a>
-            </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-            </table>
-        </div>
-        <!-- 分页 -->
-        <div class="layui-row">
-            <div class="layui-box layui-laypage layui-laypage-default">
-                    <!-- 上一页 -->
-                    {% if doctemps.has_previous %}
-                        <a href="?page={{ doctemps.previous_page_number }}&kw={{doctemps.kw}}" class="layui-btn layui-btn-xs layui-btn-normal">上一页</a>
-                    {% else %}
-                        <a href="javascript:;" class="layui-btn layui-btn-xs layui-btn-disabled">上一页</a>
-                    {% endif %}
-                    <!-- 当前页 -->
-                    <span class="layui-laypage-curr">
-                        <em class="layui-laypage-em"></em>
-                        <em>{{ doctemps.number }}/{{ doctemps.paginator.num_pages }}</em>
-                    </span>
-                    <!-- 下一页 -->
-                    {% if doctemps.has_next %}
-                        <a href="?page={{ doctemps.next_page_number }}&kw={{doctemps.kw}}" class="layui-btn layui-btn-xs layui-btn-normal">下一页</a>
-                    {% else %}
-                        <a class="layui-btn layui-btn-xs layui-btn-disabled">下一页</a>
-                    {% endif %}
-            </div>
-        </div>
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>模板名称</th>
+                    <th>创建人</th>
+                    <th>创建时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for temp in doctemps %}
+                <tr>
+                    <td>{{ temp.name }}</td>
+                    <td>{{ temp.create_user }}</td>
+                    <td>{{ temp.create_time }}</td>
+                    <td>
+                        <a href="{% url 'modify_doctemp' doctemp_id=temp.id %}" target="_blank" class="ispace-btn ispace-btn-primary ispace-btn-sm">修改</a>
+                        <a href="javascript:void(0);" onclick="delTemp('{{temp.id}}');" class="ispace-btn ispace-btn-danger ispace-btn-sm">删除</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="doctemp-empty">暂无文档模板</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% include "includes/pagination.html" with page_obj=doctemps %}
     </div>
 </div>
+{% csrf_token %}
 {% endblock %}
-{% block custom_script %}
+{% block scripts %}
 <script>
-    layui.use(['table','jquery','form','layer','element'], function() {
-        let table = layui.table;
-        let form = layui.form;
-        let $ = layui.jquery;
-        let layer = layui.layer;
-        let element = layui.element;
-        $.ajaxSetup({
-            data: {csrfmiddlewaretoken: '{{ csrf_token }}' },
-        });
-        delTemp = function(doctemp_id){
-            layer.open({
-                type:1,
-                title:'删除文档',
-                area:'300px;',
-                id:'delPro',//配置ID
-                content:'<div style="margin-left:10px;">警告：此操作将删除此文档模板！</div>',
-                btn:['确定','取消'], //添加按钮
-                btnAlign:'c', //按钮居中
-                yes:function (index,layero) {
-                    layer.load(1);
-                    data = {
-                        'doctemp_id':doctemp_id,
-                    }
-                    $.post("{% url 'del_doctemp' %}",data,function(r){
-                        layer.closeAll('loading');
-                        if(r.status){
-                            //修改成功
-                            window.location.reload();
-                            //layer.close(index)
-                        }else{
-                            //修改失败，提示
-                            console.log(r)
-                            layer.msg(r.data)
-                        }
-                    })
-                },
+    function delTemp(doctemp_id) {
+        iSpaceDoc.confirm('警告：此操作将删除此文档模板！', {
+            title: '删除文档',
+            confirmText: '确定',
+            cancelText: '取消'
+        }).then(function(confirmed) {
+            if (!confirmed) return;
+            var body = new URLSearchParams();
+            body.append('doctemp_id', doctemp_id);
+            fetch("{% url 'del_doctemp' %}", {
+                method: 'POST',
+                body: body,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                if (r.status) {
+                    window.location.reload();
+                } else {
+                    console.log(r);
+                    showError(r.data);
+                }
+            })
+            .catch(function(err) {
+                showError('请求失败');
             });
-        }
-    })
+        });
+    }
 </script>
 {% endblock %}

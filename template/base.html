@@ -1,0 +1,96 @@
+{% load static %}{% load i18n %}<!DOCTYPE html>
+<html lang="zh-cn" data-ispace-theme="{{ active_theme|default:'light' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{% block meta_description %}iSpaceDoc - 个人和小型团队的云笔记、云文档、知识管理私有化部署方案{% endblock %}">
+    <meta name="theme-color" content="#3b82f6">
+
+    {# --- FOUC prevention: apply theme before any CSS loads --- #}
+    <script>
+    (function(){
+        var t = localStorage.getItem('ispace-theme');
+        if (t === 'dark') {
+            document.documentElement.setAttribute('data-ispace-theme', 'dark');
+        } else if (t === 'auto') {
+            var isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            document.documentElement.setAttribute('data-ispace-theme', isDark ? 'dark' : 'light');
+        }
+    })();
+    </script>
+
+    <title>{% block title %}iSpaceDoc{% endblock %}</title>
+
+    {% block preconnects %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    {% endblock %}
+
+    {% block favicon %}
+    <link rel="icon" href="{% static 'favicon_16.png' %}" type="image/png">
+    <link rel="icon" href="{% static 'logo.svg' %}" type="image/svg+xml">
+    {% endblock %}
+
+    {# --- Core Stylesheets --- #}
+    {% block core_styles %}
+    <link rel="stylesheet" href="{% static 'css/theme/reset.css' %}?v={{ mrdoc_version }}">
+    <link rel="stylesheet" href="{% static 'css/theme/tokens.css' %}?v={{ mrdoc_version }}">
+    <link rel="stylesheet" href="{% static 'css/theme/themes/light.css' %}?v={{ mrdoc_version }}">
+    <link rel="stylesheet" href="{% static active_theme_css|default:'css/theme/themes/dark.css' %}" id="ispace-theme-stylesheet">
+    <link rel="stylesheet" href="{% static 'css/theme/layout.css' %}?v={{ mrdoc_version }}">
+    <link rel="stylesheet" href="{% static 'css/theme/components.css' %}?v={{ mrdoc_version }}">
+    <link rel="stylesheet" href="{% static 'css/theme/utilities.css' %}?v={{ mrdoc_version }}">
+    {% endblock %}
+
+    {% block styles %}{% endblock %}
+    {% block head_extra %}{% endblock %}
+</head>
+
+<body class="{% block body_class %}{% endblock %}">
+
+    {% block skip_link %}
+    <a href="#main-content" class="ispace-skip-link">跳到主要内容</a>
+    {% endblock %}
+
+    {% block layout %}
+    <div class="ispace-app-layout {% block layout_class %}{% endblock %}">
+        {% block header %}{% include "includes/header.html" %}{% endblock %}
+
+        {% block sidebar %}{% endblock %}
+
+        <main id="main-content" class="ispace-main-content">
+            {% block content %}{% endblock %}
+        </main>
+
+        {% block footer %}{% include "includes/footer.html" %}{% endblock %}
+    </div>
+    {% endblock %}
+
+    {# --- Global containers --- #}
+    {% include "includes/toast_container.html" %}
+    {% include "includes/modal_container.html" %}
+
+    {# --- Core Scripts --- #}
+    {% block core_scripts %}
+    <script src="{% static 'js/theme/theme-manager.js' %}?v={{ mrdoc_version }}"></script>
+    <script src="{% static 'js/theme/core.js' %}?v={{ mrdoc_version }}"></script>
+    <script src="{% static 'js/theme/components.js' %}?v={{ mrdoc_version }}"></script>
+    {% endblock %}
+
+    {% block inline_bootstrap %}
+    <script>
+    window.__ISPACEDOC__ = {
+        csrfToken: '{{ csrf_token }}',
+        isAuthenticated: {{ user.is_authenticated|yesno:"true,false" }},
+        userId: {{ user.id|default:"null" }},
+        username: '{{ user.username|default:""|escapejs }}',
+        version: '{{ mrdoc_version }}'
+    };
+    </script>
+    {% endblock %}
+
+    {% block scripts %}{% endblock %}
+
+    {% block scripts_bottom %}{% endblock %}
+</body>
+</html>

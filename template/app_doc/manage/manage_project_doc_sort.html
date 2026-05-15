@@ -1,78 +1,17 @@
-{% extends 'app_doc/user/user_base.html' %}
-{% load static %}
-{% load i18n %}
+{% extends "base.html" %}
+{% load static %}{% load i18n %}
+
 {% block title %}{% trans "文集文档排序" %}{% endblock %}
-{% block custom_element %}
-<link href="{% static 'tagsInput/tagsinput.css' %}" rel="stylesheet" type="text/css"/>
-{% endblock %}
-{% block content %}
-<div class="layui-card">
-    <div class="layui-card-body">
-    <div class="layui-row" style="padding-left:15px;">
-        <span class="layui-breadcrumb" lay-separator=">">
-          <a href="{% url 'manage_project' %}">{% trans "文集管理" %}</a>
-          <a><cite>{% trans "文集文档排序" %}</cite></a>
-        </span>
-    </div>
-    </div>
-</div>
 
-<div class="layui-card">
-    <div class="layui-card-body">
-        <div class="layui-card-header" style="margin-bottom: 10px;">
-            <div class="layui-row">
-                <span style="font-size:18px;">{% trans "文集：" %}{{pro.name}}</span>
-                <button class="pear-btn pear-btn-primary pear-btn-sm" style="float: right;" id="save-sort-btn">{% trans "保存排序" %}</button>
-            </div>
-        </div>
-
-        <div class="layui-row">
-            <div id="nested" class="row">
-                <ul id="nestedDemo" class="list-group col nested-sortable">
-                    {% for docs in doc_list %}
-                    <li data-sortable-id="{{docs.id}}" class="list-group-item"><i class="iconfont mrdoc-icon-wendang"></i> {{docs.title}}
-                        {% if docs.children %}
-                        <i class="layui-icon layui-icon-down switch-toc"></i>
-                        <ul class="list-group nested-sortable">
-                            {% for node in docs.children %}
-                            <li data-sortable-id="{{node.id}}" class="list-group-item"><i class="iconfont mrdoc-icon-wendang"></i> {{node.title}}
-                                {% if node.children %}
-                                <i class="layui-icon layui-icon-down switch-toc"></i>
-                                <ul class="list-group nested-sortable">
-                                    {% for doc in node.children %}
-                                    <li data-sortable-id="{{doc.id}}" class="list-group-item"><i class="iconfont mrdoc-icon-wendang"></i> {{doc.title}}
-                                        <ul class="list-group nested-sortable"></ul>
-                                    </li>
-                                    {% endfor %}
-                                </ul>
-                                {% else %}
-                                <ul class="list-group nested-sortable"></ul>
-                                {% endif %}
-                            </li>
-                            {% endfor %}
-                        </ul>
-                        {% else %}
-                        <ul class="list-group nested-sortable"></ul>
-                        {% endif %}
-                    </li>
-                    {% endfor %}
-                </ul>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
-{% block custom_script %}
-<!-- 文集文档排序样式 -->
+{% block styles %}
 <style>
-    .row {
+    .sort-row {
         display: -ms-flexbox;
         display: flex;
         -ms-flex-wrap: wrap;
         flex-wrap: wrap;
-        }
-
-    .list-group {
+    }
+    .sort-list-group {
         display: -ms-flexbox;
         display: flex;
         -ms-flex-direction: column;
@@ -80,7 +19,7 @@
         padding-left: 0;
         margin-bottom: 0;
     }
-    .col {
+    .sort-col {
         -ms-flex-preferred-size: 0;
         flex-basis: 0;
         -ms-flex-positive: 1;
@@ -91,135 +30,187 @@
         padding-right: 15px;
         padding-left: 15px;
     }
-    .list-group-item:first-child {
+    .sort-list-group-item:first-child {
         border-top-left-radius: .25rem;
         border-top-right-radius: .25rem;
     }
-    .list-group-item {
+    .sort-list-group-item {
         position: relative;
         display: block;
         padding: .75rem 1.25rem;
         margin-bottom: -1px;
-        background-color: #fff;
-        border: 1px solid rgba(0,0,0,.125);
+        background-color: var(--ispace-color-surface-0, #fff);
+        border: 1px solid var(--ispace-color-border-light, #e5e7eb);
+        cursor: move;
     }
-    .list-group-item:first-child {
-    border-top-left-radius: 0.25rem;
-    border-top-right-radius: 0.25rem;
+    .sort-list-group-item:first-child {
+        border-top-left-radius: 0.25rem;
+        border-top-right-radius: 0.25rem;
     }
-    
-    .list-group-item:last-child {
-      margin-bottom: 0;
-      border-bottom-right-radius: 0.25rem;
-      border-bottom-left-radius: 0.25rem;
+    .sort-list-group-item:last-child {
+        margin-bottom: 0;
+        border-bottom-right-radius: 0.25rem;
+        border-bottom-left-radius: 0.25rem;
     }
-    
-    .list-group-item:hover, .list-group-item:focus {
-      z-index: 1;
-      text-decoration: none;
+    .sort-list-group-item:hover, .sort-list-group-item:focus {
+        z-index: 1;
+        text-decoration: none;
     }
-    .list-group-item.disabled, .list-group-item:disabled {
-      color: #6c757d;
-      pointer-events: none;
-      background-color: #fff;
+    .sort-list-group-item.sortable-ghost {
+        background-color: var(--ispace-color-primary-light, #eff6ff);
+        border-color: var(--ispace-color-primary, #3b82f6);
     }
-    
-    .list-group-item.active {
-      z-index: 2;
-      color: #fff;
-      background-color: #007bff;
-      border-color: #007bff;
-    }
-    .toc-close {
+    .sort-toc-close {
         display: none;
     }
+    .switch-toc {
+        cursor: pointer;
+        margin-left: 8px;
+        font-size: 12px;
+        color: var(--ispace-color-text-tertiary, #6b7280);
+    }
 </style>
-<script src="{% static 'jquery/3.5.0/jquery.min.js' %}"></script>
-<script src="{% static 'layui/layui.js' %}"></script>
-<!-- 文档拖拽排序 -->
+{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+
+{# --- Breadcrumb --- #}
+<div class="ispace-content-card ispace-mb-4">
+    <div class="ispace-card-body">
+        <nav class="ispace-breadcrumb" style="font-size:14px;color:var(--ispace-color-text-tertiary);">
+            <a href="{% url 'manage_project' %}">{% trans "文集管理" %}</a>
+            <span style="margin:0 8px;">></span>
+            <span>{% trans "文集文档排序" %}</span>
+        </nav>
+    </div>
+</div>
+
+{# --- Sort Area --- #}
+<div class="ispace-content-card">
+    <div class="ispace-card-body">
+        <div class="ispace-flex-between ispace-mb-4">
+            <h2 style="font-size:18px;">{% trans "文集：" %}{{ pro.name }}</h2>
+            <button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="save-sort-btn">{% trans "保存排序" %}</button>
+        </div>
+
+        <div id="nested" class="sort-row">
+            <ul id="nestedDemo" class="sort-list-group sort-col nested-sortable">
+                {% for docs in doc_list %}
+                <li data-sortable-id="{{ docs.id }}" class="sort-list-group-item">
+                    <span style="margin-right:4px;">&#128196;</span> {{ docs.title }}
+                    {% if docs.children %}
+                    <span class="switch-toc">&#9660;</span>
+                    <ul class="sort-list-group nested-sortable">
+                        {% for node in docs.children %}
+                        <li data-sortable-id="{{ node.id }}" class="sort-list-group-item">
+                            <span style="margin-right:4px;">&#128196;</span> {{ node.title }}
+                            {% if node.children %}
+                            <span class="switch-toc">&#9660;</span>
+                            <ul class="sort-list-group nested-sortable">
+                                {% for doc in node.children %}
+                                <li data-sortable-id="{{ doc.id }}" class="sort-list-group-item">
+                                    <span style="margin-right:4px;">&#128196;</span> {{ doc.title }}
+                                    <ul class="sort-list-group nested-sortable"></ul>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <ul class="sort-list-group nested-sortable"></ul>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <ul class="sort-list-group nested-sortable"></ul>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
 <script src="{% static 'sortablejs/Sortable.js' %}"></script>
 <script>
-    $.ajaxSetup({
-        data: {csrfmiddlewaretoken: '{{ csrf_token }}' },
-    });
-    // 文档动态排序
-    function docSort(){
-        // Nested demo
-        var nestedSortables = [].slice.call(document.querySelectorAll('.nested-sortable'));
-        // Loop through each nested sortable element
-        for (var i = 0; i < nestedSortables.length; i++) {
-            new Sortable(nestedSortables[i], {
-                group: {
-                    name:'docsort',
-                    pull: function(event) {
-                        var deep = event.el.parentNode.parentNode.parentNode.parentNode.className
-                        if(deep == 'list-group nested-sortable') return false;
-                        return true;
-                    },
-                },
-                animation: 150,//定义排序动画的时间
-                fallbackOnBody: true, // 将cloned DOM 元素挂到body元素上
-                invertSwap:true,
-                swapThreshold: 0.65,
-                onAdd:function(evt){
-                    console.log(evt)
-                    // console.log(evt.to)
-                    let current_ele = $(evt.item)
-                    console.log(current_ele[0])
+function getCSRF() { return document.querySelector('[name=csrfmiddlewaretoken]').value; }
+
+// --- SortableJS ---
+(function() {
+    var nestedSortables = [].slice.call(document.querySelectorAll('.nested-sortable'));
+    for (var i = 0; i < nestedSortables.length; i++) {
+        new Sortable(nestedSortables[i], {
+            group: {
+                name: 'docsort',
+                pull: function(event) {
+                    var deep = event.el.parentNode.parentNode.parentNode.parentNode.className;
+                    if (deep.indexOf('nested-sortable') !== -1) return false;
+                    return true;
                 }
-            });
-        }
-    };
-    // 获取排序值
-    const nestedQuery = '.nested-sortable';
-    const identifier = 'sortableId';
-    const root = document.getElementById('nestedDemo');
-    function serialize(sortable) {
-      var serialized = [];
-      var children = [].slice.call(sortable.children);
-      for (var i in children) {
-        var nested = children[i].querySelector(nestedQuery);
-        serialized.push({
-          id: children[i].dataset[identifier],
-          children: nested ? serialize(nested) : []
-        });
-      }
-      return serialized
-    }
-    function getLevel(){
-        console.log(serialize(root))
-    };
-    // 展开收起左边目录
-    $(function(){
-        $("body").on('click','.switch-toc',SwitchToc)
-    });
-    function SwitchToc(i){
-        console.log("点击了")
-        var $me = $(this);
-        $(this).next("ul").toggleClass("toc-close"); //切换展开收起样式
-        $(this).toggleClass("layui-icon-left layui-icon-down");//切换图标
-    };
-    // 保存排序
-    $("#save-sort-btn").on('click',function(){
-        layer.load(1)
-        var sort_data = {
-            'pid':'{{pro.id}}',
-            'sort_data':JSON.stringify(serialize(root)),
-        }
-        // console.log(sort_data)
-        $.post('{% url "manage_pro_doc_sort" pro.id %}',sort_data,function(r){
-            if(r.status){
-                layer.closeAll('loading')
-                layer.msg("完成文集排序",function(){
-                    layer.close()
-                })
-                
-            }else{
-                layer.closeAll('loading')
-                layer.msg("修改导入文集出错")
+            },
+            animation: 150,
+            fallbackOnBody: true,
+            invertSwap: true,
+            swapThreshold: 0.65,
+            onAdd: function(evt) {
+                console.log(evt);
             }
         });
-    })
-    docSort();
+    }
+})();
+
+// --- Serialize sort data ---
+var nestedQuery = '.nested-sortable';
+var identifier = 'sortableId';
+var root = document.getElementById('nestedDemo');
+
+function serialize(sortable) {
+    var serialized = [];
+    var children = [].slice.call(sortable.children);
+    for (var i in children) {
+        var nested = children[i].querySelector(nestedQuery);
+        serialized.push({
+            id: children[i].dataset[identifier],
+            children: nested ? serialize(nested) : []
+        });
+    }
+    return serialized;
+}
+
+// --- Toggle expand/collapse ---
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('switch-toc')) {
+        var ul = e.target.nextElementSibling;
+        if (ul) { ul.classList.toggle('sort-toc-close'); }
+        e.target.textContent = ul && ul.classList.contains('sort-toc-close') ? '▶' : '▼';
+    }
+});
+
+// --- Save Sort ---
+document.getElementById('save-sort-btn').addEventListener('click', function() {
+    var loadingEl = document.getElementById('loadingIndicator');
+    if (loadingEl) loadingEl.style.display = 'flex';
+    var sortData = {
+        pid: '{{ pro.id }}',
+        sort_data: JSON.stringify(serialize(root))
+    };
+    fetch('{% url "manage_pro_doc_sort" pro.id %}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRF(), 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams(sortData)
+    }).then(function(r) { return r.json(); }).then(function(r) {
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (r.status) {
+            showSuccess('{% trans "完成文集排序" %}');
+        } else {
+            showError('{% trans "排序保存出错" %}');
+        }
+    }).catch(function(e) {
+        if (loadingEl) loadingEl.style.display = 'none';
+        showError('{% trans "网络异常" %}');
+    });
+});
 </script>
 {% endblock %}

@@ -63,21 +63,21 @@ def log_in(request):
         if request.user.is_authenticated:
             return redirect(to)
         else:
-            return render(request,'login.html',locals())
+            return render(request,'auth/login.html',locals())
     elif request.method == 'POST':
         try:
             username = request.POST.get('username','')
             pwd = request.POST.get('password','')
             if len(pwd) > 50:
                 errormsg = _('密码长度不符！')
-                return render(request, 'login.html', locals())
+                return render(request, 'auth/login.html', locals())
             # 判断是否需要验证码
             require_login_check_code = SysSetting.objects.filter(types="basic",name="enable_login_check_code")
             if (len(require_login_check_code) > 0) and (require_login_check_code[0].value == 'on'):
                 checkcode = request.POST.get("check_code", None)
                 if checkcode.lower() != request.session['CheckCode'].lower():
                     errormsg = _('验证码错误！')
-                    return render(request, 'login.html', locals())
+                    return render(request, 'auth/login.html', locals())
             # 验证登录次数
             if 'LoginLock' not in request.session.keys():
                 request.session['LoginNum'] = 1 # 重试次数
@@ -95,7 +95,7 @@ def log_in(request):
             if verify_lock is True and datetime.datetime.now().timestamp() < verify_time:
                 errormsg = _("操作过于频繁，请10分钟后再试！")
                 request.session['LoginNum'] = 0  # 重试次数清零
-                return render(request, 'login.html', locals())
+                return render(request, 'auth/login.html', locals())
 
             if username != '' and pwd != '':
                 user = authenticate(username=username,password=pwd)
@@ -108,14 +108,14 @@ def log_in(request):
                         return redirect(to)
                     else:
                         errormsg = _('用户被禁用！')
-                        return render(request, 'login.html', locals())
+                        return render(request, 'auth/login.html', locals())
                 else:
                     errormsg = _('用户名或密码错误！')
                     request.session['LoginNum'] += 1
-                    return render(request, 'login.html', locals())
+                    return render(request, 'auth/login.html', locals())
             else:
                 errormsg = _('用户名或密码未输入！')
-                return render(request, 'login.html', locals())
+                return render(request, 'auth/login.html', locals())
         except Exception as e:
             logger.exception("登录异常")
             return HttpResponse(_('请求出错'))
@@ -130,7 +130,7 @@ def register(request):
         return redirect('/')
     else:
         if request.method == 'GET':
-            return render(request,'register.html',locals())
+            return render(request,'auth/register.html',locals())
         elif request.method == 'POST':
             username = request.POST.get('username',None)
             email = request.POST.get('email',None)
@@ -138,25 +138,25 @@ def register(request):
             checkcode = request.POST.get("check_code",None)
             if len(password) > 50:
                 errormsg = _('密码长度不符！')
-                return render(request, 'register.html', locals())
+                return render(request, 'auth/register.html', locals())
             is_register_code = SysSetting.objects.filter(types='basic', name='enable_register_code', value='on')
             if is_register_code.exists(): # 开启了注册码设置
                 register_code = request.POST.get("register_code", None)
                 if len(register_code) > 255:
                     errormsg = _('注册码无效!')
-                    return render(request, 'register.html', locals())
+                    return render(request, 'auth/register.html', locals())
                 try:
                     current_date = timezone.now().date()
                     register_code_value = RegisterCode.objects.get(code=register_code)
                     if register_code_value.used_cnt >= register_code_value.all_cnt:
                         errormsg = _('注册码使用次数已达限制!')
-                        return render(request, 'register.html', locals())
+                        return render(request, 'auth/register.html', locals())
                     elif register_code_value.expire_date is not None and register_code_value.expire_date < current_date:
                         errormsg = _('注册码已过期!')
-                        return render(request, 'register.html', locals())
+                        return render(request, 'auth/register.html', locals())
                 except ObjectDoesNotExist:
                     errormsg = _('注册码无效!')
-                    return render(request, 'register.html', locals())
+                    return render(request, 'auth/register.html', locals())
             # 判断是否输入了用户名、邮箱和密码
             if username and email and password:
                 if '@'in email:
@@ -164,22 +164,22 @@ def register(request):
                     username_exit = User.objects.filter(username=username)
                     if email_exit.count() > 0: # 验证电子邮箱
                         errormsg = _('此电子邮箱已被注册！')
-                        return render(request, 'register.html', locals())
+                        return render(request, 'auth/register.html', locals())
                     elif username_exit.count() > 0: # 验证用户名
                         errormsg = _('用户名已被使用！')
-                        return render(request, 'register.html', locals())
+                        return render(request, 'auth/register.html', locals())
                     elif re.match('^[0-9a-z]+$',username) is None:
                         errormsg = _('用户名只能为小写英文+数字组合')
-                        return render(request, 'register.html', locals())
+                        return render(request, 'auth/register.html', locals())
                     elif len(username) < 5:
                         errormsg = _('用户名必须大于等于5位！')
-                        return render(request, 'register.html', locals())
+                        return render(request, 'auth/register.html', locals())
                     elif len(password) < 6: # 验证密码长度
                         errormsg = _('密码必须大于等于6位！')
-                        return render(request, 'register.html', locals())
+                        return render(request, 'auth/register.html', locals())
                     elif checkcode.lower() != request.session['CheckCode'].lower(): # 验证验证码
                         errormsg = _("验证码错误")
-                        return render(request, 'register.html', locals())
+                        return render(request, 'auth/register.html', locals())
                     else:
                         # 创建用户
                         user = User.objects.create_user(username=username, email=email, password=password)
@@ -207,13 +207,13 @@ def register(request):
                             return redirect('/')
                         else:
                             errormsg = _('用户被禁用，请联系管理员！')
-                            return render(request, 'register.html', locals())
+                            return render(request, 'auth/register.html', locals())
                 else:
                     errormsg = _('请输入正确的电子邮箱格式！')
-                    return render(request, 'register.html', locals())
+                    return render(request, 'auth/register.html', locals())
             else:
                 errormsg = _("请检查输入值")
-                return render(request, 'register.html', locals())
+                return render(request, 'auth/register.html', locals())
 
 
 # 注销
@@ -237,7 +237,7 @@ def log_out(request):
 # 忘记密码
 def forget_pwd(request):
     if request.method == 'GET':
-        return render(request,'forget_pwd.html',locals())
+        return render(request,'auth/forget_pwd.html',locals())
     elif request.method == 'POST':
         email = request.POST.get("email",None) # 邮箱
         vcode = request.POST.get("vcode",None) # 验证码
@@ -262,7 +262,7 @@ def forget_pwd(request):
             if verify_lock is True and datetime.datetime.now().timestamp() < verify_time:
                 errormsg = _("操作过于频繁，请10分钟后再试！")
                 request.session['ForgetPwdEmailCodeVerifyNum'] = 0  # 重试次数清零
-                return render(request, 'forget_pwd.html', locals())
+                return render(request, 'auth/forget_pwd.html', locals())
             # 比对验证码
             data = EmaiVerificationCode.objects.get(email_name=email,verification_code=vcode,verification_type='忘记密码')
             expire_time = data.expire_time
@@ -274,20 +274,20 @@ def forget_pwd(request):
                 request.session['ForgetPwdEmailCodeVerifyNum'] = 0 # 重试次数
                 request.session['ForgetPwdEmailCodeVerifyLock'] = False # 是否锁定
                 request.session['ForgetPwdEmailCodeVerifyTime'] = datetime.datetime.now().timestamp() # 解除锁定时间
-                return render(request, 'forget_pwd.html', locals())
+                return render(request, 'auth/forget_pwd.html', locals())
             else:
                 errormsg = _("验证码已过期！")
-                return render(request, 'forget_pwd.html', locals())
+                return render(request, 'auth/forget_pwd.html', locals())
         except ObjectDoesNotExist:
             logger.error(_("验证码或邮箱不存在：{}".format(email)))
             errormsg = _("验证码或邮箱错误！")
             request.session['ForgetPwdEmailCodeVerifyNum'] += 1
-            return render(request, 'forget_pwd.html', locals())
+            return render(request, 'auth/forget_pwd.html', locals())
         except Exception as e:
             logger.exception("修改密码异常")
             errormsg = _("验证码或邮箱错误！")
             request.session['ForgetPwdEmailCodeVerifyNum'] += 1
-            return render(request,'forget_pwd.html',locals())
+            return render(request,'auth/forget_pwd.html',locals())
 
 
 # 发送电子邮箱验证码

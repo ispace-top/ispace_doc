@@ -1,38 +1,41 @@
-<!-- 继承自模板：app_doc/docs_base.html -->
-{% extends 'app_doc/docs_base.html' %}
-<!-- 引入静态文件 -->
-{% load static %}
-{% load i18n %}
-{% load doc_filter %}
+{% extends "base.html" %}
+{% load static %}{% load i18n %}
 
-{% block title %}{% trans "搜索" %} {{kw}} {% trans "的结果" %} - {{ project.name }}{% endblock %}
+{% block title %}{% trans "搜索" %} {{ kw }} - {{ project.name }} - {{ site_name|default:"iSpaceDoc" }}{% endblock %}
 
-{% block head_toolbar %}
-    {% if request.user == project.create_user %}
-        <a class="btn pull-left" aria-label="" href="{% url 'create_doc' %}?pid={{project.id}}" target="_blank">
-            <i class="layui-icon layui-icon-edit"></i> {% trans "添加文档" %}
-        </a>
-    {% endif %}
-{% endblock %}
+{% block layout_class %}has-sidebar{% endblock %}
 
-{% block content_head %}
-    <h1>{% trans "搜索" %} {{kw}} {% trans "共有" %}{{ search_result.count }}{% trans "个结果" %}</h1><hr>
-{% endblock %}
+{% block sidebar %}{% include "includes/sidebar_doc.html" %}{% endblock %}
 
-{% block page_content %}
-    {% for result in search_result %}
-        <div>
-            <p><a href="{% url 'doc_id' doc_id=result.id %}?highlight={{kw}}" target="_blank">{{ result.name }}</a> - <span style="font-size: 14px;color: #999;">{{result.modify_time}}</span></p>
-            <p>{{ result|remove_doc_tag }}</p>
+{% block content %}
+<div class="ispace-page-header">
+    <h1 class="ispace-page-title">{% trans "文集内搜索" %}</h1>
+</div>
+
+<div class="ispace-mb-6">
+    <form method="get" action="" class="ispace-flex-center ispace-gap-3">
+        <div class="ispace-search-input-wrap" style="flex:1;max-width:480px;">
+            <svg class="ispace-search-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" name="kw" class="ispace-form-input" value="{{ kw }}" placeholder="{% trans '在文集中搜索文档...' %}">
         </div>
-        <hr>
-    {% endfor %}
-{% endblock %}
+        <button type="submit" class="ispace-btn ispace-btn-primary">{% trans "搜索" %}</button>
+    </form>
+</div>
 
-{% block custom_script %}
-<script>
-    setTimeout(function(){
-        keyLight('doc-content','{{kw}}')
-    },500)
-</script>
+{% if search_result %}
+<p class="ispace-text-sm ispace-text-tertiary ispace-mb-4">{% trans "找到" %} {{ search_result.count }} {% trans "条结果" %}</p>
+<div style="display:flex;flex-direction:column;gap:var(--ispace-space-3);">
+    {% for doc in search_result %}
+    <a href="{% url 'doc' pro_id=project.id doc_id=doc.id %}" class="ispace-card" style="text-decoration:none;display:block;">
+        <div class="ispace-card-body">
+            <h3 style="font-size:var(--ispace-font-base);font-weight:var(--ispace-font-semibold);color:var(--ispace-color-text-link);">{{ doc.name }}</h3>
+            <p class="ispace-text-sm ispace-text-tertiary ispace-line-clamp-2 ispace-mt-2">{{ doc.pre_content|striptags|truncatechars:200 }}</p>
+            <p class="ispace-text-xs ispace-text-quaternary ispace-mt-2">{{ doc.modify_time|date:"Y-m-d H:i" }}</p>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% elif kw %}
+{% include "includes/empty_state.html" with title="无搜索结果" description="尝试其他关键词" %}
+{% endif %}
 {% endblock %}

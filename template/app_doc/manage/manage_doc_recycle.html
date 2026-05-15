@@ -1,213 +1,151 @@
-{% extends 'app_doc/user/user_base.html' %}
+{% extends "base.html" %}
 {% load static %}
 {% load i18n %}
+{% load doc_filter %}
 {% block title %}{% trans "文档回收站管理" %}{% endblock %}
+
 {% block content %}
-<div class="layui-card">
-    <div class="layui-card-body">
-        <div class="layui-row">
-            <button class="pear-btn pear-btn-primary pear-btn-sm" onclick="restoreAll()">
-                <i class="layui-icon layui-icon-refresh"></i>{% trans "还原所有" %}</button>
-            <button class="pear-btn pear-btn-danger pear-btn-sm" onclick="emptyDoc()">
-                <i class="layui-icon layui-icon-delete" ></i>{% trans "清空回收站" %}</button>
+<div class="ispace-page">
+    <div class="ispace-page-header">
+        <h2 class="ispace-page-title">{% trans "文档回收站管理" %}</h2>
+        <div class="ispace-page-actions">
+            <button class="ispace-btn ispace-btn-secondary ispace-btn-sm" onclick="restoreAll()">
+                {% trans "还原所有" %}
+            </button>
+            <button class="ispace-btn ispace-btn-danger ispace-btn-sm" onclick="emptyDoc()">
+                {% trans "清空回收站" %}
+            </button>
         </div>
     </div>
-</div>
-<div class="layui-card">
-    <div class="layui-card-body">
-        <div class="layui-row" lay-skin="">
-            <table class="layui-table"  id="doctemp-list" lay-skin="nob" lay-even>
-        <thead>
-            <tr>
-                <th>{% trans "文档名称" %}</th>
-                <th>{% trans "上级文档" %}</th>
-                <th>{% trans "所属文集" %}</th>
-                <th>{% trans "创建时间" %}</th>
-                <th>{% trans "删除时间" %}</th>
-                <th>{% trans "操作" %}</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% load doc_filter %}
-            {% for doc in docs %}
-            <tr>
-                <td>{{ doc.name }}</td>
-                <td>{{ doc.parent_doc|get_doc_parent }}</td>
-                <td>
-                    {{ doc.top_doc|is_colla_pro:doc.create_user }}{{ doc.top_doc|get_doc_top }}
-                </td>
-                <td>{{ doc.create_time }}</td>
-                <td>{{ doc.modify_time }}</td>
-                <td>
-                    <button class="pear-btn pear-btn-xs pear-btn-primary" onclick="restoreDoc('{{doc.id}}')">
-                        <i class="layui-icon layui-icon-refresh"></i>{% trans "还原" %}
-                    </button>
-                    <button onclick="delDoc('{{doc.id}}');" class="pear-btn pear-btn-xs pear-btn-danger">
-                        <i class="layui-icon layui-icon-delete"></i>{% trans "删除" %}
-                    </button>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
+
+    <div class="ispace-content-card">
+        <div style="overflow-x:auto;">
+            <table class="ispace-table">
+                <thead>
+                    <tr>
+                        <th>{% trans "文档名称" %}</th>
+                        <th>{% trans "上级文档" %}</th>
+                        <th>{% trans "所属文集" %}</th>
+                        <th>{% trans "创建时间" %}</th>
+                        <th>{% trans "删除时间" %}</th>
+                        <th>{% trans "操作" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for doc in docs %}
+                    <tr>
+                        <td>{{ doc.name }}</td>
+                        <td>{{ doc.parent_doc|get_doc_parent }}</td>
+                        <td>{{ doc.top_doc|is_colla_pro:doc.create_user }}{{ doc.top_doc|get_doc_top }}</td>
+                        <td>{{ doc.create_time }}</td>
+                        <td>{{ doc.modify_time }}</td>
+                        <td>
+                            <div style="display:flex;gap:var(--ispace-spacing-2);">
+                                <button onclick="restoreDoc('{{ doc.id }}')" class="ispace-btn ispace-btn-secondary ispace-btn-sm">
+                                    {% trans "还原" %}
+                                </button>
+                                <button onclick="delDoc('{{ doc.id }}');" class="ispace-btn ispace-btn-danger ispace-btn-sm">
+                                    {% trans "删除" %}
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" style="text-align:center;padding:var(--ispace-spacing-8) var(--ispace-spacing-4);color:var(--ispace-color-text-tertiary);">{% trans "回收站为空" %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
             </table>
         </div>
-        <!-- 分页 -->
-        <div class="layui-row">
-            <div class="layui-box layui-laypage layui-laypage-default">
-                    <!-- 上一页 -->
-                    {% if docs.has_previous %}
-                        <a href="?page={{ docs.previous_page_number }}&kw={{docs.kw}}&status={{docs.status}}&pid={{docs.pid}}" class="layui-btn layui-btn-xs layui-btn-normal">{% trans "上一页" %}</a>
-                    {% else %}
-                        <a href="javascript:;" class="layui-btn layui-btn-xs layui-btn-disabled">{% trans "上一页" %}</a>
-                    {% endif %}
-                    <!-- 当前页 -->
-                    <span class="layui-laypage-curr">
-                        <em class="layui-laypage-em"></em>
-                        <em>{{ docs.number }}/{{ docs.paginator.num_pages }}</em>
-                    </span>
-                    <!-- 下一页 -->
-                    {% if docs.has_next %}
-                        <a href="?page={{ docs.next_page_number }}&kw={{docs.kw}}&status={{docs.status}}&pid={{docs.pid}}" class="layui-btn layui-btn-xs layui-btn-normal">{% trans "下一页" %}</a>
-                    {% else %}
-                        <a class="layui-btn layui-btn-xs layui-btn-disabled">{% trans "下一页" %}</a>
-                    {% endif %}
-            </div>
-        </div>
+        {% include 'includes/pagination.html' with page_obj=docs %}
     </div>
 </div>
 {% endblock %}
-{% block custom_script %}
+
+{% block scripts %}
 <script>
-    layui.use(['table', 'form', 'jquery', 'layer'], function() {
-        let table = layui.table;
-        let form = layui.form;
-        let $ = layui.jquery;
-        let layer = layui.layer;
-        $.ajaxSetup({
-                data: {csrfmiddlewaretoken: '{{ csrf_token }}' },
+(function() {
+    var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    function doPost(data, onSuccess) {
+        var loadingEl = document.createElement('div');
+        loadingEl.className = 'ispace-loading-overlay';
+        loadingEl.innerHTML = '<div class="ispace-spinner"></div>';
+        document.body.appendChild(loadingEl);
+
+        var bodyData = new URLSearchParams();
+        for (var key in data) {
+            bodyData.append(key, data[key]);
+        }
+
+        fetch('{% url "doc_recycle" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: bodyData.toString()
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(r) {
+            loadingEl.remove();
+            if (r.status) {
+                if (onSuccess) onSuccess();
+            } else {
+                showError(r.data || '{% trans "操作失败" %}');
+            }
+        })
+        .catch(function() {
+            loadingEl.remove();
+            showError('{% trans "操作异常" %}');
+        });
+    }
+
+    window.delDoc = function(doc_id) {
+        iSpaceDoc.confirm({
+            title: '{% trans "删除文档" %}',
+            message: '{% trans "警告：此操作将彻底删除此文档！" %}'
+        }).then(function() {
+            doPost({ doc_id: doc_id, type: 'del' }, function() {
+                window.location.reload();
             });
-        // 删除文档
-        delDoc = function(doc_id){
-            layer.open({
-                type:1,
-                title:'删除文档',
-                area:'300px;',
-                id:'delPro',//配置ID
-                content:'<div style="margin-left:10px;">警告：此操作将彻底删除此文档！</div>',
-                btn:['确定','取消'], //添加按钮
-                btnAlign:'c', //按钮居中
-                yes:function (index,layero) {
-                    layer.load(1);
-                    data = {
-                        'doc_id':doc_id,
-                        'type':'del',
-                    }
-                    $.post("{% url 'doc_recycle' %}",data,function(r){
-                        layer.closeAll('loading')
-                        if(r.status){
-                            //删除成功
-                            window.location.reload();
-                            //layer.close(index)
-                        }else{
-                            //删除失败，提示
-                            console.log(r)
-                            layer.msg(r.data)
-                        }
-                    })
-                },
+        });
+    };
+
+    window.restoreDoc = function(doc_id) {
+        iSpaceDoc.confirm({
+            title: '{% trans "还原文档" %}',
+            message: '{% trans "提示：文档将还原为草稿状态！" %}'
+        }).then(function() {
+            doPost({ doc_id: doc_id, type: 'restore' }, function() {
+                window.location.reload();
             });
-        };
-        // 还原文档
-        restoreDoc = function(doc_id){
-            layer.open({
-                type:1,
-                title:'还原文档',
-                area:'300px;',
-                id:'delPro',//配置ID
-                content:'<div style="margin-left:10px;">提示：文档将还原为草稿状态！</div>',
-                btn:['确定','取消'], //添加按钮
-                btnAlign:'c', //按钮居中
-                yes:function (index,layero) {
-                    layer.load(1);
-                    data = {
-                        'doc_id':doc_id,
-                        'type':'restore',
-                    }
-                    $.post("{% url 'doc_recycle' %}",data,function(r){
-                        layer.closeAll('loading')
-                        if(r.status){
-                            //还原成功
-                            window.location.reload();
-                            //layer.close(index)
-                        }else{
-                            //还原失败，提示
-                            console.log(r)
-                            layer.msg(r.data)
-                        }
-                    })
-                },
+        });
+    };
+
+    window.emptyDoc = function() {
+        iSpaceDoc.confirm({
+            title: '{% trans "清空回收站" %}',
+            message: '{% trans "警告：此操作将彻底删除回收站所有文档！" %}'
+        }).then(function() {
+            doPost({ type: 'empty' }, function() {
+                window.location.reload();
             });
-        };
-        // 清空回收站
-        emptyDoc = function(){
-            layer.open({
-                type:1,
-                title:'清空回收站',
-                area:'300px;',
-                id:'delPro',//配置ID
-                content:'<div style="margin-left:10px;">警告：此操作将彻底删除回收站所有文档！</div>',
-                btn:['确定','取消'], //添加按钮
-                btnAlign:'c', //按钮居中
-                yes:function (index,layero) {
-                    layer.load(1);
-                    data = {
-                        'type':'empty',
-                    }
-                    $.post("{% url 'doc_recycle' %}",data,function(r){
-                        layer.closeAll('loading')
-                        if(r.status){
-                            //清空成功
-                            window.location.reload();
-                            //layer.close(index)
-                        }else{
-                            //清空失败，提示
-                            console.log(r)
-                            layer.msg(r.data)
-                        }
-                    })
-                },
+        });
+    };
+
+    window.restoreAll = function() {
+        iSpaceDoc.confirm({
+            title: '{% trans "还原回收站" %}',
+            message: '{% trans "警告：此操作将还原回收站所有文档为草稿状态！" %}'
+        }).then(function() {
+            doPost({ type: 'restoreAll' }, function() {
+                window.location.reload();
             });
-        };
-        // 还原所有
-        restoreAll = function(){
-            layer.open({
-                type:1,
-                title:'还原回收站',
-                area:'300px;',
-                id:'delPro',//配置ID
-                content:'<div style="margin-left:10px;">警告：此操作将还原回收站所有文档为草稿状态！</div>',
-                btn:['确定','取消'], //添加按钮
-                btnAlign:'c', //按钮居中
-                yes:function (index,layero) {
-                    layer.load(1);
-                    data = {
-                        'type':'restoreAll',
-                    }
-                    $.post("{% url 'doc_recycle' %}",data,function(r){
-                        layer.closeAll('loading')
-                        if(r.status){
-                            //还原成功
-                            window.location.reload();
-                            //layer.close(index)
-                        }else{
-                            //还原失败，提示
-                            console.log(r)
-                            layer.msg(r.data)
-                        }
-                    })
-                },
-            });
-        };
-    })
+        });
+    };
+
+})();
 </script>
 {% endblock %}

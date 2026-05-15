@@ -1,79 +1,95 @@
-{% extends 'app_doc/user/user_base.html' %}
+{% extends "base.html" %}
 {% load static %}
 {% load i18n %}
-{% block title %}{% trans "文集设置" %}{% endblock %}
+{% block title %}{% trans "文集转让" %}{% endblock %}
+
 {% block content %}
-<div class="layui-card">
-    <div class="layui-card-body">
-        <div class="layui-row" style="padding-left:15px;">
-            <span class="layui-breadcrumb" lay-separator=">">
-            <a href="{% url 'manage_project' %}">{% trans "文集管理" %}</a>
-            <a href="{% url 'modify_project' %}?pro_id={{pro.id}}">{% trans "文集设置" %}</a>
-            <a><cite>{% trans "转让文集" %}</cite></a>
-            </span>
+<div class="ispace-page">
+    <!-- Breadcrumb -->
+    <div class="ispace-content-card" style="margin-bottom:var(--ispace-spacing-4);">
+        <div style="padding:var(--ispace-spacing-3) var(--ispace-spacing-5);">
+            <nav class="ispace-breadcrumb" aria-label="breadcrumb">
+                <a href="{% url 'manage_project' %}" style="color:var(--ispace-color-text-secondary);text-decoration:none;">{% trans "文集管理" %}</a>
+                <span style="color:var(--ispace-color-text-tertiary);margin:0 var(--ispace-spacing-2);">/</span>
+                <a href="{% url 'modify_project' %}?pro_id={{ pro.id }}" style="color:var(--ispace-color-text-secondary);text-decoration:none;">{% trans "文集设置" %}</a>
+                <span style="color:var(--ispace-color-text-tertiary);margin:0 var(--ispace-spacing-2);">/</span>
+                <span style="color:var(--ispace-color-text);">{% trans "转让文集" %}</span>
+            </nav>
         </div>
     </div>
-</div>
 
-<div class="layui-card">
-    <div class="layui-card-body">
-        <div class="layui-card-header" style="margin-bottom: 10px;">
-            <div class="layui-row">
-                <span style="font-size:18px;">{% trans "转让文集：" %}{{pro.name}}
+    <div class="ispace-content-card">
+        <div style="padding:var(--ispace-spacing-5);">
+            <div style="margin-bottom:var(--ispace-spacing-4);">
+                <span style="font-size:var(--ispace-font-size-lg);font-weight:var(--ispace-font-weight-semibold);">
+                    {% trans "转让文集：" %}{{ pro.name }}
                 </span>
             </div>
-        </div>
-        <div class="layui-row">
-            <div class="layui-form">
-                <select name="user-select" id="user-select" lay-verify="" lay-search>
+            <div class="ispace-form-group" style="max-width:400px;">
+                <label class="ispace-form-label" for="user-select">{% trans "选择接收用户" %}</label>
+                <select id="user-select" name="user-select" class="ispace-form-input">
                     <option value="">{% trans "选择用户，可搜索" %}</option>
                     {% for user in user_list %}
-                    <option value="{{user.username}}">{{user.first_name}}({{user.username}})</option>
+                    <option value="{{ user.username }}">{{ user.first_name }}({{ user.username }})</option>
                     {% endfor %}
                 </select>
             </div>
-        </div>
-        <div class="layui-row" style="margin-top: 5px;">
-            <button class="layui-btn layui-btn-normal" id="transfer-project"><i class="layui-icon layui-icon-transfer"></i> {% trans "转让文集的管理权限及文档" %}</button>
+            <div class="ispace-form-actions" style="margin-top:var(--ispace-spacing-4);">
+                <button class="ispace-btn ispace-btn-primary" id="transfer-project">
+                    {% trans "转让文集的管理权限及文档" %}
+                </button>
+            </div>
         </div>
     </div>
 </div>
 {% endblock %}
-{% block custom_script %}
+
+{% block scripts %}
 <script>
-    layui.use(['table','jquery','form','layer','element'], function() {
-        let table = layui.table;
-        let form = layui.form;
-        let $ = layui.jquery;
-        let layer = layui.layer;
-        let element = layui.element;
-        $.ajaxSetup({
-            data: {csrfmiddlewaretoken: '{{ csrf_token }}' },
-        });
-        // 转让文集
-        transferProject = function(){
-            layer.load(1);
-            data = {
-                'username':$("#user-select").val(),
-            }
-            $.post("{% url 'manage_pro_transfer' pro.id %}",data,function(r){
-                layer.closeAll('loading'); //关闭loading
-                if(r.status){
-                    //转让成功
-                    layer.msg('{% trans "转让成功，即将返回文集列表……" %}',function(){
-                        window.location.href = "{% url 'manage_project' %}"
-                    })
-                    //layer.close(index)
-                }else{
-                    //转让失败，提示
-                    console.log(r)
-                    layer.msg(r.data)
-                }
-            })
+(function() {
+    var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    document.getElementById('transfer-project').addEventListener('click', function() {
+        var username = document.getElementById('user-select').value;
+
+        if (!username) {
+            showWarning('{% trans "请选择接收用户" %}');
+            return;
         }
-        $("#transfer-project").click(function(){
-            transferProject();
+
+        var loadingEl = document.createElement('div');
+        loadingEl.className = 'ispace-loading-overlay';
+        loadingEl.innerHTML = '<div class="ispace-spinner"></div>';
+        document.body.appendChild(loadingEl);
+
+        var data = new URLSearchParams();
+        data.append('username', username);
+
+        fetch('{% url "manage_pro_transfer" pro.id %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: data.toString()
         })
+        .then(function(r) { return r.json(); })
+        .then(function(r) {
+            loadingEl.remove();
+            if (r.status) {
+                showSuccess('{% trans "转让成功，即将返回文集列表……" %}');
+                setTimeout(function() {
+                    window.location.href = '{% url "manage_project" %}';
+                }, 1500);
+            } else {
+                showError(r.data || '{% trans "转让失败" %}');
+            }
+        })
+        .catch(function() {
+            loadingEl.remove();
+            showError('{% trans "转让异常" %}');
+        });
     });
+})();
 </script>
 {% endblock %}

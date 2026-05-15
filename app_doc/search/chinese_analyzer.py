@@ -23,7 +23,7 @@ class ChineseTokenizer(Tokenizer):
     ["hi", "there", "3.141", "big", "time", "under_score"]
     """
     def __init__(self, expression=default_pattern, gaps=False):
-        """
+        r"""
         :param expression: 一个正则表达式对象或字符串，默认为 rcompile(r"\w+(\.?\w+)*")。
             表达式的每一个匹配都等于一个 token 令牌。
             第0组匹配（整个匹配文本）用作 token 令牌的文本。

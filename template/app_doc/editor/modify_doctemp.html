@@ -1,7 +1,7 @@
 {% extends 'app_doc/editor/create_base.html' %}
 {% load static %}
 {% load i18n %}
-{% block title %}修改文档模板{% endblock %}
+{% block editor_title %}修改文档模板{% endblock %}
 
 {% block head_toolbar %}
     <a class="btn pull-left js-toolbar-action" aria-label="" href="javascript:void(0);" title="切换侧边栏">
@@ -47,7 +47,7 @@
     </div>
 {% endblock %}
 
-{% block content %}
+{% block editor_content %}
     <div class="create-doc-form">
         <div class="layui-form" style="padding-bottom:10px;">
             <div class="layui-input-block" style="margin-left:0px;">
@@ -61,39 +61,44 @@
 {% endblock %}
 
 {% block custom_script %}
-    <script>
-        //修改文档模板
-        modifyDocTemp = function(){
-            $('button.layui-btn').attr("disabled",true);
-            $('button.layui-btn').addClass('layui-btn-disabled');
-            layer.load(1);
-            if(editor_mode == 1){
-                var content = editor.getMarkdown()
-            }else if(editor_mode == 2){
-                var content = editor.getValue()
-            }
-            var data = {
-                'doctemp_id':'{{ doctemp.id }}',
-                'name':$("#doctemp-name").val(),
-                'content':content,
-            }
-            $.post("{% url 'modify_doctemp' doctemp_id=doctemp.id %}",data,function(r){
-                layer.closeAll("loading");
-                if(r.status){
-                    //修改成功
-                    window.localStorage.removeItem('mrdoc_doc_cache') // 清空文档缓存
-                    layer.msg('修改成功，即将跳转',function(){
-                        md_changed = false;
-                        window.location.href = '/modify_doctemp/'+ '{{ doctemp.id }}/';
-                    });
-                }else{
-                    //创建失败
-                    layer.msg('保存失败');
-                    $('button.layui-btn').attr("disabled",false);
-                    $('button.layui-btn').removeClass('layui-btn-disabled');
-                }
-            });
+<script>
+    // Modify document template
+    window.modifyDocTemp = function(){
+        disableButtons(true);
+        showLoading();
+
+        var content;
+        if(editor_mode == 1){
+            content = editor.getMarkdown();
+        } else if(editor_mode == 2){
+            content = editor.getValue();
+        }
+
+        var nameEl = document.getElementById('doctemp-name');
+        var data = {
+            'doctemp_id': '{{ doctemp.id }}',
+            'name': nameEl ? nameEl.value : '',
+            'content': content,
         };
 
-    </script>
+        postData("{% url 'modify_doctemp' doctemp_id=doctemp.id %}", data).then(function(r){
+            hideLoading();
+            if(r.status){
+                window.localStorage.removeItem('mrdoc_doc_cache');
+                showSuccess('修改成功，即将跳转');
+                setTimeout(function(){
+                    md_changed = false;
+                    window.location.href = '/modify_doctemp/' + '{{ doctemp.id }}/';
+                }, 1000);
+            } else {
+                showError('保存失败');
+                disableButtons(false);
+            }
+        }).catch(function(){
+            hideLoading();
+            showError('保存异常');
+            disableButtons(false);
+        });
+    };
+</script>
 {% endblock %}
