@@ -2,6 +2,10 @@
 {% load static %}
 <script>    
     //初始化vditor编辑器
+    if (typeof Vditor === 'undefined') {
+        layer.closeAll('loading');
+        layer.msg('Vditor 编辑器组件未安装，请将 vditor 库放入 static/vditor/ 目录', {icon: 2});
+    } else {
     layer.load(1)
     if(screen_width.matches){
         var vditor_mode = 'ir'
@@ -259,4 +263,5 @@
             }
         }
     });
+    } // end if typeof Vditor check
 </script>

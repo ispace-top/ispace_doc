@@ -126,7 +126,7 @@
     </div>
 {% endblock %}
 
-{% block editor_content %}
+{% block content %}
     <div class="create-doc-form">
         <div class="layui-form">
             <!-- 标题 -->
@@ -255,7 +255,7 @@
         var sel_pro_list = document.querySelectorAll('dl.layui-anim dd');
         for(var i = 0; i < sel_pro_list.length; i++){
             if(sel_pro_list[i].getAttribute('lay-value') == '{{pid}}'){
-                var sel_pro = 'dd[lay-value=' + sel_pro_list[i].getAttribute('lay-value') + ']';
+                var sel_pro = 'dd[lay-value="' + sel_pro_list[i].getAttribute('lay-value') + '"]';
                 var projectEl = document.getElementById('project');
                 if(projectEl){
                     var dd = projectEl.parentElement.querySelector('dl').querySelector(sel_pro);
