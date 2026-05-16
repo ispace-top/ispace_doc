@@ -7,7 +7,7 @@
 
 {% block header %}
 <header class="ispace-header">
-    <div class="ispace-header-container">
+    <div class="ispace-header-container home-header-container">
         <div class="ispace-header-left">
             <a href="/" class="ispace-logo">
                 <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
@@ -168,7 +168,11 @@
 
 {% block scripts %}
 <style>
-/* ---- Header subtitle ---- */
+/* ---- Header ---- */
+.home-header-container {
+    max-width: none;
+    padding: 0;
+}
 .ispace-header-subtitle {
     font-size: var(--ispace-font-sm);
     color: var(--ispace-color-text-tertiary);
