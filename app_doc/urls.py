@@ -1,12 +1,19 @@
 from django.urls import path,re_path,include
+from django.views.generic import RedirectView
 from app_doc import views,views_user,views_search,util_upload_img,views_import
 
 urlpatterns = [
     path('',views.project_list,name='pro_list'),# 文档首页
-    #################文集相关
-    path('project-<int:pro_id>/', views.project_index, name='pro_index'),  # 文集浏览页
-    path('project/<int:pro_id>/', views.project_index, name='pro_index_id'),  # 文集浏览页
-    path('create_project/', views.create_project, name='create_project'),  # 新建文集
+    #################文档相关
+    path('docs/<int:pro_id>/', views.project_index, name='pro_index'),  # 根文档浏览页
+    path('docs/<int:pro_id>/<int:doc_id>/', views.doc, name='doc'),  # 文档浏览页
+    path('docs/<int:pro_id>/<int:doc_id>/comments/', views.doc_comments, name='doc_comments'),  # 获取/发表评论
+    # 旧URL重定向（兼容）
+    path('project-<int:pro_id>/', RedirectView.as_view(pattern_name='pro_index', permanent=True)),
+    path('project-<int:pro_id>/doc-<int:doc_id>/', RedirectView.as_view(pattern_name='doc', permanent=True)),
+    path('project-<int:pro_id>/doc-<int:doc_id>/comments/', RedirectView.as_view(pattern_name='doc_comments', permanent=True)),
+    path('project/<int:pro_id>/', RedirectView.as_view(pattern_name='pro_index', permanent=True)),
+    path('create_project/', views.create_project, name='create_project'),  # 新建根文档
     path('get_pro_doc/', views.get_pro_doc, name="get_pro_doc"),  # 获取某个文集的下级文档
     path('get_pro_doc_tree/', views.get_pro_doc_tree, name="get_pro_doc_tree"),  # 获取某个文集的下级文档树数据
     path('modify_pro/',views.modify_project,name='modify_project'), # 修改文集
@@ -28,7 +35,6 @@ urlpatterns = [
     path('api/my_colla_list/', views.MyCollaList.as_view(), name="my_colla_list"),  # 我的协作文集列表
     path('api/import_local_doc/', views_import.ImportLocalDoc.as_view(), name="import_local_doc_api"),  # 导入本地文档API
     #################文档相关
-    path('project-<int:pro_id>/doc-<int:doc_id>/', views.doc, name='doc'),  # 文档浏览页
     path('doc/<int:doc_id>/', views.doc_id, name="doc_id"),  # 文档浏览页(通过文档ID)
     path('create_doc/', views.create_doc, name="create_doc"),  # 新建文档
     path('modify_doc/<int:doc_id>/', views.modify_doc, name="modify_doc"),  # 修改文档
@@ -74,7 +80,6 @@ urlpatterns = [
     path('get_version/',views.get_version,name="get_version"), # 获取当前版本
     path('api/usergroups/userlist', views.UserGroupUserList.as_view(), name="api_usergroups_userlist"),  # 用户分组的用户列表接口
     #################文档评论
-    path('project-<int:pro_id>/doc-<int:doc_id>/comments/', views.doc_comments, name='doc_comments'),  # 获取/发表评论
     path('comment/<int:comment_id>/delete/', views.delete_comment, name='delete_comment'),  # 删除评论
     path('doc/<int:doc_id>/like/', views.doc_like_toggle, name='doc_like_toggle'),  # 文档点赞
 ]

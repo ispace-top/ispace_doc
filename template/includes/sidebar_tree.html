@@ -72,13 +72,13 @@
     // ---- Highlight current document & expand ancestor tree nodes ----
     (function(){
         var path = window.location.pathname;
-        var proMatch = path.match(/^\/project-(\d+)\//);
+        var proMatch = path.match(/^\/docs\/(\d+)\//);
         if (proMatch) {
             var pid = proMatch[1];
-            var docMatch = path.match(/\/project-\d+\/doc-(\d+)\//);
+            var docMatch = path.match(/\/docs\/\d+\/(\d+)\//);
             if (docMatch) {
                 // Doc page: highlight doc node + expand ancestors
-                var docLink = document.querySelector('.ispace-tree-link[href*="doc-' + docMatch[1] + '"]');
+                var docLink = document.querySelector('.ispace-tree-link[href*="/docs/' + pid + '/' + docMatch[1] + '/"]');
                 if (docLink) {
                     docLink.classList.add('ispace-active');
                     var node = docLink.closest('.ispace-tree-node');
@@ -97,8 +97,8 @@
                     }
                 }
             } else {
-                // Project page: highlight the project tree node
-                var proLink = document.querySelector('.ispace-tree-link[href$="project-' + pid + '/"]');
+                // Root doc page: highlight the root tree node
+                var proLink = document.querySelector('.ispace-tree-link[href$="/docs/' + pid + '/"]');
                 if (proLink) proLink.classList.add('ispace-active');
             }
         }

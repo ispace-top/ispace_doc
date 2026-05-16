@@ -60,10 +60,10 @@
                             <span style="display:inline-flex;align-items:center;gap:4px;">
                                 {% if c.type == 1 %}
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
-                                <a href="/project-{{ c.item_project_id }}/doc-{{ c.item_id }}/" target="_blank" style="font-weight:500;">{{ c.item_name }}</a>
+                                <a href="/docs/{{ c.item_project_id }}/{{ c.item_id }}/" target="_blank" style="font-weight:500;">{{ c.item_name }}</a>
                                 {% elif c.type == 2 %}
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
-                                <a href="/project-{{ c.item_id }}/" target="_blank" style="font-weight:500;">{{ c.item_name }}</a>
+                                <a href="/docs/{{ c.item_id }}/" target="_blank" style="font-weight:500;">{{ c.item_name }}</a>
                                 {% endif %}
                             </span>
                         </td>

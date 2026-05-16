@@ -32,9 +32,6 @@
             {% if request.user == project.create_user or colla_user > 0 %}
             <button class="ispace-btn ispace-btn-primary ispace-btn-sm" onclick="enterCreateMode()" id="header-add-btn">添加文档</button>
             {% endif %}
-            {% if request.user == project.create_user %}
-            <a href="{% url 'user_center' %}?tab=manage_project" class="ispace-btn ispace-btn-ghost ispace-btn-sm">管理</a>
-            {% endif %}
             {% if user.is_authenticated %}
                 {% include "includes/user_dropdown.html" %}
             {% else %}
@@ -166,7 +163,7 @@ function toggleCollectPro(){
 window._mrdocVersion = '{{ mrdoc_version }}';
 window._inlineUploadImgUrl = '{% url "upload_doc_img" %}';
 window._inlineUploadIceImgUrl = '{% url "upload_ice_img" %}';
-window._inlineSubmitFn = inlineCreateDoc;
+window._inlineSubmitFn = inlineCreateSubmit;
 window._inlineCancelFn = inlineCancelCreate;
 
 function enterCreateMode() {
@@ -178,15 +175,8 @@ function enterCreateMode() {
     window._inlineIsCreate = true;
     window._inlineDocId = 0;
     window._inlineProjectId = {{ project.id }};
-
-    // Populate project selector with current project pre-selected
-    var proSelect = document.getElementById('inline-project');
-    if (proSelect) {
-        proSelect.innerHTML = '<option value="{{ project.id }}">{{ project.name|escapejs }}</option>';
-        proSelect.value = '{{ project.id }}';
-    }
-    var proRow = document.getElementById('inline-project-row');
-    if (proRow) proRow.style.display = '';
+    document.getElementById('inline-parent-doc').value = '0';
+    document.getElementById('inline-parent-project').value = '{{ project.id }}';
 
     initInlineEditor({{ editor_mode|default:1 }}, true);
 }
@@ -205,52 +195,6 @@ function exitCreateMode() {
     var headerBtn = document.getElementById('header-add-btn');
     if (headerBtn) headerBtn.style.display = '';
 }
-
-function inlineCreateDoc(status) {
-    var content = getInlineEditorContent();
-    var preContent = getInlineEditorPreContent();
-    var docName = document.getElementById('inline-doc-name');
-    var tagsEl = document.getElementById('inline-tagsinput');
-    var proSelect = document.getElementById('inline-project');
-
-    var payload = {
-        project: proSelect ? proSelect.value : '{{ project.id }}',
-        doc_name: docName ? docName.value : '',
-        content: content,
-        pre_content: preContent,
-        doc_tag: tagsEl ? tagsEl.value : '',
-        status: status,
-        editor_mode: window._inlineEditorMode
-    };
-
-    fetch('{% url "create_doc" %}', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: Object.keys(payload).map(function(k) {
-            return encodeURIComponent(k) + '=' + encodeURIComponent(payload[k] != null ? payload[k] : '');
-        }).join('&') + '&csrfmiddlewaretoken=' + (document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '{{ csrf_token }}')
-    }).then(function(r) { return r.json(); })
-    .then(function(r) {
-        if (r.status) {
-            window._inlineMdChanged = false;
-            exitCreateMode();
-            if (typeof layer !== 'undefined') layer.msg(status === 1 ? '发布成功' : '保存成功', {icon: 1});
-            var newDocId = r.data && r.data.doc ? r.data.doc : r.data;
-            if (newDocId) {
-                window.location.href = '{% url "doc" pro_id=project.id doc_id=99999 %}'.replace('99999', newDocId);
-            }
-        } else {
-            if (typeof layer !== 'undefined') layer.msg('创建失败: ' + (r.data || ''), {icon: 2});
-            else alert('创建失败');
-        }
-    }).catch(function() {
-        if (typeof layer !== 'undefined') layer.msg('创建异常', {icon: 2});
-    });
-}
-
 window.addEventListener('beforeunload', function(e) {
     if (window._inlineMdChanged) {
         e.preventDefault();

@@ -3,7 +3,19 @@
 
 {% block title %}{{ doc.name }} - {{ project.name }} - {{ site_name|default:"iSpaceDoc" }}{% endblock %}
 {% block meta_description %}{{ doc.pre_content|striptags|slice:":100" }}{% endblock %}
-{% block breadcrumb %}{% include "includes/breadcrumb.html" with breadcrumbs=breadcrumb_items %}{% endblock %}
+{% block header_logo %}
+{{ block.super }}
+<span class="ispace-header-subtitle">{% trans "高效沉淀团队知识，让每一份文档都有归处" %}</span>
+{% endblock %}
+
+{% block header_center %}
+<div class="ispace-header-search-center">
+    <div class="ispace-search-input-wrap" style="max-width:420px;width:100%;">
+        <svg class="ispace-search-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="ispace-form-input" id="searchKw" placeholder="{% trans '搜索文档...' %}" value="" onkeyup="if(event.key==='Enter')doSearch()">
+    </div>
+</div>
+{% endblock %}
 
 {% block head_extra %}
 <meta property="og:title" content="{{ doc.name }} - {{ project.name }}">
@@ -27,32 +39,9 @@
 
 {% block layout_class %}{% endblock %}
 
-{% block header_actions %}
-<div class="ispace-flex-center ispace-gap-2">
-    {% include "includes/theme_toggle.html" %}
-    {% if request.user == doc.create_user or request.user == project.create_user %}
-    {% if doc.editor_mode != 4 %}
-    <button class="ispace-btn ispace-btn-ghost ispace-btn-sm" onclick="enterEditMode()">编辑</button>
-    {% else %}
-    <a href="{% url 'modify_doc' doc_id=doc.id %}" class="ispace-btn ispace-btn-ghost ispace-btn-sm">编辑</a>
-    {% endif %}
-    <a href="{% url 'create_doc' %}?pid={{ project.id }}" class="ispace-btn ispace-btn-primary ispace-btn-sm">添加</a>
-    {% elif colla_user > 0 %}
-    {% if colla_user_role == 1 %}
-    {% if doc.editor_mode != 4 %}
-    <button class="ispace-btn ispace-btn-ghost ispace-btn-sm" onclick="enterEditMode()">编辑</button>
-    {% else %}
-    <a href="{% url 'modify_doc' doc_id=doc.id %}" class="ispace-btn ispace-btn-ghost ispace-btn-sm">编辑</a>
-    {% endif %}
-    {% endif %}
-    <a href="{% url 'create_doc' %}?pid={{ project.id }}" class="ispace-btn ispace-btn-primary ispace-btn-sm">添加</a>
-    {% endif %}
-    {% include "includes/user_dropdown.html" %}
-</div>
-{% endblock %}
-
 {% block content %}
 <div id="doc-view-wrap">
+{% include "includes/breadcrumb.html" with breadcrumbs=breadcrumb_items %}
 <h1 class="ispace-page-title ispace-mb-3" id="doc-view-title">{{ doc.name }}</h1>
 
 {# --- Unified Doc Toolbar --- #}
@@ -88,6 +77,9 @@
             <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"/></svg>
         </button>
         {% if request.user == doc.create_user or request.user == project.create_user or colla_user_role == 1 %}
+        <button class="ispace-btn-icon ispace-btn-icon-sm" onclick="enterChildCreateMode()" id="add-child-btn" tooltip="添加子文档" placement="bottom">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/><line x1="12" y1="13" x2="12" y2="19"/><line x1="9" y1="16" x2="15" y2="16"/></svg>
+        </button>
         {% if doc.editor_mode != 4 %}
         <button class="ispace-btn-icon ispace-btn-icon-sm" onclick="enterEditMode()" id="edit-icon-btn" tooltip="编辑" placement="bottom">
             <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z"/><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd"/></svg>
@@ -255,11 +247,43 @@
     padding-left: var(--ispace-space-2);
     padding-right: var(--ispace-space-2);
 }
+/* Breadcrumb in content area — align to left edge of main, space from title */
+#doc-view-wrap .ispace-breadcrumb {
+    margin-bottom: var(--ispace-space-5);
+    padding-left: 0;
+    margin-left: calc(-1 * var(--ispace-space-2));
+}
+/* Header subtitle (same as homepage) */
+.ispace-header-subtitle {
+    font-size: var(--ispace-font-sm);
+    color: var(--ispace-color-text-tertiary);
+    margin-left: var(--ispace-space-2);
+    white-space: nowrap;
+}
+.ispace-header-search-center {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 420px;
+    pointer-events: none;
+}
+.ispace-header-search-center .ispace-search-input-wrap {
+    pointer-events: auto;
+}
+@media (max-width: 1024px) {
+    .ispace-header-subtitle { display: none; }
+}
 @media (max-width: 768px) {
     .ispace-main-content.doc-view-main {
         padding-left: var(--ispace-space-3);
         padding-right: var(--ispace-space-3);
     }
+    .ispace-header-search-center { display: none; }
 }
 </style>
 <script src="{% static 'viewerjs/viewer.min.js' %}?version={{ mrdoc_version }}"></script>
@@ -276,6 +300,10 @@
 {% endif %}
 
 <script>
+function doSearch(){
+    var kw = document.getElementById('searchKw').value.trim();
+    window.location.href = '/?kw=' + encodeURIComponent(kw);
+}
 function toggleSidebar(){var s=document.getElementById('doc-sidebar');s.style.display='none';document.querySelector('.ispace-app-layout').classList.remove('has-sidebar');}
 
 function toggleCollect(){
@@ -474,9 +502,13 @@ function enterEditMode() {
     if (viewWrap) viewWrap.style.display = 'none';
     var editBtn = document.getElementById('edit-icon-btn');
     if (editBtn) editBtn.style.display = 'none';
+    var addBtn = document.getElementById('add-child-btn');
+    if (addBtn) addBtn.style.display = 'none';
     window._inlineIsCreate = false;
     window._inlineDocId = window._docId;
     window._inlineProjectId = window._docProId;
+    window._inlineSubmitFn = inlineSaveDoc;
+    window._inlineCancelFn = inlineCancelEdit;
     initInlineEditor(window._docEditorMode, false);
 }
 
@@ -493,6 +525,45 @@ function exitEditMode() {
     if (viewWrap) viewWrap.style.display = '';
     var editBtn = document.getElementById('edit-icon-btn');
     if (editBtn) editBtn.style.display = '';
+    var addBtn = document.getElementById('add-child-btn');
+    if (addBtn) addBtn.style.display = '';
+}
+
+// ---- Child Doc Creation Mode ----
+function enterChildCreateMode() {
+    var viewWrap = document.getElementById('doc-view-wrap');
+    if (viewWrap) viewWrap.style.display = 'none';
+    var editBtn = document.getElementById('edit-icon-btn');
+    if (editBtn) editBtn.style.display = 'none';
+    var addBtn = document.getElementById('add-child-btn');
+    if (addBtn) addBtn.style.display = 'none';
+
+    window._inlineIsCreate = true;
+    window._inlineDocId = 0;
+    window._inlineProjectId = window._docProId;
+    document.getElementById('inline-parent-doc').value = '{{ doc.id }}';
+    document.getElementById('inline-parent-project').value = '{{ project.id }}';
+    window._inlineSubmitFn = inlineCreateSubmit;
+    window._inlineCancelFn = inlineCancelChildCreate;
+
+    initInlineEditor(window._docEditorMode, true);
+}
+
+function inlineCancelChildCreate() {
+    if (window._inlineMdChanged) {
+        if (!confirm('有未保存的更改，确定要取消吗？')) return;
+    }
+    exitChildCreateMode();
+}
+
+function exitChildCreateMode() {
+    destroyInlineEditor();
+    var viewWrap = document.getElementById('doc-view-wrap');
+    if (viewWrap) viewWrap.style.display = '';
+    var editBtn = document.getElementById('edit-icon-btn');
+    if (editBtn) editBtn.style.display = '';
+    var addBtn = document.getElementById('add-child-btn');
+    if (addBtn) addBtn.style.display = '';
 }
 
 function inlineSaveDoc(status) {

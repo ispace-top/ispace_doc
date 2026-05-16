@@ -12,12 +12,12 @@
             </svg>
             个人中心
         </a>
-        <a href="{% url 'manage_overview' %}" class="ispace-dropdown-item">
+        <a href="{% url 'user_center' %}?tab=manage_doc" class="ispace-dropdown-item">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
                 <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
             </svg>
-            我的文集
+            文档管理
         </a>
         {% if user.is_staff %}
         <a href="{% url 'admin_center' %}" class="ispace-dropdown-item">

@@ -415,9 +415,39 @@ def project_list(request):
                 if p:
                     recent_favorites.append({
                         'name': p.name,
-                        'type': '文集',
+                        'type': '文档',
                         'url': reverse('pro_index', args=[p.id]),
                         'time': c.create_time,
+                    })
+
+    # 最近浏览
+    recent_views = []
+    raw_views = request.session.get('recent_views', [])
+    if raw_views:
+        doc_ids_rv = [r[1] for r in raw_views if r[0] == 'doc']
+        pro_ids_rv = [r[1] for r in raw_views if r[0] == 'pro']
+        doc_map_rv = {}
+        if doc_ids_rv:
+            for d in Doc.objects.filter(id__in=doc_ids_rv, status=1):
+                doc_map_rv[d.id] = d
+        pro_map_rv = {}
+        if pro_ids_rv:
+            for p in Project.objects.filter(id__in=pro_ids_rv):
+                pro_map_rv[p.id] = p
+        for r in raw_views:
+            if r[0] == 'doc':
+                d = doc_map_rv.get(r[1])
+                if d:
+                    recent_views.append({
+                        'name': d.name,
+                        'url': reverse('doc', args=[d.top_doc, d.id]),
+                    })
+            elif r[0] == 'pro':
+                p = pro_map_rv.get(r[1])
+                if p:
+                    recent_views.append({
+                        'name': p.name,
+                        'url': reverse('pro_index', args=[p.id]),
                     })
 
     return render(request, 'app_doc/pro_list.html', locals())
@@ -537,9 +567,14 @@ def project_index(request,pro_id):
                 pass
         doc = None  # 占位，用于 inline_editor.html 兼容
         breadcrumb_items = [{'name': project.name, 'url': ''}]
+        # 记录最近浏览
+        recent = request.session.get('recent_views', [])
+        recent = [r for r in recent if not (r[0] == 'pro' and r[1] == project.id)]
+        recent.insert(0, ['pro', project.id])
+        request.session['recent_views'] = recent[:10]
         return render(request, 'app_doc/project.html', locals())
     except Exception as e:
-        logger.exception(_("文集页访问异常"))
+        logger.exception(_("页面访问异常"))
         return render(request,'404.html')
 
 
@@ -1165,10 +1200,25 @@ def doc(request,pro_id,doc_id):
                     if i < len(toc_list) - 1:
                         next_doc = toc_list[i + 1]
                     break
+            # 构建完整面包屑：根文档 → 祖先文档链 → 当前文档
+            ancestor_ids = []
+            pid = doc.parent_doc
+            while pid and pid != 0:
+                ancestor_ids.append(pid)
+                pid = Doc.objects.filter(id=pid).values_list('parent_doc', flat=True).first()
             breadcrumb_items = [
-                {'name': project.name, 'url': '/project-{}/'.format(project.id)},
-                {'name': doc.name, 'url': ''}
+                {'name': project.name, 'url': '/docs/{}/'.format(project.id)},
             ]
+            if ancestor_ids:
+                ancestor_docs = Doc.objects.filter(id__in=ancestor_ids).in_bulk()
+                for aid in reversed(ancestor_ids):
+                    ad = ancestor_docs.get(aid)
+                    if ad:
+                        breadcrumb_items.append({
+                            'name': ad.name,
+                            'url': '/docs/{}/{}/'.format(project.id, ad.id)
+                        })
+            breadcrumb_items.append({'name': doc.name, 'url': ''})
             # 获取文档编辑历史（最近10条）
             doc_history = list(DocHistory.objects
                 .filter(doc=doc)
@@ -1178,15 +1228,20 @@ def doc(request,pro_id,doc_id):
             # 获取文档点赞状态
             like_count = DocLike.objects.filter(doc=doc).count()
             user_liked = DocLike.objects.filter(doc=doc, user=request.user).exists() if request.user.is_authenticated else False
+            # 记录最近浏览
+            recent = request.session.get('recent_views', [])
+            recent = [r for r in recent if not (r[0] == 'doc' and r[1] == doc.id)]
+            recent.insert(0, ['doc', doc.id, doc.top_doc])
+            request.session['recent_views'] = recent[:10]
             return render(request,'app_doc/doc.html',locals())
         else:
             return HttpResponse(_('参数错误'))
     except Exception as e:
-        logger.exception(_("文集浏览出错"))
+        logger.exception(_("文档浏览出错"))
         return render(request,'404.html')
 
 
-# 文档浏览页，可通过文档ID 或文集ID+文档ID访问
+# 文档浏览页，可通过文档ID 访问
 @require_http_methods(['GET'])
 def doc_id(request,doc_id):
     try:
@@ -1271,9 +1326,42 @@ def doc_id(request,doc_id):
             is_share = True
         except ObjectDoesNotExist:
             is_share = False
+        # 构建完整面包屑：根文档 → 祖先文档链 → 当前文档
+        ancestor_ids = []
+        pid = doc.parent_doc
+        while pid and pid != 0:
+            ancestor_ids.append(pid)
+            pid = Doc.objects.filter(id=pid).values_list('parent_doc', flat=True).first()
+        breadcrumb_items = [
+            {'name': project.name, 'url': '/docs/{}/'.format(project.id)},
+        ]
+        if ancestor_ids:
+            ancestor_docs = Doc.objects.filter(id__in=ancestor_ids).in_bulk()
+            for aid in reversed(ancestor_ids):
+                ad = ancestor_docs.get(aid)
+                if ad:
+                    breadcrumb_items.append({
+                        'name': ad.name,
+                        'url': '/docs/{}/{}/'.format(project.id, ad.id)
+                    })
+        breadcrumb_items.append({'name': doc.name, 'url': ''})
+        # 获取文档编辑历史（最近10条）
+        doc_history = list(DocHistory.objects
+            .filter(doc=doc)
+            .select_related('create_user')
+            .order_by('-create_time')[:10]
+            .values('id', 'create_user__username', 'create_user__first_name', 'create_time'))
+        # 获取文档点赞状态
+        like_count = DocLike.objects.filter(doc=doc).count()
+        user_liked = DocLike.objects.filter(doc=doc, user=request.user).exists() if request.user.is_authenticated else False
+        # 记录最近浏览
+        recent = request.session.get('recent_views', [])
+        recent = [r for r in recent if not (r[0] == 'doc' and r[1] == doc.id)]
+        recent.insert(0, ['doc', doc.id, doc.top_doc])
+        request.session['recent_views'] = recent[:10]
         return render(request,'app_doc/doc.html',locals())
     except Exception as e:
-        logger.exception(_("文集浏览出错"))
+        logger.exception(_("文档浏览出错"))
         return render(request,'404.html')
 
 
@@ -1961,16 +2049,23 @@ def share_doc(request):
         except ObjectDoesNotExist:
             return render(request,'404.html')
     elif request.method == 'POST':
-        doc_id = request.POST.get('id')
+        doc_id = request.POST.get('doc_id') or request.POST.get('id')
+        action = request.POST.get('action', '')
         try:
             # 获取请求参数
             doc = Doc.objects.get(id=doc_id)
             has_role = check_user_project_writer_role(request.user.id, doc.top_doc)
             if has_role is False:
                 return JsonResponse({'status': False, 'data': _('无操作权限')})
-            share_type = request.POST.get('share_type',0)
-            share_value = request.POST.get('share_value',0)
-            is_enable = request.POST.get('is_enable',True)
+
+            # 撤销分享
+            if action == 'cancel':
+                DocShare.objects.filter(doc=doc, is_enable=True).update(is_enable=False)
+                return JsonResponse({'status': True, 'data': 'cancelled'})
+
+            share_type = request.POST.get('share_type', 0)
+            share_value = request.POST.get('share_pwd') or request.POST.get('share_value', 0)
+            is_enable = request.POST.get('is_enable', True)
             if is_enable == 'false':
                 is_enable = False
             else:
@@ -3582,8 +3677,8 @@ def my_collect(request):
     if request.method == 'GET':
         pass
     elif request.method == 'POST':
-        collect_type = request.POST.get('type',None) # 收藏类型
-        collect_id = request.POST.get('id',None) # 收藏对象ID
+        collect_type = request.POST.get('collect_type',None) # 收藏类型
+        collect_id = request.POST.get('collect_id',None) # 收藏对象ID
         if (collect_type is None) or (collect_id is None):
             return JsonResponse({'status':False,'data':_('参数错误')})
         else:

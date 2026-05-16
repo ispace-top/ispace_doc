@@ -108,21 +108,21 @@
     var allLinks = document.querySelectorAll('#' + SIDEBAR_NAV_ID + ' .ispace-tree-link');
     allLinks.forEach(function (l) { l.classList.remove('ispace-active'); });
 
-    var proMatch = pathname.match(/\/project-(\d+)\//);
+    var proMatch = pathname.match(/\/docs\/(\d+)\//);
     var proId = proMatch ? proMatch[1] : null;
 
     if (proId) {
-      var docMatch = pathname.match(/\/project-\d+\/doc-(\d+)\//);
+      var docMatch = pathname.match(/\/docs\/\d+\/(\d+)\//);
       if (docMatch) {
         // Doc page: highlight doc node + expand ancestors
-        var docLink = document.querySelector('.ispace-tree-link[href*="doc-' + docMatch[1] + '"]');
+        var docLink = document.querySelector('.ispace-tree-link[href*="/docs/' + proId + '/' + docMatch[1] + '/"]');
         if (docLink) {
           docLink.classList.add('ispace-active');
           expandAncestors(docLink);
         }
       } else {
-        // Project page: highlight the project's root tree node
-        var proLink = document.querySelector('.ispace-tree-link[href$="project-' + proId + '/"]');
+        // Root doc page: highlight the root tree node
+        var proLink = document.querySelector('.ispace-tree-link[href$="/docs/' + proId + '/"]');
         if (proLink) proLink.classList.add('ispace-active');
       }
     } else if (pathname === '/') {

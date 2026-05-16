@@ -82,17 +82,6 @@
                     <h3 class="ispace-sidebar-section-title">{% trans "内容管理" %}</h3>
                     <ul class="ispace-sidebar-nav">
                         <li class="ispace-sidebar-item">
-                            <a href="{% url 'manage_project' %}" class="ispace-sidebar-link">
-                                <span class="ispace-sidebar-icon">
-                                    <svg viewBox="0 0 20 20" fill="currentColor">
-                                        <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/>
-                                    </svg>
-                                </span>
-                                {% trans "我的文集" %}
-                                {% if user_project_count %}<span class="ispace-sidebar-badge">{{ user_project_count }}</span>{% endif %}
-                            </a>
-                        </li>
-                        <li class="ispace-sidebar-item">
                             <a href="{% url 'manage_doc' %}" class="ispace-sidebar-link">
                                 <span class="ispace-sidebar-icon">
                                     <svg viewBox="0 0 20 20" fill="currentColor">
@@ -177,8 +166,8 @@
                     <h1 class="ispace-content-title">{% trans "账户设置" %}</h1>
                     <p class="ispace-content-subtitle">{% trans "管理您的账户信息和偏好设置" %}</p>
                 {% elif current_tab == 'manage_project' %}
-                    <h1 class="ispace-content-title">{% trans "我的文集" %}</h1>
-                    <p class="ispace-content-subtitle">{% trans "管理您创建的所有文集" %}</p>
+                    <h1 class="ispace-content-title">{% trans "根文档" %}</h1>
+                    <p class="ispace-content-subtitle">{% trans "管理您创建的所有根文档" %}</p>
                 {% elif current_tab == 'manage_doc' %}
                     <h1 class="ispace-content-title">{% trans "我的文档" %}</h1>
                     <p class="ispace-content-subtitle">{% trans "管理您创建的所有文档" %}</p>

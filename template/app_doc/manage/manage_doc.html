@@ -96,7 +96,7 @@
                         <td>
                             {% if d.status == 1 %}
                             <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#3b82f6;margin-right:6px;"></span>
-                            <a href="/project-{{ d.project_id }}/doc-{{ d.id }}/" target="_blank" style="font-weight:500;">{{ d.name }}</a>
+                            <a href="/docs/{{ d.project_id }}/{{ d.id }}/" target="_blank" style="font-weight:500;">{{ d.name }}</a>
                             {% elif d.status == 0 %}
                             <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b;margin-right:6px;"></span>
                             <a href="{% url 'modify_doc' d.id %}" target="_blank" title="{% blocktrans with name=d.name %}修改文档：{{ name }}{% endblocktrans %}" style="font-weight:500;">{{ d.name }}</a>

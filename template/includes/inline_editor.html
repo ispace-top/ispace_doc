@@ -8,13 +8,9 @@
                placeholder="{% trans '文档标题' %}" value="{{ doc.name|default:'' }}">
     </div>
 
-    {# --- Project selector (create mode only) --- #}
-    <div id="inline-project-row" class="ispace-form-group" style="display:none;margin-bottom:var(--ispace-space-3);">
-        <label class="ispace-form-label" style="font-size:var(--ispace-font-sm);margin-bottom:var(--ispace-space-1);">{% trans '所属文集' %}</label>
-        <select id="inline-project" class="ispace-form-select" style="max-width:360px;">
-            <option value="">{% trans '选择文集...' %}</option>
-        </select>
-    </div>
+    {# --- Parent context (auto-set by entry point) --- #}
+    <input type="hidden" id="inline-parent-doc" value="">
+    <input type="hidden" id="inline-parent-project" value="">
 
     {# --- Editor container --- #}
     <div id="inline-editor-md" class="ispace-editor-container" style="min-height:400px;border:1px solid var(--ispace-color-border-light);border-radius:var(--ispace-radius-md);">
@@ -258,5 +254,67 @@ function destroyInlineEditor() {
     }
     document.getElementById('inline-editor').style.display = 'none';
     window._inlineMdChanged = false;
+}
+
+// ---- Default inline create submit ----
+function inlineCreateSubmit(status) {
+    var docName = document.getElementById('inline-doc-name');
+    var tagsEl = document.getElementById('inline-tagsinput');
+    var content = getInlineEditorContent();
+    var preContent = getInlineEditorPreContent();
+    var parentDoc = document.getElementById('inline-parent-doc').value || '0';
+    var parentProject = document.getElementById('inline-parent-project').value || '0';
+
+    // If creating root doc from homepage (no parent context), use create_project API
+    if (parentProject === '0' && parentDoc === '0') {
+        var payload = 'pname=' + encodeURIComponent(docName ? docName.value : '');
+        if (tagsEl && tagsEl.value) payload += '&tag=' + encodeURIComponent(tagsEl.value);
+        payload += '&csrfmiddlewaretoken=' + (document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '');
+        fetch('/create_project/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'X-Requested-With': 'XMLHttpRequest' },
+            body: payload
+        }).then(function(r) { return r.json(); })
+        .then(function(r) {
+            if (r.status) {
+                window._inlineMdChanged = false;
+                destroyInlineEditor();
+                // Navigate to new root doc page
+                var newUrl = '/docs/' + r.data.id + '/';
+                if (window.iSpaceNav) { window.iSpaceNav.navigateTo(newUrl); }
+                else { window.location.href = newUrl; }
+            } else {
+                alert('创建失败：' + (r.data || ''));
+            }
+        });
+        return;
+    }
+
+    // Creating child doc under existing parent
+    var projectId = parentProject === '0' ? window._inlineProjectId : parentProject;
+    var payload = 'doc_name=' + encodeURIComponent(docName ? docName.value : '') +
+        '&project=' + encodeURIComponent(projectId) +
+        '&parent_doc=' + encodeURIComponent(parentDoc) +
+        '&content=' + encodeURIComponent(content) +
+        '&pre_content=' + encodeURIComponent(preContent) +
+        '&status=' + status +
+        '&editor_mode=' + (window._docEditorMode || window._inlineEditorMode || 1);
+    if (tagsEl && tagsEl.value) payload += '&doc_tag=' + encodeURIComponent(tagsEl.value);
+
+    fetch('/create_doc/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'X-Requested-With': 'XMLHttpRequest' },
+        body: payload + '&csrfmiddlewaretoken=' + (document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '')
+    }).then(function(r) { return r.json(); })
+    .then(function(r) {
+        if (r.status) {
+            window._inlineMdChanged = false;
+            destroyInlineEditor();
+            if (window.iSpaceNav) { window.iSpaceNav.navigateTo('/docs/' + projectId + '/' + r.data.doc + '/'); }
+            else { window.location.href = '/docs/' + projectId + '/' + r.data.doc + '/'; }
+        } else {
+            alert('创建失败：' + (r.data || ''));
+        }
+    });
 }
 </script>
