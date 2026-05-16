@@ -118,7 +118,8 @@
         iSpaceDoc.confirm({
             title: '{% trans "删除附件" %}',
             message: '{% trans "警告：删除附件后，文档中引用的附件将失效！" %}'
-        }).then(function() {
+        }).then(function(confirmed) {
+            if (!confirmed) return;
             var loadingEl = document.createElement('div');
             loadingEl.className = 'ispace-loading-overlay';
             loadingEl.innerHTML = '<div class="ispace-spinner"></div>';

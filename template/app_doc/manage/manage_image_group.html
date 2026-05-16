@@ -68,7 +68,8 @@
         iSpaceDoc.confirm({
             title: '{% trans "删除分组" %}',
             message: '{% trans "警告：此操作将删除此图片分组，分组下所属图片将移动到【未分组】！" %}'
-        }).then(function() {
+        }).then(function(confirmed) {
+            if (!confirmed) return;
             var loadingEl = document.createElement('div');
             loadingEl.className = 'ispace-loading-overlay';
             loadingEl.innerHTML = '<div class="ispace-spinner"></div>';

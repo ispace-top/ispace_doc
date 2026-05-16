@@ -270,8 +270,8 @@ function createShare(){
     });
 }
 
-function cancelShare(){
-    if(!confirm('确认撤销分享？')) return;
+async function cancelShare(){
+    if(!(await confirm('确认撤销分享？'))) return;
     var formData = new FormData();
     formData.append('csrfmiddlewaretoken','{{ csrf_token }}');
     formData.append('doc_id',{{ doc.id }});
@@ -284,8 +284,8 @@ function cancelShare(){
     });
 }
 
-function delDoc(){
-    if(!confirm('确认删除此文档？文档将被移入回收站。')) return;
+async function delDoc(){
+    if(!(await confirm('确认删除此文档？文档将被移入回收站。', { variant: 'danger' }))) return;
     var formData = new FormData();
     formData.append('csrfmiddlewaretoken','{{ csrf_token }}');
     formData.append('doc_id',{{ doc.id }});

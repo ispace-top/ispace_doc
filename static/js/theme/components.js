@@ -110,59 +110,88 @@ window.iSpaceDoc.Modal = (() => {
 
 /* ================================================================
    confirm dialog — returns Promise<boolean>
+   Usage:
+     await iSpaceDoc.confirm('确定删除？')                         // default
+     await iSpaceDoc.confirm('确定删除？', { variant: 'danger' }) // danger (red button)
+     await iSpaceDoc.confirm({ message: '...', title: '...' })   // object form
    ================================================================ */
 window.iSpaceDoc.confirm = function (message, options = {}) {
+  // Support object-first form: iSpaceDoc.confirm({ message, title, ... })
+  if (typeof message === 'object' && message !== null) {
+    options = message;
+    message = options.message || '';
+  }
   return new Promise((resolve) => {
     const title = options.title || '确认操作';
+    const variant = options.variant || 'default';
     const confirmText = options.confirmText || '确认';
     const cancelText = options.cancelText || '取消';
 
-    const backdrop = document.createElement('div');
+    var isDanger = variant === 'danger' || variant === 'warning';
+    var confirmClass = isDanger ? 'ispace-btn ispace-btn-danger' : 'ispace-btn ispace-btn-primary';
+
+    var iconSvg = '';
+    if (variant === 'danger') {
+      iconSvg = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--ispace-color-danger-500)" stroke-width="2" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+    } else if (variant === 'warning') {
+      iconSvg = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--ispace-color-warning-500)" stroke-width="2" style="flex-shrink:0;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+    }
+
+    var bodyContent = iconSvg
+      ? '<div style="display:flex;align-items:flex-start;gap:12px;"><div style="flex-shrink:0;">' + iconSvg + '</div><p class="ispace-text-sm ispace-text-secondary">' + escapeHTML(message) + '</p></div>'
+      : '<p class="ispace-text-sm ispace-text-secondary">' + escapeHTML(message) + '</p>';
+
+    var backdrop = document.createElement('div');
     backdrop.className = 'ispace-modal-backdrop';
-    backdrop.innerHTML = `
-      <div class="ispace-modal ispace-modal-sm">
-        <div class="ispace-modal-header">
-          <h3 class="ispace-modal-title">${escapeHTML(title)}</h3>
-          <button class="ispace-modal-close" data-ispace-modal-close>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-        </div>
-        <div class="ispace-modal-body">
-          <p class="ispace-text-sm ispace-text-secondary">${escapeHTML(message)}</p>
-        </div>
-        <div class="ispace-modal-footer">
-          <button class="ispace-btn ispace-btn-secondary" data-action="cancel">${cancelText}</button>
-          <button class="ispace-btn ispace-btn-primary" data-action="confirm">${confirmText}</button>
-        </div>
-      </div>
-    `;
+    backdrop.innerHTML =
+      '<div class="ispace-modal ispace-modal-sm">' +
+        '<div class="ispace-modal-header">' +
+          '<h3 class="ispace-modal-title">' + escapeHTML(title) + '</h3>' +
+          '<button class="ispace-modal-close" data-ispace-modal-close>' +
+            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+              '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>' +
+            '</svg>' +
+          '</button>' +
+        '</div>' +
+        '<div class="ispace-modal-body">' + bodyContent + '</div>' +
+        '<div class="ispace-modal-footer">' +
+          '<button class="ispace-btn ispace-btn-secondary" data-action="cancel">' + cancelText + '</button>' +
+          '<button class="' + confirmClass + '" data-action="confirm">' + confirmText + '</button>' +
+        '</div>' +
+      '</div>';
     document.body.appendChild(backdrop);
 
-    requestAnimationFrame(() => {
+    function cleanup() {
+      backdrop.classList.remove('ispace-active');
+      setTimeout(function () { backdrop.remove(); }, 300);
+      document.removeEventListener('keydown', onKeydown);
+    }
+
+    function onKeydown(e) {
+      if (e.key === 'Escape') { cleanup(); resolve(false); }
+    }
+
+    requestAnimationFrame(function () {
       backdrop.classList.add('ispace-active');
+      var confirmBtn = backdrop.querySelector('[data-action="confirm"]');
+      if (confirmBtn) confirmBtn.focus();
     });
 
-    backdrop.querySelector('[data-action="confirm"]').addEventListener('click', () => {
+    backdrop.querySelector('[data-action="confirm"]').addEventListener('click', function () {
       cleanup();
       resolve(true);
     });
-    backdrop.querySelector('[data-action="cancel"]').addEventListener('click', () => {
+    backdrop.querySelector('[data-action="cancel"]').addEventListener('click', function () {
       cleanup();
       resolve(false);
     });
-    backdrop.addEventListener('click', (e) => {
+    backdrop.addEventListener('click', function (e) {
       if (e.target === backdrop) {
         cleanup();
         resolve(false);
       }
     });
-
-    function cleanup() {
-      backdrop.classList.remove('ispace-active');
-      setTimeout(() => backdrop.remove(), 300);
-    }
+    document.addEventListener('keydown', onKeydown);
   });
 };
 
