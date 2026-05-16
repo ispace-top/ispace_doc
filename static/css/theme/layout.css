@@ -54,6 +54,7 @@
 }
 
 .ispace-header-container {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -101,11 +102,12 @@
   z-index: var(--ispace-z-sidebar);
 }
 
-/* ---- Sidebar Nav ---- */
 .ispace-sidebar-nav {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-height: 100%;
 }
 
 .ispace-sidebar-link {

@@ -1,0 +1,388 @@
+{% load i18n %}{% load static %}
+<aside class="ispace-sidebar" id="globalSidebar">
+    <nav class="ispace-sidebar-nav" id="sidebarNav">
+        <button class="ispace-sidebar-toggle" id="sidebarCollapse" title="{% trans '折叠侧边栏' %}" aria-label="折叠侧边栏">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="3" height="14" rx="1"/><path d="M10 8l4 4-4 4"/><line x1="17" y1="7" x2="17" y2="17"/></svg>
+        </button>
+        {% for pro in sidebar_projects %}
+        <div class="ispace-sidebar-group">
+            <button class="ispace-sidebar-group-toggle" data-pro-id="{{ pro.id }}" aria-expanded="false">
+                {% if pro.docs %}
+                <svg class="ispace-sidebar-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                {% else %}
+                <span class="ispace-sidebar-chevron ispace-sidebar-chevron--empty"></span>
+                {% endif %}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="ispace-sidebar-folder-icon"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                <span class="ispace-sidebar-group-name">{{ pro.name }}</span>
+                {% if pro.role != 0 %}
+                <span class="ispace-sidebar-badge">{% if pro.role == 1 %}{% trans "私" %}{% else %}{% trans "码" %}{% endif %}</span>
+                {% endif %}
+            </button>
+            <div class="ispace-sidebar-group-children" id="proChildren{{ pro.id }}" style="display:none;">
+                {% for doc in pro.docs %}
+                <a href="{% url 'doc' pro.id doc.id %}" class="ispace-sidebar-link ispace-sidebar-link--doc" data-doc-id="{{ doc.id }}" data-pro-id="{{ pro.id }}" data-spa>
+                    <span class="ispace-sidebar-doc-icon">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+                    </span>
+                    <span class="ispace-truncate">{{ doc.name }}</span>
+                </a>
+                {% empty %}
+                <span class="ispace-sidebar-empty">{% trans "暂无文档" %}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="ispace-sidebar-empty-state">
+            <p class="ispace-text-sm ispace-text-quaternary">{% trans "暂无文集" %}</p>
+        </div>
+        {% endfor %}
+    </nav>
+</aside>
+
+{# ---- Context Menu ---- #}
+<div class="ispace-context-menu" id="sidebarContextMenu" style="display:none;"></div>
+
+<script>
+(function(){
+    // ---- Project expand/collapse + directory click navigation ----
+    var toggles = document.querySelectorAll('.ispace-sidebar-group-toggle');
+    toggles.forEach(function(btn){
+        btn.addEventListener('click', function(e){
+            var proId = this.getAttribute('data-pro-id');
+            // If chevron was clicked, toggle expand/collapse
+            if (e.target.closest('.ispace-sidebar-chevron')) {
+                var children = document.getElementById('proChildren' + proId);
+                var chevron = this.querySelector('.ispace-sidebar-chevron');
+                if (!children) return;
+                var expanded = this.getAttribute('aria-expanded') === 'true';
+                if (expanded) {
+                    children.style.display = 'none';
+                    this.setAttribute('aria-expanded', 'false');
+                    if (chevron) chevron.style.transform = '';
+                } else {
+                    children.style.display = 'block';
+                    this.setAttribute('aria-expanded', 'true');
+                    if (chevron) chevron.style.transform = 'rotate(90deg)';
+                }
+            } else {
+                // Navigate to project page
+                if (window.iSpaceDoc && window.iSpaceDoc.SPA) {
+                    window.iSpaceDoc.SPA.navigate('/project-' + proId + '/');
+                } else {
+                    window.location.href = '/project-' + proId + '/';
+                }
+            }
+        });
+    });
+
+    // ---- Sidebar collapse toggle ----
+    var collapseBtn = document.getElementById('sidebarCollapse');
+    var sidebar = document.getElementById('globalSidebar');
+    if (collapseBtn && sidebar) {
+        if (localStorage.getItem('sidebar-collapsed') === '1') {
+            sidebar.classList.add('ispace-sidebar--collapsed');
+        }
+        collapseBtn.addEventListener('click', function(){
+            var collapsed = sidebar.classList.toggle('ispace-sidebar--collapsed');
+            localStorage.setItem('sidebar-collapsed', collapsed ? '1' : '0');
+        });
+    }
+
+    // ---- Highlight current document / expand current project ----
+    (function(){
+        var path = window.location.pathname;
+        var proMatch = path.match(/^\/project-(\d+)\//);
+        if (proMatch) {
+            var pid = proMatch[1];
+            var children = document.getElementById('proChildren' + pid);
+            var toggle = document.querySelector('.ispace-sidebar-group-toggle[data-pro-id="' + pid + '"]');
+            if (children && toggle) {
+                children.style.display = 'block';
+                toggle.setAttribute('aria-expanded', 'true');
+                var chevron = toggle.querySelector('.ispace-sidebar-chevron');
+                if (chevron) chevron.style.transform = 'rotate(90deg)';
+            }
+        }
+    })();
+
+    // ---- Right-click Context Menu ----
+    var contextMenu = document.getElementById('sidebarContextMenu');
+    var currentContextTarget = null;
+
+    function showContextMenu(e, items) {
+        e.preventDefault();
+        e.stopPropagation();
+        currentContextTarget = e.currentTarget;
+        contextMenu.innerHTML = items.map(function(item) {
+            return '<button class="ispace-context-menu-item" data-action="' + item.action + '">' + item.label + '</button>';
+        }).join('');
+        contextMenu.style.display = 'block';
+        var x = e.clientX, y = e.clientY;
+        // Adjust position to stay within viewport
+        var mw = contextMenu.offsetWidth || 160;
+        var mh = contextMenu.offsetHeight || 200;
+        if (x + mw > window.innerWidth) x = window.innerWidth - mw - 8;
+        if (y + mh > window.innerHeight) y = window.innerHeight - mh - 8;
+        contextMenu.style.left = x + 'px';
+        contextMenu.style.top = y + 'px';
+    }
+
+    function hideContextMenu() {
+        contextMenu.style.display = 'none';
+        currentContextTarget = null;
+    }
+
+    // Attach context menu to directory (project group) toggles
+    document.querySelectorAll('.ispace-sidebar-group-toggle').forEach(function(btn) {
+        btn.addEventListener('contextmenu', function(e) {
+            var proId = this.getAttribute('data-pro-id');
+            showContextMenu(e, [
+                {label: '新建子目录', action: 'new-dir:' + proId},
+                {label: '新建文档', action: 'new-doc:' + proId},
+                {label: '重命名', action: 'rename-pro:' + proId},
+                {label: '删除', action: 'delete-pro:' + proId}
+            ]);
+        });
+    });
+
+    // Attach context menu to doc links
+    document.querySelectorAll('.ispace-sidebar-link--doc').forEach(function(link) {
+        link.addEventListener('contextmenu', function(e) {
+            var docId = this.getAttribute('data-doc-id');
+            var proId = this.getAttribute('data-pro-id');
+            showContextMenu(e, [
+                {label: '重命名', action: 'rename-doc:' + docId + ':' + proId},
+                {label: '删除', action: 'delete-doc:' + docId + ':' + proId}
+            ]);
+        });
+    });
+
+    // Context menu action handling
+    contextMenu.addEventListener('click', function(e) {
+        var item = e.target.closest('.ispace-context-menu-item');
+        if (!item) return;
+        var action = item.getAttribute('data-action');
+        var parts = action.split(':');
+        var type = parts[0], id = parts[1], extra = parts[2];
+        hideContextMenu();
+        handleContextAction(type, id, extra);
+    });
+
+    function handleContextAction(type, id, extra) {
+        var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
+        var csrfToken = csrf ? csrf.value : window.__ISPACEDOC__ ? window.__ISPACEDOC__.csrfToken : '';
+        if (type === 'new-doc') {
+            // Navigate to create doc for this project
+            var url = '/create_doc/?pid=' + id;
+            if (window.iSpaceDoc && window.iSpaceDoc.SPA) {
+                window.iSpaceDoc.SPA.navigate(url);
+            } else {
+                window.location.href = url;
+            }
+        } else if (type === 'delete-doc') {
+            if (!window.confirm('确认删除此文档？文档将被移入回收站。')) return;
+            var fd = new FormData();
+            fd.append('doc_id', id);
+            fd.append('csrfmiddlewaretoken', csrfToken);
+            fetch('/del_doc/', {method:'POST', body:fd})
+            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                if (r.status) { window.location.reload(); }
+                else { alert(r.data); }
+            });
+        } else if (type === 'rename-doc') {
+            var newName = prompt('请输入新名称：');
+            if (!newName) return;
+            var fd2 = new FormData();
+            fd2.append('doc_id', id);
+            fd2.append('doc_name', newName);
+            fd2.append('csrfmiddlewaretoken', csrfToken);
+            fetch('/modify_doc/' + id + '/', {method:'POST', body:fd2})
+            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                if (r.status) { window.location.reload(); }
+                else { alert(r.data || '重命名失败'); }
+            });
+        } else if (type === 'delete-pro') {
+            if (!window.confirm('确认删除此文集中所有文档？此操作不可恢复！')) return;
+            var fd3 = new FormData();
+            fd3.append('project_id', id);
+            fd3.append('csrfmiddlewaretoken', csrfToken);
+            fetch('/del_project/', {method:'POST', body:fd3})
+            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                if (r.status) { window.location.href = '/'; }
+                else { alert(r.data); }
+            });
+        } else if (type === 'rename-pro') {
+            var newPName = prompt('请输入文集群的新名称：');
+            if (!newPName) return;
+            var fd4 = new FormData();
+            fd4.append('project_id', id);
+            fd4.append('name', newPName);
+            fd4.append('csrfmiddlewaretoken', csrfToken);
+            fetch('/modify_pro/', {method:'POST', body:fd4})
+            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                if (r.status) { window.location.reload(); }
+                else { alert(r.data || '重命名失败'); }
+            });
+        } else if (type === 'new-dir') {
+            // Same as new-doc but with a directory prefix convention
+            var dname = prompt('请输入子目录名称：');
+            if (!dname) return;
+            var fd5 = new FormData();
+            fd5.append('project', id);
+            fd5.append('doc_name', dname);
+            fd5.append('open_children', 'true');
+            fd5.append('csrfmiddlewaretoken', csrfToken);
+            fd5.append('status', '1');
+            fetch('/create_doc/', {method:'POST',
+                headers:{'X-Requested-With':'XMLHttpRequest'},
+                body: new URLSearchParams(fd5).toString()
+            }).then(function(r) { return r.json(); })
+            .then(function(r) {
+                if (r.status) { window.location.reload(); }
+                else { alert(r.data || '创建失败'); }
+            });
+        }
+    }
+
+    // Dismiss context menu on outside click
+    document.addEventListener('click', hideContextMenu);
+})();
+</script>
+
+<style>
+/* ---- 侧边栏树组件样式 ---- */
+.ispace-sidebar-toggle {
+    position: absolute;
+    left: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: var(--ispace-color-surface-0);
+    cursor: pointer;
+    color: var(--ispace-color-text-quaternary);
+    border-radius: var(--ispace-radius-md);
+    padding: 0;
+    box-shadow: var(--ispace-shadow-sm);
+    border: 1px solid var(--ispace-color-border-light);
+    z-index: 10;
+    transition: left var(--ispace-duration-normal);
+}
+.ispace-sidebar-toggle:hover { background: var(--ispace-color-surface-100); color: var(--ispace-color-text-primary); }
+
+/* 项目分组 */
+.ispace-sidebar-group { margin-bottom: 2px; }
+.ispace-sidebar-group-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--ispace-space-2);
+    width: 100%;
+    padding: var(--ispace-space-2) var(--ispace-space-2);
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: var(--ispace-font-sm);
+    font-weight: var(--ispace-font-medium);
+    color: var(--ispace-color-text-primary);
+    border-radius: var(--ispace-radius-md);
+    transition: background var(--ispace-duration-fast);
+    text-align: left;
+}
+.ispace-sidebar-group-toggle:hover { background: var(--ispace-color-surface-100); }
+.ispace-sidebar-chevron {
+    flex-shrink: 0;
+    width: 12px;
+    color: var(--ispace-color-text-quaternary);
+    transition: transform 0.15s ease;
+}
+.ispace-sidebar-chevron--empty {
+    visibility: hidden;
+    width: 12px;
+    flex-shrink: 0;
+}
+.ispace-sidebar-folder-icon { flex-shrink: 0; color: var(--ispace-color-brand-400); }
+.ispace-sidebar-group-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+.ispace-sidebar-badge {
+    font-size: 9px;
+    color: var(--ispace-color-text-quaternary);
+    background: var(--ispace-color-surface-200);
+    padding: 1px 4px;
+    border-radius: var(--ispace-radius-sm);
+    line-height: 1.3;
+    flex-shrink: 0;
+}
+.ispace-sidebar-group-children { padding: 2px 0 4px var(--ispace-space-4); }
+
+.ispace-sidebar-link--doc { font-size: var(--ispace-font-xs); padding-left: var(--ispace-space-2); }
+.ispace-sidebar-empty {
+    display: block;
+    padding: var(--ispace-space-1) var(--ispace-space-4);
+    font-size: var(--ispace-font-xs);
+    color: var(--ispace-color-text-quaternary);
+}
+.ispace-sidebar-empty-state {
+    padding: var(--ispace-space-4) 0;
+    text-align: center;
+}
+
+/* 折叠侧边栏 */
+.ispace-sidebar--collapsed {
+    width: var(--ispace-sidebar-collapsed-width) !important;
+    overflow: visible;
+}
+.ispace-sidebar--collapsed .ispace-sidebar-group-name,
+.ispace-sidebar--collapsed .ispace-sidebar-group-children,
+.ispace-sidebar--collapsed .ispace-sidebar-link span,
+.ispace-sidebar--collapsed .ispace-sidebar-badge,
+.ispace-sidebar--collapsed .ispace-sidebar-empty,
+.ispace-sidebar--collapsed .ispace-sidebar-empty-state,
+.ispace-sidebar--collapsed .ispace-sidebar-chevron,
+.ispace-sidebar--collapsed .ispace-sidebar-chevron--empty,
+.ispace-sidebar--collapsed .ispace-sidebar-folder-icon { display: none; }
+.ispace-sidebar--collapsed .ispace-sidebar-group-toggle { justify-content: center; padding: var(--ispace-space-2); }
+.ispace-sidebar--collapsed .ispace-sidebar-toggle { left: 50%; transform: translate(-50%, -50%); }
+.ispace-sidebar--collapsed .ispace-sidebar-toggle svg { transform: rotate(180deg); }
+
+/* 右键上下文菜单 */
+.ispace-context-menu {
+    position: fixed;
+    z-index: 1100;
+    min-width: 150px;
+    background: var(--ispace-color-surface-0);
+    border: 1px solid var(--ispace-color-border-medium);
+    border-radius: var(--ispace-radius-md);
+    box-shadow: var(--ispace-shadow-lg);
+    padding: var(--ispace-space-1);
+}
+.ispace-context-menu-item {
+    display: block;
+    width: 100%;
+    padding: var(--ispace-space-1-5) var(--ispace-space-3);
+    font-size: var(--ispace-font-sm);
+    color: var(--ispace-color-text-secondary);
+    background: none;
+    border: none;
+    border-radius: var(--ispace-radius-sm);
+    cursor: pointer;
+    text-align: left;
+    transition: background var(--ispace-duration-fast);
+}
+.ispace-context-menu-item:hover {
+    background: var(--ispace-color-surface-100);
+    color: var(--ispace-color-text-primary);
+}
+</style>

@@ -1,78 +1,129 @@
 {% extends "base.html" %}
 {% load static %}{% load i18n %}
 
-{% block title %}{% trans "文集列表" %} - {{ site_name|default:"iSpaceDoc" }}{% endblock %}
+{% block title %}{{ site_name|default:"iSpaceDoc" }} — {% trans "知识管理" %}{% endblock %}
 
 {% block body_class %}ispace-page-body{% endblock %}
 
-{% block header_center %}
-<div class="ispace-search-input-wrap" style="max-width:360px;width:100%;">
-    <svg class="ispace-search-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <input type="text" class="ispace-form-input" id="searchKw" placeholder="{% trans '搜索文集...' %}" value="{{ kw|default:'' }}" onkeyup="if(event.key==='Enter')doSearch()">
-</div>
+{% block header %}
+<header class="ispace-header">
+    <div class="ispace-header-container">
+        <div class="ispace-header-left">
+            <a href="/" class="ispace-logo">
+                <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+                    <rect width="32" height="32" rx="8" fill="var(--ispace-color-brand-500)"/>
+                    <path d="M9 16L14 21L23 11" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                {{ site_name|default:"iSpaceDoc" }}
+            </a>
+            <span class="ispace-header-subtitle">{% trans "高效沉淀团队知识，让每一份文档都有归处" %}</span>
+        </div>
+        <div class="ispace-header-center">
+            <div class="ispace-header-search-center">
+                <div class="ispace-search-input-wrap" style="max-width:420px;width:100%;">
+                    <svg class="ispace-search-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" class="ispace-form-input" id="searchKw" placeholder="{% trans '搜索文集、文档...' %}" value="{{ kw|default:'' }}" onkeyup="if(event.key==='Enter')doSearch()">
+                </div>
+            </div>
+        </div>
+        <div class="ispace-header-right">
+            {% include "includes/theme_toggle.html" %}
+            {% if user.is_authenticated %}
+                {% include "includes/user_dropdown.html" %}
+            {% else %}
+                <a href="{% url 'login' %}" class="ispace-btn ispace-btn-ghost ispace-btn-sm">登录</a>
+                {% if close_register != 'on' %}
+                <a href="{% url 'register' %}" class="ispace-btn ispace-btn-primary ispace-btn-sm">注册</a>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</header>
 {% endblock %}
 
 {% block content %}
-<div class="ispace-page-header ispace-flex-between">
-    <div>
-        <h1 class="ispace-page-title">{% trans "文集列表" %}</h1>
-        <p class="ispace-page-description">{% trans "浏览和搜索公开文集" %}</p>
+
+{# ---- Filter & Sort Bar ---- #}
+<div class="home-funcbar">
+    <div class="home-funcbar-left">
+        <span class="home-funcbar-label">{% trans "文集" %}</span>
+        <span class="home-funcbar-count">{{ projects.paginator.count }}{% trans " 个" %}</span>
     </div>
-    <div class="ispace-flex-center ispace-gap-3">
-        <select name="role" id="selRole" class="ispace-form-select" style="width:auto;" onchange="doFilter()">
-            <option value="">{% trans "全部" %}</option>
-            <option value="0" {% if role == '0' %}selected{% endif %}>{% trans "公开" %}</option>
-            <option value="3" {% if role == '3' %}selected{% endif %}>{% trans "访问码" %}</option>
-            {% if request.user.is_authenticated %}
-            <option value="1" {% if role == '1' %}selected{% endif %}>{% trans "私密" %}</option>
-            {% endif %}
-        </select>
-        <select name="sort" id="selSort" class="ispace-form-select" style="width:auto;" onchange="doFilter()">
-            <option value="1" {% if sort == '1' %}selected{% endif %}>{% trans "最新" %}</option>
-            <option value="0" {% if sort == '0' %}selected{% endif %}>{% trans "最早" %}</option>
-            <option value="2" {% if sort == '2' %}selected{% endif %}>{% trans "最多文档" %}</option>
-        </select>
+    <div class="home-funcbar-right">
+        <div class="pro-dropdown">
+            <span class="pro-dropdown-label" id="sortLabel" data-value="{{ sort|default:'1' }}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="16" y2="6"/><line x1="4" y1="12" x2="12" y2="12"/><line x1="4" y1="18" x2="8" y2="18"/></svg>
+                {% if sort == '0' %}{% trans "最早" %}{% elif sort == '2' %}{% trans "最多文档" %}{% else %}{% trans "最新" %}{% endif %}
+            </span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            <select name="sort" id="selSort" onchange="updateDropdownLabel(this,'sortLabel');doFilter()">
+                <option value="1" {% if sort == '1' %}selected{% endif %}>{% trans "最新" %}</option>
+                <option value="0" {% if sort == '0' %}selected{% endif %}>{% trans "最早" %}</option>
+                <option value="2" {% if sort == '2' %}selected{% endif %}>{% trans "最多文档" %}</option>
+            </select>
+        </div>
+        <div class="pro-dropdown">
+            <span class="pro-dropdown-label" id="roleLabel" data-value="{{ role|default:'' }}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                {% if role == '0' %}{% trans "公开" %}{% elif role == '3' %}{% trans "访问码" %}{% elif role == '1' %}{% trans "私密" %}{% else %}{% trans "分类" %}{% endif %}
+            </span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            <select name="role" id="selRole" onchange="updateDropdownLabel(this,'roleLabel');doFilter()">
+                <option value="">{% trans "分类" %}</option>
+                <option value="0" {% if role == '0' %}selected{% endif %}>{% trans "公开" %}</option>
+                <option value="3" {% if role == '3' %}selected{% endif %}>{% trans "访问码" %}</option>
+                {% if request.user.is_authenticated %}
+                <option value="1" {% if role == '1' %}selected{% endif %}>{% trans "私密" %}</option>
+                {% endif %}
+            </select>
+        </div>
         {% if user.is_authenticated %}
-        <a href="{% url 'manage_project' %}" class="ispace-btn ispace-btn-primary ispace-btn-sm">{% trans "新建文集" %}</a>
+        <a href="{% url 'manage_project' %}" class="ispace-btn ispace-btn-primary ispace-btn-sm">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+            {% trans "新建文集" %}
+        </a>
         {% endif %}
     </div>
 </div>
 
+{# ---- Project Cards Grid ---- #}
 {% if projects %}
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(320px,100%),1fr));gap:var(--ispace-space-4);">
+<div class="home-card-grid">
     {% for p in projects %}
-    <div class="ispace-card" style="display:block;position:relative;">
-        <a href="{% url 'pro_index_id' p.id %}" style="text-decoration:none;display:block;">
-            <div class="ispace-card-body">
-                <div class="ispace-flex-between ispace-mb-3">
-                    <h3 class="ispace-card-title ispace-truncate" style="flex:1;font-size:var(--ispace-font-base);">{{ p.name }}</h3>
-                    <span class="ispace-badge {% if p.role == 0 %}ispace-badge-success{% elif p.role == 3 %}ispace-badge-warning{% else %}ispace-badge-info{% endif %} ispace-ml-2">
-                        {% if p.role == 0 %}{% trans "公开" %}{% elif p.role == 3 %}{% trans "访问码" %}{% else %}{% trans "私密" %}{% endif %}
-                    </span>
-                </div>
-                <p class="ispace-text-sm ispace-text-tertiary ispace-line-clamp-2 ispace-mb-3">
-                    {% if p.intro %}{{ p.intro|striptags|truncatechars:120 }}{% else %}{% trans "此文集没有填写简介" %}{% endif %}
-                </p>
-                <div class="ispace-flex-between ispace-text-xs ispace-text-quaternary">
-                    <span>{{ p.create_user.username }}</span>
-                    <span class="ispace-flex-center ispace-gap-2">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
-                        {% if p.doc_count %}{{ p.doc_count }}{% else %}0{% endif %} {% trans "篇" %}
-                    </span>
-                    <span>{{ p.modify_time|date:"Y-m-d" }}</span>
-                </div>
-            </div>
-        </a>
-        {% if user.is_authenticated %}
-        <button class="ispace-collect-btn" data-type="2" data-id="{{ p.id }}" title="{% trans '收藏文集' %}" onclick="toggleCollect(event, this)" style="position:absolute;top:12px;right:12px;background:none;border:none;cursor:pointer;padding:4px;border-radius:var(--ispace-radius-sm);z-index:2;opacity:0;transition:opacity .2s;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.5" class="collect-star"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg>
-        </button>
-        {% endif %}
-    </div>
+    <a href="{% url 'pro_index_id' p.id %}" class="home-card" data-spa>
+        <div class="home-card-icon-row">
+            {% if p.icon %}
+            <img src="{{ p.icon }}" alt="" loading="lazy" style="width:28px;height:28px;border-radius:var(--ispace-radius-md);">
+            {% else %}
+            <span class="home-card-icon-fallback">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            </span>
+            {% endif %}
+            <span class="home-card-stat">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+                {{ p.doc_count|default:0 }}{% trans " 篇" %}
+            </span>
+            {% if p.role != 0 %}
+            <span class="home-card-badge">{% if p.role == 1 %}{% trans "私密" %}{% elif p.role == 3 %}{% trans "访问码" %}{% else %}{% trans "受限" %}{% endif %}</span>
+            {% endif %}
+        </div>
+        <div class="home-card-body">
+            <h3 class="home-card-title">{{ p.name }}</h3>
+            {% if p.intro %}
+            <p class="home-card-desc">{{ p.intro|striptags|truncatechars:80 }}</p>
+            {% endif %}
+        </div>
+    </a>
     {% endfor %}
 </div>
+
+{# ---- Pagination ---- #}
+<div class="ispace-mt-6">
 {% include "includes/pagination.html" with page_obj=projects %}
+</div>
+
 {% else %}
+{# ---- Empty State ---- #}
 <div class="ispace-empty-state">
     <svg class="ispace-empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
         <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
@@ -82,51 +133,318 @@
     <p class="ispace-empty-state-description">{% trans "当前没有可查看的文集" %}</p>
     {% if user.is_authenticated %}
     <a href="{% url 'manage_project' %}" class="ispace-btn ispace-btn-primary ispace-mt-6">
-        <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd"/>
-        </svg>
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd"/></svg>
         {% trans "创建第一个文集" %}
     </a>
     {% else %}
-    <a href="{% url 'login' %}" class="ispace-btn ispace-btn-primary ispace-mt-6">
-        <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" clip-rule="evenodd"/>
-        </svg>
-        {% trans "登录后创建文集" %}
-    </a>
+    <a href="{% url 'login' %}" class="ispace-btn ispace-btn-primary ispace-mt-6">{% trans "登录后创建文集" %}</a>
     {% endif %}
 </div>
 {% endif %}
+
+{# ---- Recent Documents Section ---- #}
+{% if doc_items %}
+<div class="home-recent-section">
+    <div class="home-section-header">
+        <h2 class="home-section-title">{% trans "最近更新的文档" %}</h2>
+    </div>
+    <div class="home-doc-list">
+        {% for item in doc_items|slice:":6" %}
+        {% with doc=item.doc pro_name=item.pro_name %}
+        <a href="{% url 'doc' doc.top_doc doc.id %}" class="home-doc-card" data-spa>
+            <div class="home-doc-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+            </div>
+            <div class="home-doc-card-body">
+                <span class="home-doc-card-title">{{ doc.name }}</span>
+                <span class="home-doc-card-meta">{{ pro_name }} &middot; {{ doc.create_user.username }} &middot; {{ doc.modify_time|date:"m-d" }}</span>
+            </div>
+        </a>
+        {% endwith %}
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
 {% endblock %}
 
 {% block scripts %}
 <style>
-.ispace-card:hover .ispace-collect-btn { opacity: 1 !important; }
-.ispace-collect-btn.collected svg { fill: #f5a623; stroke: #f5a623; }
+/* ---- Header subtitle ---- */
+.ispace-header-subtitle {
+    font-size: var(--ispace-font-sm);
+    color: var(--ispace-color-text-tertiary);
+    margin-left: var(--ispace-space-2);
+    white-space: nowrap;
+}
+/* ---- Header centered search ---- */
+.ispace-header-search-center {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 420px;
+}
+
+/* ---- Funcbar ---- */
+.home-funcbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--ispace-space-3) 0;
+    margin-bottom: var(--ispace-space-5);
+    border-bottom: 1px solid var(--ispace-color-border-light);
+}
+.home-funcbar-left {
+    display: flex;
+    align-items: center;
+    gap: var(--ispace-space-2);
+}
+.home-funcbar-label {
+    font-size: var(--ispace-font-base);
+    font-weight: var(--ispace-font-semibold);
+    color: var(--ispace-color-text-primary);
+}
+.home-funcbar-count {
+    font-size: var(--ispace-font-sm);
+    color: var(--ispace-color-text-quaternary);
+}
+.home-funcbar-right {
+    display: flex;
+    align-items: center;
+    gap: var(--ispace-space-3);
+}
+
+/* ---- Dropdown (shared with original) ---- */
+.pro-dropdown {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    color: var(--ispace-color-text-secondary);
+    font-size: var(--ispace-font-sm);
+    user-select: none;
+    line-height: 1;
+}
+.pro-dropdown:hover { color: var(--ispace-color-text-primary); }
+.pro-dropdown select {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+}
+.pro-dropdown-label {
+    font-size: var(--ispace-font-sm);
+    color: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ---- Project Cards Grid ---- */
+.home-card-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--ispace-space-4);
+}
+.home-card {
+    display: flex;
+    flex-direction: column;
+    padding: var(--ispace-space-4);
+    border-radius: var(--ispace-radius-lg);
+    background: var(--ispace-color-surface-0);
+    border: 1px solid var(--ispace-color-border-light);
+    text-decoration: none;
+    color: var(--ispace-color-text-primary);
+    transition: all var(--ispace-duration-fast);
+}
+.home-card:hover {
+    border-color: var(--ispace-color-brand-300);
+    box-shadow: var(--ispace-shadow-md);
+    transform: translateY(-2px);
+}
+.home-card-icon-row {
+    display: flex;
+    align-items: center;
+    gap: var(--ispace-space-2);
+    margin-bottom: var(--ispace-space-3);
+}
+.home-card-icon-fallback {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px; height: 36px;
+    border-radius: var(--ispace-radius-md);
+    background: var(--ispace-color-brand-50);
+    color: var(--ispace-color-brand-500);
+    flex-shrink: 0;
+}
+.home-card-icon-row img {
+    flex-shrink: 0;
+}
+.home-card-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: var(--ispace-font-xs);
+    color: var(--ispace-color-text-quaternary);
+    flex-shrink: 0;
+}
+.home-card-badge {
+    font-size: 10px;
+    color: var(--ispace-color-text-quaternary);
+    background: var(--ispace-color-surface-200);
+    padding: 1px 6px;
+    border-radius: var(--ispace-radius-sm);
+    line-height: 1.5;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+.home-card-body {
+    flex: 1;
+}
+.home-card-title {
+    font-size: var(--ispace-font-sm);
+    font-weight: var(--ispace-font-semibold);
+    color: var(--ispace-color-text-primary);
+    margin-bottom: var(--ispace-space-1);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.home-card-desc {
+    font-size: var(--ispace-font-xs);
+    color: var(--ispace-color-text-tertiary);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* ---- Recent Docs Section ---- */
+.home-recent-section {
+    margin-top: var(--ispace-space-8);
+}
+.home-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--ispace-space-4);
+}
+.home-section-title {
+    font-size: var(--ispace-font-lg);
+    font-weight: var(--ispace-font-semibold);
+    color: var(--ispace-color-text-primary);
+}
+.home-doc-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    border: 1px solid var(--ispace-color-border-light);
+    border-radius: var(--ispace-radius-lg);
+    overflow: hidden;
+    background: var(--ispace-color-border-light);
+}
+.home-doc-card {
+    display: flex;
+    align-items: center;
+    gap: var(--ispace-space-3);
+    padding: var(--ispace-space-3) var(--ispace-space-5);
+    background: var(--ispace-color-surface-0);
+    text-decoration: none;
+    transition: background var(--ispace-duration-fast);
+}
+.home-doc-card:hover {
+    background: var(--ispace-color-surface-50);
+}
+.home-doc-card-icon {
+    flex-shrink: 0;
+    color: var(--ispace-color-text-quaternary);
+    display: flex;
+    align-items: center;
+}
+.home-doc-card-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--ispace-space-6);
+}
+.home-doc-card-title {
+    font-size: var(--ispace-font-sm);
+    font-weight: var(--ispace-font-medium);
+    color: var(--ispace-color-text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-shrink: 1;
+}
+.home-doc-card:hover .home-doc-card-title { color: var(--ispace-color-brand-600); }
+.home-doc-card-meta {
+    font-size: var(--ispace-font-xs);
+    color: var(--ispace-color-text-quaternary);
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 1024px) {
+    .home-card-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .ispace-header-subtitle {
+        display: none;
+    }
+}
+@media (max-width: 768px) {
+    .home-card-grid {
+        grid-template-columns: 1fr;
+    }
+    .home-funcbar {
+        flex-wrap: wrap;
+        gap: var(--ispace-space-2);
+    }
+    .ispace-header-search-center {
+        display: none;
+    }
+    .home-doc-card {
+        padding: var(--ispace-space-3) var(--ispace-space-3);
+    }
+    .home-doc-card-body {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+    }
+    .home-doc-card-meta {
+        margin-left: 0;
+    }
+}
 </style>
 <script>
-document.getElementById('searchKw')?.focus();
-function doSearch(){var kw=document.getElementById('searchKw').value.trim();var role=document.getElementById('selRole').value;var sort=document.getElementById('selSort').value;window.location.href='/?kw='+encodeURIComponent(kw)+'&role='+role+'&sort='+sort;}
-function doFilter(){var kw=document.getElementById('searchKw').value.trim();var role=document.getElementById('selRole').value;var sort=document.getElementById('selSort').value;window.location.href='/?kw='+encodeURIComponent(kw)+'&role='+role+'&sort='+sort;}
-function getCookie(name){
-    var v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
-    return v ? v.pop() : '';
+function doSearch(){
+    var kw = document.getElementById('searchKw').value.trim();
+    var role = document.getElementById('selRole').value;
+    var sort = document.getElementById('selSort').value;
+    window.location.href = '/?kw=' + encodeURIComponent(kw) + '&role=' + role + '&sort=' + sort;
 }
-function toggleCollect(e, btn){
-    e.preventDefault();e.stopPropagation();
-    var type = btn.getAttribute('data-type');
-    var id = btn.getAttribute('data-id');
-    var fd = new FormData();
-    fd.append('type', type);
-    fd.append('id', id);
-    fd.append('csrfmiddlewaretoken', getCookie('csrftoken'));
-    fetch('{% url "my_collect" %}', {method:'POST', body:fd, headers:{'X-Requested-With':'XMLHttpRequest'}})
-    .then(function(r){return r.json();}).then(function(r){
-        if(r.status){
-            if(r.data.indexOf('成功') >= 0){ btn.classList.add('collected'); }
-            else { btn.classList.remove('collected'); }
-        }
+function doFilter(){
+    doSearch();
+}
+
+function updateDropdownLabel(sel, labelId) {
+    var opt = sel.options[sel.selectedIndex];
+    var label = document.getElementById(labelId);
+    var svg = label.querySelector('svg');
+    label.childNodes.forEach(function(c) {
+        if (c.nodeType === 3) c.textContent = opt.text;
     });
+    if (!label.textContent.trim()) label.textContent = opt.text;
 }
 </script>
 {% endblock %}
