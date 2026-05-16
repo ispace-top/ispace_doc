@@ -3510,7 +3510,7 @@ def my_collect(request):
             # 存在收藏
             if is_collect.exists():
                 is_collect.delete()
-                return JsonResponse({'status': True, 'data': _('取消收藏成功')})
+                return JsonResponse({'status': True, 'data': 'remove'})
             else:
                 MyCollect.objects.create(
                     collect_type = collect_type,
@@ -3518,7 +3518,7 @@ def my_collect(request):
                     create_user = request.user,
                     create_time = datetime.datetime.now()
                 )
-                return JsonResponse({'status':True,'data':_('收藏成功')})
+                return JsonResponse({'status':True,'data':'add'})
 
     elif request.method == 'DELETE':
         pass
@@ -3529,15 +3529,95 @@ def my_collect(request):
 @csrf_exempt
 def manage_collect(request):
     if request.method == 'GET':
-        # 收藏文集数量
+        collect_type = request.GET.get('type', '')  # 收藏类型筛选
+        kw = request.GET.get('kw', '')  # 搜索词
+
+        # 统计数量
         collect_project_cnt = MyCollect.objects.filter(create_user=request.user, collect_type=2).count()
-        # 收藏文档数量
         collect_doc_cnt = MyCollect.objects.filter(create_user=request.user, collect_type=1).count()
-        # 所有收藏数量
         all_cnt = collect_project_cnt + collect_doc_cnt
 
+        # 构建查询
+        type_filter = [1, 2]
+        if collect_type in ['1', '2']:
+            type_filter = [int(collect_type)]
+
+        collect_list = MyCollect.objects.filter(
+            create_user=request.user,
+            collect_type__in=type_filter,
+        ).order_by('-create_time')
+
+        # 按关键词搜索收藏的文档/文集名称
+        if kw:
+            doc_ids = Doc.objects.filter(name__icontains=kw).values_list('id', flat=True)
+            pro_ids = Project.objects.filter(name__icontains=kw).values_list('id', flat=True)
+            from django.db.models import Q as Q_obj
+            collect_list = collect_list.filter(
+                Q_obj(collect_type=1, collect_id__in=doc_ids) |
+                Q_obj(collect_type=2, collect_id__in=pro_ids)
+            )
+
+        # 分页
+        paginator = Paginator(collect_list, 15)
+        page = request.GET.get('page', 1)
+        try:
+            collects_page = paginator.page(page)
+        except PageNotAnInteger:
+            collects_page = paginator.page(1)
+        except EmptyPage:
+            collects_page = paginator.page(paginator.num_pages)
+
+        # 丰富收藏数据
+        enriched = []
+        for collect in collects_page:
+            if collect.collect_type == 1:
+                try:
+                    doc = Doc.objects.select_related('create_user').get(id=collect.collect_id)
+                    enriched.append({
+                        'id': collect.id,
+                        'type': 1,
+                        'item_id': doc.id,
+                        'item_name': doc.name,
+                        'item_project_id': doc.top_doc,
+                        'item_project_name': Project.objects.filter(id=doc.top_doc).values_list('name', flat=True).first() or '--',
+                        'author': doc.create_user.first_name or doc.create_user.username,
+                        'create_time': collect.create_time,
+                    })
+                except Doc.DoesNotExist:
+                    enriched.append({
+                        'id': collect.id, 'type': 1, 'item_id': 0, 'item_name': _('(文档已删除)'),
+                        'item_project_id': 0, 'item_project_name': '--', 'author': '--', 'create_time': collect.create_time,
+                    })
+            else:
+                try:
+                    pro = Project.objects.select_related('create_user').get(id=collect.collect_id)
+                    enriched.append({
+                        'id': collect.id,
+                        'type': 2,
+                        'item_id': pro.id,
+                        'item_name': pro.name,
+                        'item_project_id': '',
+                        'item_project_name': '--',
+                        'author': pro.create_user.first_name or pro.create_user.username,
+                        'create_time': collect.create_time,
+                    })
+                except Project.DoesNotExist:
+                    enriched.append({
+                        'id': collect.id, 'type': 2, 'item_id': 0, 'item_name': _('(文集已删除)'),
+                        'item_project_id': '', 'item_project_name': '--', 'author': '--', 'create_time': collect.create_time,
+                    })
+
+        collects = enriched
+        query_string = ''
+        if collect_type:
+            query_string += f'type={collect_type}'
+        if kw:
+            query_string += ('&' if query_string else '') + f'kw={kw}'
+        page_obj = collects_page  # for pagination include
+        ctype = collect_type
+
         breadcrumb_items = [{"name": _('我的收藏'), 'url': ''}]
-        return render(request,'app_doc/manage/manage_collect.html',locals())
+        return render(request, 'app_doc/manage/manage_collect.html', locals())
     elif request.method == 'POST':
         kw = request.POST.get('kw', '') # 搜索词
         collect_type = request.POST.get('type', '') # 收藏类型

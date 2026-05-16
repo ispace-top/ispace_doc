@@ -9,19 +9,25 @@
 
 {# --- Filter Card --- #}
 <div class="ispace-content-card ispace-mb-4">
-    <div class="ispace-card-header" style="font-weight:600;">{% trans "高级筛选" %}</div>
+    <div class="ispace-card-header" style="font-weight:600;">{% trans "筛选与搜索" %}</div>
     <div class="ispace-card-body">
-        <div class="ispace-flex-center ispace-gap-3" style="flex-wrap:wrap;">
-            <label class="ispace-form-label" style="width:auto;margin-bottom:0;">{% trans "收藏类型" %}</label>
-            <label style="cursor:pointer;font-size:14px;margin-right:12px;">
-                <input type="radio" name="ctype" value="-1" {% if ctype == '-1' or not ctype %}checked{% endif %} onchange="filterByType(this.value)"> {% trans "全部" %}({{ all_cnt }})
-            </label>
-            <label style="cursor:pointer;font-size:14px;margin-right:12px;">
-                <input type="radio" name="ctype" value="2" {% if ctype == '2' %}checked{% endif %} onchange="filterByType(this.value)"> {% trans "文集" %}({{ collect_project_cnt }})
-            </label>
-            <label style="cursor:pointer;font-size:14px;">
-                <input type="radio" name="ctype" value="1" {% if ctype == '1' %}checked{% endif %} onchange="filterByType(this.value)"> {% trans "文档" %}({{ collect_doc_cnt }})
-            </label>
+        <div class="ispace-flex-between" style="flex-wrap:wrap;gap:var(--ispace-space-3);">
+            <div class="ispace-flex-center ispace-gap-3" style="flex-wrap:wrap;">
+                <label class="ispace-form-label" style="width:auto;margin-bottom:0;">{% trans "收藏类型" %}</label>
+                <label style="cursor:pointer;font-size:14px;margin-right:12px;">
+                    <input type="radio" name="ctype" value="-1" {% if ctype == '-1' or not ctype %}checked{% endif %} onchange="filterByType(this.value)"> {% trans "全部" %}({{ all_cnt }})
+                </label>
+                <label style="cursor:pointer;font-size:14px;margin-right:12px;">
+                    <input type="radio" name="ctype" value="2" {% if ctype == '2' %}checked{% endif %} onchange="filterByType(this.value)"> {% trans "文集" %}({{ collect_project_cnt }})
+                </label>
+                <label style="cursor:pointer;font-size:14px;">
+                    <input type="radio" name="ctype" value="1" {% if ctype == '1' %}checked{% endif %} onchange="filterByType(this.value)"> {% trans "文档" %}({{ collect_doc_cnt }})
+                </label>
+            </div>
+            <div class="ispace-search-input-wrap" style="max-width:240px;">
+                <svg class="ispace-search-input-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" class="ispace-form-input ispace-form-input-sm" id="searchKw" placeholder="{% trans '搜索收藏...' %}" value="{{ kw|default:'' }}" style="padding-left:32px;" onkeyup="if(event.key==='Enter')doSearch()">
+            </div>
         </div>
     </div>
 </div>
@@ -33,7 +39,7 @@
             <button class="ispace-btn ispace-btn-danger ispace-btn-sm" id="batchRemove">{% trans "取消收藏" %}</button>
         </div>
 
-        {% if collects and collects.paginator.count > 0 %}
+        {% if collects %}
         <div class="ispace-table-wrap" style="overflow-x:auto;">
             <table class="ispace-table">
                 <thead>
@@ -41,6 +47,7 @@
                         <th style="width:36px;"><input type="checkbox" id="selectAll" title="{% trans '全选' %}"></th>
                         <th>{% trans "名称" %}</th>
                         <th>{% trans "归属" %}</th>
+                        <th>{% trans "作者" %}</th>
                         <th>{% trans "收藏时间" %}</th>
                         <th style="width:100px;">{% trans "操作" %}</th>
                     </tr>
@@ -50,16 +57,19 @@
                     <tr>
                         <td><input type="checkbox" class="collect-checkbox" value="{{ c.id }}"></td>
                         <td>
-                            {% if c.type == 1 %}
-                            <img src="{% static 'icon_img/manage-doc-icon.svg' %}" height="14" width="14" alt="doc" style="vertical-align:middle;margin-right:4px;">
-                            <a href="/project-{{ c.item_project_id }}/doc-{{ c.item_id }}/" target="_blank" style="font-weight:500;">{{ c.item_name }}</a>
-                            {% elif c.type == 2 %}
-                            <img src="{% static 'icon_img/manage-pro-icon.svg' %}" height="14" width="14" alt="pro" style="vertical-align:middle;margin-right:4px;">
-                            <a href="/project-{{ c.item_id }}/" target="_blank" style="font-weight:500;">{{ c.item_name }}</a>
-                            {% endif %}
+                            <span style="display:inline-flex;align-items:center;gap:4px;">
+                                {% if c.type == 1 %}
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+                                <a href="/project-{{ c.item_project_id }}/doc-{{ c.item_id }}/" target="_blank" style="font-weight:500;">{{ c.item_name }}</a>
+                                {% elif c.type == 2 %}
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+                                <a href="/project-{{ c.item_id }}/" target="_blank" style="font-weight:500;">{{ c.item_name }}</a>
+                                {% endif %}
+                            </span>
                         </td>
                         <td>{{ c.item_project_name|default:'--' }}</td>
-                        <td>{{ c.create_time|date:"Y-m-d H:i:s" }}</td>
+                        <td style="font-size:var(--ispace-font-sm);color:var(--ispace-color-text-secondary);">{{ c.author }}</td>
+                        <td style="white-space:nowrap;">{{ c.create_time|date:"Y-m-d H:i" }}</td>
                         <td>
                             <button class="ispace-btn ispace-btn-sm ispace-btn-danger" onclick="delCollect({{ c.id }})">{% trans "取消收藏" %}</button>
                         </td>
@@ -68,7 +78,7 @@
                 </tbody>
             </table>
         </div>
-        {% include "includes/pagination.html" with page_obj=collects query_string=query_string %}
+        {% include "includes/pagination.html" with page_obj=page_obj query_string=query_string %}
         {% else %}
         {% include "includes/empty_state.html" with title="暂无收藏" description="您还没有收藏任何内容" %}
         {% endif %}
@@ -81,8 +91,17 @@
 function getCSRF() { return document.querySelector('[name=csrfmiddlewaretoken]').value; }
 
 function filterByType(val) {
-    var url = '{% url "manage_collect" %}' + (val !== '-1' ? '?type=' + val : '');
-    window.location.href = url;
+    var kw = document.getElementById('searchKw').value.trim();
+    var params = [];
+    if (val !== '-1') params.push('type=' + val);
+    if (kw) params.push('kw=' + encodeURIComponent(kw));
+    window.location.href = '{% url "manage_collect" %}' + (params.length ? '?' + params.join('&') : '');
+}
+function doSearch() {
+    var kw = document.getElementById('searchKw').value.trim();
+    var ctype = document.querySelector('input[name="ctype"]:checked');
+    var typeVal = ctype ? ctype.value : '-1';
+    filterByType(typeVal);
 }
 
 // --- Single Delete ---
