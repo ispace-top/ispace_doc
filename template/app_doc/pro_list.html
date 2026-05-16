@@ -179,12 +179,17 @@
 .ispace-header-search-center {
     position: absolute;
     left: 50%;
-    transform: translateX(-50%);
+    top: 50%;
+    transform: translate(-50%, -50%);
     display: flex;
     align-items: center;
     justify-content: center;
     width: 100%;
     max-width: 420px;
+    pointer-events: none;
+}
+.ispace-header-search-center .ispace-search-input-wrap {
+    pointer-events: auto;
 }
 
 /* ---- Funcbar ---- */
