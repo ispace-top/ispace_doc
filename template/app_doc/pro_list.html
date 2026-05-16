@@ -30,6 +30,7 @@
         <select name="sort" id="selSort" class="ispace-form-select" style="width:auto;" onchange="doFilter()">
             <option value="1" {% if sort == '1' %}selected{% endif %}>{% trans "最新" %}</option>
             <option value="0" {% if sort == '0' %}selected{% endif %}>{% trans "最早" %}</option>
+            <option value="2" {% if sort == '2' %}selected{% endif %}>{% trans "最多文档" %}</option>
         </select>
         {% if user.is_authenticated %}
         <a href="{% url 'manage_project' %}" class="ispace-btn ispace-btn-primary ispace-btn-sm">{% trans "新建文集" %}</a>
@@ -40,23 +41,34 @@
 {% if projects %}
 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:var(--ispace-space-4);">
     {% for p in projects %}
-    <a href="{% url 'pro_index_id' p.id %}" class="ispace-card" style="text-decoration:none;display:block;">
-        <div class="ispace-card-body">
-            <div class="ispace-flex-between ispace-mb-3">
-                <h3 class="ispace-card-title ispace-truncate" style="flex:1;font-size:var(--ispace-font-base);">{{ p.name }}</h3>
-                <span class="ispace-badge {% if p.role == 0 %}ispace-badge-success{% elif p.role == 3 %}ispace-badge-warning{% else %}ispace-badge-info{% endif %} ispace-ml-2">
-                    {% if p.role == 0 %}{% trans "公开" %}{% elif p.role == 3 %}{% trans "访问码" %}{% else %}{% trans "私密" %}{% endif %}
-                </span>
+    <div class="ispace-card" style="display:block;position:relative;">
+        <a href="{% url 'pro_index_id' p.id %}" style="text-decoration:none;display:block;">
+            <div class="ispace-card-body">
+                <div class="ispace-flex-between ispace-mb-3">
+                    <h3 class="ispace-card-title ispace-truncate" style="flex:1;font-size:var(--ispace-font-base);">{{ p.name }}</h3>
+                    <span class="ispace-badge {% if p.role == 0 %}ispace-badge-success{% elif p.role == 3 %}ispace-badge-warning{% else %}ispace-badge-info{% endif %} ispace-ml-2">
+                        {% if p.role == 0 %}{% trans "公开" %}{% elif p.role == 3 %}{% trans "访问码" %}{% else %}{% trans "私密" %}{% endif %}
+                    </span>
+                </div>
+                <p class="ispace-text-sm ispace-text-tertiary ispace-line-clamp-2 ispace-mb-3">
+                    {% if p.intro %}{{ p.intro|striptags|truncatechars:120 }}{% else %}{% trans "此文集没有填写简介" %}{% endif %}
+                </p>
+                <div class="ispace-flex-between ispace-text-xs ispace-text-quaternary">
+                    <span>{{ p.create_user.username }}</span>
+                    <span class="ispace-flex-center ispace-gap-2">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+                        {% if p.doc_count %}{{ p.doc_count }}{% else %}0{% endif %} {% trans "篇" %}
+                    </span>
+                    <span>{{ p.modify_time|date:"Y-m-d" }}</span>
+                </div>
             </div>
-            <p class="ispace-text-sm ispace-text-tertiary ispace-line-clamp-2 ispace-mb-3">
-                {% if p.intro %}{{ p.intro|striptags|truncatechars:120 }}{% else %}{% trans "此文集没有填写简介" %}{% endif %}
-            </p>
-            <div class="ispace-flex-between ispace-text-xs ispace-text-quaternary">
-                <span>{{ p.create_user.username }}</span>
-                <span>{{ p.modify_time|date:"Y-m-d" }}</span>
-            </div>
-        </div>
-    </a>
+        </a>
+        {% if user.is_authenticated %}
+        <button class="ispace-collect-btn" data-type="2" data-id="{{ p.id }}" title="{% trans '收藏文集' %}" onclick="toggleCollect(event, this)" style="position:absolute;top:12px;right:12px;background:none;border:none;cursor:pointer;padding:4px;border-radius:var(--ispace-radius-sm);z-index:2;opacity:0;transition:opacity .2s;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.5" class="collect-star"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg>
+        </button>
+        {% endif %}
+    </div>
     {% endfor %}
 </div>
 {% include "includes/pagination.html" with page_obj=projects %}
@@ -88,9 +100,33 @@
 {% endblock %}
 
 {% block scripts %}
+<style>
+.ispace-card:hover .ispace-collect-btn { opacity: 1 !important; }
+.ispace-collect-btn.collected svg { fill: #f5a623; stroke: #f5a623; }
+</style>
 <script>
 document.getElementById('searchKw')?.focus();
 function doSearch(){var kw=document.getElementById('searchKw').value.trim();var role=document.getElementById('selRole').value;var sort=document.getElementById('selSort').value;window.location.href='/?kw='+encodeURIComponent(kw)+'&role='+role+'&sort='+sort;}
 function doFilter(){var kw=document.getElementById('searchKw').value.trim();var role=document.getElementById('selRole').value;var sort=document.getElementById('selSort').value;window.location.href='/?kw='+encodeURIComponent(kw)+'&role='+role+'&sort='+sort;}
+function getCookie(name){
+    var v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+    return v ? v.pop() : '';
+}
+function toggleCollect(e, btn){
+    e.preventDefault();e.stopPropagation();
+    var type = btn.getAttribute('data-type');
+    var id = btn.getAttribute('data-id');
+    var fd = new FormData();
+    fd.append('type', type);
+    fd.append('id', id);
+    fd.append('csrfmiddlewaretoken', getCookie('csrftoken'));
+    fetch('{% url "my_collect" %}', {method:'POST', body:fd, headers:{'X-Requested-With':'XMLHttpRequest'}})
+    .then(function(r){return r.json();}).then(function(r){
+        if(r.status){
+            if(r.data.indexOf('成功') >= 0){ btn.classList.add('collected'); }
+            else { btn.classList.remove('collected'); }
+        }
+    });
+}
 </script>
 {% endblock %}

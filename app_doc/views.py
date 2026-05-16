@@ -15,7 +15,7 @@ from rest_framework.views import APIView # 视图
 from rest_framework.response import Response # 响应
 from rest_framework.pagination import PageNumberPagination # 分页
 from rest_framework.authentication import SessionAuthentication # 认证
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.db import transaction
 from django.utils.html import strip_tags,escape
 from django.utils.translation import gettext_lazy as _
@@ -340,6 +340,15 @@ def project_list(request):
             ).order_by('-is_top',"{}create_time".format(sort_str))
         else:
             return render(request,'404.html')
+
+    # 统计文集文档数（top_doc是IntegerField而非FK，需用子查询）
+    from django.db.models import OuterRef, Subquery
+    doc_subquery = Doc.objects.filter(
+        top_doc=OuterRef('pk'), status=1
+    ).values('top_doc').annotate(cnt=Count('id')).values('cnt')
+    project_list = project_list.annotate(doc_count=Subquery(doc_subquery))
+    if sort in [2, '2']:  # 最多文档
+        project_list = project_list.order_by('-is_top', '-doc_count')
 
     # 分页处理
     paginator = Paginator(project_list, 12)
