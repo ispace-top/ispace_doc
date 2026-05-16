@@ -2,6 +2,7 @@
 {% load static %}{% load i18n %}
 
 {% block title %}{% trans "搜索文档" %} - {{ site_name|default:"iSpaceDoc" }}{% endblock %}
+{% block breadcrumb %}{% include "includes/breadcrumb.html" with breadcrumbs=breadcrumb_items %}{% endblock %}
 
 {% block content %}
 <div class="ispace-page-header" style="text-align:center;">

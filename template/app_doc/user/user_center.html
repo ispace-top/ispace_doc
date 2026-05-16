@@ -3,6 +3,7 @@
 
 {% block title %}{% trans "个人中心" %} - {{ site_name|default:"iSpaceDoc" }}{% endblock %}
 
+{% block breadcrumb %}{% include "includes/breadcrumb.html" with breadcrumbs=breadcrumb_items %}{% endblock %}
 {% block body_class %}ispace-page-body{% endblock %}
 
 {% block styles %}

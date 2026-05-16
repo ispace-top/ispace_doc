@@ -1,0 +1,12 @@
+{% load i18n %}
+<nav class="ispace-breadcrumb" aria-label="breadcrumb">
+    <a href="/">{% trans "首页" %}</a>
+    {% for item in breadcrumbs %}
+    <span class="ispace-breadcrumb-separator">/</span>
+    {% if item.url %}
+    <a href="{{ item.url }}">{{ item.name }}</a>
+    {% else %}
+    <span>{{ item.name }}</span>
+    {% endif %}
+    {% endfor %}
+</nav>

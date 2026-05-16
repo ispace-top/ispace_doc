@@ -41,6 +41,7 @@ import json
 @require_http_methods(['GET','POST'])
 def import_project(request):
     if request.method == 'GET':
+        breadcrumb_items = [{"name": _('导入文集'), 'url': ''}]
         return render(request,'app_doc/manage/manage_project_import.html',locals())
     elif request.method == 'POST':
         file_type = request.POST.get('type',None)
@@ -147,6 +148,7 @@ def import_local_doc_to_project(request):
     if request.method == 'GET':
         project_list = Project.objects.filter(create_user=request.user)  # 自己创建的文集列表
         colla_project_list = ProjectCollaborator.objects.filter(user=request.user)  # 协作的文集列表
+        breadcrumb_items = [{"name": _('导入本地文档'), 'url': ''}]
         return render(request,'app_doc/manage/import_local_doc_to_project.html',locals())
 
 

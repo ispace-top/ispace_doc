@@ -1,6 +1,7 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% load static %}{% load i18n %}
 {% block title %}{% trans "仪表盘" %}{% endblock %}
+{% block breadcrumb %}{% include "includes/breadcrumb.html" with breadcrumbs=breadcrumb_items %}{% endblock %}
 
 {% block body_class %}ispace-page-body{% endblock %}
 
@@ -160,18 +161,7 @@
                             </div>
                         </div>
 
-                        <div class="ispace-content-card">
-                            <div class="ispace-card-header">
-                                <h3 class="ispace-card-title">{% trans "链接" %}</h3>
-                            </div>
-                            <div class="ispace-card-body">
-                                <div class="ispace-link-list">
-                                    <a href="https://mrdoc.pro" target="_blank" class="ispace-btn ispace-btn-primary">{% trans "觅思文档官网" %}</a>
-                                    <a href="https://doc.mrdoc.pro/project-54/" target="_blank" class="ispace-btn ispace-btn-secondary">{% trans "使用手册" %}</a>
-                                    <a href="https://gitee.com/zmister/MrDoc" target="_blank" class="ispace-btn ispace-btn-secondary">{% trans "源码下载" %}</a>
-                                </div>
-                            </div>
-                        </div>
+
                     </div>
                 </div>
             </div>

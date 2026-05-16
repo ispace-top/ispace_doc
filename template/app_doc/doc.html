@@ -3,6 +3,7 @@
 
 {% block title %}{{ doc.name }} - {{ project.name }} - {{ site_name|default:"iSpaceDoc" }}{% endblock %}
 {% block meta_description %}{{ doc.pre_content|striptags|slice:":100" }}{% endblock %}
+{% block breadcrumb %}{% include "includes/breadcrumb.html" with breadcrumbs=breadcrumb_items %}{% endblock %}
 
 {% block head_extra %}
 <meta property="og:title" content="{{ doc.name }} - {{ project.name }}">

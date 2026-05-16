@@ -3,6 +3,7 @@
 
 {% block title %}{{ project.name }} - {{ site_name|default:"iSpaceDoc" }}{% endblock %}
 {% block meta_description %}{{ project.intro|striptags|slice:":100" }}{% endblock %}
+{% block breadcrumb %}{% include "includes/breadcrumb.html" with breadcrumbs=breadcrumb_items %}{% endblock %}
 
 {% block head_extra %}
 <meta property="og:type" content="website">
@@ -45,15 +46,35 @@
 </aside>
 {% endblock %}
 
-{% block header_actions %}
-{% include "includes/theme_toggle.html" %}
-{% if request.user == project.create_user or colla_user > 0 %}
-<a href="{% url 'create_doc' %}?pid={{ project.id }}" class="ispace-btn ispace-btn-primary ispace-btn-sm">添加文档</a>
-{% endif %}
-{% if request.user == project.create_user %}
-<a href="{% url 'user_center' %}?tab=manage_project" class="ispace-btn ispace-btn-ghost ispace-btn-sm">管理</a>
-{% endif %}
-{% include "includes/user_dropdown.html" %}
+{% block header %}
+<header class="ispace-header">
+    <div class="ispace-header-container">
+        <div class="ispace-header-left">
+            <a href="/" class="ispace-logo">
+                <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+                    <rect width="32" height="32" rx="8" fill="var(--ispace-color-brand-500)"/>
+                    <path d="M9 16L14 21L23 11" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                {{ site_name|default:"iSpaceDoc" }}
+            </a>
+        </div>
+        <div class="ispace-header-center"></div>
+        <div class="ispace-header-right">
+            {% include "includes/theme_toggle.html" %}
+            {% if request.user == project.create_user or colla_user > 0 %}
+            <a href="{% url 'create_doc' %}?pid={{ project.id }}" class="ispace-btn ispace-btn-primary ispace-btn-sm">添加文档</a>
+            {% endif %}
+            {% if request.user == project.create_user %}
+            <a href="{% url 'user_center' %}?tab=manage_project" class="ispace-btn ispace-btn-ghost ispace-btn-sm">管理</a>
+            {% endif %}
+            {% if user.is_authenticated %}
+                {% include "includes/user_dropdown.html" %}
+            {% else %}
+                <a href="{% url 'login' %}" class="ispace-btn ispace-btn-ghost ispace-btn-sm">登录</a>
+            {% endif %}
+        </div>
+    </div>
+</header>
 {% endblock %}
 
 {% block content %}

@@ -51,6 +51,7 @@ def user_center(request):
     user_project_count = Project.objects.filter(create_user=request.user).count()
     user_doc_count = Doc.objects.filter(create_user=request.user).count()
     user_collect_count = MyCollect.objects.filter(create_user=request.user).count()
+    breadcrumb_items = [{"name": _('个人中心'), 'url': ''}]
     return render(request,'app_doc/user/user_center.html',locals())
 
 

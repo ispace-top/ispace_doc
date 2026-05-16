@@ -1,4 +1,4 @@
-# coding:utf-8
+﻿# coding:utf-8
 from django.shortcuts import render,redirect
 from django.http.response import JsonResponse,HttpResponse,Http404
 from django.contrib.auth import authenticate,login,logout # 认证相关方法
@@ -1472,18 +1472,7 @@ def admin_site_config(request):
 
 # 检测版本更新
 def check_update(request):
-    gitee_url = 'https://gitee.com/api/v5/repos/zmister/MrDoc/tags'
-    github_url = 'https://api.github.com/repos/zmister2016/MrDoc/tags'
-    gitee_resp = requests.get(gitee_url,timeout=5)
-    if gitee_resp.status_code == 200:
-        # gitee上查找版本取结果数组中最后一个对象为最新版本
-        return JsonResponse({'status':True,'data':gitee_resp.json()[-1]})
-    else:
-        github_resp = requests.get(github_url,timeout=5)
-        if github_resp.status_code == 200:
-            return JsonResponse({'status':True,'data':github_resp.json()[0]})
-        else:
-            return JsonResponse({'status':True,'data':{'name': 'v0.0.1'}})
+    return JsonResponse({'status':False,'data':'功能已禁用'})
 
 # 站点数据备份
 @superuser_only
@@ -1557,6 +1546,7 @@ def admin_backup(request):
 # 后台管理
 @superuser_only
 def admin_center(request):
+    breadcrumb_items = [{"name": _('后台管理'), 'url': ''}]
     return render(request,'app_admin/admin_center.html',locals())
 
 
@@ -1637,84 +1627,6 @@ def admin_center_menu(request):
             "icon": "layui-icon layui-icon-set",
             "href": reverse('sys_setting'),
         },
-        {
-            "id": 'update_pro',
-            "title": _("升级专业版"),
-            "type": 1,
-            "icon": "layui-icon layui-icon-senior",
-            "href": 'https://doc.mrdoc.pro/doc/3441/',
-            "openType": "_blank",
-        },
-        {
-            "id": "download",
-            "title": _("客户端下载"),
-            "icon": "layui-icon layui-icon-template-1",
-            "type": 0,
-            "href": "",
-            "children": [
-                {
-                    "id": 702,
-                    "title": _("浏览器扩展"),
-                    "icon": "layui-icon layui-icon-face-cry",
-                    "type": 1,
-                    "openType": "_blank",
-                    "href": "https://gitee.com/zmister/mrdoc-webclipper"
-                },
-                {
-                    "id": 703,
-                    "title": _("桌面客户端"),
-                    "icon": "layui-icon layui-icon-face-cry",
-                    "type": 1,
-                    "openType": "_blank",
-                    "href": "https://gitee.com/zmister/mrdoc-desktop-release"
-                },
-                {
-                    "id": 704,
-                    "title": _("移动端APP"),
-                    "icon": "layui-icon layui-icon-face-cry",
-                    "type": 1,
-                    "openType": "_blank",
-                    "href": "https://gitee.com/zmister/mrdoc-app-release"
-                },
-                {
-                    "id": 705,
-                    "title": _("Obsidian插件"),
-                    "icon": "layui-icon layui-icon-face-cry",
-                    "type": 1,
-                    "openType": "_blank",
-                    "href": "https://gitee.com/zmister/obsidian-mrdoc-plugin"
-                },
-            ]
-        },
-        {
-            "id": "common",
-            "title": _("使用帮助"),
-            "icon": "layui-icon layui-icon-template-1",
-            "type": 0,
-            "href": "",
-            "children": [{
-                "id": 701,
-                "title": _("部署手册"),
-                "icon": "layui-icon layui-icon-face-smile",
-                "type": 1,
-                "openType": "_blank",
-                "href": "https://doc.mrdoc.pro/project/7/"
-            }, {
-                "id": 702,
-                "title": _("使用手册"),
-                "icon": "layui-icon layui-icon-face-smile",
-                "type": 1,
-                "openType": "_blank",
-                "href": "https://doc.mrdoc.pro/project/54/"
-            },{
-                "id": 'doc-example',
-                "title": _("文档示例"),
-                "icon": "layui-icon layui-icon-face-smile",
-                "type": 1,
-                "openType": "_blank",
-                "href": "https://doc.mrdoc.pro/p/example/"
-            }
-            ]
-        }
+
     ]
     return JsonResponse(menu_data,safe=False)

@@ -467,6 +467,7 @@ def project_index(request,pro_id):
             search_result = Doc.objects.filter(Q(pre_content__icontains=kw) | Q(name__icontains=kw),top_doc=int(pro_id))
             remove_markdown_tag(search_result)
             return render(request,'app_doc/project_doc_search.html',locals())
+        breadcrumb_items = [{'name': project.name, 'url': ''}]
         return render(request, 'app_doc/project.html', locals())
     except Exception as e:
         logger.exception(_("文集页访问异常"))
@@ -640,6 +641,7 @@ def del_project(request):
 @require_http_methods(['GET','POST'])
 def manage_project(request):
     if request.method == 'GET':
+        breadcrumb_items = [{"name": _('我的文集'), 'url': ''}]
         return render(request,'app_doc/manage/manage_project.html',locals())
     else:
         kw = request.POST.get('kw','')
@@ -914,6 +916,7 @@ def manage_project_collaborator(request,pro_id):
 @logger.catch()
 def manage_pro_colla_self(request):
     colla_pros = ProjectCollaborator.objects.filter(user=request.user)
+    breadcrumb_items = [{"name": _('协作文集'), 'url': ''}]
     return render(request,'app_doc/manage/manage_project_self_colla.html',locals())
 
 
@@ -1092,6 +1095,10 @@ def doc(request,pro_id,doc_id):
                     if i < len(toc_list) - 1:
                         next_doc = toc_list[i + 1]
                     break
+            breadcrumb_items = [
+                {'name': project.name, 'url': '/project-{}/'.format(project.id)},
+                {'name': doc.name, 'url': ''}
+            ]
             return render(request,'app_doc/doc.html',locals())
         else:
             return HttpResponse(_('参数错误'))
@@ -1211,6 +1218,7 @@ def create_doc(request):
             project_list = Project.objects.filter(create_user=request.user) # 自己创建的文集列表
             colla_project_list = ProjectCollaborator.objects.filter(user=request.user) # 协作的文集列表
             doctemp_list = DocTemp.objects.filter(create_user=request.user).values('id','name','create_time')
+            breadcrumb_items = [{"name": _('创建文档'), 'url': ''}]
             return render(request, 'app_doc/editor/create_doc.html', locals())
         except Exception as e:
             logger.exception(_("访问创建文档页面出错"))
@@ -1316,6 +1324,7 @@ def modify_doc(request,doc_id):
                 doc_list = Doc.objects.filter(top_doc=project.id)
                 doctemp_list = DocTemp.objects.filter(create_user=request.user)
                 history_list = DocHistory.objects.filter(doc=doc).order_by('-create_time')
+                breadcrumb_items = [{"name": _('编辑文档'), 'url': ''}]
                 return render(request, 'app_doc/editor/modify_doc.html', locals())
 
             else:
@@ -1501,6 +1510,7 @@ def manage_doc(request):
         recycle_doc_cnt = Doc.objects.filter(create_user=request.user, status=3).count()
         # 所有文档数量
         all_cnt = published_doc_cnt + draft_doc_cnt + recycle_doc_cnt
+        breadcrumb_items = [{"name": _('我的文档'), 'url': ''}]
         return render(request,'app_doc/manage/manage_doc.html',locals())
     else:
         kw = request.POST.get('kw', '')
@@ -1750,6 +1760,7 @@ def doc_recycle(request):
             docs = paginator.page(1)
         except EmptyPage:
             docs = paginator.page(paginator.num_pages)
+        breadcrumb_items = [{"name": _('文档回收站'), 'url': ''}]
         return render(request,'app_doc/manage/manage_doc_recycle.html',locals())
     elif request.method == 'POST':
         try:
@@ -1955,6 +1966,7 @@ def manage_doc_share(request):
         # 获取用户可分享的文档列表（用于创建分享）
         user_docs = Doc.objects.filter(create_user=request.user, status=1).order_by('name')
         query_string = request.GET.urlencode()
+        breadcrumb_items = [{"name": _('分享管理'), 'url': ''}]
         return render(request, 'app_doc/manage/manage_doc_share.html', locals())
     else:
         types = request.POST.get('type')
@@ -2193,6 +2205,7 @@ def manage_doctemp(request):
                 doctemps = paginator.page(1)
             except EmptyPage:
                 doctemps = paginator.page(paginator.num_pages)
+        breadcrumb_items = [{"name": _('文档模板'), 'url': ''}]
         return render(request, 'app_doc/manage/manage_doctemp.html', locals())
     except Exception as e:
         logger.exception(_("管理文档模板页面访问出错"))
@@ -2687,6 +2700,7 @@ def manage_image(request):
             except EmptyPage:
                 images = paginator.page(paginator.num_pages)
             images.group = g_id
+            breadcrumb_items = [{"name": _('图片管理'), 'url': ''}]
             return render(request,'app_doc/manage/manage_image.html',locals())
         except:
             logger.exception(_("图片素材管理出错"))
@@ -2930,6 +2944,7 @@ def manage_attachment(request):
                     attachments = paginator.page(1)
                 except EmptyPage:
                     attachments = paginator.page(paginator.num_pages)
+            breadcrumb_items = [{"name": _('附件管理'), 'url': ''}]
             return render(request, 'app_doc/manage/manage_attachment.html', locals())
         except Exception as e:
             logger.exception(_("附件管理访问出错"))
@@ -3142,7 +3157,8 @@ def search(request):
                 ).order_by('-create_time')
 
         else:
-            return render(request, 'app_doc/search.html')
+            breadcrumb_items = [{"name": _('搜索文档'), 'url': ''}]
+            return render(request, 'app_doc/search.html', locals())
 
         # 分页处理
         paginator = Paginator(data_list, 12)
@@ -3157,7 +3173,8 @@ def search(request):
 
     # 否则跳转到搜索首页
     else:
-        return render(request,'app_doc/search.html')
+        breadcrumb_items = [{"name": _('搜索文档'), 'url': ''}]
+        return render(request,'app_doc/search.html',locals())
 
 
 # 文档Markdown文件下载
@@ -3201,7 +3218,7 @@ def manage_overview(request):
         attachment_cnt = Attachment.objects.filter(user=request.user).count()
 
         doc_active_list = Doc.objects.filter(create_user=request.user).order_by('-modify_time')[:5]
-
+        breadcrumb_items = [{"name": _('我的概览'), 'url': ''}]
         return render(request,'app_doc/manage/manage_overview.html',locals())
     else:
         pass
@@ -3213,6 +3230,7 @@ def manage_overview(request):
 def manage_doc_tag(request):
     if request.method == 'GET':
         tags = Tag.objects.filter(create_user=request.user)
+        breadcrumb_items = [{"name": _('文档标签'), 'url': ''}]
         return render(request,'app_doc/manage/manage_doc_tag.html',locals())
     # 操作标签
     elif request.method == 'POST':
@@ -3518,6 +3536,7 @@ def manage_collect(request):
         # 所有收藏数量
         all_cnt = collect_project_cnt + collect_doc_cnt
 
+        breadcrumb_items = [{"name": _('我的收藏'), 'url': ''}]
         return render(request,'app_doc/manage/manage_collect.html',locals())
     elif request.method == 'POST':
         kw = request.POST.get('kw', '') # 搜索词

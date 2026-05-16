@@ -6,6 +6,7 @@
 {% block styles %}
 <link href="{% static 'viewerjs/viewer.css' %}?version={{ mrdoc_version }}" rel="stylesheet">
 {% endblock %}
+{% block breadcrumb %}{% include "includes/breadcrumb.html" with breadcrumbs=breadcrumb_items %}{% endblock %}
 
 {% block content %}
 {% csrf_token %}

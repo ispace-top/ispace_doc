@@ -2,6 +2,7 @@
 {% load static %}{% load i18n %}
 
 {% block title %}{% trans "收藏管理" %}{% endblock %}
+{% block breadcrumb %}{% include "includes/breadcrumb.html" with breadcrumbs=breadcrumb_items %}{% endblock %}
 
 {% block content %}
 {% csrf_token %}

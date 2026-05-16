@@ -252,7 +252,10 @@
 <div class="admin-layout">
     <div class="admin-sidebar" id="adminSidebar">
         <div class="admin-logo">
-            <img src="{% static 'mrdoc_logo_ridus.png' %}" alt="Logo">
+            <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+                <rect width="32" height="32" rx="8" fill="var(--ispace-color-brand-500)"/>
+                <path d="M9 16L14 21L23 11" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
             <span class="title">后台管理</span>
         </div>
         <div class="admin-nav" id="adminNav"></div>
@@ -309,6 +312,9 @@
             </div>
         </div>
 
+        <div class="admin-breadcrumb" style="padding: 8px 24px 0 24px;">
+            {% include "includes/breadcrumb.html" with breadcrumbs=breadcrumb_items %}
+        </div>
         <div class="content-tabs">
             <div class="tab-list" id="tabList">
                 <button class="tab-item active" data-tab="dashboard">仪表盘</button>
@@ -597,13 +603,40 @@
                 const response = await fetch(href);
                 if (!response.ok) { throw new Error('HTTP ' + response.status); }
                 const html = await response.text();
-                contentFrame.innerHTML = html;
 
-                setTimeout(() => {
-                    const scripts = contentFrame.querySelectorAll('script');
-                    scripts.forEach(script => {
+                // Parse the full page HTML and extract only the relevant content
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+
+                // Remove base layout elements: header, footer, skip-link
+                const toRemove = doc.querySelectorAll('header.ispace-header, footer.ispace-footer, .ispace-skip-link, .ispace-toast-container, #ispace-modals-container, #ispace-toast-container');
+                toRemove.forEach(function(el) { el.remove(); });
+
+                // Remove theme/FOUC inline scripts (already handled by admin shell)
+                const inlineScripts = doc.querySelectorAll('script:not([src])');
+                inlineScripts.forEach(function(s) {
+                    if (s.textContent.indexOf('ispace-theme') !== -1 || s.textContent.indexOf('ispace-color-scheme') !== -1) {
+                        s.remove();
+                    }
+                });
+
+                // Extract page-specific styles from <head>
+                var pageStyles = '';
+                var styleElements = doc.querySelectorAll('head style');
+                styleElements.forEach(function(s) { pageStyles += s.outerHTML; });
+
+                // Extract main content
+                var mainEl = doc.querySelector('main#main-content, main.ispace-main-content');
+                var content = pageStyles + (mainEl ? mainEl.innerHTML : doc.body.innerHTML);
+
+                contentFrame.innerHTML = content;
+
+                // Execute inline scripts from the loaded content
+                setTimeout(function() {
+                    var scripts = contentFrame.querySelectorAll('script');
+                    scripts.forEach(function(script) {
                         try {
-                            const newScript = document.createElement('script');
+                            var newScript = document.createElement('script');
                             if (script.src) {
                                 newScript.src = script.src;
                             } else {

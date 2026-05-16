@@ -1,7 +1,8 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% load static %}
 {% load i18n %}
 {% block title %}{% trans "导入文集" %}{% endblock %}
+{% block breadcrumb %}{% include "includes/breadcrumb.html" with breadcrumbs=breadcrumb_items %}{% endblock %}
 
 {% block content %}
 <div class="ispace-page">
@@ -14,7 +15,7 @@
             <div style="margin-bottom:var(--ispace-spacing-4);">
                 <span style="font-size:var(--ispace-font-size-lg);font-weight:var(--ispace-font-weight-semibold);">{% trans "导入本地文档到文集" %}</span>
                 <span style="font-size:var(--ispace-font-size-sm);color:var(--ispace-color-text-secondary);">
-                    （Markdown文集、Word批量、印象笔记、Joplin等导入请使用<a href="https://gitee.com/zmister/mrdoc-import-toolbox" target="_blank">「爱思文档导入工具箱」</a>）
+                    （仅支持本地文本文档导入）
                 </span>
             </div>
             <div>

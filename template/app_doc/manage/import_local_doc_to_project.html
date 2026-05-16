@@ -3,6 +3,7 @@
 {% load i18n %}
 
 {% block title %}{% trans "导入文集" %}{% endblock %}
+{% block breadcrumb %}{% include "includes/breadcrumb.html" with breadcrumbs=breadcrumb_items %}{% endblock %}
 
 {% block content %}
 <div class="ispace-page-header">
