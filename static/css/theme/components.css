@@ -1240,3 +1240,131 @@
   font-weight: var(--ispace-font-semibold);
   color: var(--ispace-color-text-primary);
 }
+
+/* ============================================================
+   RESPONSIVE — Mobile (≤768px)
+   ============================================================ */
+@media (max-width: 768px) {
+  /* Page header: stack title and actions */
+  .ispace-page-header.ispace-flex-between {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--ispace-space-3);
+  }
+
+  .ispace-page-title {
+    font-size: var(--ispace-font-xl);
+  }
+
+  /* Content card */
+  .ispace-content-card {
+    padding: var(--ispace-space-4);
+    border-radius: var(--ispace-radius-md);
+  }
+
+  /* Stat grid */
+  .ispace-stat-grid {
+    grid-template-columns: 1fr;
+    gap: var(--ispace-space-3);
+  }
+
+  .ispace-stat-card {
+    padding: var(--ispace-space-3);
+  }
+
+  .ispace-stat-value {
+    font-size: var(--ispace-font-xl);
+  }
+
+  /* Table: horizontal scroll wrapper */
+  .ispace-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .ispace-table {
+    min-width: 600px;
+  }
+
+  /* Form grid */
+  .ispace-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Form inline stack */
+  .ispace-form-inline {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ispace-form-inline > * {
+    width: 100%;
+  }
+
+  /* Toast full-width */
+  .ispace-toast-container {
+    left: var(--ispace-space-3);
+    right: var(--ispace-space-3);
+    max-width: none;
+  }
+
+  .ispace-toast {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* Page layout */
+  .ispace-page {
+    padding: var(--ispace-space-4) 0;
+  }
+
+  /* Breadcrumb truncation */
+  .ispace-breadcrumb {
+    font-size: var(--ispace-font-xs);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 50vw;
+  }
+
+  /* Modal */
+  .ispace-modal {
+    margin: var(--ispace-space-4);
+  }
+
+  .ispace-modal-sm {
+    max-width: none;
+    width: auto;
+  }
+
+  /* Search input wrap full-width */
+  .ispace-search-input-wrap {
+    max-width: none !important;
+    width: 100%;
+  }
+
+  /* Flex utilities */
+  .ispace-flex-between-mobile {
+    justify-content: space-between;
+  }
+}
+
+/* Extra small (≤480px) */
+@media (max-width: 480px) {
+  .ispace-card {
+    border-radius: var(--ispace-radius-md);
+  }
+
+  .ispace-card-body {
+    padding: var(--ispace-space-3);
+  }
+
+  .ispace-btn-sm {
+    padding: 4px 10px;
+    font-size: var(--ispace-font-xs);
+  }
+
+  .ispace-page-header {
+    margin-bottom: var(--ispace-space-4);
+  }
+}
