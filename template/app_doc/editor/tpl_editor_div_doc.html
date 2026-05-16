@@ -1,35 +1,33 @@
 {% load i18n %}
 <!-- 插入文档模板div块 -->
-<div class="doctemp-list " id="doctemp-list" style="display: none;padding:5px;">
-    <div style="margin: 10px 0 0 10px;">
-        <a class="layui-btn layui-btn-primary layui-btn-sm" href="{% url 'create_doctemp' %}" target="_blank">新建模板</a>
-        <a class="layui-btn layui-btn-normal layui-btn-sm" href="{% url 'user_center' %}?tab=manage_doctemp" target="_blank">管理模板</a>
+<div class="doctemp-list" id="doctemp-list" style="display:none;padding:var(--ispace-space-4);max-height:60vh;overflow-y:auto;">
+    <div style="display:flex;gap:var(--ispace-space-2);margin-bottom:var(--ispace-space-4);">
+        <a class="ispace-btn ispace-btn-secondary ispace-btn-sm" href="{% url 'create_doctemp' %}" target="_blank">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            新建模板
+        </a>
+        <a class="ispace-btn ispace-btn-ghost ispace-btn-sm" href="{% url 'user_center' %}?tab=manage_doctemp" target="_blank">管理模板</a>
     </div>
-    <table class="layui-table" style="margin: 10px;width:90%;">
-      <colgroup>
-        <col width="">
-        <col width="">
-        <col>
-      </colgroup>
-      <thead>
-        <tr>
-          <th>模板名称</th>
-          <th class="layui-hide-xs">创建时间</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody>
+    {% if doctemp_list %}
+    <div style="display:flex;flex-direction:column;gap:var(--ispace-space-2);">
         {% for temp in doctemp_list %}
-        <tr>
-          <td>{{ temp.name }}</td>
-          <td class="layui-hide-xs">{{ temp.create_time }}</td>
-          <td>
-              <a class="layui-btn layui-btn-primary layui-btn-sm" href="javascript:void(0);" onclick="insertTemp('{{temp.id}}');">选择模板</a>
-          </td>
-        </tr>
+        <div class="ispace-doctemp-card" style="border:1px solid var(--ispace-color-border-light);border-radius:var(--ispace-radius-md);padding:var(--ispace-space-3);transition:border-color var(--ispace-duration-fast);cursor:default;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:var(--ispace-space-3);">
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:var(--ispace-font-medium);font-size:var(--ispace-font-sm);color:var(--ispace-color-text-primary);margin-bottom:var(--ispace-space-1);">{{ temp.name }}</div>
+                    <div style="font-size:var(--ispace-font-xs);color:var(--ispace-color-text-tertiary);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:var(--ispace-leading-normal);">{% if temp.content %}{{ temp.content|truncatechars:120 }}{% else %}<em>空白模板</em>{% endif %}</div>
+                </div>
+                <button class="ispace-btn ispace-btn-primary ispace-btn-sm" onclick="insertTemp('{{ temp.id }}');" style="flex-shrink:0;">选择模板</button>
+            </div>
+        </div>
         {% endfor %}
-      </tbody>
-    </table>
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:var(--ispace-space-8) var(--ispace-space-4);color:var(--ispace-color-text-tertiary);">
+        <p style="margin-bottom:var(--ispace-space-2);">暂无文档模板</p>
+        <a class="ispace-btn ispace-btn-primary ispace-btn-sm" href="{% url 'create_doctemp' %}" target="_blank">创建第一个模板</a>
+    </div>
+    {% endif %}
 </div>
 <!-- 结束插入文档模板div块 -->
 

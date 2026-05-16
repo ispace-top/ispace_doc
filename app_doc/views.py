@@ -1217,7 +1217,7 @@ def create_doc(request):
             pid = request.GET.get('pid',-999)
             project_list = Project.objects.filter(create_user=request.user) # 自己创建的文集列表
             colla_project_list = ProjectCollaborator.objects.filter(user=request.user) # 协作的文集列表
-            doctemp_list = DocTemp.objects.filter(create_user=request.user).values('id','name','create_time')
+            doctemp_list = DocTemp.objects.filter(create_user=request.user).values('id','name','content','create_time').order_by('-modify_time')
             breadcrumb_items = [{"name": _('创建文档'), 'url': ''}]
             return render(request, 'app_doc/editor/create_doc.html', locals())
         except Exception as e:
