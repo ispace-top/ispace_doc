@@ -901,3 +901,51 @@ input#doc-name,input#doctemp-name{
         max-width: 200px;
     }
 }
+
+/* ---- Inline Editor ---- */
+.ispace-inline-editor {
+    padding: var(--ispace-space-6) 0;
+}
+.ispace-editor-container {
+    min-height: 400px;
+}
+.ispace-editor-container .vditor {
+    border: none;
+}
+/* Tag input within inline editor */
+.ispace-inline-editor .tagsinput {
+    width: 100%;
+    min-height: 42px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border: 1px solid var(--ispace-color-border-light);
+    border-radius: var(--ispace-radius-md);
+    background: var(--ispace-color-bg-primary);
+    cursor: text;
+}
+.ispace-inline-editor .tagsinput .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    font-size: var(--ispace-font-xs);
+    color: var(--ispace-color-brand-600);
+    background: var(--ispace-color-brand-50);
+    border-radius: var(--ispace-radius-full);
+}
+.ispace-inline-editor .tagsinput .tag a {
+    color: var(--ispace-color-brand-600);
+    text-decoration: none;
+    font-weight: bold;
+}
+.ispace-inline-editor .tagsinput input {
+    border: none;
+    outline: none;
+    min-width: 120px;
+    flex: 1;
+    padding: 4px;
+    background: transparent;
+}

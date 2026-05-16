@@ -16,18 +16,18 @@
         <div class="ispace-footer-links">
             <h4>产品</h4>
             <ul>
-                <li><a href="/">首页</a></li>
-                <li><a href="/search/">搜索文档</a></li>
+                <li><a href="/" data-spa>首页</a></li>
+                <li><a href="/search/" data-spa>搜索文档</a></li>
                 {% if not user.is_authenticated %}
                 <li><a href="{% url 'login' %}">登录</a></li>
                 {% endif %}
             </ul>
         </div>
         <div class="ispace-footer-links">
-            <h4>支持</h4>
+            <h4>导航</h4>
             <ul>
-                <li><a href="https://github.com/MrDocTeam/MrDoc" target="_blank" rel="noopener">GitHub</a></li>
-                <li><a href="https://doc.mrdoc.pro" target="_blank" rel="noopener">使用文档</a></li>
+                <li><a href="/" data-spa>首页</a></li>
+                <li><a href="/search/" data-spa>搜索</a></li>
             </ul>
         </div>
     </div>

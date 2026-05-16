@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% load static %}
 {% load i18n %}
 
@@ -17,12 +17,10 @@
 {% endif %}
 
 <div id="is_update_tips" style="display:none;background:var(--ispace-color-warning-bg);border:1px solid var(--ispace-color-warning-border);border-radius:var(--ispace-radius-md);padding:var(--ispace-space-3);margin-bottom:var(--ispace-space-4);color:var(--ispace-color-warning-text);font-size:var(--ispace-font-sm);">
-    <strong>{% trans "iSpaceDoc 已发布新版本" %}</strong> &mdash;
-    <a href="https://gitee.com/zmister/MrDoc/blob/master/CHANGES.md" target="_blank" style="color:var(--ispace-color-brand-500);">{% trans "查看更新内容" %}</a> |
-    <a href="https://doc.mrdoc.pro/doc/1395/" target="_blank" style="color:var(--ispace-color-brand-500);">{% trans "查看更新指南" %}</a>
+    <strong>{% trans "iSpaceDoc 已发布新版本" %}</strong>
 </div>
 
-<div style="display:grid;grid-template-columns:1fr 340px;gap:var(--ispace-space-4);margin-bottom:var(--ispace-space-4);">
+<div style="margin-bottom:var(--ispace-space-4);">
     <!-- Stats Grid -->
     <div class="ispace-stat-grid" style="grid-template-columns:repeat(5,1fr);">
         <div class="ispace-stat-card" style="flex-direction:column;align-items:stretch;">
@@ -62,25 +60,7 @@
         </div>
     </div>
 
-    <!-- Version Card -->
-    <div class="ispace-content-card" style="height:fit-content;">
-        <div class="ispace-card-header">
-            <h3 class="ispace-card-title">MrDoc {{ mrdoc_version }}</h3>
-        </div>
-        <div class="ispace-card-body">
-            <div style="display:flex;flex-direction:column;gap:var(--ispace-space-3);">
-                <a href="https://doc.mrdoc.pro/project-7/doc-3441/" target="_blank" class="ispace-btn ispace-btn-ghost" style="border-color:var(--ispace-color-warning-border);color:var(--ispace-color-warning-text);font-weight:var(--ispace-font-bold);">
-                    <span style="color:#F2CB51;">&#9733;</span> 升级专业版！
-                </a>
-                <a href="https://gitee.com/zmister/MrDoc" target="_blank" class="ispace-btn ispace-btn-secondary" style="width:100%;justify-content:center;">访问 Gitee</a>
-                <a href="https://github.com/zmister2016/MrDoc" target="_blank" class="ispace-btn ispace-btn-secondary" style="width:100%;justify-content:center;">访问 GitHub</a>
-                <button class="ispace-btn ispace-btn-secondary ispace-btn-sm" id="check-update-btn" style="width:100%;justify-content:center;">检查更新</button>
-            </div>
-            <div style="margin-top:var(--ispace-space-4);text-align:center;">
-                <img src="{% static 'mrdoc/1354bec77bdb4339a74a79397ca79f2d4926.png' %}" alt="QR Code" width="50%" style="border-radius:var(--ispace-radius-md);" />
-            </div>
-        </div>
-    </div>
+
 </div>
 
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--ispace-space-4);">

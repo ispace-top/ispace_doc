@@ -9,7 +9,7 @@ from django.views.decorators.http import require_http_methods,require_GET,requir
 from django.core.paginator import Paginator,PageNotAnInteger,EmptyPage,InvalidPage # 后端分页
 from django.core.exceptions import PermissionDenied,ObjectDoesNotExist
 from django.core.serializers import serialize
-from app_doc.models import Project,Doc,DocTemp,DocComment
+from app_doc.models import Project,Doc,DocTemp,DocComment,DocHistory,DocLike,DocTag,DocShare,ProjectCollaborator,MyCollect
 from django.contrib.auth.models import User
 from rest_framework.views import APIView # 视图
 from rest_framework.response import Response # 响应
@@ -350,6 +350,29 @@ def project_list(request):
     if sort in [2, '2']:  # 最多文档
         project_list = project_list.order_by('-is_top', '-doc_count')
 
+    # 获取可见文集的ID列表（用于查询文档）
+    visible_project_ids = list(project_list.values_list('id', flat=True))
+
+    # 构建文集ID→名称映射（供文档列表使用）
+    pro_name_map = {p.id: p.name for p in project_list}
+
+    # 查询可见文集下的文档（已发布状态），根据排序条件
+    doc_sort = '-modify_time' if sort in [1, '1'] else 'modify_time'
+    if sort in [2, '2']:
+        doc_sort = '-modify_time'  # 最多文档模式下仍按最近更新
+    doc_list = Doc.objects.filter(
+        top_doc__in=visible_project_ids,
+        status=1
+    ).select_related('create_user').order_by(doc_sort)[:50]
+
+    # 组装文档+文集名列表（避免模板中字典查找）
+    doc_items = []
+    for d in doc_list:
+        doc_items.append({
+            'doc': d,
+            'pro_name': pro_name_map.get(d.top_doc, ''),
+        })
+
     # 分页处理
     paginator = Paginator(project_list, 12)
     page = request.GET.get('page', 1)
@@ -359,6 +382,44 @@ def project_list(request):
         projects = paginator.page(1)
     except EmptyPage:
         projects = paginator.page(paginator.num_pages)
+
+    # 最近收藏
+    from django.urls import reverse
+    recent_favorites = []
+    if is_auth:
+        collects = MyCollect.objects.filter(
+            create_user=request.user
+        ).order_by('-create_time')[:6]
+        doc_ids = [c.collect_id for c in collects if c.collect_type == 1]
+        pro_ids_fav = [c.collect_id for c in collects if c.collect_type == 2]
+        doc_map = {}
+        if doc_ids:
+            for d in Doc.objects.filter(id__in=doc_ids).select_related('create_user'):
+                doc_map[d.id] = d
+        pro_map = {}
+        if pro_ids_fav:
+            for p in Project.objects.filter(id__in=pro_ids_fav):
+                pro_map[p.id] = p
+        for c in collects:
+            if c.collect_type == 1:
+                d = doc_map.get(c.collect_id)
+                if d:
+                    recent_favorites.append({
+                        'name': d.name,
+                        'type': '文档',
+                        'url': reverse('doc', args=[d.top_doc, d.id]),
+                        'time': c.create_time,
+                    })
+            else:
+                p = pro_map.get(c.collect_id)
+                if p:
+                    recent_favorites.append({
+                        'name': p.name,
+                        'type': '文集',
+                        'url': reverse('pro_index', args=[p.id]),
+                        'time': c.create_time,
+                    })
+
     return render(request, 'app_doc/pro_list.html', locals())
 
 
@@ -467,6 +528,14 @@ def project_index(request,pro_id):
             search_result = Doc.objects.filter(Q(pre_content__icontains=kw) | Q(name__icontains=kw),top_doc=int(pro_id))
             remove_markdown_tag(search_result)
             return render(request,'app_doc/project_doc_search.html',locals())
+        # 获取用户编辑器模式（用于行内创建文档）
+        editor_mode = 1
+        if request.user.is_authenticated:
+            try:
+                editor_mode = UserOptions.objects.get(user=request.user).editor_mode
+            except ObjectDoesNotExist:
+                pass
+        doc = None  # 占位，用于 inline_editor.html 兼容
         breadcrumb_items = [{'name': project.name, 'url': ''}]
         return render(request, 'app_doc/project.html', locals())
     except Exception as e:
@@ -1070,6 +1139,7 @@ def doc(request,pro_id,doc_id):
             try:
                 doc = Doc.objects.get(id=int(doc_id),status__in=[0,1]) # 文档信息
                 doc_tags = DocTag.objects.filter(doc=doc) # 文档标签信息
+                doc_tags_str = ','.join([i.tag.name for i in doc_tags])
                 if doc.status == 0 and doc.create_user != request.user:
                     raise ObjectDoesNotExist
                 elif doc.status == 0 and doc.create_user == request.user:
@@ -1099,6 +1169,15 @@ def doc(request,pro_id,doc_id):
                 {'name': project.name, 'url': '/project-{}/'.format(project.id)},
                 {'name': doc.name, 'url': ''}
             ]
+            # 获取文档编辑历史（最近10条）
+            doc_history = list(DocHistory.objects
+                .filter(doc=doc)
+                .select_related('create_user')
+                .order_by('-create_time')[:10]
+                .values('id', 'create_user__username', 'create_user__first_name', 'create_time'))
+            # 获取文档点赞状态
+            like_count = DocLike.objects.filter(doc=doc).count()
+            user_liked = DocLike.objects.filter(doc=doc, user=request.user).exists() if request.user.is_authenticated else False
             return render(request,'app_doc/doc.html',locals())
         else:
             return HttpResponse(_('参数错误'))
@@ -1115,6 +1194,7 @@ def doc_id(request,doc_id):
         try:
             doc = Doc.objects.get(id=int(doc_id),status__in=[0,1]) # 文档信息
             doc_tags = DocTag.objects.filter(doc=doc) # 文档标签信息
+            doc_tags_str = ','.join([i.tag.name for i in doc_tags])
             pro_id = doc.top_doc
             if doc.status == 0 and doc.create_user != request.user:
                 raise ObjectDoesNotExist
@@ -1177,6 +1257,7 @@ def doc_id(request,doc_id):
         try:
             doc = Doc.objects.get(id=int(doc_id),status__in=[0,1]) # 文档信息
             doc_tags = DocTag.objects.filter(doc=doc) # 文档标签信息
+            doc_tags_str = ','.join([i.tag.name for i in doc_tags])
             if doc.status == 0 and doc.create_user != request.user:
                 raise ObjectDoesNotExist
             elif doc.status == 0 and doc.create_user == request.user:
@@ -3827,6 +3908,24 @@ def delete_comment(request, comment_id):
     comment.is_active = False
     comment.save()
     return JsonResponse({'status': True, 'data': _('删除成功')})
+
+
+@login_required
+@require_POST
+def doc_like_toggle(request, doc_id):
+    """Toggle like on a document. Returns liked state and total count."""
+    try:
+        doc = Doc.objects.get(id=doc_id, status__in=[0, 1])
+    except Doc.DoesNotExist:
+        return JsonResponse({'status': False, 'data': _('文档不存在')})
+    like, created = DocLike.objects.get_or_create(doc=doc, user=request.user)
+    if not created:
+        like.delete()
+        liked = False
+    else:
+        liked = True
+    count = DocLike.objects.filter(doc=doc).count()
+    return JsonResponse({'status': True, 'liked': liked, 'count': count})
 
 
 def _serialize_comment(comment, current_user):

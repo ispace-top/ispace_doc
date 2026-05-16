@@ -12,39 +12,7 @@
 <meta property="og:url" content="{{ request.scheme }}://{{ request.META.HTTP_HOST }}{{ request.path_info }}">
 {% endblock %}
 
-{% block layout_class %}has-sidebar{% endblock %}
-
-{% block sidebar %}
-<aside class="ispace-sidebar" id="doc-sidebar">
-    <div class="ispace-flex-between ispace-mb-4">
-        <h3 class="ispace-font-semibold ispace-text-sm ispace-text-secondary">文档目录</h3>
-        <button class="ispace-btn ispace-btn-ghost ispace-btn-icon ispace-btn-sm" onclick="toggleSidebar()" title="收起侧栏">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-        </button>
-    </div>
-    <form action="{% url 'pro_index' pro_id=project.id %}" method="get" class="ispace-mb-4">
-        <div class="ispace-search-input-wrap">
-            <svg class="ispace-search-input-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" name="kw" class="ispace-form-input ispace-form-input-sm" placeholder="在文集内搜索文档" style="padding-left:32px;font-size:12px;">
-        </div>
-    </form>
-    <nav class="ispace-sidebar-nav">
-        {% if toc_list %}
-            {% for item in toc_list %}
-            <a href="{% url 'doc' pro_id=project.id doc_id=item.id %}" class="ispace-sidebar-link"
-               style="padding-left:calc(var(--ispace-space-3) * {{ item.level|add:1 }})">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;">
-                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/>
-                </svg>
-                <span class="ispace-truncate">{{ item.name }}</span>
-            </a>
-            {% endfor %}
-        {% else %}
-        <p class="ispace-text-xs ispace-text-quaternary" style="padding:var(--ispace-space-2);">暂无文档</p>
-        {% endif %}
-    </nav>
-</aside>
-{% endblock %}
+{% block layout_class %}{% endblock %}
 
 {% block header %}
 <header class="ispace-header">
@@ -62,7 +30,7 @@
         <div class="ispace-header-right">
             {% include "includes/theme_toggle.html" %}
             {% if request.user == project.create_user or colla_user > 0 %}
-            <a href="{% url 'create_doc' %}?pid={{ project.id }}" class="ispace-btn ispace-btn-primary ispace-btn-sm">添加文档</a>
+            <button class="ispace-btn ispace-btn-primary ispace-btn-sm" onclick="enterCreateMode()" id="header-add-btn">添加文档</button>
             {% endif %}
             {% if request.user == project.create_user %}
             <a href="{% url 'user_center' %}?tab=manage_project" class="ispace-btn ispace-btn-ghost ispace-btn-sm">管理</a>
@@ -78,6 +46,7 @@
 {% endblock %}
 
 {% block content %}
+<div id="project-view-wrap">
 <div class="ispace-page-header">
     <div class="ispace-flex-between">
         <h1 class="ispace-page-title">{{ project.name }}</h1>
@@ -141,7 +110,7 @@
     <h3 class="ispace-font-semibold ispace-mb-4">最新文档</h3>
     <div style="display:flex;flex-direction:column;gap:var(--ispace-space-2);">
         {% for d in new_docs %}
-        <a href="{% url 'doc' pro_id=project.id doc_id=d.id %}" class="ispace-flex-between" style="padding:var(--ispace-space-2);border-radius:var(--ispace-radius-md);transition:background var(--ispace-duration-fast);text-decoration:none;">
+        <a href="{% url 'doc' pro_id=project.id doc_id=d.id %}" data-spa class="ispace-flex-between" style="padding:var(--ispace-space-2);border-radius:var(--ispace-radius-md);transition:background var(--ispace-duration-fast);text-decoration:none;">
             <span style="color:var(--ispace-color-text-link);">{{ d.name }}</span>
             <span class="ispace-text-xs ispace-text-quaternary">{{ d.modify_time|date:"m-d" }}</span>
         </a>
@@ -162,6 +131,8 @@
     </div>
 </div>
 {% endif %}
+</div>{# end project-view-wrap #}
+{% include "includes/inline_editor.html" %}
 {% endblock %}
 
 {% block scripts %}
@@ -190,5 +161,101 @@ function toggleCollectPro(){
         }
     });
 }
+
+// ---- Inline Create Mode ----
+window._mrdocVersion = '{{ mrdoc_version }}';
+window._inlineUploadImgUrl = '{% url "upload_doc_img" %}';
+window._inlineUploadIceImgUrl = '{% url "upload_ice_img" %}';
+window._inlineSubmitFn = inlineCreateDoc;
+window._inlineCancelFn = inlineCancelCreate;
+
+function enterCreateMode() {
+    var viewWrap = document.getElementById('project-view-wrap');
+    if (viewWrap) viewWrap.style.display = 'none';
+    var headerBtn = document.getElementById('header-add-btn');
+    if (headerBtn) headerBtn.style.display = 'none';
+
+    window._inlineIsCreate = true;
+    window._inlineDocId = 0;
+    window._inlineProjectId = {{ project.id }};
+
+    // Populate project selector with current project pre-selected
+    var proSelect = document.getElementById('inline-project');
+    if (proSelect) {
+        proSelect.innerHTML = '<option value="{{ project.id }}">{{ project.name|escapejs }}</option>';
+        proSelect.value = '{{ project.id }}';
+    }
+    var proRow = document.getElementById('inline-project-row');
+    if (proRow) proRow.style.display = '';
+
+    initInlineEditor({{ editor_mode|default:1 }}, true);
+}
+
+function inlineCancelCreate() {
+    if (window._inlineMdChanged) {
+        if (!confirm('有未保存的更改，确定要取消吗？')) return;
+    }
+    exitCreateMode();
+}
+
+function exitCreateMode() {
+    destroyInlineEditor();
+    var viewWrap = document.getElementById('project-view-wrap');
+    if (viewWrap) viewWrap.style.display = '';
+    var headerBtn = document.getElementById('header-add-btn');
+    if (headerBtn) headerBtn.style.display = '';
+}
+
+function inlineCreateDoc(status) {
+    var content = getInlineEditorContent();
+    var preContent = getInlineEditorPreContent();
+    var docName = document.getElementById('inline-doc-name');
+    var tagsEl = document.getElementById('inline-tagsinput');
+    var proSelect = document.getElementById('inline-project');
+
+    var payload = {
+        project: proSelect ? proSelect.value : '{{ project.id }}',
+        doc_name: docName ? docName.value : '',
+        content: content,
+        pre_content: preContent,
+        doc_tag: tagsEl ? tagsEl.value : '',
+        status: status,
+        editor_mode: window._inlineEditorMode
+    };
+
+    fetch('{% url "create_doc" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: Object.keys(payload).map(function(k) {
+            return encodeURIComponent(k) + '=' + encodeURIComponent(payload[k] != null ? payload[k] : '');
+        }).join('&') + '&csrfmiddlewaretoken=' + (document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '{{ csrf_token }}')
+    }).then(function(r) { return r.json(); })
+    .then(function(r) {
+        if (r.status) {
+            window._inlineMdChanged = false;
+            exitCreateMode();
+            if (typeof layer !== 'undefined') layer.msg(status === 1 ? '发布成功' : '保存成功', {icon: 1});
+            var newDocId = r.data && r.data.doc ? r.data.doc : r.data;
+            if (newDocId) {
+                window.location.href = '{% url "doc" pro_id=project.id doc_id=99999 %}'.replace('99999', newDocId);
+            }
+        } else {
+            if (typeof layer !== 'undefined') layer.msg('创建失败: ' + (r.data || ''), {icon: 2});
+            else alert('创建失败');
+        }
+    }).catch(function() {
+        if (typeof layer !== 'undefined') layer.msg('创建异常', {icon: 2});
+    });
+}
+
+window.addEventListener('beforeunload', function(e) {
+    if (window._inlineMdChanged) {
+        e.preventDefault();
+        e.returnValue = '您有未保存的更改，确定要离开吗？';
+    }
+});
 </script>
 {% endblock %}

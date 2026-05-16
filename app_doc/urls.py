@@ -76,4 +76,5 @@ urlpatterns = [
     #################文档评论
     path('project-<int:pro_id>/doc-<int:doc_id>/comments/', views.doc_comments, name='doc_comments'),  # 获取/发表评论
     path('comment/<int:comment_id>/delete/', views.delete_comment, name='delete_comment'),  # 删除评论
+    path('doc/<int:doc_id>/like/', views.doc_like_toggle, name='doc_like_toggle'),  # 文档点赞
 ]

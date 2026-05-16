@@ -118,6 +118,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'app_admin.context_processors.sys_setting', # 自定义系统设置上下文渲染
+                'app_doc.context_processors.sidebar_tree', # 全局侧边栏文档树
             ],
             'libraries': { # 自定义的模板标签
                 'doc_filter' : 'app_doc.templatetags.doc_filter',

@@ -4,38 +4,13 @@
         <button class="ispace-sidebar-toggle" id="sidebarCollapse" title="{% trans '折叠侧边栏' %}" aria-label="折叠侧边栏">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="7" x2="21" y2="17"/><path d="M14 8l-4 4 4 4"/><rect x="3" y="5" width="3" height="14" rx="1"/></svg>
         </button>
-        {% for pro in sidebar_projects %}
-        <div class="ispace-sidebar-group">
-            <button class="ispace-sidebar-group-toggle" data-pro-id="{{ pro.id }}" aria-expanded="false">
-                <span class="ispace-sidebar-toggle-icon">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="ispace-sidebar-folder-icon"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                    {% if pro.docs %}
-                    <svg class="ispace-sidebar-folder-chevron" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-                    {% endif %}
-                </span>
-                <span class="ispace-sidebar-group-name">{{ pro.name }}</span>
-                {% if pro.role != 0 %}
-                <span class="ispace-sidebar-badge">{% if pro.role == 1 %}{% trans "私" %}{% else %}{% trans "码" %}{% endif %}</span>
-                {% endif %}
-            </button>
-            <div class="ispace-sidebar-group-children" id="proChildren{{ pro.id }}" style="display:none;">
-                {% for doc in pro.docs %}
-                <a href="{% url 'doc' pro.id doc.id %}" class="ispace-sidebar-link ispace-sidebar-link--doc" data-doc-id="{{ doc.id }}" data-pro-id="{{ pro.id }}" data-spa>
-                    <span class="ispace-sidebar-doc-icon">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
-                    </span>
-                    <span class="ispace-truncate">{{ doc.name }}</span>
-                </a>
-                {% empty %}
-                <span class="ispace-sidebar-empty">{% trans "暂无文档" %}</span>
-                {% endfor %}
-            </div>
-        </div>
-        {% empty %}
+        {% if sidebar_tree %}
+            {% include "includes/sidebar_doc_node.html" with docs=sidebar_tree %}
+        {% else %}
         <div class="ispace-sidebar-empty-state">
-            <p class="ispace-text-sm ispace-text-quaternary">{% trans "暂无文集" %}</p>
+            <p class="ispace-text-sm ispace-text-quaternary">{% trans "暂无文档" %}</p>
         </div>
-        {% endfor %}
+        {% endif %}
     </nav>
 </aside>
 
@@ -44,46 +19,41 @@
 
 <script>
 (function(){
-    // ---- Project expand/collapse + directory click navigation ----
-    var toggles = document.querySelectorAll('.ispace-sidebar-group-toggle');
-    toggles.forEach(function(btn){
-        btn.addEventListener('click', function(e){
-            var proId = this.getAttribute('data-pro-id');
-            // If toggle icon area (folder + chevron) was clicked, toggle expand/collapse
-            if (e.target.closest('.ispace-sidebar-toggle-icon')) {
-                // Check if this project actually has docs to toggle
-                var children = document.getElementById('proChildren' + proId);
-                if (!children || !children.children.length) {
-                    // Navigate to project page
-                    if (window.iSpaceDoc && window.iSpaceDoc.SPA) {
-                        window.iSpaceDoc.SPA.navigate('/project-' + proId + '/');
-                    } else {
-                        window.location.href = '/project-' + proId + '/';
-                    }
-                    return;
-                }
-                var chevron = this.querySelector('.ispace-sidebar-folder-chevron');
-                var expanded = this.getAttribute('aria-expanded') === 'true';
-                if (expanded) {
-                    children.style.display = 'none';
-                    this.setAttribute('aria-expanded', 'false');
-                    if (chevron) chevron.style.transform = '';
-                    if (chevron) chevron.style.color = '';
-                } else {
-                    children.style.display = 'block';
-                    this.setAttribute('aria-expanded', 'true');
-                    if (chevron) chevron.style.transform = 'rotate(90deg)';
-                    if (chevron) chevron.style.color = 'var(--ispace-color-brand-500)';
-                }
-            } else {
-                // Navigate to project page
-                if (window.iSpaceDoc && window.iSpaceDoc.SPA) {
-                    window.iSpaceDoc.SPA.navigate('/project-' + proId + '/');
-                } else {
-                    window.location.href = '/project-' + proId + '/';
-                }
-            }
-        });
+    // ---- SVG icons for tree toggle swapping ----
+    var TREE_ICONS = {
+        'folder-closed': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>',
+        'folder-open': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg>',
+        'doc': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>'
+    };
+
+    function updateTreeIcon(toggle, state) {
+        toggle.innerHTML = TREE_ICONS[state] || TREE_ICONS['doc'];
+        toggle.setAttribute('data-icon-state', state);
+    }
+
+    // ---- Doc tree toggle: click icon → expand/collapse children ----
+    document.getElementById('sidebarNav').addEventListener('click', function(e) {
+        var toggle = e.target.closest('.ispace-tree-toggle');
+        if (!toggle) return;
+        if (toggle.getAttribute('data-has-children') !== '1') return;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        var node = toggle.closest('.ispace-tree-node');
+        var children = node.querySelector(':scope > .ispace-tree-children');
+        if (!children) return;
+
+        var expanded = toggle.getAttribute('data-expanded') === '1';
+        if (expanded) {
+            children.style.display = 'none';
+            updateTreeIcon(toggle, 'folder-closed');
+            toggle.setAttribute('data-expanded', '0');
+        } else {
+            children.style.display = 'block';
+            updateTreeIcon(toggle, 'folder-open');
+            toggle.setAttribute('data-expanded', '1');
+        }
     });
 
     // ---- Sidebar collapse toggle ----
@@ -99,19 +69,37 @@
         });
     }
 
-    // ---- Highlight current document / expand current project ----
+    // ---- Highlight current document & expand ancestor tree nodes ----
     (function(){
         var path = window.location.pathname;
         var proMatch = path.match(/^\/project-(\d+)\//);
         if (proMatch) {
             var pid = proMatch[1];
-            var children = document.getElementById('proChildren' + pid);
-            var toggle = document.querySelector('.ispace-sidebar-group-toggle[data-pro-id="' + pid + '"]');
-            if (children && toggle) {
-                children.style.display = 'block';
-                toggle.setAttribute('aria-expanded', 'true');
-                var chevron = toggle.querySelector('.ispace-sidebar-folder-chevron');
-                if (chevron) { chevron.style.transform = 'rotate(90deg)'; chevron.style.color = 'var(--ispace-color-brand-500)'; }
+            var docMatch = path.match(/\/project-\d+\/doc-(\d+)\//);
+            if (docMatch) {
+                // Doc page: highlight doc node + expand ancestors
+                var docLink = document.querySelector('.ispace-tree-link[href*="doc-' + docMatch[1] + '"]');
+                if (docLink) {
+                    docLink.classList.add('ispace-active');
+                    var node = docLink.closest('.ispace-tree-node');
+                    while (node) {
+                        var childrenContainer = node.parentElement;
+                        if (!childrenContainer || !childrenContainer.classList.contains('ispace-tree-children')) break;
+                        childrenContainer.style.display = 'block';
+                        var ancestorNode = childrenContainer.parentElement;
+                        if (!ancestorNode || !ancestorNode.classList.contains('ispace-tree-node')) break;
+                        var ancToggle = ancestorNode.querySelector(':scope > .ispace-tree-row > .ispace-tree-toggle');
+                        if (ancToggle && ancToggle.getAttribute('data-has-children') === '1') {
+                            updateTreeIcon(ancToggle, 'folder-open');
+                            ancToggle.setAttribute('data-expanded', '1');
+                        }
+                        node = ancestorNode;
+                    }
+                }
+            } else {
+                // Project page: highlight the project tree node
+                var proLink = document.querySelector('.ispace-tree-link[href$="project-' + pid + '/"]');
+                if (proLink) proLink.classList.add('ispace-active');
             }
         }
     })();
@@ -121,9 +109,7 @@
     var currentContextTarget = null;
 
     var menuIcons = {
-        'new-dir': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>',
         'new-doc': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/><line x1="12" y1="13" x2="12" y2="19"/><line x1="9" y1="16" x2="15" y2="16"/></svg>',
-        'rename-pro': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>',
         'rename-doc': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>',
         'delete-pro': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
         'delete-doc': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>'
@@ -145,7 +131,6 @@
         }).join('');
         contextMenu.style.display = 'block';
         var x = e.clientX, y = e.clientY;
-        // Read size after inserting content
         var mw = contextMenu.offsetWidth || 170;
         var mh = contextMenu.offsetHeight || 200;
         if (x + mw > window.innerWidth) x = window.innerWidth - mw - 8;
@@ -159,28 +144,28 @@
         currentContextTarget = null;
     }
 
-    // Attach context menu to directory (project group) toggles
-    document.querySelectorAll('.ispace-sidebar-group-toggle').forEach(function(btn) {
-        btn.addEventListener('contextmenu', function(e) {
-            var proId = this.getAttribute('data-pro-id');
-            showContextMenu(e, [
-                {label: '新建子目录', action: 'new-dir:' + proId},
-                {label: '新建文档', action: 'new-doc:' + proId},
-                {label: '重命名', action: 'rename-pro:' + proId},
-                {label: '删除文集', action: 'delete-pro:' + proId}
-            ]);
-        });
-    });
-
-    // Attach context menu to doc links
-    document.querySelectorAll('.ispace-sidebar-link--doc').forEach(function(link) {
-        link.addEventListener('contextmenu', function(e) {
-            var docId = this.getAttribute('data-doc-id');
-            var proId = this.getAttribute('data-pro-id');
-            showContextMenu(e, [
-                {label: '重命名', action: 'rename-doc:' + docId + ':' + proId},
-                {label: '删除文档', action: 'delete-doc:' + docId + ':' + proId}
-            ]);
+    // Context menu on tree rows
+    document.querySelectorAll('.ispace-tree-row').forEach(function(row) {
+        row.addEventListener('contextmenu', function(e) {
+            var node = this.parentElement;
+            var docId = node.getAttribute('data-doc-id');
+            var proId = node.getAttribute('data-pro-id');
+            var isProject = node.getAttribute('data-is-project') === '1';
+            var items = [];
+            if (isProject) {
+                items = [
+                    {label: '新建文档', action: 'new-doc:' + docId},
+                    {label: '重命名', action: 'rename-pro:' + docId},
+                    {label: '删除文集', action: 'delete-pro:' + docId}
+                ];
+            } else {
+                items = [
+                    {label: '新建子文档', action: 'new-child-doc:' + docId + ':' + proId},
+                    {label: '重命名', action: 'rename-doc:' + docId + ':' + proId},
+                    {label: '删除文档', action: 'delete-doc:' + docId + ':' + proId}
+                ];
+            }
+            showContextMenu(e, items);
         });
     });
 
@@ -197,14 +182,18 @@
 
     function handleContextAction(type, id, extra) {
         var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
-        var csrfToken = csrf ? csrf.value : window.__ISPACEDOC__ ? window.__ISPACEDOC__.csrfToken : '';
-        if (type === 'new-doc') {
-            var url = '/create_doc/?pid=' + id;
+        var csrfToken = csrf ? csrf.value : (window.__ISPACEDOC__ ? window.__ISPACEDOC__.csrfToken : '');
+        function goto(url) {
             if (window.iSpaceDoc && window.iSpaceDoc.SPA) {
                 window.iSpaceDoc.SPA.navigate(url);
             } else {
                 window.location.href = url;
             }
+        }
+        if (type === 'new-doc') {
+            goto('/create_doc/?pid=' + id);
+        } else if (type === 'new-child-doc') {
+            goto('/create_doc/?pid=' + extra + '&parent_id=' + id);
         } else if (type === 'delete-doc') {
             if (!window.confirm('确认删除此文档？文档将被移入回收站。')) return;
             var fd = new FormData();
@@ -241,7 +230,7 @@
                 else { alert(r.data); }
             });
         } else if (type === 'rename-pro') {
-            var newPName = prompt('请输入文集群的新名称：');
+            var newPName = prompt('请输入文档名称：');
             if (!newPName) return;
             var fd4 = new FormData();
             fd4.append('project_id', id);
@@ -252,23 +241,6 @@
             .then(function(r) {
                 if (r.status) { window.location.reload(); }
                 else { alert(r.data || '重命名失败'); }
-            });
-        } else if (type === 'new-dir') {
-            var dname = prompt('请输入子目录名称：');
-            if (!dname) return;
-            var fd5 = new FormData();
-            fd5.append('project', id);
-            fd5.append('doc_name', dname);
-            fd5.append('open_children', 'true');
-            fd5.append('csrfmiddlewaretoken', csrfToken);
-            fd5.append('status', '1');
-            fetch('/create_doc/', {method:'POST',
-                headers:{'X-Requested-With':'XMLHttpRequest'},
-                body: new URLSearchParams(fd5).toString()
-            }).then(function(r) { return r.json(); })
-            .then(function(r) {
-                if (r.status) { window.location.reload(); }
-                else { alert(r.data || '创建失败'); }
             });
         }
     }
@@ -303,65 +275,48 @@
 }
 .ispace-sidebar-toggle:hover { background: var(--ispace-color-surface-100); color: var(--ispace-color-text-primary); }
 
-/* 项目分组 */
-.ispace-sidebar-group { margin-bottom: 2px; }
-.ispace-sidebar-group-toggle {
+/* ---- 文档树节点 ---- */
+.ispace-tree-row {
     display: flex;
     align-items: center;
-    gap: var(--ispace-space-2);
-    width: 100%;
-    padding: var(--ispace-space-1-5) var(--ispace-space-2);
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    font-size: var(--ispace-font-sm);
-    font-weight: var(--ispace-font-medium);
-    color: var(--ispace-color-text-primary);
+    gap: var(--ispace-space-1);
     border-radius: var(--ispace-radius-md);
     transition: background var(--ispace-duration-fast);
-    text-align: left;
 }
-.ispace-sidebar-group-toggle:hover { background: var(--ispace-color-surface-100); }
+.ispace-tree-row:hover { background: var(--ispace-color-surface-100); }
 
-.ispace-sidebar-toggle-icon {
-    display: inline-flex;
+.ispace-tree-toggle {
+    display: flex;
     align-items: center;
-    gap: 1px;
+    justify-content: center;
+    width: 22px;
+    height: 28px;
     flex-shrink: 0;
-    position: relative;
-}
-.ispace-sidebar-folder-icon { flex-shrink: 0; color: var(--ispace-color-brand-400); display: block; }
-.ispace-sidebar-folder-chevron {
-    flex-shrink: 0;
+    cursor: pointer;
     color: var(--ispace-color-text-quaternary);
-    transition: transform 0.15s ease, color 0.15s ease;
-    margin-left: -2px;
-}
-.ispace-sidebar-group-name {
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    min-width: 0;
-}
-.ispace-sidebar-badge {
-    font-size: 9px;
-    color: var(--ispace-color-text-quaternary);
-    background: var(--ispace-color-surface-200);
-    padding: 1px 4px;
     border-radius: var(--ispace-radius-sm);
-    line-height: 1.3;
-    flex-shrink: 0;
+    transition: color var(--ispace-duration-fast);
 }
-.ispace-sidebar-group-children { padding: 1px 0 4px var(--ispace-space-4); }
+.ispace-tree-toggle:hover { color: var(--ispace-color-brand-500); }
+.ispace-tree-toggle[data-has-children="0"] { cursor: default; }
+.ispace-tree-toggle[data-has-children="0"]:hover { color: var(--ispace-color-text-quaternary); }
 
-.ispace-sidebar-link--doc { font-size: var(--ispace-font-xs); padding-left: var(--ispace-space-2); }
-.ispace-sidebar-empty {
-    display: block;
-    padding: var(--ispace-space-1) var(--ispace-space-4);
-    font-size: var(--ispace-font-xs);
-    color: var(--ispace-color-text-quaternary);
+.ispace-tree-link {
+    flex: 1;
+    min-width: 0;
+    padding: var(--ispace-space-1) var(--ispace-space-2);
+    padding-left: 0;
 }
+.ispace-tree-link.ispace-active {
+    background: var(--ispace-color-brand-50);
+    color: var(--ispace-color-brand-500);
+    font-weight: var(--ispace-font-medium);
+}
+
+.ispace-tree-children {
+    padding-left: var(--ispace-space-5);
+}
+
 .ispace-sidebar-empty-state {
     padding: var(--ispace-space-4) 0;
     text-align: center;
@@ -372,15 +327,8 @@
     width: var(--ispace-sidebar-collapsed-width) !important;
     overflow: visible;
 }
-.ispace-sidebar--collapsed .ispace-sidebar-group-name,
-.ispace-sidebar--collapsed .ispace-sidebar-group-children,
-.ispace-sidebar--collapsed .ispace-sidebar-link span,
-.ispace-sidebar--collapsed .ispace-sidebar-badge,
-.ispace-sidebar--collapsed .ispace-sidebar-empty,
-.ispace-sidebar--collapsed .ispace-sidebar-empty-state,
-.ispace-sidebar--collapsed .ispace-sidebar-toggle-icon,
-.ispace-sidebar--collapsed .ispace-sidebar-folder-chevron { display: none; }
-.ispace-sidebar--collapsed .ispace-sidebar-group-toggle { justify-content: center; padding: var(--ispace-space-1-5) var(--ispace-space-2); }
+.ispace-sidebar--collapsed .ispace-tree-row,
+.ispace-sidebar--collapsed .ispace-sidebar-empty-state { display: none; }
 .ispace-sidebar--collapsed .ispace-sidebar-toggle { right: 50%; transform: translate(50%, -50%); }
 .ispace-sidebar--collapsed .ispace-sidebar-toggle svg { transform: rotate(180deg); }
 
@@ -393,7 +341,7 @@
     border: 1px solid var(--ispace-color-border-medium);
     border-radius: var(--ispace-radius-lg);
     box-shadow: var(--ispace-shadow-lg);
-    padding: var(--ispace-space-1-5);
+    padding: var(--ispace-space-1);
     overflow: hidden;
 }
 .ispace-context-menu-item {
@@ -421,21 +369,12 @@
     background: var(--ispace-color-surface-100);
     color: var(--ispace-color-text-primary);
 }
-.ispace-context-menu-item:hover svg {
-    color: var(--ispace-color-text-secondary);
-}
-.ispace-context-menu-item--danger {
-    color: var(--ispace-color-error-text);
-}
+.ispace-context-menu-item:hover svg { color: var(--ispace-color-text-secondary); }
+.ispace-context-menu-item--danger { color: var(--ispace-color-error-text); }
 .ispace-context-menu-item--danger:hover {
     background: var(--ispace-color-error-bg);
     color: var(--ispace-color-error-text);
 }
-.ispace-context-menu-item--danger:hover svg {
-    color: var(--ispace-color-error-text);
-}
-.ispace-context-menu-item--danger svg {
-    color: var(--ispace-color-error-text);
-    opacity: 0.7;
-}
+.ispace-context-menu-item--danger:hover svg { color: var(--ispace-color-error-text); }
+.ispace-context-menu-item--danger svg { color: var(--ispace-color-error-text); opacity: 0.7; }
 </style>

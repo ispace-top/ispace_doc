@@ -32,11 +32,11 @@
     <div class="ispace-card">
         <div class="ispace-card-body">
             {% if search_type == 'pro' %}
-            <h3><a href="{% url 'pro_index' pro_id=result.id %}" class="ispace-font-semibold" style="font-size:var(--ispace-font-lg);color:var(--ispace-color-text-link);">{{ result.name }}</a></h3>
+            <h3><a href="{% url 'pro_index' pro_id=result.id %}" data-spa class="ispace-font-semibold" style="font-size:var(--ispace-font-lg);color:var(--ispace-color-text-link);">{{ result.name }}</a></h3>
             <p class="ispace-text-sm ispace-text-tertiary ispace-line-clamp-2 ispace-mt-2">{{ result.intro|striptags|truncatechars:200 }}</p>
             <p class="ispace-text-xs ispace-text-quaternary ispace-mt-2">{{ result.create_user.username }} · {{ result.modify_time|date:"Y-m-d" }}</p>
             {% else %}
-            <h3><a href="{% url 'doc_id' doc_id=result.id %}" class="ispace-font-semibold" style="font-size:var(--ispace-font-lg);color:var(--ispace-color-text-link);">{{ result.name }}</a></h3>
+            <h3><a href="{% url 'doc_id' doc_id=result.id %}" data-spa class="ispace-font-semibold" style="font-size:var(--ispace-font-lg);color:var(--ispace-color-text-link);">{{ result.name }}</a></h3>
             <p class="ispace-text-sm ispace-text-tertiary ispace-line-clamp-2 ispace-mt-2">{{ result.pre_content|striptags|truncatechars:200 }}</p>
             <p class="ispace-text-xs ispace-text-quaternary ispace-mt-2">{{ result.top_doc.pro_name }} · {{ result.modify_time|date:"Y-m-d" }}</p>
             {% endif %}

@@ -1,0 +1,262 @@
+{% load static %}{% load i18n %}
+{# Inline editor for doc.html and project.html — toggled by view/edit mode CSS #}
+<div id="inline-editor" class="ispace-inline-editor" style="display:none;">
+    {# --- Title --- #}
+    <div class="ispace-form-group" style="margin-bottom:var(--ispace-space-4);">
+        <input type="text" id="inline-doc-name" class="ispace-form-input"
+               style="font-size:var(--ispace-font-2xl);font-weight:var(--ispace-font-semibold);padding:var(--ispace-space-2) 0;border:none;border-bottom:2px solid var(--ispace-color-border-light);border-radius:0;background:transparent;"
+               placeholder="{% trans '文档标题' %}" value="{{ doc.name|default:'' }}">
+    </div>
+
+    {# --- Project selector (create mode only) --- #}
+    <div id="inline-project-row" class="ispace-form-group" style="display:none;margin-bottom:var(--ispace-space-3);">
+        <label class="ispace-form-label" style="font-size:var(--ispace-font-sm);margin-bottom:var(--ispace-space-1);">{% trans '所属文集' %}</label>
+        <select id="inline-project" class="ispace-form-select" style="max-width:360px;">
+            <option value="">{% trans '选择文集...' %}</option>
+        </select>
+    </div>
+
+    {# --- Editor container --- #}
+    <div id="inline-editor-md" class="ispace-editor-container" style="min-height:400px;border:1px solid var(--ispace-color-border-light);border-radius:var(--ispace-radius-md);">
+        {% if editor_mode == 3 %}
+            {{ doc.content|default:''|safe }}
+        {% else %}
+            <textarea style="display:none;">{{ doc.pre_content|default:'' }}</textarea>
+        {% endif %}
+    </div>
+
+    {# --- Tag input --- #}
+    <div class="ispace-form-group" style="margin-top:var(--ispace-space-4);">
+        <label class="ispace-form-label" style="font-size:var(--ispace-font-sm);margin-bottom:var(--ispace-space-1);">{% trans '标签' %}</label>
+        <input name="tagsinput" id="inline-tagsinput" class="tagsinput" data-role="tagsinput"
+               value="{{ doc_tags_str|default:'' }}" placeholder="{% trans '输入标签名，回车添加' %}">
+    </div>
+
+    {# --- Action buttons --- #}
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:var(--ispace-space-4);padding-top:var(--ispace-space-4);border-top:1px solid var(--ispace-color-border-light);">
+        <div style="display:flex;gap:var(--ispace-space-2);">
+            <button class="ispace-btn ispace-btn-primary" id="inline-save-btn" onclick="(window._inlineSubmitFn||function(){})(0)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                {% trans '保存' %}
+            </button>
+            <button class="ispace-btn ispace-btn-secondary" id="inline-publish-btn" onclick="(window._inlineSubmitFn||function(){})(1)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                {% trans '发布' %}
+            </button>
+            <button class="ispace-btn ispace-btn-ghost" id="inline-cancel-btn" onclick="(window._inlineCancelFn||function(){})()">
+                {% trans '取消' %}
+            </button>
+        </div>
+        <span id="inline-auto-save-indicator" style="font-size:var(--ispace-font-xs);color:var(--ispace-color-text-tertiary);display:none;"></span>
+    </div>
+</div>
+
+<script>
+// ---- Inline Editor Engine ----
+window._inlineEditor = null;
+window._inlineEditorMode = {{ editor_mode|default:1 }};
+window._inlineMdChanged = false;
+window._inlineIsCreate = false;  // set to true by project.html create mode
+window._inlineDocId = {{ doc.id|default:0 }};
+window._inlineProjectId = {{ project.id|default:0 }};
+window._inlineEditorAssetsLoaded = {};
+window._inlineSubmitFn = null;  // set by doc.html or project.html
+window._inlineCancelFn = null;  // set by doc.html or project.html
+
+function _loadScript(src) {
+    return new Promise(function(resolve, reject) {
+        if (window._inlineEditorAssetsLoaded[src]) { resolve(); return; }
+        var s = document.createElement('script');
+        s.src = src;
+        s.onload = function() { window._inlineEditorAssetsLoaded[src] = true; resolve(); };
+        s.onerror = reject;
+        document.head.appendChild(s);
+    });
+}
+
+function _loadCSS(href) {
+    return new Promise(function(resolve) {
+        if (window._inlineEditorAssetsLoaded[href]) { resolve(); return; }
+        if (document.querySelector('link[href="' + href + '"]')) { resolve(); return; }
+        var l = document.createElement('link');
+        l.rel = 'stylesheet';
+        l.href = href;
+        l.onload = function() { window._inlineEditorAssetsLoaded[href] = true; resolve(); };
+        l.onerror = resolve; // CSS fail shouldn't block
+        document.head.appendChild(l);
+    });
+}
+
+function initInlineEditor(editorMode, isCreate) {
+    window._inlineEditorMode = editorMode || 1;
+    window._inlineIsCreate = isCreate || false;
+    window._inlineMdChanged = false;
+
+    var container = document.getElementById('inline-editor-md');
+    if (!container) return;
+
+    // Show the editor wrapper
+    document.getElementById('inline-editor').style.display = 'block';
+
+    // Load and init the right editor
+    var mode = window._inlineEditorMode;
+    if (mode === 1) initEditorMD(container);
+    else if (mode === 2) initVditor(container);
+    else if (mode === 3) initIceEditor(container);
+}
+
+function initEditorMD(container) {
+    _loadCSS('{% static "mr-editor/mreditor.css" %}?' + (window._mrdocVersion || ''))
+    .then(function() { return _loadScript('{% static "mr-marked/marked.min.js" %}?' + (window._mrdocVersion || '')); })
+    .then(function() { return _loadScript('{% static "mr-editor/mreditor.js" %}?' + (window._mrdocVersion || '')); })
+    .then(function() {
+        if (typeof MrEditor === 'undefined') { _editorFallback('EditorMD'); return; }
+        var val = (window._inlineIsCreate) ? '' : (container.querySelector('textarea') ? container.querySelector('textarea').value : (window._docPreContent || ''));
+        window._inlineEditor = new MrEditor({
+            element: container,
+            value: val,
+            cdn: '{% static "mr-marked/" %}',
+            toolbar: [
+                'undo','redo','separator',
+                'heading-2','heading-3','heading-4','separator',
+                'font','bold','italic','strikethrough','mark','inlinecode','separator',
+                'quote','blockcode','unordered-list','ordered-list','task-list','divider','separator','link',
+                'table','separator','formula','graph','mermaid'
+            ]
+        });
+        container.addEventListener('keydown', function(){ window._inlineMdChanged = true; });
+    });
+}
+
+function initVditor(container) {
+    _loadCSS('{% static "vditor/dist/index.css" %}?' + (window._mrdocVersion || ''))
+    .then(function() { return _loadScript('{% static "vditor/dist/index.min.js" %}?' + (window._mrdocVersion || '')); })
+    .then(function() {
+        if (typeof Vditor === 'undefined') { _editorFallback('Vditor'); return; }
+        var val = (window._inlineIsCreate) ? '' : (container.querySelector('textarea') ? container.querySelector('textarea').value : (window._docPreContent || ''));
+        var screenW = window.matchMedia('(max-width: 768px)');
+        var vdHeight = screenW.matches ? window.innerHeight / 2 : window.innerHeight - 200;
+        var vdMode = screenW.matches ? 'ir' : 'sv';
+        var vdToolbar = screenW.matches ? [
+            "emoji","headings","bold","strike","link","|","list","ordered-list","check","|","quote","line","code","inline-code","|",
+            "table","|","undo","redo","|","fullscreen","edit-mode",{name:"more",toolbar:["both","code-theme","content-theme","export","outline","preview","devtools","info","help"]}
+        ] : [
+            "emoji","headings","bold","italic","strike","link","|","list","ordered-list","check","outdent","indent","|","quote","line","code","inline-code","insert-before","insert-after","|",
+            "table","|","undo","redo","|","fullscreen","edit-mode",{name:"more",toolbar:["both","code-theme","content-theme","export","outline","preview","devtools","info","help"]}
+        ];
+        window._inlineEditor = new Vditor('inline-editor-md', {
+            value: val,
+            cdn: '{% static "vditor" %}',
+            toolbar: vdToolbar,
+            height: vdHeight,
+            width: '100%',
+            mode: vdMode,
+            placeholder: '开始编写...',
+            outline: { enable: true },
+            counter: { enable: true },
+            cache: { enable: false },
+            preview: { markdown: { autoSpace: true, chinesePunct: true, mark: true }, hljs: { lineNumber: true } },
+            after: function() {},
+            input: function() { window._inlineMdChanged = true; },
+            upload: {
+                fieldName: 'editormd-image-file[]',
+                url: _getUploadImgUrl(),
+                handler: function(files) {
+                    var reader = new FileReader();
+                    reader.onload = function(ev) {
+                        var base64 = ev.target.result;
+                        var fd = new FormData();
+                        fd.append('base', base64);
+                        fd.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '');
+                        fetch(_getUploadImgUrl(), {method:'POST', body:fd, headers:{'X-Requested-With':'XMLHttpRequest'}})
+                        .then(function(r){ return r.json(); })
+                        .then(function(ret) {
+                            if (ret.success === 1) {
+                                window._inlineEditor.insertValue('\n![](' + ret.url + ')');
+                                window._inlineEditor.focus();
+                            }
+                        });
+                    };
+                    reader.readAsDataURL(files[0]);
+                }
+            }
+        });
+    });
+}
+
+function initIceEditor(container) {
+    _loadScript('{% static "iceEditor/src/iceEditor.min.js" %}?' + (window._mrdocVersion || ''))
+    .then(function() { return _loadScript('{% static "purifyjs/purify.min.js" %}?' + (window._mrdocVersion || '')); })
+    .then(function() {
+        if (typeof ice === 'undefined' || !ice.editor) { _editorFallback('iceEditor'); return; }
+        window._inlineEditor = new ice.editor('inline-editor-md');
+        window._inlineEditor.height = '600px';
+        window._inlineEditor.menu = [
+            'backColor','fontSize','foreColor','bold','italic','underline','strikeThrough',
+            'justifyLeft','justifyCenter','justifyRight','indent','outdent',
+            'insertOrderedList','insertUnorderedList','superscript','subscript',
+            'createLink','unlink','hr','table','image','attachments','music','video',
+            'removeFormat','code','line','paste'
+        ];
+        window._inlineEditor.uploadUrl = _getUploadIceImgUrl();
+        window._inlineEditor.imgAutoUpload = true;
+        window._inlineEditor.create();
+        window._inlineEditor.on('change', function() { window._inlineMdChanged = true; });
+    });
+}
+
+function _editorFallback(name) {
+    var c = document.getElementById('inline-editor-md');
+    if (c) {
+        c.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ispace-color-text-tertiary);"><p><strong>' + name + ' 编辑器组件未安装</strong></p><p style="margin-top:8px;">请将编辑器库放入 static 目录，或切换到其他编辑器</p></div>';
+    }
+}
+
+function _getUploadImgUrl() {
+    // Try to resolve from a global or fall back
+    if (window._inlineUploadImgUrl) return window._inlineUploadImgUrl;
+    return '/upload_doc_img/';
+}
+function _getUploadIceImgUrl() {
+    if (window._inlineUploadIceImgUrl) return window._inlineUploadIceImgUrl;
+    return '/upload_ice_img/';
+}
+
+// ---- Content getters ----
+function getInlineEditorContent() {
+    var m = window._inlineEditorMode;
+    var ed = window._inlineEditor;
+    if (!ed) return '';
+    if (m === 1) return ed.getHTML ? ed.getHTML() : '';
+    if (m === 2) return ed.getHTML ? ed.getHTML() : '';
+    if (m === 3) return typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(ed.getHTML(), {ADD_TAGS: ['iframe']}) : ed.getHTML();
+    return '';
+}
+
+function getInlineEditorPreContent() {
+    var m = window._inlineEditorMode;
+    var ed = window._inlineEditor;
+    if (!ed) return '';
+    if (m === 1) return ed.getMarkdown ? ed.getMarkdown() : '';
+    if (m === 2) return ed.getValue ? ed.getValue() : '';
+    if (m === 3) return ed.getText ? ed.getText() : '';
+    return '';
+}
+
+function destroyInlineEditor() {
+    var ed = window._inlineEditor;
+    if (ed) {
+        try {
+            if (window._inlineEditorMode === 2 && ed.destroy) ed.destroy();
+            if (window._inlineEditorMode === 3 && ed.destroy) ed.destroy();
+        } catch(e) { /* ignore */ }
+    }
+    window._inlineEditor = null;
+    var c = document.getElementById('inline-editor-md');
+    if (c) {
+        c.innerHTML = '<textarea style="display:none;"></textarea>';
+    }
+    document.getElementById('inline-editor').style.display = 'none';
+    window._inlineMdChanged = false;
+}
+</script>

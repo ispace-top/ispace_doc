@@ -59,8 +59,7 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  max-width: var(--ispace-content-max-width);
-  margin: 0 auto;
+  max-width: none;
 }
 
 .ispace-header-left,
@@ -106,7 +105,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--ispace-space-1);
   min-height: 100%;
 }
 

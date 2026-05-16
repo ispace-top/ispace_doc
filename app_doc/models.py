@@ -117,6 +117,18 @@ class DocHistory(models.Model):
         verbose_name_plural = verbose_name
 
 
+# 文档点赞模型
+class DocLike(models.Model):
+    doc = models.ForeignKey(Doc, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    create_time = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('doc', 'user')
+        verbose_name = '文档点赞'
+        verbose_name_plural = verbose_name
+
+
 # 文档模板模型
 class DocTemp(models.Model):
     name = models.CharField(verbose_name="模板名称",max_length=50)
