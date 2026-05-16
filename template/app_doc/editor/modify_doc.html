@@ -76,6 +76,7 @@
         <li class="layui-nav-item mrdoc-import-doc-item">
             <a href="{% url 'pro_list' %}"><span class="layui-hide-xs">返回首页</span></a>
         </li>
+        <span id="autoSaveIndicator" class="pull-right" style="display:none;margin-top:14px;margin-right:10px;color:#888;font-size:12px;"></span>
         {% if doc.status == 0 %}
         <button class="layui-btn layui-btn-sm layui-btn-normal layui-btn-radius pull-right" style="margin-top:10px;" title="保存文档" id="modify_save_doc">保存</button>
         <button class="layui-btn layui-btn-sm layui-btn-primary layui-btn-radius pull-right" style="margin-top:10px;" title="保存文档为发布状态" id="modify_doc_to_pub">转为发布</button>
@@ -559,6 +560,96 @@
             showError('移动文档异常');
         });
     };
+
+    // Auto-save timer - silently save every 30 seconds when content changed
+    var autoSaveInterval = null;
+    var autoSaveLastContent = '';
+    function startAutoSave() {
+        if (autoSaveInterval) clearInterval(autoSaveInterval);
+        autoSaveInterval = setInterval(function() {
+            if (!md_changed) return;
+            var currentContent;
+            if(editor_mode == 1){
+                currentContent = editor.getMarkdown();
+            } else if(editor_mode == 2){
+                currentContent = editor.getValue();
+            } else if(editor_mode == 3){
+                currentContent = editor.getHTML();
+            } else if(editor_mode == 4){
+                currentContent = JSON.stringify(getOptimizedSheets());
+            }
+            if (currentContent === autoSaveLastContent) return;
+            autoSaveLastContent = currentContent;
+            autoSaveDoc();
+        }, 30000);
+    }
+
+    function autoSaveDoc() {
+        var content, pre_content;
+        if(editor_mode == 1){
+            content = editor.getHTML();
+            pre_content = editor.getMarkdown();
+        } else if(editor_mode == 2){
+            content = editor.getHTML();
+            pre_content = editor.getValue();
+        } else if(editor_mode == 3){
+            content = DOMPurify.sanitize(editor.getHTML(), {ADD_TAGS: ['iframe']});
+            pre_content = editor.getText();
+        } else if(editor_mode == 4){
+            content = '';
+            pre_content = JSON.stringify(getOptimizedSheets());
+        }
+
+        var docNameEl = document.getElementById('doc-name');
+        var projectEl = document.getElementById('project');
+        var parentDocEl = document.getElementById('parent-doc');
+        var sortEl = document.getElementById('sort');
+        var tagsEl = document.getElementById('tagsinputval');
+        var openChildrenEl = document.querySelector('input[name="open-children"]:checked');
+        var showChildrenEl = document.querySelector('input[name="show-children"]:checked');
+
+        var payload = {
+            'doc_id': '{{ doc.id }}',
+            'project': projectEl ? projectEl.value : '',
+            'doc_tag': tagsEl ? tagsEl.value : '',
+            'parent_doc': parentDocEl ? parentDocEl.value : '',
+            'doc_name': docNameEl ? docNameEl.value : '',
+            'content': content,
+            'pre_content': pre_content,
+            'sort': sortEl ? sortEl.value : '',
+            'editor_mode': '{{editor_mode}}',
+            'status': '{{doc.status}}',
+            'open_children': openChildrenEl ? openChildrenEl.value : '',
+            'show_children': showChildrenEl ? showChildrenEl.value : ''
+        };
+
+        fetch("{% url 'modify_doc' doc_id=doc.id %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: Object.keys(payload).map(function(k){
+                return encodeURIComponent(k) + '=' + encodeURIComponent(payload[k]);
+            }).join('&') + '&csrfmiddlewaretoken=' + encodeURIComponent(getCsrfToken())
+        }).then(function(response){
+            return response.json();
+        }).then(function(r){
+            if(r.status){
+                md_changed = false;
+                console.log('[AutoSave] ' + new Date().toLocaleTimeString());
+                var indicator = document.getElementById('autoSaveIndicator');
+                if (indicator) {
+                    indicator.textContent = '已自动保存 ' + new Date().toLocaleTimeString();
+                    indicator.style.display = 'inline';
+                    setTimeout(function(){ indicator.style.display = 'none'; }, 3000);
+                }
+            }
+        }).catch(function(){
+            console.log('[AutoSave] failed');
+        });
+    }
+    startAutoSave();
 
     // Adjust Luckysheet height if editor_mode == 4
     {% if doc.editor_mode == 4 %}

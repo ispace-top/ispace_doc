@@ -252,15 +252,81 @@
             $.ajaxSetup({
                 data: {csrfmiddlewaretoken: '{{ csrf_token }}' },
             });
-    
+
+            // Helper functions for editor pages
+            function getCsrfToken() {
+                var el = document.querySelector('[name=csrfmiddlewaretoken]');
+                return el ? el.value : '';
+            }
+            function showLoading(msg) { if(typeof layer !== 'undefined'){ layer.load(1); } }
+            function hideLoading() { if(typeof layer !== 'undefined'){ layer.closeAll('loading'); } }
+            function showSuccess(msg) { if(typeof layer !== 'undefined'){ layer.msg(msg || '操作成功', {icon:1}); } }
+            function showError(msg) { if(typeof layer !== 'undefined'){ layer.msg(msg || '操作失败', {icon:2}); } }
+            function showWarning(msg) { if(typeof layer !== 'undefined'){ layer.msg(msg || '警告', {icon:3}); } }
+            function showInfo(msg) { if(typeof layer !== 'undefined'){ layer.msg(msg || '提示', {icon:0}); } }
+            function disableButtons(disabled) {
+                var btns = document.querySelectorAll('button.layui-btn:not(.layui-btn-disabled), button.layui-btn.layui-btn-disabled');
+                btns.forEach(function(btn){
+                    if(disabled){ btn.classList.add('layui-btn-disabled'); btn.disabled = true; }
+                    else { btn.classList.remove('layui-btn-disabled'); btn.disabled = false; }
+                });
+            }
+            function editorConfirm(title, msg) {
+                return new Promise(function(resolve){
+                    if(typeof layer !== 'undefined'){
+                        layer.confirm(msg || '确定吗？', {title: title, icon: 3}, function(idx){
+                            layer.close(idx);
+                            resolve(true);
+                        }, function(idx){
+                            layer.close(idx);
+                            resolve(false);
+                        });
+                    } else { resolve(confirm(msg)); }
+                });
+            }
+            function openEditorModal(title, contentEl, opts) {
+                if(typeof layer !== 'undefined'){
+                    var cfg = {
+                        type: 1,
+                        title: title || '',
+                        content: contentEl,
+                        area: (opts && opts.area) || '500px',
+                        btn: (opts && opts.btn) || ['确定', '取消'],
+                        yes: function(idx){
+                            if(opts && opts.onConfirm) opts.onConfirm(contentEl);
+                            layer.close(idx);
+                        },
+                        btn2: function(idx){
+                            if(opts && opts.onCancel) opts.onCancel();
+                            layer.close(idx);
+                        },
+                        success: function(layero, idx){
+                            if(opts && opts.onOpen) opts.onOpen(layero, contentEl);
+                        }
+                    };
+                    layer.open(cfg);
+                }
+            }
+            function postData(url, data) {
+                return new Promise(function(resolve, reject){
+                    $.post(url, data, function(r){ resolve(r); }).fail(function(xhr){
+                        reject(xhr);
+                    });
+                });
+            }
+
             //未保存离开提示
-            window.onbeforeunload =function() {
-            　　 if(md_changed){
-                    return 1;
-                }else{
-                    return null;
+            window.onbeforeunload = function() {
+                if (md_changed) {
+                    return '您有未保存的更改，确定要离开吗？';
                 }
             };
+            window.addEventListener('beforeunload', function(e) {
+                if (md_changed) {
+                    e.preventDefault();
+                    e.returnValue = '您有未保存的更改，确定要离开吗？';
+                }
+            });
         </script>
         <script src="{% static 'mrdoc/mrdoc.editor.js' %}?version={{mrdoc_version}}"></script>
         <script src="{% static 'mrdoc/mrdoc.js' %}?version={{mrdoc_version}}"></script>

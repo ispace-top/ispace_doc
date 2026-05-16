@@ -96,5 +96,7 @@
     editor.uploadUrl="{% url 'upload_ice_img' %}";          //粘贴上传请求路径
     editor.imgAutoUpload=true;
     editor.create();
-    // autoCacheDoc();
+    editor.on('change', function(){
+        md_changed = true;
+    });
 </script>
