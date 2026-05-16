@@ -73,4 +73,7 @@ urlpatterns = [
     path('manage_collect/',views.manage_collect,name="manage_collect"), # 收藏管理
     path('get_version/',views.get_version,name="get_version"), # 获取当前版本
     path('api/usergroups/userlist', views.UserGroupUserList.as_view(), name="api_usergroups_userlist"),  # 用户分组的用户列表接口
+    #################文档评论
+    path('project-<int:pro_id>/doc-<int:doc_id>/comments/', views.doc_comments, name='doc_comments'),  # 获取/发表评论
+    path('comment/<int:comment_id>/delete/', views.delete_comment, name='delete_comment'),  # 删除评论
 ]

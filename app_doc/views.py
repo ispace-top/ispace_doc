@@ -9,7 +9,7 @@ from django.views.decorators.http import require_http_methods,require_GET,requir
 from django.core.paginator import Paginator,PageNotAnInteger,EmptyPage,InvalidPage # 后端分页
 from django.core.exceptions import PermissionDenied,ObjectDoesNotExist
 from django.core.serializers import serialize
-from app_doc.models import Project,Doc,DocTemp
+from app_doc.models import Project,Doc,DocTemp,DocComment
 from django.contrib.auth.models import User
 from rest_framework.views import APIView # 视图
 from rest_framework.response import Response # 响应
@@ -3677,3 +3677,87 @@ class UserGroupUserList(APIView):
         }
 
         return Response(resp)
+
+
+# ==================== 文档评论系统 ====================
+
+def get_comments_tree(comments):
+    """将评论列表转换为树形结构"""
+    top = []
+    children_map = {}
+    for c in comments:
+        c._replies = []
+        if c.parent_id:
+            children_map.setdefault(c.parent_id, []).append(c)
+        else:
+            top.append(c)
+    def attach(comment_list):
+        for c in comment_list:
+            c._replies = children_map.get(c.id, [])
+            attach(c._replies)
+    attach(top)
+    return top
+
+
+@login_required()
+@require_http_methods(['GET', 'POST'])
+def doc_comments(request, pro_id, doc_id):
+    """获取/发表文档评论"""
+    try:
+        doc = Doc.objects.get(id=doc_id, top_doc=pro_id, status=1)
+    except Doc.DoesNotExist:
+        return JsonResponse({'status': False, 'data': _('文档不存在')})
+
+    if request.method == 'GET':
+        comments = DocComment.objects.filter(doc=doc, is_active=True).select_related('user').order_by('create_time')
+        result = []
+        for c in get_comments_tree(comments):
+            result.append(_serialize_comment(c, request.user))
+        return JsonResponse({'status': True, 'data': result, 'count': comments.count()})
+
+    elif request.method == 'POST':
+        parent_id = request.POST.get('parent_id', '').strip()
+        content = request.POST.get('content', '').strip()
+        if not content:
+            return JsonResponse({'status': False, 'data': _('评论内容不能为空')})
+        if len(content) > 2000:
+            return JsonResponse({'status': False, 'data': _('评论内容不能超过2000字')})
+        parent = None
+        if parent_id:
+            try:
+                parent = DocComment.objects.get(id=int(parent_id), doc=doc, is_active=True)
+            except (DocComment.DoesNotExist, ValueError):
+                return JsonResponse({'status': False, 'data': _('父评论不存在')})
+        comment = DocComment.objects.create(
+            doc=doc, user=request.user, parent=parent, content=content
+        )
+        return JsonResponse({'status': True, 'data': _serialize_comment(comment, request.user)})
+
+
+@login_required()
+@require_POST
+def delete_comment(request, comment_id):
+    """删除评论（仅评论作者可删除）"""
+    try:
+        comment = DocComment.objects.get(id=comment_id, is_active=True)
+    except DocComment.DoesNotExist:
+        return JsonResponse({'status': False, 'data': _('评论不存在')})
+    if comment.user != request.user and not request.user.is_superuser:
+        return JsonResponse({'status': False, 'data': _('无权删除此评论')})
+    comment.is_active = False
+    comment.save()
+    return JsonResponse({'status': True, 'data': _('删除成功')})
+
+
+def _serialize_comment(comment, current_user):
+    """序列化单个评论节点"""
+    return {
+        'id': comment.id,
+        'content': comment.content,
+        'user_name': comment.user.first_name or comment.user.username,
+        'user_avatar': comment.user.avatar.url if hasattr(comment.user, 'avatar') and comment.user.avatar else None,
+        'create_time': comment.create_time.strftime('%Y-%m-%d %H:%M'),
+        'parent_id': comment.parent_id,
+        'can_delete': current_user == comment.user or current_user.is_superuser,
+        'replies': [_serialize_comment(r, current_user) for r in getattr(comment, '_replies', [])],
+    }

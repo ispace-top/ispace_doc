@@ -267,4 +267,22 @@ class MyCollect(models.Model):
 
     class Meta:
         verbose_name = '我的收藏'
+
+
+# 文档评论模型
+class DocComment(models.Model):
+    doc = models.ForeignKey(Doc, on_delete=models.CASCADE, verbose_name="文档")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="评论者")
+    parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='replies', verbose_name="父评论")
+    content = models.TextField(verbose_name="评论内容")
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name="评论时间")
+    is_active = models.BooleanField(default=True, verbose_name="是否有效")
+
+    def __str__(self):
+        return '{}: {}'.format(self.user.username, self.content[:50])
+
+    class Meta:
+        verbose_name = '文档评论'
+        verbose_name_plural = verbose_name
+        ordering = ['create_time']
         verbose_name_plural = verbose_name
