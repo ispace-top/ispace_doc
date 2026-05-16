@@ -36,6 +36,8 @@
     .admin-user-action-link:hover { text-decoration: underline; }
     .admin-user-action-link.danger { color: var(--ispace-color-error-text); }
     .admin-user-modal-body { display: flex; flex-direction: column; gap: var(--ispace-space-3); }
+    td .admin-user-action-link { margin-right: var(--ispace-space-3); }
+    td .admin-user-action-link:last-child { margin-right: 0; }
 </style>
 {% endblock %}
 
@@ -145,12 +147,13 @@
                     <td>${escapeHtml(row.username)}</td>
                     <td>${escapeHtml(row.first_name || '-')}</td>
                     <td>${escapeHtml(row.email || '-')}</td>
-                    <td>${roleHtml}</td>
+                    <td><a class="admin-user-action-link" data-action="toggle-role" data-id="${row.id}" data-super="${row.is_superuser ? '1' : '0'}" title="点击切换角色">${roleHtml}</a></td>
                     <td class="ispace-text-sm">${formatDateTime(row.date_joined)}</td>
                     <td class="ispace-text-sm">${formatDateTime(row.last_login)}</td>
-                    <td>${statusHtml}</td>
+                    <td><a class="admin-user-action-link" data-action="toggle-active" data-id="${row.id}" data-active="${row.is_active ? '1' : '0'}" title="点击切换状态">${statusHtml}</a></td>
                     <td>
                         <a class="admin-user-action-link" data-action="edit" data-id="${row.id}" data-username="${escapeHtml(row.username)}">编辑</a>
+                        <a class="admin-user-action-link" data-action="pwd" data-id="${row.id}" data-username="${escapeHtml(row.username)}">密码</a>
                         <a class="admin-user-action-link danger" data-action="delete" data-id="${row.id}" data-username="${escapeHtml(row.username)}">删除</a>
                     </td>
                 </tr>`;
@@ -362,6 +365,70 @@
         iSpaceDoc.Modal.open(backdrop);
     }
 
+    async function toggleUserActive(uid, username, currentlyActive) {
+        const action = currentlyActive ? '禁用' : '启用';
+        const confirmed = await iSpaceDoc.confirm({
+            title: action + '用户',
+            message: '确认' + action + '用户 ' + username + '？',
+            variant: 'warning'
+        });
+        if (!confirmed) return;
+
+        const body = new URLSearchParams();
+        body.set('obj', 'info');
+        body.set('is_active', currentlyActive ? '' : 'on');
+        body.set('csrfmiddlewaretoken', CSRF_TOKEN);
+
+        try {
+            const resp = await fetch('/admin/api/user/' + uid, {
+                method: 'PUT',
+                headers: getCSRFHeaders(),
+                body: body.toString()
+            });
+            const result = await resp.json();
+            if (result.code === 0) {
+                showSuccess(action + '成功');
+                loadTable(currentPage);
+            } else {
+                showError(result.data || action + '失败');
+            }
+        } catch (err) {
+            showError(action + '失败');
+        }
+    }
+
+    async function toggleUserRole(uid, username, currentlyAdmin) {
+        const newRole = currentlyAdmin ? '普通用户' : '超级管理员';
+        const confirmed = await iSpaceDoc.confirm({
+            title: '修改角色',
+            message: '确认将 ' + username + ' 的角色改为「' + newRole + '」？',
+            variant: 'warning'
+        });
+        if (!confirmed) return;
+
+        const body = new URLSearchParams();
+        body.set('obj', 'info');
+        body.set('is_superuser', currentlyAdmin ? 'false' : 'true');
+        body.set('csrfmiddlewaretoken', CSRF_TOKEN);
+
+        try {
+            const resp = await fetch('/admin/api/user/' + uid, {
+                method: 'PUT',
+                headers: getCSRFHeaders(),
+                body: body.toString()
+            });
+            const result = await resp.json();
+            if (result.code === 0) {
+                showSuccess('角色修改成功');
+                loadTable(currentPage);
+            } else {
+                showError(result.data || '角色修改失败');
+            }
+        } catch (err) {
+            showError('角色修改失败');
+        }
+    }
+
     async function delUser(uid, username) {
         const confirmed = await iSpaceDoc.confirm(
             '警告：此操作将删除用户 ' + username + ' 及其文集文档！协作文档将转移给文集所有者',
@@ -398,6 +465,12 @@
             location.href = PROFILE_URL + '?id=' + uid;
         } else if (action === 'delete') {
             delUser(uid, username);
+        } else if (action === 'pwd') {
+            openChangePwdModal(uid, username);
+        } else if (action === 'toggle-active') {
+            toggleUserActive(uid, username, target.dataset.active === '1');
+        } else if (action === 'toggle-role') {
+            toggleUserRole(uid, username, target.dataset.super === '1');
         }
     });
 
