@@ -25,47 +25,25 @@
 <link rel="stylesheet" href="{% static 'prismjs/prism.css' %}?version={{ mrdoc_version }}">
 {% endblock %}
 
-{% block layout_class %}has-sidebar{% endblock %}
-
-{% block sidebar %}
-<aside class="ispace-sidebar" id="doc-sidebar">
-    <div class="ispace-flex-between ispace-mb-4">
-        <h3 class="ispace-font-semibold ispace-text-sm ispace-text-secondary">文档目录</h3>
-        <button class="ispace-btn ispace-btn-ghost ispace-btn-icon ispace-btn-sm" onclick="toggleSidebar()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-        </button>
-    </div>
-    <form action="{% url 'pro_index' pro_id=project.id %}" method="get" class="ispace-mb-4">
-        <div class="ispace-search-input-wrap">
-            <svg class="ispace-search-input-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" name="kw" class="ispace-form-input ispace-form-input-sm" placeholder="在文集内搜索文档" style="padding-left:32px;font-size:12px;">
-        </div>
-    </form>
-    <nav class="ispace-sidebar-nav">
-        {% if toc_list %}
-            {% for item in toc_list %}
-            <a href="{% url 'doc' pro_id=project.id doc_id=item.id %}" class="ispace-sidebar-link {% if item.id == doc.id %}ispace-active{% endif %}"
-               style="padding-left:calc(var(--ispace-space-3) * {{ item.level|add:1 }})">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;">
-                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/>
-                </svg>
-                <span class="ispace-truncate">{{ item.name }}</span>
-            </a>
-            {% endfor %}
-        {% endif %}
-    </nav>
-</aside>
-{% endblock %}
+{% block layout_class %}{% endblock %}
 
 {% block header_actions %}
 <div class="ispace-flex-center ispace-gap-2">
     {% include "includes/theme_toggle.html" %}
     {% if request.user == doc.create_user or request.user == project.create_user %}
+    {% if doc.editor_mode != 4 %}
+    <button class="ispace-btn ispace-btn-ghost ispace-btn-sm" onclick="enterEditMode()">编辑</button>
+    {% else %}
     <a href="{% url 'modify_doc' doc_id=doc.id %}" class="ispace-btn ispace-btn-ghost ispace-btn-sm">编辑</a>
+    {% endif %}
     <a href="{% url 'create_doc' %}?pid={{ project.id }}" class="ispace-btn ispace-btn-primary ispace-btn-sm">添加</a>
     {% elif colla_user > 0 %}
     {% if colla_user_role == 1 %}
+    {% if doc.editor_mode != 4 %}
+    <button class="ispace-btn ispace-btn-ghost ispace-btn-sm" onclick="enterEditMode()">编辑</button>
+    {% else %}
     <a href="{% url 'modify_doc' doc_id=doc.id %}" class="ispace-btn ispace-btn-ghost ispace-btn-sm">编辑</a>
+    {% endif %}
     {% endif %}
     <a href="{% url 'create_doc' %}?pid={{ project.id }}" class="ispace-btn ispace-btn-primary ispace-btn-sm">添加</a>
     {% endif %}
@@ -74,60 +52,63 @@
 {% endblock %}
 
 {% block content %}
-<h1 class="ispace-page-title ispace-mb-3">{{ doc.name }}</h1>
+<div id="doc-view-wrap">
+<h1 class="ispace-page-title ispace-mb-3" id="doc-view-title">{{ doc.name }}</h1>
 
-{# --- Document Info Bar --- #}
-<div class="ispace-doc-meta" style="display:flex;flex-wrap:wrap;align-items:center;gap:var(--ispace-space-2) var(--ispace-space-4);margin-bottom:var(--ispace-space-5);padding-bottom:var(--ispace-space-4);border-bottom:1px solid var(--ispace-color-border-light);">
-    <span style="display:inline-flex;align-items:center;gap:4px;font-size:var(--ispace-font-sm);color:var(--ispace-color-text-secondary);">
-        <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
-        {{ doc.create_user.first_name|default:doc.create_user.username }}
-    </span>
-    <span style="display:inline-flex;align-items:center;gap:4px;font-size:var(--ispace-font-sm);color:var(--ispace-color-text-tertiary);">
-        <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
-        创建于 {{ doc.create_time|date:"Y-m-d" }}
-    </span>
-    <span style="display:inline-flex;align-items:center;gap:4px;font-size:var(--ispace-font-sm);color:var(--ispace-color-text-tertiary);">
-        <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z"/><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd"/></svg>
-        更新于 {{ doc.modify_time|date:"Y-m-d H:i" }}
-    </span>
-    {% if doc_tags %}
-    <span style="display:inline-flex;align-items:center;gap:4px;font-size:var(--ispace-font-sm);color:var(--ispace-color-text-tertiary);">
-        <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>
-        {% for tag in doc_tags %}
-        <a href="{% url 'tag_docs' tag_id=tag.tag.id %}" style="color:var(--ispace-color-brand-500);">{{ tag.tag.name }}</a>{% if not forloop.last %}, {% endif %}
-        {% endfor %}
-    </span>
-    {% endif %}
-</div>
-
-{# --- Action Buttons --- #}
-<div class="ispace-doc-actions" style="display:flex;flex-wrap:wrap;gap:var(--ispace-space-2);margin-bottom:var(--ispace-space-4);">
-    {% if request.user.is_authenticated %}
+{# --- Unified Doc Toolbar --- #}
+<div class="ispace-doc-toolbar">
+    <div class="ispace-doc-toolbar-left">
+        <span class="ispace-doc-toolbar-author">
+            <span class="ispace-doc-toolbar-avatar">{{ doc.create_user.first_name|default:doc.create_user.username|slice:":1" }}</span>
+            {{ doc.create_user.first_name|default:doc.create_user.username }}
+        </span>
+        <span class="ispace-doc-toolbar-time" id="doc-toolbar-time">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+            更新于 {{ doc.modify_time|date:"Y-m-d H:i" }}
+        </span>
+        {% if doc_tags %}
+        <span class="ispace-doc-toolbar-tags">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>
+            {% for tag in doc_tags %}
+            <a href="{% url 'tag_docs' tag_id=tag.tag.id %}">{{ tag.tag.name }}</a>{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+        </span>
+        {% endif %}
+    </div>
+    <div class="ispace-doc-toolbar-right">
+        {# History clock with tooltip #}
+        <button class="ispace-btn-icon ispace-btn-icon-sm" id="history-btn" tooltip="编辑历史" placement="bottom">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </button>
+        {% if request.user.is_authenticated %}
+        <button class="ispace-btn-icon ispace-btn-icon-sm" id="collect-icon-btn" onclick="toggleCollect()" tooltip="{% if is_collect_doc %}已收藏{% else %}收藏{% endif %}" placement="bottom">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="{% if is_collect_doc %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+        </button>
+        <button class="ispace-btn-icon ispace-btn-icon-sm" onclick="toggleShare()" tooltip="分享" placement="bottom">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"/></svg>
+        </button>
         {% if request.user == doc.create_user or request.user == project.create_user or colla_user_role == 1 %}
-        <a href="{% url 'modify_doc' doc_id=doc.id %}" class="ispace-btn ispace-btn-primary ispace-btn-sm">
-            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z"/><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd"/></svg>
-            编辑
+        {% if doc.editor_mode != 4 %}
+        <button class="ispace-btn-icon ispace-btn-icon-sm" onclick="enterEditMode()" id="edit-icon-btn" tooltip="编辑" placement="bottom">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z"/><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd"/></svg>
+        </button>
+        {% else %}
+        <a href="{% url 'modify_doc' doc_id=doc.id %}" class="ispace-btn-icon ispace-btn-icon-sm" tooltip="编辑" placement="bottom">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z"/><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd"/></svg>
         </a>
         {% endif %}
-        <button class="ispace-btn ispace-btn-ghost ispace-btn-sm" onclick="toggleCollect()" id="collect-btn" title="收藏">
-            <svg width="14" height="14" viewBox="0 0 20 20" fill="{% if is_collect_doc %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-            <span id="collect-text">{% if is_collect_doc %}已收藏{% else %}收藏{% endif %}</span>
-        </button>
-        <button class="ispace-btn ispace-btn-ghost ispace-btn-sm" onclick="toggleShare()" id="share-btn" title="分享">
-            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"/></svg>
-            分享
-        </button>
+        {% endif %}
         {% if request.user == doc.create_user or request.user == project.create_user %}
-        <button class="ispace-btn ispace-btn-ghost ispace-btn-sm ispace-text-danger" onclick="delDoc()" title="删除">
-            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-            删除
+        <button class="ispace-btn-icon ispace-btn-icon-sm ispace-text-danger" onclick="delDoc()" tooltip="删除" placement="bottom">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
         </button>
         {% endif %}
-    {% endif %}
-    <a href="{% url 'pro_index' pro_id=project.id %}" class="ispace-btn ispace-btn-ghost ispace-btn-sm">返回文集</a>
+        {% endif %}
+    </div>
 </div>
 
-<div class="ispace-content-card">
+{# --- Document Content (no card background) --- #}
+<div class="ispace-doc-content-wrapper" id="doc-content-area">
     <div class="markdown-body" id="doc-content">
         {% if doc.editor_mode == 3 %}
             {{ doc.content|safe }}
@@ -139,11 +120,49 @@
     </div>
 </div>
 
+{# --- Watermark (CSS-only via ::after) --- #}
+<style>
+.ispace-doc-content-wrapper {
+    position: relative;
+    background: transparent;
+    padding: var(--ispace-space-6) 0;
+}
+.ispace-doc-content-wrapper::after {
+    content: "{{ request.user.first_name|default:request.user.username|default:''|escapejs }}";
+    position: fixed;
+    bottom: 60px;
+    right: 40px;
+    font-size: 80px;
+    font-weight: 700;
+    color: var(--ispace-color-text-quaternary);
+    opacity: 0.04;
+    pointer-events: none;
+    user-select: none;
+    z-index: 0;
+    white-space: nowrap;
+    transform: rotate(-15deg);
+}
+</style>
+
+{# --- Like + Reply at end of doc --- #}
+<div class="ispace-doc-engagement" id="doc-engagement">
+    <button class="ispace-doc-like-btn" id="doc-like-btn" onclick="toggleDocLike()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="{% if user_liked %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2" id="doc-like-icon">
+            <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
+        </svg>
+        <span id="doc-like-count"{% if like_count == 0 %} style="display:none;"{% endif %}>{{ like_count }}</span>
+    </button>
+    <button class="ispace-doc-reply-btn" id="doc-reply-btn" onclick="openReplyToComment()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span>回复</span>
+    </button>
+</div>
+
 {# --- Previous / Next Navigation --- #}
-<div class="ispace-flex-between ispace-mt-6" style="gap:var(--ispace-space-3);">
+<div class="ispace-flex-between ispace-mt-4" style="gap:var(--ispace-space-3);">
     <div>
         {% if prev_doc %}
-        <a href="{% url 'doc' pro_id=project.id doc_id=prev_doc.id %}" class="ispace-btn ispace-btn-ghost ispace-btn-sm" style="gap:6px;">
+        <a href="{% url 'doc' pro_id=project.id doc_id=prev_doc.id %}" class="ispace-btn ispace-btn-ghost ispace-btn-sm" style="gap:6px;" data-spa>
             <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd"/></svg>
             {{ prev_doc.name }}
         </a>
@@ -151,13 +170,24 @@
     </div>
     <div>
         {% if next_doc %}
-        <a href="{% url 'doc' pro_id=project.id doc_id=next_doc.id %}" class="ispace-btn ispace-btn-ghost ispace-btn-sm" style="gap:6px;">
+        <a href="{% url 'doc' pro_id=project.id doc_id=next_doc.id %}" class="ispace-btn ispace-btn-ghost ispace-btn-sm" style="gap:6px;" data-spa>
             {{ next_doc.name }}
             <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
         </a>
         {% endif %}
     </div>
 </div>
+
+{# --- History data (hidden) --- #}
+{% if doc_history %}
+<script id="doc-history-data" type="application/json">[
+    {% for h in doc_history %}
+    {"id":{{ h.id }},"user":"{{ h.create_user__first_name|default:h.create_user__username|escapejs }}","time":"{{ h.create_time|date:'Y-m-d H:i' }}"}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+]</script>
+{% else %}
+<script id="doc-history-data" type="application/json">[{"id":0,"user":"{{ doc.create_user.first_name|default:doc.create_user.username|escapejs }}","time":"{{ doc.create_time|date:'Y-m-d H:i' }}"}]</script>
+{% endif %}
 
 {# --- Share Modal --- #}
 <div class="ispace-modal-backdrop" id="shareModal" style="display:none;">
@@ -203,9 +233,35 @@
     </div>
 </div>
 {% include "includes/doc_comments.html" %}
+</div>{# end doc-view-wrap #}
+{% include "includes/inline_editor.html" %}
 {% endblock %}
 
 {% block scripts %}
+<style>
+/* Reduce gap between toolbar and content */
+.ispace-doc-toolbar {
+    margin-bottom: var(--ispace-space-3);
+}
+.ispace-doc-content-wrapper {
+    padding: var(--ispace-space-3) 0;
+}
+/* Center like & reply buttons */
+.ispace-doc-engagement {
+    justify-content: center;
+}
+/* Reduce left padding on doc view */
+.ispace-main-content.doc-view-main {
+    padding-left: var(--ispace-space-2);
+    padding-right: var(--ispace-space-2);
+}
+@media (max-width: 768px) {
+    .ispace-main-content.doc-view-main {
+        padding-left: var(--ispace-space-3);
+        padding-right: var(--ispace-space-3);
+    }
+}
+</style>
 <script src="{% static 'viewerjs/viewer.min.js' %}?version={{ mrdoc_version }}"></script>
 <script src="{% static 'prismjs/prism.js' %}?version={{ mrdoc_version }}"></script>
 {% if doc.editor_mode != 4 %}
@@ -223,8 +279,7 @@
 function toggleSidebar(){var s=document.getElementById('doc-sidebar');s.style.display='none';document.querySelector('.ispace-app-layout').classList.remove('has-sidebar');}
 
 function toggleCollect(){
-    var btn = document.getElementById('collect-btn');
-    var txt = document.getElementById('collect-text');
+    var btn = document.getElementById('collect-icon-btn');
     var formData = new FormData();
     formData.append('csrfmiddlewaretoken','{{ csrf_token }}');
     formData.append('collect_id',{{ doc.id }});
@@ -234,12 +289,13 @@ function toggleCollect(){
     .then(function(r){
         if(r.status){
             var iconSvg = btn.querySelector('svg');
+            var tooltip = btn.getAttribute('tooltip');
             if(r.data==='add'){
                 iconSvg.setAttribute('fill','currentColor');
-                txt.textContent='已收藏';
+                btn.setAttribute('tooltip','已收藏');
             }else{
                 iconSvg.setAttribute('fill','none');
-                txt.textContent='收藏';
+                btn.setAttribute('tooltip','收藏');
             }
         }
     });
@@ -298,7 +354,238 @@ async function delDoc(){
     });
 }
 
+// ---- Doc Like ----
+function toggleDocLike(){
+    var icon = document.getElementById('doc-like-icon');
+    var countEl = document.getElementById('doc-like-count');
+    var fd = new FormData();
+    fd.append('csrfmiddlewaretoken','{{ csrf_token }}');
+    fetch('{% url "doc_like_toggle" doc_id=doc.id %}',{method:'POST',body:fd})
+    .then(function(r){return r.json();})
+    .then(function(r){
+        if(r.status){
+            icon.setAttribute('fill', r.liked ? 'currentColor' : 'none');
+            if(r.count > 0){
+                countEl.style.display = '';
+                countEl.textContent = r.count;
+            }else{
+                countEl.style.display = 'none';
+            }
+        }
+    });
+}
+
+function openReplyToComment(){
+    var commentInput = document.getElementById('comment-input');
+    if (commentInput) {
+        commentInput.scrollIntoView({ behavior: 'smooth' });
+        setTimeout(function(){ commentInput.focus(); }, 300);
+    }
+}
+
+// ---- History Tooltip ----
+(function(){
+    var historyBtn = document.getElementById('history-btn');
+    if (!historyBtn) return;
+    var historyData = JSON.parse(document.getElementById('doc-history-data').textContent);
+    var tooltip = document.createElement('div');
+    tooltip.className = 'ispace-history-tooltip';
+    tooltip.style.display = 'none';
+    document.body.appendChild(tooltip);
+
+    var showCount = 5;
+    function renderHistory(items) {
+        var shown = items.slice(0, showCount);
+        var html = '<div class="ispace-history-tooltip-header">编辑历史 (' + items.length + ')</div>';
+        html += '<div class="ispace-history-tooltip-list">';
+        shown.forEach(function(h) {
+            html += '<div class="ispace-history-tooltip-item"><span class="ispace-history-tooltip-user">' + escapeHTML(h.user) + '</span><span class="ispace-history-tooltip-time">' + h.time + '</span></div>';
+        });
+        html += '</div>';
+        if (items.length > showCount) {
+            html += '<button class="ispace-history-tooltip-more" id="history-show-more">显示更多 (' + (items.length - showCount) + ')</button>';
+        }
+        return html;
+    }
+
+    function positionTooltip() {
+        var rect = historyBtn.getBoundingClientRect();
+        tooltip.style.left = Math.min(rect.left, window.innerWidth - 270) + 'px';
+        tooltip.style.top = (rect.bottom + 8) + 'px';
+    }
+
+    function showTooltip() {
+        tooltip.innerHTML = renderHistory(historyData);
+        tooltip.style.display = 'block';
+        positionTooltip();
+
+        var moreBtn = document.getElementById('history-show-more');
+        if (moreBtn) {
+            moreBtn.addEventListener('click', function() {
+                showCount = historyData.length;
+                tooltip.innerHTML = renderHistory(historyData);
+                tooltip.style.display = 'block';
+                positionTooltip();
+            });
+        }
+    }
+
+    historyBtn.addEventListener('mouseenter', showTooltip);
+    tooltip.addEventListener('mouseenter', function(){});
+
+    var hideTimer;
+    historyBtn.addEventListener('mouseleave', function() {
+        hideTimer = setTimeout(function() {
+            tooltip.style.display = 'none';
+            showCount = 5;
+        }, 200);
+    });
+    tooltip.addEventListener('mouseleave', function() {
+        tooltip.style.display = 'none';
+        showCount = 5;
+    });
+    tooltip.addEventListener('mouseenter', function() {
+        if (hideTimer) clearTimeout(hideTimer);
+    });
+
+    function escapeHTML(str) {
+        var d = document.createElement('div');
+        d.textContent = str;
+        return d.innerHTML;
+    }
+})();
+
+// ---- View/Edit Mode Toggle ----
+window._mrdocVersion = '{{ mrdoc_version }}';
+window._inlineUploadImgUrl = '{% url "upload_doc_img" %}';
+window._inlineUploadIceImgUrl = '{% url "upload_ice_img" %}';
+window._docId = {{ doc.id }};
+window._docProId = {{ project.id }};
+window._docEditorMode = {{ doc.editor_mode }};
+window._docPreContent = '{{ doc.pre_content|escapejs }}';
+window._docContent = '{{ doc.content|escapejs }}';
+window._docName = '{{ doc.name|escapejs }}';
+window._docTags = '{{ doc_tags_str|default:""|escapejs }}';
+window._inlineSubmitFn = inlineSaveDoc;
+window._inlineCancelFn = inlineCancelEdit;
+
+function enterEditMode() {
+    var viewWrap = document.getElementById('doc-view-wrap');
+    if (viewWrap) viewWrap.style.display = 'none';
+    var editBtn = document.getElementById('edit-icon-btn');
+    if (editBtn) editBtn.style.display = 'none';
+    window._inlineIsCreate = false;
+    window._inlineDocId = window._docId;
+    window._inlineProjectId = window._docProId;
+    initInlineEditor(window._docEditorMode, false);
+}
+
+function inlineCancelEdit() {
+    if (window._inlineMdChanged) {
+        if (!confirm('有未保存的更改，确定要取消吗？')) return;
+    }
+    exitEditMode();
+}
+
+function exitEditMode() {
+    destroyInlineEditor();
+    var viewWrap = document.getElementById('doc-view-wrap');
+    if (viewWrap) viewWrap.style.display = '';
+    var editBtn = document.getElementById('edit-icon-btn');
+    if (editBtn) editBtn.style.display = '';
+}
+
+function inlineSaveDoc(status) {
+    var content = getInlineEditorContent();
+    var preContent = getInlineEditorPreContent();
+    var docName = document.getElementById('inline-doc-name');
+    var tagsEl = document.getElementById('inline-tagsinput');
+
+    var payload = {
+        doc_id: window._docId,
+        project: window._docProId,
+        doc_name: docName ? docName.value : '',
+        content: content,
+        pre_content: preContent,
+        doc_tag: tagsEl ? tagsEl.value : '',
+        status: status,
+        editor_mode: window._docEditorMode
+    };
+
+    fetch('{% url "modify_doc" doc_id=doc.id %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: Object.keys(payload).map(function(k) {
+            return encodeURIComponent(k) + '=' + encodeURIComponent(payload[k] != null ? payload[k] : '');
+        }).join('&') + '&csrfmiddlewaretoken=' + (document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '{{ csrf_token }}')
+    }).then(function(r) { return r.json(); })
+    .then(function(r) {
+        if (r.status) {
+            window._inlineMdChanged = false;
+            window._docName = docName ? docName.value : window._docName;
+            window._docPreContent = preContent;
+            window._docContent = content;
+            refreshDocView();
+            exitEditMode();
+            if (typeof layer !== 'undefined') layer.msg(status === 1 ? '发布成功' : '保存成功', {icon: 1});
+        } else {
+            if (typeof layer !== 'undefined') layer.msg('保存失败: ' + (r.data || ''), {icon: 2});
+            else alert('保存失败');
+        }
+    }).catch(function() {
+        if (typeof layer !== 'undefined') layer.msg('保存异常', {icon: 2});
+    });
+}
+
+function refreshDocView() {
+    var titleEl = document.getElementById('doc-view-title');
+    if (titleEl) titleEl.textContent = window._docName;
+    document.title = window._docName + ' - {{ project.name }} - {{ site_name|default:"iSpaceDoc" }}';
+
+    var contentContainer = document.getElementById('doc-content');
+    if (contentContainer) {
+        if (window._docEditorMode === 3) {
+            contentContainer.innerHTML = window._docContent;
+        } else if (window._docEditorMode === 2) {
+            var vdEl = document.getElementById('vditor-doc-content');
+            if (vdEl && typeof Vditor !== 'undefined') {
+                Vditor.preview(vdEl, window._docPreContent, {
+                    cdn: '{% static "vditor" %}/dist',
+                    mode: 'light',
+                    hljs: { style: 'github' }
+                });
+            }
+        } else {
+            var mdEl = document.getElementById('vditor-doc-content');
+            if (mdEl && typeof marked !== 'undefined') {
+                mdEl.innerHTML = marked.parse(window._docPreContent);
+            }
+        }
+    }
+
+    if (window.Prism) { Prism.highlightAll(); }
+    if (window.Viewer) {
+        try { new Viewer(document.getElementById('doc-content')); } catch(e) {}
+    }
+}
+
+window.addEventListener('beforeunload', function(e) {
+    if (window._inlineMdChanged) {
+        e.preventDefault();
+        e.returnValue = '您有未保存的更改，确定要离开吗？';
+    }
+});
+
+var _vditorReady = typeof Vditor !== 'undefined';
+
 document.addEventListener('DOMContentLoaded',function(){
+    // Apply doc-view-main class to reduce horizontal padding
+    var main = document.querySelector('.ispace-main-content');
+    if (main) main.classList.add('doc-view-main');
+
     {% if doc.editor_mode == 2 %}
     Vditor.preview(document.getElementById('vditor-doc-content'),'{{ doc.pre_content|escapejs }}',{cdn:'{% static "vditor" %}/dist',mode:'light',hljs:{style:'github'}});
     {% elif doc.editor_mode == 3 %}
@@ -309,9 +596,7 @@ document.addEventListener('DOMContentLoaded',function(){
     document.getElementById('vditor-doc-content').innerHTML = marked.parse('{{ doc.pre_content|escapejs }}');
     {% endif %}
 
-    // Image viewer
     if(window.Viewer){var g=new Viewer(document.getElementById('doc-content'));}
-    // Code highlight
     if(window.Prism){Prism.highlightAll();}
 });
 </script>

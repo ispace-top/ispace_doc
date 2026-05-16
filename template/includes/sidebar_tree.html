@@ -2,17 +2,17 @@
 <aside class="ispace-sidebar" id="globalSidebar">
     <nav class="ispace-sidebar-nav" id="sidebarNav">
         <button class="ispace-sidebar-toggle" id="sidebarCollapse" title="{% trans '折叠侧边栏' %}" aria-label="折叠侧边栏">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="3" height="14" rx="1"/><path d="M10 8l4 4-4 4"/><line x1="17" y1="7" x2="17" y2="17"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="7" x2="21" y2="17"/><path d="M14 8l-4 4 4 4"/><rect x="3" y="5" width="3" height="14" rx="1"/></svg>
         </button>
         {% for pro in sidebar_projects %}
         <div class="ispace-sidebar-group">
             <button class="ispace-sidebar-group-toggle" data-pro-id="{{ pro.id }}" aria-expanded="false">
-                {% if pro.docs %}
-                <svg class="ispace-sidebar-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                {% else %}
-                <span class="ispace-sidebar-chevron ispace-sidebar-chevron--empty"></span>
-                {% endif %}
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="ispace-sidebar-folder-icon"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                <span class="ispace-sidebar-toggle-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="ispace-sidebar-folder-icon"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    {% if pro.docs %}
+                    <svg class="ispace-sidebar-folder-chevron" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                    {% endif %}
+                </span>
                 <span class="ispace-sidebar-group-name">{{ pro.name }}</span>
                 {% if pro.role != 0 %}
                 <span class="ispace-sidebar-badge">{% if pro.role == 1 %}{% trans "私" %}{% else %}{% trans "码" %}{% endif %}</span>
@@ -49,20 +49,31 @@
     toggles.forEach(function(btn){
         btn.addEventListener('click', function(e){
             var proId = this.getAttribute('data-pro-id');
-            // If chevron was clicked, toggle expand/collapse
-            if (e.target.closest('.ispace-sidebar-chevron')) {
+            // If toggle icon area (folder + chevron) was clicked, toggle expand/collapse
+            if (e.target.closest('.ispace-sidebar-toggle-icon')) {
+                // Check if this project actually has docs to toggle
                 var children = document.getElementById('proChildren' + proId);
-                var chevron = this.querySelector('.ispace-sidebar-chevron');
-                if (!children) return;
+                if (!children || !children.children.length) {
+                    // Navigate to project page
+                    if (window.iSpaceDoc && window.iSpaceDoc.SPA) {
+                        window.iSpaceDoc.SPA.navigate('/project-' + proId + '/');
+                    } else {
+                        window.location.href = '/project-' + proId + '/';
+                    }
+                    return;
+                }
+                var chevron = this.querySelector('.ispace-sidebar-folder-chevron');
                 var expanded = this.getAttribute('aria-expanded') === 'true';
                 if (expanded) {
                     children.style.display = 'none';
                     this.setAttribute('aria-expanded', 'false');
                     if (chevron) chevron.style.transform = '';
+                    if (chevron) chevron.style.color = '';
                 } else {
                     children.style.display = 'block';
                     this.setAttribute('aria-expanded', 'true');
                     if (chevron) chevron.style.transform = 'rotate(90deg)';
+                    if (chevron) chevron.style.color = 'var(--ispace-color-brand-500)';
                 }
             } else {
                 // Navigate to project page
@@ -99,8 +110,8 @@
             if (children && toggle) {
                 children.style.display = 'block';
                 toggle.setAttribute('aria-expanded', 'true');
-                var chevron = toggle.querySelector('.ispace-sidebar-chevron');
-                if (chevron) chevron.style.transform = 'rotate(90deg)';
+                var chevron = toggle.querySelector('.ispace-sidebar-folder-chevron');
+                if (chevron) { chevron.style.transform = 'rotate(90deg)'; chevron.style.color = 'var(--ispace-color-brand-500)'; }
             }
         }
     })();
@@ -109,17 +120,33 @@
     var contextMenu = document.getElementById('sidebarContextMenu');
     var currentContextTarget = null;
 
+    var menuIcons = {
+        'new-dir': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>',
+        'new-doc': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/><line x1="12" y1="13" x2="12" y2="19"/><line x1="9" y1="16" x2="15" y2="16"/></svg>',
+        'rename-pro': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>',
+        'rename-doc': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>',
+        'delete-pro': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+        'delete-doc': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>'
+    };
+
+    var menuCls = {
+        'delete-pro': ' ispace-context-menu-item--danger',
+        'delete-doc': ' ispace-context-menu-item--danger'
+    };
+
     function showContextMenu(e, items) {
         e.preventDefault();
         e.stopPropagation();
         currentContextTarget = e.currentTarget;
         contextMenu.innerHTML = items.map(function(item) {
-            return '<button class="ispace-context-menu-item" data-action="' + item.action + '">' + item.label + '</button>';
+            var icon = menuIcons[item.action.split(':')[0]] || '';
+            var cls = menuCls[item.action.split(':')[0]] || '';
+            return '<button class="ispace-context-menu-item' + cls + '" data-action="' + item.action + '">' + icon + '<span>' + item.label + '</span></button>';
         }).join('');
         contextMenu.style.display = 'block';
         var x = e.clientX, y = e.clientY;
-        // Adjust position to stay within viewport
-        var mw = contextMenu.offsetWidth || 160;
+        // Read size after inserting content
+        var mw = contextMenu.offsetWidth || 170;
         var mh = contextMenu.offsetHeight || 200;
         if (x + mw > window.innerWidth) x = window.innerWidth - mw - 8;
         if (y + mh > window.innerHeight) y = window.innerHeight - mh - 8;
@@ -140,7 +167,7 @@
                 {label: '新建子目录', action: 'new-dir:' + proId},
                 {label: '新建文档', action: 'new-doc:' + proId},
                 {label: '重命名', action: 'rename-pro:' + proId},
-                {label: '删除', action: 'delete-pro:' + proId}
+                {label: '删除文集', action: 'delete-pro:' + proId}
             ]);
         });
     });
@@ -152,7 +179,7 @@
             var proId = this.getAttribute('data-pro-id');
             showContextMenu(e, [
                 {label: '重命名', action: 'rename-doc:' + docId + ':' + proId},
-                {label: '删除', action: 'delete-doc:' + docId + ':' + proId}
+                {label: '删除文档', action: 'delete-doc:' + docId + ':' + proId}
             ]);
         });
     });
@@ -172,7 +199,6 @@
         var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
         var csrfToken = csrf ? csrf.value : window.__ISPACEDOC__ ? window.__ISPACEDOC__.csrfToken : '';
         if (type === 'new-doc') {
-            // Navigate to create doc for this project
             var url = '/create_doc/?pid=' + id;
             if (window.iSpaceDoc && window.iSpaceDoc.SPA) {
                 window.iSpaceDoc.SPA.navigate(url);
@@ -228,7 +254,6 @@
                 else { alert(r.data || '重命名失败'); }
             });
         } else if (type === 'new-dir') {
-            // Same as new-doc but with a directory prefix convention
             var dname = prompt('请输入子目录名称：');
             if (!dname) return;
             var fd5 = new FormData();
@@ -257,7 +282,7 @@
 /* ---- 侧边栏树组件样式 ---- */
 .ispace-sidebar-toggle {
     position: absolute;
-    left: 6px;
+    right: 6px;
     top: 50%;
     transform: translateY(-50%);
     display: flex;
@@ -274,7 +299,7 @@
     box-shadow: var(--ispace-shadow-sm);
     border: 1px solid var(--ispace-color-border-light);
     z-index: 10;
-    transition: left var(--ispace-duration-normal);
+    transition: right var(--ispace-duration-normal);
 }
 .ispace-sidebar-toggle:hover { background: var(--ispace-color-surface-100); color: var(--ispace-color-text-primary); }
 
@@ -285,7 +310,7 @@
     align-items: center;
     gap: var(--ispace-space-2);
     width: 100%;
-    padding: var(--ispace-space-2) var(--ispace-space-2);
+    padding: var(--ispace-space-1-5) var(--ispace-space-2);
     border: none;
     background: transparent;
     cursor: pointer;
@@ -297,18 +322,21 @@
     text-align: left;
 }
 .ispace-sidebar-group-toggle:hover { background: var(--ispace-color-surface-100); }
-.ispace-sidebar-chevron {
+
+.ispace-sidebar-toggle-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
     flex-shrink: 0;
-    width: 12px;
+    position: relative;
+}
+.ispace-sidebar-folder-icon { flex-shrink: 0; color: var(--ispace-color-brand-400); display: block; }
+.ispace-sidebar-folder-chevron {
+    flex-shrink: 0;
     color: var(--ispace-color-text-quaternary);
-    transition: transform 0.15s ease;
+    transition: transform 0.15s ease, color 0.15s ease;
+    margin-left: -2px;
 }
-.ispace-sidebar-chevron--empty {
-    visibility: hidden;
-    width: 12px;
-    flex-shrink: 0;
-}
-.ispace-sidebar-folder-icon { flex-shrink: 0; color: var(--ispace-color-brand-400); }
 .ispace-sidebar-group-name {
     flex: 1;
     overflow: hidden;
@@ -325,7 +353,7 @@
     line-height: 1.3;
     flex-shrink: 0;
 }
-.ispace-sidebar-group-children { padding: 2px 0 4px var(--ispace-space-4); }
+.ispace-sidebar-group-children { padding: 1px 0 4px var(--ispace-space-4); }
 
 .ispace-sidebar-link--doc { font-size: var(--ispace-font-xs); padding-left: var(--ispace-space-2); }
 .ispace-sidebar-empty {
@@ -350,39 +378,64 @@
 .ispace-sidebar--collapsed .ispace-sidebar-badge,
 .ispace-sidebar--collapsed .ispace-sidebar-empty,
 .ispace-sidebar--collapsed .ispace-sidebar-empty-state,
-.ispace-sidebar--collapsed .ispace-sidebar-chevron,
-.ispace-sidebar--collapsed .ispace-sidebar-chevron--empty,
-.ispace-sidebar--collapsed .ispace-sidebar-folder-icon { display: none; }
-.ispace-sidebar--collapsed .ispace-sidebar-group-toggle { justify-content: center; padding: var(--ispace-space-2); }
-.ispace-sidebar--collapsed .ispace-sidebar-toggle { left: 50%; transform: translate(-50%, -50%); }
+.ispace-sidebar--collapsed .ispace-sidebar-toggle-icon,
+.ispace-sidebar--collapsed .ispace-sidebar-folder-chevron { display: none; }
+.ispace-sidebar--collapsed .ispace-sidebar-group-toggle { justify-content: center; padding: var(--ispace-space-1-5) var(--ispace-space-2); }
+.ispace-sidebar--collapsed .ispace-sidebar-toggle { right: 50%; transform: translate(50%, -50%); }
 .ispace-sidebar--collapsed .ispace-sidebar-toggle svg { transform: rotate(180deg); }
 
 /* 右键上下文菜单 */
 .ispace-context-menu {
     position: fixed;
     z-index: 1100;
-    min-width: 150px;
+    min-width: 170px;
     background: var(--ispace-color-surface-0);
     border: 1px solid var(--ispace-color-border-medium);
-    border-radius: var(--ispace-radius-md);
+    border-radius: var(--ispace-radius-lg);
     box-shadow: var(--ispace-shadow-lg);
-    padding: var(--ispace-space-1);
+    padding: var(--ispace-space-1-5);
+    overflow: hidden;
 }
 .ispace-context-menu-item {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: var(--ispace-space-2);
     width: 100%;
-    padding: var(--ispace-space-1-5) var(--ispace-space-3);
+    padding: var(--ispace-space-2) var(--ispace-space-3);
     font-size: var(--ispace-font-sm);
+    font-weight: var(--ispace-font-normal);
     color: var(--ispace-color-text-secondary);
     background: none;
     border: none;
-    border-radius: var(--ispace-radius-sm);
+    border-radius: var(--ispace-radius-md);
     cursor: pointer;
     text-align: left;
-    transition: background var(--ispace-duration-fast);
+    transition: all var(--ispace-duration-fast);
+}
+.ispace-context-menu-item svg {
+    flex-shrink: 0;
+    color: var(--ispace-color-text-quaternary);
+    transition: color var(--ispace-duration-fast);
 }
 .ispace-context-menu-item:hover {
     background: var(--ispace-color-surface-100);
     color: var(--ispace-color-text-primary);
+}
+.ispace-context-menu-item:hover svg {
+    color: var(--ispace-color-text-secondary);
+}
+.ispace-context-menu-item--danger {
+    color: var(--ispace-color-error-text);
+}
+.ispace-context-menu-item--danger:hover {
+    background: var(--ispace-color-error-bg);
+    color: var(--ispace-color-error-text);
+}
+.ispace-context-menu-item--danger:hover svg {
+    color: var(--ispace-color-error-text);
+}
+.ispace-context-menu-item--danger svg {
+    color: var(--ispace-color-error-text);
+    opacity: 0.7;
 }
 </style>
