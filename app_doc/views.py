@@ -1942,6 +1942,19 @@ def share_doc_check(request):
 @require_http_methods(['GET','POST'])
 def manage_doc_share(request):
     if request.method == 'GET':
+        # 获取用户的分享列表
+        share_query = DocShare.objects.filter(doc__create_user=request.user).order_by('-create_time')
+        paginator = Paginator(share_query, 15)
+        page = request.GET.get('page', 1)
+        try:
+            shares = paginator.page(page)
+        except PageNotAnInteger:
+            shares = paginator.page(1)
+        except EmptyPage:
+            shares = paginator.page(paginator.num_pages)
+        # 获取用户可分享的文档列表（用于创建分享）
+        user_docs = Doc.objects.filter(create_user=request.user, status=1).order_by('name')
+        query_string = request.GET.urlencode()
         return render(request, 'app_doc/manage/manage_doc_share.html', locals())
     else:
         types = request.POST.get('type')
@@ -2014,6 +2027,45 @@ def manage_doc_share(request):
             else:
                 return JsonResponse({'status':False,'data':_('参数错误')})
             return JsonResponse({'status':True,'data':'ok'})
+        # 创建分享
+        elif types == '4':
+            doc_id = request.POST.get('doc_id', '')
+            share_type = request.POST.get('share_type', '0')
+            share_value = request.POST.get('share_value', '')
+            try:
+                doc = Doc.objects.get(id=doc_id, create_user=request.user)
+                share_token = hashlib.md5()
+                share_token.update("{}_{}".format(doc_id, request.user.username).encode())
+                share_token = share_token.hexdigest()
+                DocShare.objects.update_or_create(
+                    token=share_token,
+                    defaults={
+                        'doc': doc,
+                        'share_type': int(share_type),
+                        'share_value': share_value,
+                        'is_enable': True
+                    }
+                )
+                return JsonResponse({'status': True, 'data': {
+                    'token': share_token,
+                    'share_type': int(share_type),
+                    'share_value': share_value
+                }})
+            except Doc.DoesNotExist:
+                return JsonResponse({'status': False, 'data': _('文档不存在')})
+        # 修改分享码
+        elif types == '5':
+            token = request.POST.get('token', '')
+            share_value = request.POST.get('share_value', '')
+            try:
+                share = DocShare.objects.get(token=token, doc__create_user=request.user)
+                share.share_value = share_value
+                share.save()
+                return JsonResponse({'status': True, 'data': 'ok'})
+            except DocShare.DoesNotExist:
+                return JsonResponse({'status': False, 'data': _('分享不存在')})
+        else:
+            return JsonResponse({'status': False, 'data': _('类型错误')})
 
 
 # 创建文档模板
@@ -2735,6 +2787,43 @@ def manage_img_group(request):
                     group_name = group_name
                 )
                 return JsonResponse({'status':True,'data':'ok'})
+        # 创建分享
+        elif types == '4':
+            doc_id = request.POST.get('doc_id', '')
+            share_type = request.POST.get('share_type', '0')
+            share_value = request.POST.get('share_value', '')
+            try:
+                doc = Doc.objects.get(id=doc_id, create_user=request.user)
+                share_token = hashlib.md5()
+                share_token.update("{}_{}".format(doc_id, request.user.username).encode())
+                share_token = share_token.hexdigest()
+                DocShare.objects.update_or_create(
+                    token=share_token,
+                    defaults={
+                        'doc': doc,
+                        'share_type': int(share_type),
+                        'share_value': share_value,
+                        'is_enable': True
+                    }
+                )
+                return JsonResponse({'status': True, 'data': {
+                    'token': share_token,
+                    'share_type': int(share_type),
+                    'share_value': share_value
+                }})
+            except Doc.DoesNotExist:
+                return JsonResponse({'status': False, 'data': _('文档不存在')})
+        # 修改分享码
+        elif types == '5':
+            token = request.POST.get('token', '')
+            share_value = request.POST.get('share_value', '')
+            try:
+                share = DocShare.objects.get(token=token, doc__create_user=request.user)
+                share.share_value = share_value
+                share.save()
+                return JsonResponse({'status': True, 'data': 'ok'})
+            except DocShare.DoesNotExist:
+                return JsonResponse({'status': False, 'data': _('分享不存在')})
             else:
                 return JsonResponse({'status':False,'data':_('名称无效')})
         # 修改分组
