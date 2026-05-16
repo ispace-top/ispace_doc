@@ -79,13 +79,62 @@
 
 {% block content %}
 <div class="ispace-page-header">
-    <h1 class="ispace-page-title">{{ project.name }}</h1>
-    {% if project.intro %}
-    <div class="ispace-mt-4 ispace-content-card">
-        <div class="markdown-body">{{ project.intro|safe }}</div>
+    <div class="ispace-flex-between">
+        <h1 class="ispace-page-title">{{ project.name }}</h1>
+        {% if user.is_authenticated %}
+        <div class="ispace-flex-center ispace-gap-2">
+            <button class="ispace-btn ispace-btn-ghost ispace-btn-sm" id="collect-pro-btn" onclick="toggleCollectPro()" title="{% if is_collect_pro %}取消收藏{% else %}收藏文集{% endif %}">
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="{% if is_collect_pro %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                <span id="collect-pro-text">{% if is_collect_pro %}已收藏{% else %}收藏{% endif %}</span>
+            </button>
+        </div>
+        {% endif %}
     </div>
-    {% endif %}
+
+    {# --- Stats Bar --- #}
+    <div class="ispace-doc-meta" style="display:flex;flex-wrap:wrap;align-items:center;gap:var(--ispace-space-2) var(--ispace-space-4);margin-top:var(--ispace-space-3);">
+        <span style="display:inline-flex;align-items:center;gap:4px;font-size:var(--ispace-font-sm);color:var(--ispace-color-text-secondary);">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+            {{ project.create_user.first_name|default:project.create_user.username }}
+        </span>
+        <span style="display:inline-flex;align-items:center;gap:4px;font-size:var(--ispace-font-sm);color:var(--ispace-color-text-tertiary);">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+            创建于 {{ project.create_time|date:"Y-m-d" }}
+        </span>
+        <span style="display:inline-flex;align-items:center;gap:4px;font-size:var(--ispace-font-sm);color:var(--ispace-color-text-tertiary);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+            {{ toc_cnt }} 篇文档
+        </span>
+        {% if colla_user_list %}
+        <span style="display:inline-flex;align-items:center;gap:4px;font-size:var(--ispace-font-sm);color:var(--ispace-color-text-tertiary);">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
+            {{ colla_user_list.count }} 位协作者
+        </span>
+        {% endif %}
+    </div>
 </div>
+
+{% if project.intro %}
+<div class="ispace-content-card ispace-mt-4">
+    <div class="markdown-body">{{ project.intro|safe }}</div>
+</div>
+{% endif %}
+
+{# --- Collaborators --- #}
+{% if colla_user_list %}
+<div class="ispace-content-card ispace-mt-4">
+    <h3 class="ispace-font-semibold ispace-mb-3" style="font-size:var(--ispace-font-base);">协作成员</h3>
+    <div class="ispace-flex-center ispace-gap-3" style="flex-wrap:wrap;">
+        {% for item in colla_user_list %}
+        <span style="display:inline-flex;align-items:center;gap:6px;font-size:var(--ispace-font-sm);">
+            <span class="ispace-comment-avatar">{{ item.user.first_name|default:item.user.username|slice:":1"|upper }}</span>
+            <span>{{ item.user.first_name|default:item.user.username }}</span>
+            <span class="ispace-badge {% if item.role == 1 %}ispace-badge-info{% else %}ispace-badge-secondary{% endif %} ispace-text-xs">{% if item.role == 1 %}编辑{% else %}只读{% endif %}</span>
+        </span>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
 
 {% if new_docs %}
 <div class="ispace-content-card ispace-mt-4">
@@ -118,5 +167,28 @@
 {% block scripts %}
 <script>
 function toggleSidebar(){document.getElementById('doc-sidebar').style.display='none';document.querySelector('.ispace-app-layout').classList.remove('has-sidebar');}
+
+function toggleCollectPro(){
+    var btn = document.getElementById('collect-pro-btn');
+    var txt = document.getElementById('collect-pro-text');
+    var fd = new FormData();
+    fd.append('csrfmiddlewaretoken','{{ csrf_token }}');
+    fd.append('collect_id',{{ project.id }});
+    fd.append('collect_type',2);
+    fetch('{% url "my_collect" %}',{method:'POST',body:fd})
+    .then(function(r){return r.json();})
+    .then(function(r){
+        if(r.status){
+            var iconSvg = btn.querySelector('svg');
+            if(r.data==='add'){
+                iconSvg.setAttribute('fill','currentColor');
+                txt.textContent='已收藏';
+            }else{
+                iconSvg.setAttribute('fill','none');
+                txt.textContent='收藏';
+            }
+        }
+    });
+}
 </script>
 {% endblock %}
