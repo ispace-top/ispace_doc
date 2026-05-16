@@ -2617,12 +2617,15 @@ def manage_image(request):
             all_img_cnt = Image.objects.filter(user=request.user).count()
             no_group_cnt = Image.objects.filter(user=request.user,group_id=None).count() # 获取所有未分组的图片数量
             g_id = int(request.GET.get('group', 0))  # 图片分组id
+            kw = request.GET.get('kw', '').strip()  # 搜索关键词
             if int(g_id) == 0:
                 image_list = Image.objects.filter(user=request.user).order_by('-create_time')  # 查询所有图片
             elif int(g_id) == -1:
                 image_list = Image.objects.filter(user=request.user,group_id=None).order_by('-create_time')  # 查询未分组的图片
             else:
                 image_list = Image.objects.filter(user=request.user,group_id=g_id).order_by('-create_time')  # 查询指定分组的图片
+            if kw:
+                image_list = image_list.filter(file_name__icontains=kw)
             paginator = Paginator(image_list, 18)
             page = request.GET.get('page', 1)
             try:

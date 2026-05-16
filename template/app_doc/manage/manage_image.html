@@ -25,12 +25,21 @@
             <button class="ispace-btn ispace-btn-sm ispace-btn-danger" id="batch-del-img">{% trans "批量删除" %}</button>
             <button class="ispace-btn ispace-btn-sm ispace-btn-secondary" id="batch-move-img">{% trans "批量移动" %}</button>
         </div>
-        <div class="ispace-flex-center ispace-gap-2 ispace-mt-3" style="flex-wrap:wrap;">
-            <a href="{% url 'manage_image' %}?group=0" class="ispace-btn ispace-btn-sm {% if g_id == 0 or not g_id %}ispace-btn-primary{% else %}ispace-btn-ghost{% endif %}">{% trans "全部图片" %}({{ all_img_cnt }})</a>
-            <a href="{% url 'manage_image' %}?group=-1" class="ispace-btn ispace-btn-sm {% if g_id == -1 %}ispace-btn-primary{% else %}ispace-btn-ghost{% endif %}">{% trans "未分组" %}({{ no_group_cnt }})</a>
-            {% for group in groups %}
-            <a href="{% url 'manage_image' %}?group={{ group.id }}" class="ispace-btn ispace-btn-sm {% if g_id == group.id %}ispace-btn-primary{% else %}ispace-btn-ghost{% endif %}">{{ group.group_name|safe }}({{ group.id|img_group_cnt }})</a>
-            {% endfor %}
+        <div class="ispace-flex-between ispace-mt-3" style="flex-wrap:wrap;gap:8px;">
+            <div class="ispace-flex-center ispace-gap-2" style="flex-wrap:wrap;">
+                <a href="{% url 'manage_image' %}?group=0{% if kw %}&kw={{ kw|urlencode }}{% endif %}" class="ispace-btn ispace-btn-sm {% if g_id == 0 or not g_id %}ispace-btn-primary{% else %}ispace-btn-ghost{% endif %}">{% trans "全部图片" %}({{ all_img_cnt }})</a>
+                <a href="{% url 'manage_image' %}?group=-1{% if kw %}&kw={{ kw|urlencode }}{% endif %}" class="ispace-btn ispace-btn-sm {% if g_id == -1 %}ispace-btn-primary{% else %}ispace-btn-ghost{% endif %}">{% trans "未分组" %}({{ no_group_cnt }})</a>
+                {% for group in groups %}
+                <a href="{% url 'manage_image' %}?group={{ group.id }}{% if kw %}&kw={{ kw|urlencode }}{% endif %}" class="ispace-btn ispace-btn-sm {% if g_id == group.id %}ispace-btn-primary{% else %}ispace-btn-ghost{% endif %}">{{ group.group_name|safe }}({{ group.id|img_group_cnt }})</a>
+                {% endfor %}
+            </div>
+            <div class="ispace-flex-center ispace-gap-2">
+                <span class="ispace-text-sm ispace-text-quaternary">{% trans "共" %} {{ all_img_cnt }} {% trans "张图片" %}</span>
+                <div class="ispace-search-input-wrap" style="max-width:200px;width:100%;">
+                    <svg class="ispace-search-input-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" class="ispace-form-input" id="imgSearchKw" placeholder="{% trans '搜索图片名称...' %}" value="{{ kw|default:'' }}" style="padding-left:32px;" onkeyup="if(event.key==='Enter')doImgSearch()">
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -42,9 +51,11 @@
         <div id="images" style="display:flex;flex-wrap:wrap;gap:16px;padding:20px;">
             {% for img in images %}
             <div class="image-list" style="position:relative;width:160px;border:1px solid var(--ispace-color-border-light);border-radius:8px;overflow:hidden;">
-                <img class="image-list-i" src="{{ img.file_path }}" alt="{{ img.file_name }}" title="{{ img.file_name }}" style="width:100%;height:120px;object-fit:cover;cursor:pointer;">
+                <img class="image-list-i" src="{{ img.file_path }}" data-original="{{ img.file_path }}" alt="{{ img.file_name }}" title="{{ img.file_name }}" style="width:100%;height:120px;object-fit:cover;cursor:pointer;">
                 <div class="opera-img-btn" style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:var(--ispace-color-surface-1);">
                     <input type="checkbox" class="batch-image-checkbox" name="batch-image" value="{{ img.id }}">
+                    <a href="javascript:void(0);" class="copy-md-link" title="{% trans '复制Markdown链接' %}" data-url="{{ img.file_path }}" data-name="{{ img.file_name }}" style="color:var(--ispace-color-text-secondary);text-decoration:none;font-size:14px;">MD</a>
+                    <a href="javascript:void(0);" class="copy-url-link" title="{% trans '复制图片链接' %}" data-url="{{ img.file_path }}" style="color:var(--ispace-color-text-secondary);text-decoration:none;font-size:14px;">🔗</a>
                     <a href="javascript:void(0);" class="move-img" title="{% trans '移动分组' %}" data-id="{{ img.id }}" style="color:var(--ispace-color-text-secondary);text-decoration:none;font-size:14px;">&#8644;</a>
                     <a href="javascript:void(0);" class="del-img" title="{% trans '删除图片' %}" data-src="{{ img.file_path }}" data-id="{{ img.id }}" style="color:#ef4444;text-decoration:none;font-size:14px;">&#10005;</a>
                 </div>
@@ -60,13 +71,13 @@
         <hr style="margin:16px 0;">
         <div class="ispace-flex-center" style="justify-content:center;gap:8px;">
             {% if images.has_previous %}
-            <a href="?page={{ images.previous_page_number }}&group={{ g_id|default:0 }}" class="ispace-btn ispace-btn-sm ispace-btn-secondary">{% trans "上一页" %}</a>
+            <a href="?page={{ images.previous_page_number }}&group={{ g_id|default:0 }}{% if kw %}&kw={{ kw|urlencode }}{% endif %}" class="ispace-btn ispace-btn-sm ispace-btn-secondary">{% trans "上一页" %}</a>
             {% else %}
             <span class="ispace-btn ispace-btn-sm" style="opacity:0.5;pointer-events:none;">{% trans "上一页" %}</span>
             {% endif %}
             <span class="ispace-text-sm">{{ images.number }} / {{ images.paginator.num_pages }}</span>
             {% if images.has_next %}
-            <a href="?page={{ images.next_page_number }}&group={{ g_id|default:0 }}" class="ispace-btn ispace-btn-sm ispace-btn-secondary">{% trans "下一页" %}</a>
+            <a href="?page={{ images.next_page_number }}&group={{ g_id|default:0 }}{% if kw %}&kw={{ kw|urlencode }}{% endif %}" class="ispace-btn ispace-btn-sm ispace-btn-secondary">{% trans "下一页" %}</a>
             {% else %}
             <span class="ispace-btn ispace-btn-sm" style="opacity:0.5;pointer-events:none;">{% trans "下一页" %}</span>
             {% endif %}
@@ -104,19 +115,89 @@
 <script>
 function getCSRF() { return document.querySelector('[name=csrfmiddlewaretoken]').value; }
 
+// --- Image Search ---
+function doImgSearch() {
+    var kw = document.getElementById('imgSearchKw').value.trim();
+    var params = new URLSearchParams(window.location.search);
+    if (kw) { params.set('kw', kw); } else { params.delete('kw'); }
+    params.set('page', '1');
+    window.location.href = '?' + params.toString();
+}
+
 // --- Viewer.js for image preview ---
 (function() {
     var container = document.getElementById('images');
     if (container) {
         var viewer = new Viewer(container, {
             url: 'data-original',
-            fullscreen: false,
-            rotatable: false,
-            scalable: false,
-            button: false
+            navbar: false,
+            toolbar: {
+                zoomIn: true,
+                zoomOut: true,
+                oneToOne: true,
+                reset: true,
+                prev: true,
+                play: false,
+                next: true,
+                rotateLeft: true,
+                rotateRight: true,
+                flipHorizontal: true,
+                flipVertical: true
+            }
         });
     }
 })();
+
+// --- Copy Link ---
+(function() {
+    var imgContainer = document.getElementById('images');
+    if (!imgContainer) return;
+    imgContainer.addEventListener('click', function(e) {
+        var mdBtn = e.target.closest('.copy-md-link');
+        var urlBtn = e.target.closest('.copy-url-link');
+        if (!mdBtn && !urlBtn) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        var url = (mdBtn || urlBtn).getAttribute('data-url');
+        var absUrl = window.location.origin + url;
+        var text;
+        if (mdBtn) {
+            var name = mdBtn.getAttribute('data-name') || 'image';
+            text = '![' + name + '](' + absUrl + ')';
+        } else {
+            text = absUrl;
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function() {
+                showSuccess('{% trans "已复制到剪贴板" %}');
+            }).catch(function() {
+                fallbackCopy(text);
+            });
+        } else {
+            fallbackCopy(text);
+        }
+    });
+})();
+
+function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    ta.style.top = '-9999px';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try {
+        document.execCommand('copy');
+        showSuccess('{% trans "已复制到剪贴板" %}');
+    } catch(e) {
+        showError('{% trans "复制失败，请手动复制" %}');
+    }
+    document.body.removeChild(ta);
+}
 
 // --- Upload ---
 document.getElementById('upload_img_btn').addEventListener('click', function() {
@@ -158,9 +239,12 @@ document.getElementById('upload_img_input').addEventListener('change', function(
 });
 
 // --- Single Delete ---
-document.getElementById('images').addEventListener('click', function(e) {
-    var delBtn = e.target.closest('.del-img');
-    if (!delBtn) return;
+(function() {
+    var imgContainer = document.getElementById('images');
+    if (!imgContainer) return;
+    imgContainer.addEventListener('click', function(e) {
+        var delBtn = e.target.closest('.del-img');
+        if (!delBtn) return;
     var imgId = delBtn.getAttribute('data-id');
     var imgSrc = delBtn.getAttribute('data-src');
 
@@ -205,16 +289,21 @@ document.getElementById('images').addEventListener('click', function(e) {
             showError('{% trans "网络异常" %}');
         });
     });
-});
+    });  // close outer addEventListener
+})();    // close IIFE
 
 // --- Single Move ---
 var _currentMoveImgId = null;
-document.getElementById('images').addEventListener('click', function(e) {
-    var moveBtn = e.target.closest('.move-img');
-    if (!moveBtn) return;
-    _currentMoveImgId = moveBtn.getAttribute('data-id');
-    iSpaceDoc.Modal.open('moveGroupModal');
-});
+(function() {
+    var imgContainer = document.getElementById('images');
+    if (!imgContainer) return;
+    imgContainer.addEventListener('click', function(e) {
+        var moveBtn = e.target.closest('.move-img');
+        if (!moveBtn) return;
+        _currentMoveImgId = moveBtn.getAttribute('data-id');
+        iSpaceDoc.Modal.open('moveGroupModal');
+    });
+})();
 
 document.getElementById('confirm-move-img').addEventListener('click', function() {
     var groupId = document.getElementById('modal_group_id').value;
