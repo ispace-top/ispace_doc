@@ -1073,6 +1073,16 @@ def doc(request,pro_id,doc_id):
                 is_share = False
             # 获取文集下一级文档
             # project_docs = Doc.objects.filter(top_doc=doc.top_doc, parent_doc=0, status=1).order_by('sort')
+            # 计算上一篇/下一篇文档
+            prev_doc = None
+            next_doc = None
+            for i, item in enumerate(toc_list):
+                if item['id'] == doc.id:
+                    if i > 0:
+                        prev_doc = toc_list[i - 1]
+                    if i < len(toc_list) - 1:
+                        next_doc = toc_list[i + 1]
+                    break
             return render(request,'app_doc/doc.html',locals())
         else:
             return HttpResponse(_('参数错误'))
