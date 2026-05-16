@@ -1,4 +1,4 @@
-# coding:utf-8
+﻿# coding:utf-8
 # @文件: views_user.py
 # @创建者：州的先生
 # #日期：2020/11/7
@@ -33,6 +33,24 @@ import hashlib
 # 个人中心
 @login_required()
 def user_center(request):
+    from app_doc.models import MyCollect
+    # 获取当前tab
+    current_tab = request.GET.get('tab', 'profile')
+    # redirect tabs that have dedicated fully-functional pages
+    tab_redirects = {
+        'manage_project': 'manage_project',
+        'manage_doc': 'manage_doc',
+        'manage_doc_temp': 'manage_doctemp',
+        'collect_doc': 'manage_collect',
+        'collect_project': 'manage_collect',
+        'colla_project': 'manage_pro_colla_self',
+    }
+    if current_tab in tab_redirects:
+        return redirect(tab_redirects[current_tab])
+    # 获取用户统计信息
+    user_project_count = Project.objects.filter(create_user=request.user).count()
+    user_doc_count = Doc.objects.filter(create_user=request.user).count()
+    user_collect_count = MyCollect.objects.filter(create_user=request.user).count()
     return render(request,'app_doc/user/user_center.html',locals())
 
 
@@ -186,68 +204,6 @@ def user_center_menu(request):
                 },
             ]
         },
-        {
-            "id": "download",
-            "title": _("客户端下载"),
-            "icon": "layui-icon layui-icon-template-1",
-            "type": 0,
-            "href": "",
-            "children": [
-                {
-                    "id": 702,
-                    "title": _("浏览器扩展"),
-                    "icon": "layui-icon layui-icon-face-cry",
-                    "type": 1,
-                    "openType": "_blank",
-                    "href": "https://gitee.com/zmister/mrdoc-webclipper"
-                },
-                {
-                    "id": 703,
-                    "title": _("桌面客户端"),
-                    "icon": "layui-icon layui-icon-face-cry",
-                    "type": 1,
-                    "openType": "_blank",
-                    "href": "https://gitee.com/zmister/mrdoc-desktop-release"
-                },
-                {
-                    "id": 704,
-                    "title": _("移动端APP"),
-                    "icon": "layui-icon layui-icon-face-cry",
-                    "type": 1,
-                    "openType": "_blank",
-                    "href": "https://gitee.com/zmister/mrdoc-app-release"
-                },
-                {
-                    "id": 705,
-                    "title": _("Obsidian插件"),
-                    "icon": "layui-icon layui-icon-face-cry",
-                    "type": 1,
-                    "openType": "_blank",
-                    "href": "https://gitee.com/zmister/obsidian-mrdoc-plugin"
-                },
-            ]
-        },
-        {
-            "id": "common",
-            "title": "使用帮助",
-            "icon": "layui-icon layui-icon-template-1",
-            "type": 0,
-            "href": "",
-            "children": [{
-                "id": 802,
-                "title": "使用手册",
-                "icon": "layui-icon layui-icon-face-smile",
-                "type": 1,
-                "openType": "_blank",
-                "href": "https://doc.mrdoc.pro/project/54/"
-            },{
-                "id": 'doc-example',
-                "title": _("文档示例"),
-                "icon": "layui-icon layui-icon-face-smile",
-                "type": 1,
-                "openType": "_blank",
-                "href": "https://doc.mrdoc.pro/p/example/"
-            }]
-        }
+
     ]
     return JsonResponse(menu_data,safe=False)

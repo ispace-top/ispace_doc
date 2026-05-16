@@ -81,7 +81,7 @@
                     <h3 class="ispace-sidebar-section-title">{% trans "内容管理" %}</h3>
                     <ul class="ispace-sidebar-nav">
                         <li class="ispace-sidebar-item">
-                            <a href="?tab=manage_project" class="ispace-sidebar-link {% if current_tab == 'manage_project' %}active{% endif %}">
+                            <a href="{% url 'manage_project' %}" class="ispace-sidebar-link">
                                 <span class="ispace-sidebar-icon">
                                     <svg viewBox="0 0 20 20" fill="currentColor">
                                         <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/>
@@ -92,7 +92,7 @@
                             </a>
                         </li>
                         <li class="ispace-sidebar-item">
-                            <a href="?tab=manage_doc" class="ispace-sidebar-link {% if current_tab == 'manage_doc' %}active{% endif %}">
+                            <a href="{% url 'manage_doc' %}" class="ispace-sidebar-link">
                                 <span class="ispace-sidebar-icon">
                                     <svg viewBox="0 0 20 20" fill="currentColor">
                                         <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0v12h8V4H6z" clip-rule="evenodd"/>
@@ -103,7 +103,7 @@
                             </a>
                         </li>
                         <li class="ispace-sidebar-item">
-                            <a href="?tab=manage_doc_temp" class="ispace-sidebar-link {% if current_tab == 'manage_doc_temp' %}active{% endif %}">
+                            <a href="{% url 'manage_doctemp' %}" class="ispace-sidebar-link">
                                 <span class="ispace-sidebar-icon">
                                     <svg viewBox="0 0 20 20" fill="currentColor">
                                         <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h4a1 1 0 010 2H6.414l2.293 2.293a1 1 0 01-1.414 1.414L5 6.414V8a1 1 0 01-2 0V4zm9 1a1 1 0 010-2h4a1 1 0 011 1v4a1 1 0 01-2 0V5.414l-2.293 2.293a1 1 0 11-1.414-1.414L13.586 4H12zm-9 7a1 1 0 112 0v1.586l2.293-2.293a1 1 0 111.414 1.414L6.414 14H8a1 1 0 110 2H4a1 1 0 01-1-1v-4zm13-1a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 110-2h1.586l-2.293-2.293a1 1 0 111.414-1.414L16 13.586V12a1 1 0 011-1z" clip-rule="evenodd"/>
@@ -119,7 +119,7 @@
                     <h3 class="ispace-sidebar-section-title">{% trans "收藏与协作" %}</h3>
                     <ul class="ispace-sidebar-nav">
                         <li class="ispace-sidebar-item">
-                            <a href="?tab=collect_doc" class="ispace-sidebar-link {% if current_tab == 'collect_doc' %}active{% endif %}">
+                            <a href="{% url 'manage_collect' %}" class="ispace-sidebar-link">
                                 <span class="ispace-sidebar-icon">
                                     <svg viewBox="0 0 20 20" fill="currentColor">
                                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
@@ -129,7 +129,7 @@
                             </a>
                         </li>
                         <li class="ispace-sidebar-item">
-                            <a href="?tab=collect_project" class="ispace-sidebar-link {% if current_tab == 'collect_project' %}active{% endif %}">
+                            <a href="{% url 'manage_collect' %}" class="ispace-sidebar-link">
                                 <span class="ispace-sidebar-icon">
                                     <svg viewBox="0 0 20 20" fill="currentColor">
                                         <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
@@ -139,7 +139,7 @@
                             </a>
                         </li>
                         <li class="ispace-sidebar-item">
-                            <a href="?tab=colla_project" class="ispace-sidebar-link {% if current_tab == 'colla_project' %}active{% endif %}">
+                            <a href="{% url 'manage_pro_colla_self' %}" class="ispace-sidebar-link">
                                 <span class="ispace-sidebar-icon">
                                     <svg viewBox="0 0 20 20" fill="currentColor">
                                         <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
