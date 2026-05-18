@@ -77,11 +77,21 @@
             var pid = proMatch[1];
             var docMatch = path.match(/\/docs\/\d+\/(\d+)\//);
             if (docMatch) {
-                // Doc page: highlight doc node + expand ancestors
+                // Doc page: highlight doc node + expand ancestors + expand own children
                 var docLink = document.querySelector('.ispace-tree-link[href*="/docs/' + pid + '/' + docMatch[1] + '/"]');
                 if (docLink) {
                     docLink.classList.add('ispace-active');
                     var node = docLink.closest('.ispace-tree-node');
+                    // Expand current doc's own children
+                    var ownChildren = node.querySelector(':scope > .ispace-tree-children');
+                    if (ownChildren) {
+                        ownChildren.style.display = 'block';
+                        var ownToggle = node.querySelector(':scope > .ispace-tree-row > .ispace-tree-toggle');
+                        if (ownToggle && ownToggle.getAttribute('data-has-children') === '1') {
+                            updateTreeIcon(ownToggle, 'folder-open');
+                            ownToggle.setAttribute('data-expanded', '1');
+                        }
+                    }
                     while (node) {
                         var childrenContainer = node.parentElement;
                         if (!childrenContainer || !childrenContainer.classList.contains('ispace-tree-children')) break;
@@ -97,9 +107,23 @@
                     }
                 }
             } else {
-                // Root doc page: highlight the root tree node
+                // Root doc page: highlight the root tree node + expand children
                 var proLink = document.querySelector('.ispace-tree-link[href$="/docs/' + pid + '/"]');
-                if (proLink) proLink.classList.add('ispace-active');
+                if (proLink) {
+                    proLink.classList.add('ispace-active');
+                    var proNode = proLink.closest('.ispace-tree-node');
+                    if (proNode) {
+                        var childrenContainer = proNode.querySelector(':scope > .ispace-tree-children');
+                        if (childrenContainer) {
+                            childrenContainer.style.display = 'block';
+                            var toggle = proNode.querySelector(':scope > .ispace-tree-row > .ispace-tree-toggle');
+                            if (toggle && toggle.getAttribute('data-has-children') === '1') {
+                                updateTreeIcon(toggle, 'folder-open');
+                                toggle.setAttribute('data-expanded', '1');
+                            }
+                        }
+                    }
+                }
             }
         }
     })();

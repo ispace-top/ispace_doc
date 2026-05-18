@@ -48,6 +48,8 @@
 
 <body class="{% block body_class %}{% endblock %}">
 
+    {% csrf_token %}
+
     {% block skip_link %}
     <a href="#main-content" class="ispace-skip-link">跳到主要内容</a>
     {% endblock %}

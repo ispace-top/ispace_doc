@@ -46,6 +46,41 @@
 
 {# --- Unified Doc Toolbar --- #}
 <div class="ispace-doc-toolbar">
+    {% if is_project_root %}
+    {# --- Project Root Toolbar --- #}
+    <div class="ispace-doc-toolbar-left">
+        <span class="ispace-doc-toolbar-author">
+            <span class="ispace-doc-toolbar-avatar">{{ project.create_user.first_name|default:project.create_user.username|slice:":1" }}</span>
+            {{ project.create_user.first_name|default:project.create_user.username }}
+        </span>
+        <span class="ispace-doc-toolbar-time">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+            创建于 {{ project.create_time|date:"Y-m-d H:i" }}
+        </span>
+        <span class="ispace-doc-toolbar-time">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+            {{ toc_cnt }} 篇文档
+        </span>
+        {% if colla_user_list %}
+        <span class="ispace-doc-toolbar-time">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
+            {{ colla_user_list.count }} 位协作者
+        </span>
+        {% endif %}
+    </div>
+    <div class="ispace-doc-toolbar-right">
+        {% if user.is_authenticated %}
+        <button class="ispace-btn ispace-btn-ghost ispace-btn-sm" id="collect-pro-btn" onclick="toggleCollectPro()" title="{% if is_collect_pro %}取消收藏{% else %}收藏文集{% endif %}">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="{% if is_collect_pro %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            <span id="collect-pro-text">{% if is_collect_pro %}已收藏{% else %}收藏{% endif %}</span>
+        </button>
+        {% endif %}
+        {% if request.user == project.create_user or colla_user > 0 %}
+        <button class="ispace-btn ispace-btn-primary ispace-btn-sm" onclick="enterCreateMode()" id="header-add-btn">添加文档</button>
+        {% endif %}
+    </div>
+    {% else %}
+    {# --- Document Toolbar --- #}
     <div class="ispace-doc-toolbar-left">
         <span class="ispace-doc-toolbar-author">
             <span class="ispace-doc-toolbar-avatar">{{ doc.create_user.first_name|default:doc.create_user.username|slice:":1" }}</span>
@@ -97,6 +132,7 @@
         {% endif %}
         {% endif %}
     </div>
+    {% endif %}
 </div>
 
 {# --- Document Content (no card background) --- #}
@@ -136,6 +172,7 @@
 }
 </style>
 
+{% if not is_project_root %}
 {# --- Like + Reply at end of doc --- #}
 <div class="ispace-doc-engagement" id="doc-engagement">
     <button class="ispace-doc-like-btn" id="doc-like-btn" onclick="toggleDocLike()">
@@ -149,7 +186,9 @@
         <span>回复</span>
     </button>
 </div>
+{% endif %}
 
+{% if not is_project_root %}
 {# --- Previous / Next Navigation --- #}
 <div class="ispace-flex-between ispace-mt-4" style="gap:var(--ispace-space-3);">
     <div>
@@ -169,7 +208,9 @@
         {% endif %}
     </div>
 </div>
+{% endif %}
 
+{% if not is_project_root %}
 {# --- History data (hidden) --- #}
 {% if doc_history %}
 <script id="doc-history-data" type="application/json">[
@@ -180,7 +221,9 @@
 {% else %}
 <script id="doc-history-data" type="application/json">[{"id":0,"user":"{{ doc.create_user.first_name|default:doc.create_user.username|escapejs }}","time":"{{ doc.create_time|date:'Y-m-d H:i' }}"}]</script>
 {% endif %}
+{% endif %}
 
+{% if not is_project_root %}
 {# --- Share Modal --- #}
 <div class="ispace-modal-backdrop" id="shareModal" style="display:none;">
     <div class="ispace-modal ispace-modal-sm">
@@ -224,7 +267,8 @@
         </div>
     </div>
 </div>
-{% include "includes/doc_comments.html" %}
+{% endif %}
+{% if not is_project_root %}{% include "includes/doc_comments.html" %}{% endif %}
 </div>{# end doc-view-wrap #}
 {% include "includes/inline_editor.html" %}
 {% endblock %}
@@ -494,8 +538,13 @@ window._docPreContent = '{{ doc.pre_content|escapejs }}';
 window._docContent = '{{ doc.content|escapejs }}';
 window._docName = '{{ doc.name|escapejs }}';
 window._docTags = '{{ doc_tags_str|default:""|escapejs }}';
+{% if is_project_root %}
+window._inlineSubmitFn = inlineCreateSubmit;
+window._inlineCancelFn = inlineCancelCreate;
+{% else %}
 window._inlineSubmitFn = inlineSaveDoc;
 window._inlineCancelFn = inlineCancelEdit;
+{% endif %}
 
 function enterEditMode() {
     var viewWrap = document.getElementById('doc-view-wrap');
@@ -649,6 +698,63 @@ window.addEventListener('beforeunload', function(e) {
         e.returnValue = '您有未保存的更改，确定要离开吗？';
     }
 });
+
+{% if is_project_root %}
+// ---- Project Root: Collection Toggle ----
+function toggleCollectPro(){
+    var btn = document.getElementById('collect-pro-btn');
+    var txt = document.getElementById('collect-pro-text');
+    var fd = new FormData();
+    fd.append('csrfmiddlewaretoken','{{ csrf_token }}');
+    fd.append('collect_id',{{ project.id }});
+    fd.append('collect_type',2);
+    fetch('{% url "my_collect" %}',{method:'POST',body:fd})
+    .then(function(r){return r.json();})
+    .then(function(r){
+        if(r.status){
+            var iconSvg = btn.querySelector('svg');
+            if(r.data==='add'){
+                iconSvg.setAttribute('fill','currentColor');
+                txt.textContent='已收藏';
+            }else{
+                iconSvg.setAttribute('fill','none');
+                txt.textContent='收藏';
+            }
+        }
+    });
+}
+
+// ---- Project Root: Inline Create Mode ----
+function enterCreateMode() {
+    var viewWrap = document.getElementById('doc-view-wrap');
+    if (viewWrap) viewWrap.style.display = 'none';
+    var headerBtn = document.getElementById('header-add-btn');
+    if (headerBtn) headerBtn.style.display = 'none';
+
+    window._inlineIsCreate = true;
+    window._inlineDocId = 0;
+    window._inlineProjectId = {{ project.id }};
+    document.getElementById('inline-parent-doc').value = '0';
+    document.getElementById('inline-parent-project').value = '{{ project.id }}';
+
+    initInlineEditor({{ editor_mode|default:1 }}, true);
+}
+
+function inlineCancelCreate() {
+    if (window._inlineMdChanged) {
+        if (!confirm('有未保存的更改，确定要取消吗？')) return;
+    }
+    exitCreateMode();
+}
+
+function exitCreateMode() {
+    destroyInlineEditor();
+    var viewWrap = document.getElementById('doc-view-wrap');
+    if (viewWrap) viewWrap.style.display = '';
+    var headerBtn = document.getElementById('header-add-btn');
+    if (headerBtn) headerBtn.style.display = '';
+}
+{% endif %}
 
 var _vditorReady = typeof Vditor !== 'undefined';
 

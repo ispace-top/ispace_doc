@@ -133,7 +133,8 @@ function delCollect(collect_id) {
 }
 
 // --- Batch Delete ---
-document.getElementById('batchRemove').addEventListener('click', function() {
+var batchRemoveBtn = document.getElementById('batchRemove');
+if (batchRemoveBtn) batchRemoveBtn.addEventListener('click', function() {
     var checks = document.querySelectorAll('.collect-checkbox:checked');
     if (checks.length === 0) {
         showError('{% trans "未选中任何收藏" %}');
@@ -167,7 +168,8 @@ document.getElementById('batchRemove').addEventListener('click', function() {
     });
 });
 
-document.getElementById('selectAll').addEventListener('change', function() {
+var selectAllCb = document.getElementById('selectAll');
+if (selectAllCb) selectAllCb.addEventListener('change', function() {
     document.querySelectorAll('.collect-checkbox').forEach(function(cb) { cb.checked = this.checked; });
 });
 </script>

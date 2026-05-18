@@ -548,12 +548,6 @@ def project_index(request,pro_id):
 
         # 获取搜索词
         kw = request.GET.get('kw','')
-        # 获取文集下所有一级文档
-        # project_docs = Doc.objects.filter(
-        #     top_doc=int(pro_id),
-        #     parent_doc=0,
-        #     status=1
-        # ).values('id','name','top_doc').order_by('sort')
         if kw != '':
             search_result = Doc.objects.filter(Q(pre_content__icontains=kw) | Q(name__icontains=kw),top_doc=int(pro_id))
             remove_markdown_tag(search_result)
@@ -565,14 +559,49 @@ def project_index(request,pro_id):
                 editor_mode = UserOptions.objects.get(user=request.user).editor_mode
             except ObjectDoesNotExist:
                 pass
-        doc = None  # 占位，用于 inline_editor.html 兼容
+        # 构建伪文档对象，复用 doc.html 模板
+        is_project_root = True
+        doc = type('PseudoDoc', (), {})()
+        doc.id = project.id
+        doc.name = project.name
+        doc.content = project.intro or ''
+        doc.pre_content = project.intro or ''
+        doc.editor_mode = 1
+        doc.create_user = project.create_user
+        doc.modify_time = project.create_time
+        doc.create_time = project.create_time
+        doc.top_doc = pro_id
+        doc.parent_doc = 0
+        doc.status = 1
+        doc.sort = 0
+        doc.open_children = True
+        # 文档相关变量（占位）
+        doc_tags = []
+        doc_tags_str = ''
+        prev_doc = None
+        next_doc = None
+        doc_history = []
+        like_count = 0
+        user_liked = False
+        is_share = False
+        doc_share = None
+        colla_user_role = 0
+        is_collect_doc = False
         breadcrumb_items = [{'name': project.name, 'url': ''}]
+        # 计算上一篇/下一篇（基于toc_list）
+        for i, item in enumerate(toc_list):
+            if item['id'] == doc.id:
+                if i > 0:
+                    prev_doc = toc_list[i - 1]
+                if i < len(toc_list) - 1:
+                    next_doc = toc_list[i + 1]
+                break
         # 记录最近浏览
         recent = request.session.get('recent_views', [])
         recent = [r for r in recent if not (r[0] == 'pro' and r[1] == project.id)]
         recent.insert(0, ['pro', project.id])
         request.session['recent_views'] = recent[:10]
-        return render(request, 'app_doc/project.html', locals())
+        return render(request, 'app_doc/doc.html', locals())
     except Exception as e:
         logger.exception(_("页面访问异常"))
         return render(request,'404.html')

@@ -229,7 +229,8 @@ function fastPubDoc(doc_id) {
 }
 
 // --- Batch Delete ---
-document.getElementById('batchRemove').addEventListener('click', function() {
+var batchRemoveBtn = document.getElementById('batchRemove');
+if (batchRemoveBtn) batchRemoveBtn.addEventListener('click', function() {
     var checks = document.querySelectorAll('.doc-checkbox:checked');
     if (checks.length === 0) {
         showError('{% trans "未选中任何文档" %}');
@@ -264,7 +265,8 @@ document.getElementById('batchRemove').addEventListener('click', function() {
 });
 
 // Select All / Deselect All
-document.getElementById('selectAll').addEventListener('change', function() {
+var selectAllCb = document.getElementById('selectAll');
+if (selectAllCb) selectAllCb.addEventListener('change', function() {
     var checked = this.checked;
     document.querySelectorAll('.doc-checkbox').forEach(function(cb) { cb.checked = checked; });
 });

@@ -305,7 +305,8 @@ function downloadMd(download_link) {
 }
 
 // Select All
-document.getElementById('selectAll').addEventListener('change', function() {
+var selectAllCb = document.getElementById('selectAll');
+if (selectAllCb) selectAllCb.addEventListener('change', function() {
     document.querySelectorAll('.project-checkbox').forEach(function(cb) { cb.checked = this.checked; });
 });
 
