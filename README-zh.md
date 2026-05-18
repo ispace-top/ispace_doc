@@ -122,7 +122,7 @@ git clone https://gitee.com/zmister/mrdoc-install.git && cd mrdoc-install && chm
 
 ### 2、更新
 
-如果有版本更新，直接在爱思文档项目目录下运行`docker-update.sh`脚本即可完成更新。
+如果有版本更新，直接在爱思文档项目目录下运行`scripts/docker-update.sh`脚本即可完成更新。
 
 ## 简明运行教程
 

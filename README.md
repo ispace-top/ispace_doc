@@ -72,7 +72,7 @@ git clone https://gitee.com/zmister/mrdoc-install.git && cd mrdoc-install && chm
 
 ### 2、Update
 
-run`docker-update.sh`
+run `scripts/docker-update.sh`
 
 ## Simple Installation Tutorial
 
