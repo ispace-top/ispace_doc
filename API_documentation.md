@@ -4,7 +4,7 @@
 
 项目中的接口主要分为三类：
 1.  **管理后台REST API** (`/admin/api/`)：基于 Django Rest Framework (DRF)，用于后台管理功能，仅限超级管理员访问。
-2.  **核心交互AJAX API** (`app_doc`)：基于Django的普通视图，通过返回 `JsonResponse` 实现前端的动态交互，如文档编辑、项目管理等。这类接口通常需要用户登录（Session认证）。
+2.  **核心交互AJAX API** (`backend.apps.doc`)：基于Django的普通视图，通过返回 `JsonResponse` 实现前端的动态交互，如文档编辑、项目管理等。这类接口通常需要用户登录（Session认证）。
 3.  **通用REST API** (`/api/`)：基于Token认证的接口，为客户端或第三方应用提供数据交互能力。
 
 ---

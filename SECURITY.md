@@ -1,5 +1,14 @@
-# Security Policy
+# 安全策略
 
-## Reporting a Vulnerability
+## 报告安全漏洞
 
-Please report security issues to `zmister@qq.com`
+如果你发现了安全漏洞，请通过 GitHub Issues 提交报告，并标记为安全问题。
+
+我们将尽快评估和修复已验证的安全漏洞。
+
+## 安全建议
+
+- 请勿在公开场合（如公开 Issue）披露未修复的安全漏洞细节
+- 在生产环境部署时，请确保 `DEBUG = False`
+- 定期更新依赖库以获取安全补丁
+- 妥善保管配置文件中的密钥和数据库凭据
