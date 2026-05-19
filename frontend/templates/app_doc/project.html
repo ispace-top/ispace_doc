@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}{% load i18n %}{% load doc_filter %}
 
-{% block title %}{{ project.name }} - {{ site_name|default:"iSpaceDoc" }}{% endblock %}
+{% block title %}{{ project.name }} - {{ site_name|default:"爱思文档" }}{% endblock %}
 {% block meta_description %}{{ project.intro|striptags|slice:":100" }}{% endblock %}
 {% block breadcrumb %}{% include "includes/breadcrumb.html" with breadcrumbs=breadcrumb_items %}{% endblock %}
 

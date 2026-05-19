@@ -2,6 +2,7 @@
    iSpaceDoc Layout System
    Grid, header, sidebar, main content, footer
    ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap');
 
 /* ---- App Shell ---- */
 .ispace-app-layout {
@@ -75,8 +76,8 @@
 
 /* ---- Logo ---- */
 .ispace-logo {
-  font-size: var(--ispace-font-xl);
-  font-weight: var(--ispace-font-bold);
+  font-family: 'Ma Shan Zheng', 'STXingkai', 'KaiTi', cursive, sans-serif;
+  font-size: var(--ispace-font-2xl);
   color: var(--ispace-color-text-primary);
   text-decoration: none;
   display: flex;

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}{% load i18n %}
 
-{% block title %}{% trans "文档历史版本对比" %} - {{ doc.name }} - {{ site_name|default:"iSpaceDoc" }}{% endblock %}
+{% block title %}{% trans "文档历史版本对比" %} - {{ doc.name }} - {{ site_name|default:"爱思文档" }}{% endblock %}
 
 {% block styles %}
 <link rel="stylesheet" href="{% static 'docdiff/codemirror.css' %}?version={{ mrdoc_version }}">

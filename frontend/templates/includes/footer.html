@@ -3,11 +3,8 @@
     <div class="ispace-footer-grid">
         <div>
             <div class="ispace-flex-center" style="gap: var(--ispace-space-2);">
-                <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
-                    <rect width="32" height="32" rx="8" fill="var(--ispace-color-brand-500)"/>
-                    <path d="M9 16L14 21L23 11" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                <span class="ispace-font-semibold">{{ site_name|default:"iSpaceDoc" }}</span>
+                <img src="{% static 'logo.png' %}" width="24" height="24" alt="logo">
+                <span class="ispace-font-semibold">{{ site_name|default:"爱思文档" }}</span>
             </div>
             <p class="ispace-footer-brand-desc">
                 {{ site_desc|default:"个人和小型团队的云笔记、云文档、知识管理私有化部署方案" }}
@@ -32,7 +29,7 @@
         </div>
     </div>
     <div class="ispace-footer-bottom">
-        <p>Copyright &copy; {% now "Y" %} {{ site_name|default:"iSpaceDoc" }}. All rights reserved.</p>
+        <p>Copyright &copy; {% now "Y" %} {{ site_name|default:"爱思文档" }}. All rights reserved.</p>
         {% if beian_code %}
         <p class="ispace-mt-2"><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">{{ beian_code }}</a></p>
         {% endif %}

@@ -389,7 +389,7 @@ def project_list(request):
     if is_auth:
         collects = MyCollect.objects.filter(
             create_user=request.user
-        ).order_by('-create_time')[:6]
+        ).order_by('-create_time')
         doc_ids = [c.collect_id for c in collects if c.collect_type == 1]
         pro_ids_fav = [c.collect_id for c in collects if c.collect_type == 2]
         doc_map = {}
@@ -1237,8 +1237,11 @@ def doc(request,pro_id,doc_id):
             ancestor_ids = []
             pid = doc.parent_doc
             while pid and pid != 0:
+                parent_pid = Doc.objects.filter(id=pid).values_list('parent_doc', flat=True).first()
+                if not parent_pid or parent_pid == 0:
+                    break
                 ancestor_ids.append(pid)
-                pid = Doc.objects.filter(id=pid).values_list('parent_doc', flat=True).first()
+                pid = parent_pid
             breadcrumb_items = [
                 {'name': project.name, 'url': '/docs/{}/'.format(project.id)},
             ]
@@ -1251,7 +1254,8 @@ def doc(request,pro_id,doc_id):
                             'name': ad.name,
                             'url': '/docs/{}/{}/'.format(project.id, ad.id)
                         })
-            breadcrumb_items.append({'name': doc.name, 'url': ''})
+            if doc.parent_doc and doc.parent_doc != 0:
+                breadcrumb_items.append({'name': doc.name, 'url': ''})
             # 获取文档编辑历史（最近10条）
             doc_history = list(DocHistory.objects
                 .filter(doc=doc)
@@ -1363,8 +1367,11 @@ def doc_id(request,doc_id):
         ancestor_ids = []
         pid = doc.parent_doc
         while pid and pid != 0:
+            parent_pid = Doc.objects.filter(id=pid).values_list('parent_doc', flat=True).first()
+            if not parent_pid or parent_pid == 0:
+                break
             ancestor_ids.append(pid)
-            pid = Doc.objects.filter(id=pid).values_list('parent_doc', flat=True).first()
+            pid = parent_pid
         breadcrumb_items = [
             {'name': project.name, 'url': '/docs/{}/'.format(project.id)},
         ]
@@ -1377,7 +1384,8 @@ def doc_id(request,doc_id):
                         'name': ad.name,
                         'url': '/docs/{}/{}/'.format(project.id, ad.id)
                     })
-        breadcrumb_items.append({'name': doc.name, 'url': ''})
+        if doc.parent_doc and doc.parent_doc != 0:
+            breadcrumb_items.append({'name': doc.name, 'url': ''})
         # 获取文档编辑历史（最近10条）
         doc_history = list(DocHistory.objects
             .filter(doc=doc)

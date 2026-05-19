@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}{% load i18n %}
 
-{% block title %}{{ kw }} - {% trans "搜索结果" %} - {{ site_name|default:"iSpaceDoc" }}{% endblock %}
+{% block title %}{{ kw }} - {% trans "搜索结果" %} - {{ site_name|default:"爱思文档" }}{% endblock %}
 
 {% block header_center %}
 <form method="get" action="{% url 'search' %}" class="ispace-flex-center ispace-gap-3">

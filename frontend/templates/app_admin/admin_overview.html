@@ -17,7 +17,7 @@
 {% endif %}
 
 <div id="is_update_tips" style="display:none;background:var(--ispace-color-warning-bg);border:1px solid var(--ispace-color-warning-border);border-radius:var(--ispace-radius-md);padding:var(--ispace-space-3);margin-bottom:var(--ispace-space-4);color:var(--ispace-color-warning-text);font-size:var(--ispace-font-sm);">
-    <strong>{% trans "iSpaceDoc 已发布新版本" %}</strong>
+    <strong>{% trans "爱思文档 已发布新版本" %}</strong>
 </div>
 
 <div style="margin-bottom:var(--ispace-space-4);">
@@ -176,7 +176,7 @@
                     var newVersion = r.data.name.slice(1, 6);
                     var currentVersion = '{{ mrdoc_version }}';
                     if (newVersion > currentVersion) {
-                        showWarning('iSpaceDoc 已发布新版本 ' + r.data.name + '，请及时更新', {duration: 8000});
+                        showWarning('爱思文档 已发布新版本 ' + r.data.name + '，请及时更新', {duration: 8000});
                         document.getElementById('is_update_tips').style.display = 'block';
                     } else {
                         showSuccess('当前已是最新版本！');
