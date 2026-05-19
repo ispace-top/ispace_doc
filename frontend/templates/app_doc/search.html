@@ -11,11 +11,8 @@
 <div class="ispace-content-card" style="max-width:640px;margin:0 auto;">
     <form method="get" action="{% url 'search' %}">
         {% include "includes/search_bar.html" with placeholder="输入关键词搜索..." value=kw %}
+        <input type="hidden" name="type" value="doc">
         <div class="ispace-flex-between ispace-mt-4">
-            <select name="type" class="ispace-form-select" style="width:auto;">
-                <option value="doc" {% if search_type == 'doc' %}selected{% endif %}>{% trans "文档" %}</option>
-                <option value="pro" {% if search_type == 'pro' %}selected{% endif %}>{% trans "文集" %}</option>
-            </select>
             <button type="submit" class="ispace-btn ispace-btn-primary">{% trans "搜索" %}</button>
         </div>
     </form>

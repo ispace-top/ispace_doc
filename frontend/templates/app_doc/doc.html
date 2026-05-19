@@ -388,7 +388,7 @@
 <script>
 function doSearch(){
     var kw = document.getElementById('searchKw').value.trim();
-    window.location.href = '/?kw=' + encodeURIComponent(kw);
+    window.location.href = '/search/?kw=' + encodeURIComponent(kw) + '&type=doc';
 }
 function toggleSidebar(){var s=document.getElementById('doc-sidebar');s.style.display='none';document.querySelector('.ispace-app-layout').classList.remove('has-sidebar');}
 

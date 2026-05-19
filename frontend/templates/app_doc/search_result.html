@@ -9,18 +9,13 @@
         <svg class="ispace-search-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" name="kw" class="ispace-form-input ispace-form-input-sm" value="{{ kw }}" placeholder="{% trans '搜索...' %}">
     </div>
-    <input type="hidden" name="type" value="{{ search_type }}">
+    <input type="hidden" name="type" value="doc">
     <button type="submit" class="ispace-btn ispace-btn-primary ispace-btn-sm">{% trans "搜索" %}</button>
 </form>
 {% endblock %}
 
 {% block content %}
 <div class="ispace-page-header">
-    <div class="ispace-tabs ispace-mb-4">
-        <a href="{% url 'search' %}?kw={{ kw }}&type=doc" class="ispace-tab {% if search_type == 'doc' %}ispace-active{% endif %}">{% trans "文档" %}</a>
-        <a href="{% url 'search' %}?kw={{ kw }}&type=pro" class="ispace-tab {% if search_type == 'pro' %}ispace-active{% endif %}">{% trans "文集" %}</a>
-        <a href="{% url 'search' %}?kw={{ kw }}&type=tag" class="ispace-tab {% if search_type == 'tag' %}ispace-active{% endif %}">{% trans "标签" %}</a>
-    </div>
     <p class="ispace-page-description">
         搜索到 <strong>{{ paginator.count }}</strong> 条结果
     </p>
@@ -31,15 +26,9 @@
     {% for result in datas %}
     <div class="ispace-card">
         <div class="ispace-card-body">
-            {% if search_type == 'pro' %}
-            <h3><a href="{% url 'pro_index' pro_id=result.id %}" data-spa class="ispace-font-semibold" style="font-size:var(--ispace-font-lg);color:var(--ispace-color-text-link);">{{ result.name }}</a></h3>
-            <p class="ispace-text-sm ispace-text-tertiary ispace-line-clamp-2 ispace-mt-2">{{ result.intro|striptags|truncatechars:200 }}</p>
-            <p class="ispace-text-xs ispace-text-quaternary ispace-mt-2">{{ result.create_user.username }} · {{ result.modify_time|date:"Y-m-d" }}</p>
-            {% else %}
             <h3><a href="{% url 'doc_id' doc_id=result.id %}" data-spa class="ispace-font-semibold" style="font-size:var(--ispace-font-lg);color:var(--ispace-color-text-link);">{{ result.name }}</a></h3>
             <p class="ispace-text-sm ispace-text-tertiary ispace-line-clamp-2 ispace-mt-2">{{ result.pre_content|striptags|truncatechars:200 }}</p>
             <p class="ispace-text-xs ispace-text-quaternary ispace-mt-2">{{ result.top_doc.pro_name }} · {{ result.modify_time|date:"Y-m-d" }}</p>
-            {% endif %}
         </div>
     </div>
     {% endfor %}
