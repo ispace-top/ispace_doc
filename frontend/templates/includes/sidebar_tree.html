@@ -2,7 +2,7 @@
 <aside class="ispace-sidebar" id="globalSidebar">
     <nav class="ispace-sidebar-nav" id="sidebarNav">
         <button class="ispace-sidebar-toggle" id="sidebarCollapse" title="{% trans '折叠侧边栏' %}" aria-label="折叠侧边栏">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="7" x2="21" y2="17"/><path d="M14 8l-4 4 4 4"/><rect x="3" y="5" width="3" height="14" rx="1"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
         {% if sidebar_tree %}
             {% include "includes/sidebar_doc_node.html" with docs=sidebar_tree %}
@@ -136,7 +136,9 @@
         'new-doc': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/><line x1="12" y1="13" x2="12" y2="19"/><line x1="9" y1="16" x2="15" y2="16"/></svg>',
         'rename-doc': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>',
         'delete-pro': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
-        'delete-doc': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>'
+        'delete-doc': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+        'new-doc-root': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/><line x1="12" y1="13" x2="12" y2="19"/><line x1="9" y1="16" x2="15" y2="16"/></svg>',
+        'new-table-root': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/><line x1="12" y1="3" x2="12" y2="21"/></svg>'
     };
 
     var menuCls = {
@@ -168,29 +170,55 @@
         currentContextTarget = null;
     }
 
-    // Context menu on tree rows
-    document.querySelectorAll('.ispace-tree-row').forEach(function(row) {
-        row.addEventListener('contextmenu', function(e) {
-            var node = this.parentElement;
-            var docId = node.getAttribute('data-doc-id');
-            var proId = node.getAttribute('data-pro-id');
-            var isProject = node.getAttribute('data-is-project') === '1';
-            var items = [];
-            if (isProject) {
-                items = [
-                    {label: '新建文档', action: 'new-doc:' + docId},
-                    {label: '重命名', action: 'rename-pro:' + docId},
-                    {label: '删除文档', action: 'delete-pro:' + docId}
-                ];
-            } else {
-                items = [
-                    {label: '新建子文档', action: 'new-child-doc:' + docId + ':' + proId},
-                    {label: '重命名', action: 'rename-doc:' + docId + ':' + proId},
-                    {label: '删除文档', action: 'delete-doc:' + docId + ':' + proId}
-                ];
+    // Determine current project ID from URL
+    function getCurrentProId() {
+        var m = window.location.pathname.match(/^\/docs\/(\d+)\//);
+        return m ? m[1] : null;
+    }
+
+    // Check if user has any create permission in current project
+    function canCreateInProject() {
+        var rows = document.querySelectorAll('.ispace-tree-row');
+        for (var i = 0; i < rows.length; i++) {
+            var node = rows[i].parentElement;
+            if (node && node.classList.contains('ispace-tree-node') && node.getAttribute('data-can-create') === '1') {
+                return true;
             }
+        }
+        // Fallback: if authenticated and no rows (empty project), allow create
+        return window.__ISPACEDOC__ && window.__ISPACEDOC__.isAuthenticated;
+    }
+
+    // Context menu on sidebar nav — tree rows + empty space
+    document.getElementById('sidebarNav').addEventListener('contextmenu', function(e) {
+        var row = e.target.closest('.ispace-tree-row');
+        if (!row) {
+            // ---- Empty space: create root-level doc ----
+            if (!canCreateInProject()) return;
+            var proId = getCurrentProId();
+            var items = [];
+            items.push({label: '新建文档', action: 'new-doc-root:' + (proId || '')});
+            items.push({label: '新建表格', action: 'new-table-root:' + (proId || '')});
             showContextMenu(e, items);
-        });
+            return;
+        }
+
+        var node = row.parentElement;
+        if (!node.classList.contains('ispace-tree-node')) return;
+
+        // 权限检查：无任何编辑权限则不弹出菜单
+        var canCreate = node.getAttribute('data-can-create') === '1';
+        var canManage = node.getAttribute('data-can-manage') === '1';
+        if (!canCreate && !canManage) return;
+
+        var docId = node.getAttribute('data-doc-id');
+        var proId = node.getAttribute('data-pro-id');
+        var items = [];
+        if (canCreate) items.push({label: '新建子文档', action: 'new-child-doc:' + docId + ':' + proId});
+        if (canManage) items.push({label: '重命名', action: 'rename-doc:' + docId + ':' + proId});
+        if (canManage) items.push({label: '删除文档', action: 'delete-doc:' + docId + ':' + proId});
+        if (items.length === 0) return;
+        showContextMenu(e, items);
     });
 
     // Context menu action handling
@@ -216,6 +244,19 @@
         }
         if (type === 'new-doc') {
             goto('/docs/' + id + '/?create=1');
+        } else if (type === 'new-doc-root') {
+            // Create root-level doc (no parent_doc) in current project or home
+            if (id) {
+                goto('/docs/' + id + '/?create=1');
+            } else {
+                goto('/?create=1');
+            }
+        } else if (type === 'new-table-root') {
+            if (id) {
+                goto('/docs/' + id + '/?create=1&eid=4');
+            } else {
+                goto('/?create=1&eid=4');
+            }
         } else if (type === 'new-child-doc') {
             goto('/docs/' + extra + '/' + id + '/?create_child=1');
         } else if (type === 'delete-doc') {
@@ -223,10 +264,18 @@
             var fd = new FormData();
             fd.append('doc_id', id);
             fd.append('csrfmiddlewaretoken', csrfToken);
+            // Check if the deleted doc is the currently viewed doc
+            var isCurrentDoc = window.location.pathname.indexOf('/docs/' + extra + '/' + id + '/') !== -1;
             fetch('/del_doc/', {method:'POST', body:fd})
             .then(function(r) { return r.json(); })
             .then(function(r) {
-                if (r.status) { window.location.reload(); }
+                if (r.status) {
+                    if (isCurrentDoc) {
+                        goto('/docs/' + extra + '/'); // redirect to project root
+                    } else {
+                        window.location.reload();
+                    }
+                }
                 else { alert(r.data); }
             });
         } else if (type === 'rename-doc') {
@@ -234,6 +283,7 @@
             if (!newName) return;
             var fd2 = new FormData();
             fd2.append('doc_id', id);
+            fd2.append('project', extra);
             fd2.append('doc_name', newName);
             fd2.append('csrfmiddlewaretoken', csrfToken);
             fetch('/modify_doc/' + id + '/', {method:'POST', body:fd2})
@@ -275,29 +325,39 @@
 </script>
 
 <style>
-/* ---- 侧边栏树组件样式 ---- */
+/* ---- 侧边栏抽屉折叠按钮（边缘标签式）---- */
 .ispace-sidebar-toggle {
     position: absolute;
-    right: 6px;
+    right: 4px;
     top: 50%;
     transform: translateY(-50%);
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
-    border: none;
+    width: 20px;
+    height: 44px;
+    border: 1px solid var(--ispace-color-border-medium);
     background: var(--ispace-color-surface-0);
     cursor: pointer;
     color: var(--ispace-color-text-quaternary);
-    border-radius: var(--ispace-radius-md);
+    border-radius: var(--ispace-radius-md) 0 0 var(--ispace-radius-md);
     padding: 0;
-    box-shadow: var(--ispace-shadow-sm);
-    border: 1px solid var(--ispace-color-border-light);
     z-index: 10;
-    transition: right var(--ispace-duration-normal);
+    opacity: 0.35;
+    box-shadow: var(--ispace-shadow-xs);
+    transition: opacity var(--ispace-duration-normal) var(--ispace-ease-out),
+                color var(--ispace-duration-fast),
+                background var(--ispace-duration-fast),
+                box-shadow var(--ispace-duration-normal) var(--ispace-ease-out);
 }
-.ispace-sidebar-toggle:hover { background: var(--ispace-color-surface-100); color: var(--ispace-color-text-primary); }
+.ispace-sidebar-toggle svg { width: 16px; height: 16px; flex-shrink: 0; }
+.ispace-sidebar-toggle:hover {
+    opacity: 1;
+    color: var(--ispace-color-text-primary);
+    background: var(--ispace-color-surface-100);
+    border-color: var(--ispace-color-border-strong);
+    box-shadow: var(--ispace-shadow-sm);
+}
 
 /* ---- 文档树节点 ---- */
 .ispace-tree-row {
@@ -321,6 +381,7 @@
     border-radius: var(--ispace-radius-sm);
     transition: color var(--ispace-duration-fast);
 }
+.ispace-tree-toggle svg { width: 14px; height: 14px; flex-shrink: 0; }
 .ispace-tree-toggle:hover { color: var(--ispace-color-brand-500); }
 .ispace-tree-toggle[data-has-children="0"] { cursor: default; }
 .ispace-tree-toggle[data-has-children="0"]:hover { color: var(--ispace-color-text-quaternary); }
@@ -353,7 +414,16 @@
 }
 .ispace-sidebar--collapsed .ispace-tree-row,
 .ispace-sidebar--collapsed .ispace-sidebar-empty-state { display: none; }
-.ispace-sidebar--collapsed .ispace-sidebar-toggle { right: 50%; transform: translate(50%, -50%); }
+.ispace-sidebar--collapsed .ispace-sidebar-toggle {
+    right: 50%;
+    transform: translate(50%, -50%);
+    border-radius: var(--ispace-radius-md);
+    opacity: 0.7;
+    width: 28px;
+    height: 40px;
+    border: 1px solid var(--ispace-color-border-light);
+}
+.ispace-sidebar--collapsed .ispace-sidebar-toggle:hover { opacity: 1; }
 .ispace-sidebar--collapsed .ispace-sidebar-toggle svg { transform: rotate(180deg); }
 
 /* 右键上下文菜单 */
@@ -385,6 +455,7 @@
     transition: all var(--ispace-duration-fast);
 }
 .ispace-context-menu-item svg {
+    width: 14px; height: 14px;
     flex-shrink: 0;
     color: var(--ispace-color-text-quaternary);
     transition: color var(--ispace-duration-fast);

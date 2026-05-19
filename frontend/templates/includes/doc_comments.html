@@ -136,7 +136,7 @@
     function loadComments() {
         var list = document.getElementById('comments-list');
         list.innerHTML = '<div class="ispace-comments-loading">加载评论中...</div>';
-        fetch('/project-' + proId + '/doc-' + docId + '/comments/')
+        fetch('/docs/' + proId + '/' + docId + '/comments/')
         .then(function(r) { return r.json(); })
         .then(function(r) {
             if (!r.status) { list.innerHTML = ''; return; }

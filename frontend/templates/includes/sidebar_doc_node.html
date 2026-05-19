@@ -1,6 +1,6 @@
 {% load i18n %}
 {% for doc in docs %}
-<div class="ispace-tree-node" data-doc-id="{{ doc.id }}" data-pro-id="{{ doc.top_doc }}"{% if doc.is_project %} data-is-project="1"{% endif %}>
+<div class="ispace-tree-node" data-doc-id="{{ doc.id }}" data-pro-id="{{ doc.top_doc }}" data-can-create="{% if doc.can_create %}1{% else %}0{% endif %}" data-can-manage="{% if doc.can_manage %}1{% else %}0{% endif %}">
     <div class="ispace-tree-row">
         <span class="ispace-tree-toggle"
               data-has-children="{% if doc.has_children %}1{% else %}0{% endif %}"
@@ -16,7 +16,7 @@
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
             {% endif %}
         </span>
-        <a href="{% if doc.is_project %}{% url 'pro_index' doc.id %}{% else %}{% url 'doc' doc.top_doc doc.id %}{% endif %}"
+        <a href="{% url 'doc' doc.top_doc doc.id %}"
            class="ispace-tree-link ispace-sidebar-link" data-doc-id="{{ doc.id }}" data-pro-id="{{ doc.top_doc }}" data-spa>
             <span class="ispace-truncate">{{ doc.name }}</span>
         </a>

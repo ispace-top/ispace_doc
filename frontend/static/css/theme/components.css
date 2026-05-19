@@ -660,6 +660,11 @@
   color: var(--ispace-color-text-secondary);
   transition: background var(--ispace-duration-fast);
 }
+.ispace-dropdown-item svg {
+  width: 16px; height: 16px;
+  flex-shrink: 0;
+  color: var(--ispace-color-text-quaternary);
+}
 
 .ispace-dropdown-item:first-child {
   border-radius: var(--ispace-radius-md) var(--ispace-radius-md) 0 0;
@@ -1558,6 +1563,10 @@ body.ispace-auth-page {
   transition: all var(--ispace-duration-fast);
   text-decoration: none;
 }
+.ispace-btn-icon svg {
+  width: 18px; height: 18px;
+  flex-shrink: 0;
+}
 .ispace-btn-icon:hover {
   background: var(--ispace-color-surface-100);
   color: var(--ispace-color-text-primary);
@@ -1573,10 +1582,20 @@ body.ispace-auth-page {
   transition: all var(--ispace-duration-fast);
   text-decoration: none;
 }
+.ispace-btn-icon-sm svg {
+  width: 16px; height: 16px;
+  flex-shrink: 0;
+}
 .ispace-btn-icon-sm:hover {
   background: var(--ispace-color-surface-100);
   color: var(--ispace-color-text-primary);
 }
+
+/* Danger variant icons */
+.ispace-btn-icon.ispace-text-danger,
+.ispace-btn-icon-sm.ispace-text-danger { color: var(--ispace-color-error-text); }
+.ispace-btn-icon.ispace-text-danger:hover,
+.ispace-btn-icon-sm.ispace-text-danger:hover { background: var(--ispace-color-error-bg); }
 
 /* ============================================================
    HISTORY TOOLTIP

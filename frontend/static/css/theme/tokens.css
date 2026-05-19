@@ -20,6 +20,14 @@
   --ispace-font-3xl: 1.875rem;
   --ispace-font-4xl: 2.25rem;
 
+  /* ---- Heading Sizes (harmonised scale) ---- */
+  --ispace-heading-h1: var(--ispace-font-4xl);   /* 2.25rem / 36px */
+  --ispace-heading-h2: var(--ispace-font-3xl);   /* 1.875rem / 30px */
+  --ispace-heading-h3: var(--ispace-font-2xl);   /* 1.5rem   / 24px */
+  --ispace-heading-h4: var(--ispace-font-xl);    /* 1.25rem  / 20px */
+  --ispace-heading-h5: var(--ispace-font-base);  /* 1rem     / 16px */
+  --ispace-heading-h6: var(--ispace-font-sm);    /* 0.875rem / 14px */
+
   /* ---- Font Weights ---- */
   --ispace-font-light: 300;
   --ispace-font-normal: 400;

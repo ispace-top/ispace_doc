@@ -69,6 +69,13 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--ispace-color-text-primary);
 }
 
+h1 { font-size: var(--ispace-heading-h1); }
+h2 { font-size: var(--ispace-heading-h2); }
+h3 { font-size: var(--ispace-heading-h3); }
+h4 { font-size: var(--ispace-heading-h4); }
+h5 { font-size: var(--ispace-heading-h5); }
+h6 { font-size: var(--ispace-heading-h6); }
+
 /* Focus ring */
 :focus-visible {
   outline: 2px solid var(--ispace-color-brand-500);

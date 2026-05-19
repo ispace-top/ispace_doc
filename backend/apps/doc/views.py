@@ -1577,12 +1577,12 @@ def modify_doc(request,doc_id):
                                 pre_content = doc.pre_content,
                                 create_user = request.user
                             )
-                            # 更新文档内容
+                            # 更新文档内容，parent_doc 未传则保持原值
                             Doc.objects.filter(id=int(doc_id)).update(
                                 name=doc_name,
                                 content=doc_content,
                                 pre_content=pre_content,
-                                parent_doc=int(parent_doc) if parent_doc != '' else 0,
+                                parent_doc=int(parent_doc) if parent_doc != '' else doc.parent_doc,
                                 sort=sort if sort != '' else 9999,
                                 modify_time = datetime.datetime.now(),
                                 status = status,

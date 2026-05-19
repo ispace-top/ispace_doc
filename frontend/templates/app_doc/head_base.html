@@ -37,32 +37,6 @@
             </a>
         </div>
         
-        <!-- 新建文档按钮 -->
-        {% if request.user.is_authenticated %}
-        <div class="layui-hide-xs">
-            <ul class="layui-nav">
-                <li class="layui-nav-item">
-                    <a>
-                        <i class="layui-icon layui-icon-add-circle" style="color:black;"></i> <span>{% trans "新建" %}</span>
-                    </a>
-                    <dl class="layui-nav-child">
-                        <dd>
-                            <a href="/?create=1">
-                                <img src="{% static 'icon_img/create-doc-icon.svg' %}" height="14px" width="14px"></img>
-                                <span class="layui-hide-xs">{% trans "新建文档" %}</span>
-                            </a>
-                        </dd>
-                        <dd>
-                            <a href="/?create=1&eid=4">
-                                <img src="{% static 'icon_img/create-table-icon.svg' %}" height="14px" width="14px"></img>
-                                <span class="layui-hide-xs">{% trans "新建表格" %}</span>
-                            </a>
-                        </dd>
-                    </dl>
-                </li>
-            </ul>
-        </div>
-        {% endif %}
         <!-- 用户菜单 -->
         <div class="">
             <ul class="layui-nav layui-layout-right">
