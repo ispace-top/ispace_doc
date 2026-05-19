@@ -1,11 +1,102 @@
 {% load static %}{% load i18n %}
 {# Inline editor for doc.html and project.html — toggled by view/edit mode CSS #}
+<style>
+/* ---- Inline editor toolbar fixes ---- */
+#inline-editor .mreditor {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 400px;
+    overflow: hidden;
+}
+#inline-editor .mreditor-toolbar {
+    position: relative;
+    opacity: 1;
+    user-select: none;
+    padding: 0 6px;
+    border: 1px solid #bbb;
+    border-radius: 4px;
+    background: #fafbfc;
+    min-height: 36px;
+    overflow: hidden;
+}
+#inline-editor .mreditor-toolbar:after,
+#inline-editor .mreditor-toolbar:before {
+    display: block;
+    content: ' ';
+    height: 1px;
+}
+#inline-editor .mreditor-toolbar-left { float: left; }
+#inline-editor .mreditor-toolbar-right { float: right; }
+#inline-editor .mreditor-toolbar svg {
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+}
+#inline-editor .mreditor-toolbar-item {
+    float: left;
+}
+#inline-editor .mreditor-toolbar-item-btn {
+    width: 30px;
+    height: 28px;
+    text-align: center;
+    border: 0;
+    cursor: pointer;
+    background-color: transparent;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #586069;
+}
+#inline-editor .mreditor-toolbar-item-btn:hover {
+    background-color: #e1e4e8;
+    border-radius: 4px;
+    color: #4285f4;
+}
+#inline-editor .mreditor-toolbar-item-btn:focus { outline: 0; }
+#inline-editor .mreditor-toolbar div.separator {
+    float: left;
+    height: 20px;
+    border-left: 1px solid rgba(88,96,105,0.36);
+    margin: 8px 6px;
+}
+#inline-editor .mreditor-body {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+}
+#inline-editor .mreditor-editor {
+    flex: 1;
+    min-height: 300px;
+}
+#inline-editor .CodeMirror {
+    min-height: 300px;
+    height: auto;
+}
+/* ---- Vditor dropdown icon size fixes ---- */
+#inline-editor .vditor-emojis__item { width:28px !important; height:28px !important; padding:2px !important; }
+#inline-editor .vditor-emojis__item img,
+#inline-editor .vditor-emojis__item svg { width:18px !important; height:18px !important; max-width:18px !important; max-height:18px !important; }
+#inline-editor .vditor-panel__item svg { width:16px !important; height:16px !important; }
+#inline-editor .vditor-panel__item { padding:5px 10px !important; font-size:14px !important; line-height:1.6 !important; }
+#inline-editor .vditor-hint__item .vditor-icon { width:16px !important; height:16px !important; }
+/* Vditor toolbar compact styling */
+#inline-editor .vditor-toolbar__item svg { width:15px !important; height:15px !important; }
+#inline-editor .vditor-toolbar__item { padding:3px 5px !important; }
+#inline-editor .vditor-toolbar { min-height:32px !important; padding:2px 4px !important; background:#fafbfc !important; border-bottom:1px solid #e1e4e8 !important; }
+</style>
 <div id="inline-editor" class="ispace-inline-editor" style="display:none;">
-    {# --- Title --- #}
-    <div class="ispace-form-group" style="margin-bottom:var(--ispace-space-4);">
+    {# --- Title row with save button --- #}
+    <div style="display:flex;align-items:center;gap:var(--ispace-space-3);margin-bottom:var(--ispace-space-4);">
         <input type="text" id="inline-doc-name" class="ispace-form-input"
-               style="font-size:var(--ispace-font-2xl);font-weight:var(--ispace-font-semibold);padding:var(--ispace-space-2) 0;border:none;border-bottom:2px solid var(--ispace-color-border-light);border-radius:0;background:transparent;"
+               style="flex:1;font-size:var(--ispace-font-2xl);font-weight:var(--ispace-font-semibold);padding:var(--ispace-space-2) 0;border:none;border-bottom:2px solid var(--ispace-color-border-light);border-radius:0;background:transparent;"
                placeholder="{% trans '文档标题' %}" value="{{ doc.name|default:'' }}">
+        <button class="ispace-btn ispace-btn-primary" id="inline-save-btn" onclick="(window._inlineSubmitFn||function(){})(window._inlineDocStatus !== undefined ? window._inlineDocStatus : 1)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            <span id="inline-save-btn-text">{% trans '保存' %}</span>
+        </button>
     </div>
 
     {# --- Parent context (auto-set by entry point) --- #}
@@ -28,29 +119,16 @@
                value="{{ doc_tags_str|default:'' }}" placeholder="{% trans '输入标签名，回车添加' %}">
     </div>
 
-    {# --- Action buttons --- #}
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:var(--ispace-space-4);padding-top:var(--ispace-space-4);border-top:1px solid var(--ispace-color-border-light);">
-        <div style="display:flex;gap:var(--ispace-space-2);">
-            <button class="ispace-btn ispace-btn-primary" id="inline-save-btn" onclick="(window._inlineSubmitFn||function(){})(0)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                {% trans '保存' %}
-            </button>
-            <button class="ispace-btn ispace-btn-secondary" id="inline-publish-btn" onclick="(window._inlineSubmitFn||function(){})(1)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
-                {% trans '发布' %}
-            </button>
-            <button class="ispace-btn ispace-btn-ghost" id="inline-cancel-btn" onclick="(window._inlineCancelFn||function(){})()">
-                {% trans '取消' %}
-            </button>
-        </div>
-        <span id="inline-auto-save-indicator" style="font-size:var(--ispace-font-xs);color:var(--ispace-color-text-tertiary);display:none;"></span>
+    {# --- Auto-save indicator --- #}
+    <div style="display:flex;align-items:center;justify-content:flex-end;margin-top:var(--ispace-space-4);padding-top:var(--ispace-space-3);border-top:1px solid var(--ispace-color-border-light);min-height:24px;">
+        <span id="inline-auto-save-indicator" style="font-size:var(--ispace-font-xs);color:var(--ispace-color-text-tertiary);"></span>
     </div>
 </div>
 
 <script>
 // ---- Inline Editor Engine ----
 window._inlineEditor = null;
-window._inlineEditorMode = {{ editor_mode|default:1 }};
+window._inlineEditorMode = {{ editor_mode|default:2 }};
 window._inlineMdChanged = false;
 window._inlineIsCreate = false;  // set to true by project.html create mode
 window._inlineDocId = {{ doc.id|default:0 }};
@@ -91,8 +169,18 @@ function initInlineEditor(editorMode, isCreate) {
     var container = document.getElementById('inline-editor-md');
     if (!container) return;
 
+    // Clear title for new document creation
+    if (window._inlineIsCreate) {
+        document.getElementById('inline-doc-name').value = '';
+    }
+
     // Show the editor wrapper
     document.getElementById('inline-editor').style.display = 'block';
+
+    // Start auto-save for existing docs
+    if (!window._inlineIsCreate && window._inlineDocId) {
+        _startAutoSave();
+    }
 
     // Load and init the right editor
     var mode = window._inlineEditorMode;
@@ -132,52 +220,97 @@ function initVditor(container) {
         var val = (window._inlineIsCreate) ? '' : (container.querySelector('textarea') ? container.querySelector('textarea').value : (window._docPreContent || ''));
         var screenW = window.matchMedia('(max-width: 768px)');
         var vdHeight = screenW.matches ? window.innerHeight / 2 : window.innerHeight - 200;
-        var vdMode = screenW.matches ? 'ir' : 'sv';
-        var vdToolbar = screenW.matches ? [
-            "emoji","headings","bold","strike","link","|","list","ordered-list","check","|","quote","line","code","inline-code","|",
-            "table","|","undo","redo","|","fullscreen","edit-mode",{name:"more",toolbar:["both","code-theme","content-theme","export","outline","preview","devtools","info","help"]}
-        ] : [
-            "emoji","headings","bold","italic","strike","link","|","list","ordered-list","check","outdent","indent","|","quote","line","code","inline-code","insert-before","insert-after","|",
-            "table","|","undo","redo","|","fullscreen","edit-mode",{name:"more",toolbar:["both","code-theme","content-theme","export","outline","preview","devtools","info","help"]}
-        ];
-        window._inlineEditor = new Vditor('inline-editor-md', {
-            value: val,
-            cdn: '{% static "vditor" %}',
-            toolbar: vdToolbar,
-            height: vdHeight,
-            width: '100%',
-            mode: vdMode,
-            placeholder: '开始编写...',
-            outline: { enable: true },
-            counter: { enable: true },
-            cache: { enable: false },
-            preview: { markdown: { autoSpace: true, chinesePunct: true, mark: true }, hljs: { lineNumber: true } },
-            after: function() {},
-            input: function() { window._inlineMdChanged = true; },
-            upload: {
-                fieldName: 'editormd-image-file[]',
-                url: _getUploadImgUrl(),
-                handler: function(files) {
-                    var reader = new FileReader();
-                    reader.onload = function(ev) {
-                        var base64 = ev.target.result;
-                        var fd = new FormData();
-                        fd.append('base', base64);
-                        fd.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '');
-                        fetch(_getUploadImgUrl(), {method:'POST', body:fd, headers:{'X-Requested-With':'XMLHttpRequest'}})
-                        .then(function(r){ return r.json(); })
-                        .then(function(ret) {
-                            if (ret.success === 1) {
-                                window._inlineEditor.insertValue('\n![](' + ret.url + ')');
-                                window._inlineEditor.focus();
-                            }
-                        });
-                    };
-                    reader.readAsDataURL(files[0]);
-                }
-            }
-        });
+        window._currentVditorMode = 'ir';
+        _initVditorWithMode(container, 'ir', val, vdHeight);
     });
+}
+
+function _initVditorWithMode(container, mode, val, vdHeight) {
+    if (!vdHeight) {
+        var screenW = window.matchMedia('(max-width: 768px)');
+        vdHeight = screenW.matches ? window.innerHeight / 2 : window.innerHeight - 200;
+    }
+    var modeToggleBtn = {
+        name: 'mode-toggle',
+        tipPosition: 's',
+        tip: mode === 'ir' ? '切换至源码模式' : '切换至即时渲染模式',
+        icon: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>',
+        click: function() { _toggleVditorMode(); }
+    };
+    var isMobile = window.matchMedia('(max-width: 768px)').matches;
+    var vdToolbar = isMobile ? [
+        "headings","bold","|",
+        "quote","code","inline-code","link","|",
+        "list","ordered-list","check","|",
+        "undo","redo","|",
+        "fullscreen",modeToggleBtn
+    ] : [
+        "headings","bold","italic","strike","|",
+        "quote","code","inline-code","link","|",
+        "list","ordered-list","check","table","|",
+        "undo","redo","|",
+        "fullscreen",modeToggleBtn,
+        {name:"more",toolbar:["outline","export","code-theme","content-theme","info","help"]}
+    ];
+    window._inlineEditor = new Vditor('inline-editor-md', {
+        value: val,
+        cdn: '{% static "vditor" %}',
+        toolbar: vdToolbar,
+        height: vdHeight,
+        width: '100%',
+        mode: mode,
+        placeholder: '开始编写...',
+        outline: { enable: true },
+        counter: { enable: true },
+        cache: { enable: false },
+        preview: { markdown: { autoSpace: true, chinesePunct: true, mark: true }, hljs: { lineNumber: true } },
+        after: function() {},
+        input: function() { window._inlineMdChanged = true; },
+        upload: {
+            fieldName: 'editormd-image-file[]',
+            url: _getUploadImgUrl(),
+            handler: function(files) {
+                var reader = new FileReader();
+                reader.onload = function(ev) {
+                    var base64 = ev.target.result;
+                    var fd = new FormData();
+                    fd.append('base', base64);
+                    fd.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '');
+                    fetch(_getUploadImgUrl(), {method:'POST', body:fd, headers:{'X-Requested-With':'XMLHttpRequest'}})
+                    .then(function(r){ return r.json(); })
+                    .then(function(ret) {
+                        if (ret.success === 1) {
+                            window._inlineEditor.insertValue('\n![](' + ret.url + ')');
+                            window._inlineEditor.focus();
+                        }
+                    });
+                };
+                reader.readAsDataURL(files[0]);
+            }
+        }
+    });
+}
+
+function _toggleVditorMode() {
+    var ed = window._inlineEditor;
+    if (!ed) return;
+    var currentMode = window._currentVditorMode || 'ir';
+    var newMode = currentMode === 'ir' ? 'sv' : 'ir';
+    var content = ed.getMarkdown ? ed.getMarkdown() : (ed.getValue ? ed.getValue() : '');
+    var container = document.getElementById('inline-editor-md');
+    try { ed.destroy(); } catch(e) {}
+    window._inlineEditor = null;
+    container.innerHTML = '';
+    var ta = document.createElement('textarea');
+    ta.style.display = 'none';
+    ta.value = content;
+    container.appendChild(ta);
+    window._currentVditorMode = newMode;
+    _initVditorWithMode(container, newMode, content);
+    var btn = document.querySelector('.vditor-toolbar__item[data-type="mode-toggle"]');
+    if (btn) {
+        btn.setAttribute('aria-label', newMode === 'ir' ? '切换至源码模式' : '切换至即时渲染模式');
+    }
 }
 
 function initIceEditor(container) {
@@ -234,12 +367,13 @@ function getInlineEditorPreContent() {
     var ed = window._inlineEditor;
     if (!ed) return '';
     if (m === 1) return ed.getMarkdown ? ed.getMarkdown() : '';
-    if (m === 2) return ed.getValue ? ed.getValue() : '';
+    if (m === 2) return ed.getMarkdown ? ed.getMarkdown() : (ed.getValue ? ed.getValue() : '');
     if (m === 3) return ed.getText ? ed.getText() : '';
     return '';
 }
 
 function destroyInlineEditor() {
+    _stopAutoSave();
     var ed = window._inlineEditor;
     if (ed) {
         try {
@@ -256,6 +390,70 @@ function destroyInlineEditor() {
     window._inlineMdChanged = false;
 }
 
+// ---- Auto-save ----
+var _autoSaveTimer = null;
+var _autoSaveInterval = 10000; // 10 seconds
+
+function _startAutoSave() {
+    _stopAutoSave();
+    _autoSaveTimer = setInterval(function() {
+        if (window._inlineMdChanged) {
+            _doAutoSave();
+        }
+    }, _autoSaveInterval);
+}
+
+function _stopAutoSave() {
+    if (_autoSaveTimer) { clearInterval(_autoSaveTimer); _autoSaveTimer = null; }
+}
+
+function _doAutoSave() {
+    var indicator = document.getElementById('inline-auto-save-indicator');
+    if (indicator) { indicator.textContent = '自动保存中...'; indicator.style.color = 'var(--ispace-color-text-tertiary)'; }
+
+    // Only auto-save existing docs in edit mode
+    if (!window._inlineIsCreate && window._inlineDocId && window._inlineProjectId) {
+        var content = getInlineEditorContent();
+        var preContent = getInlineEditorPreContent();
+        var docName = document.getElementById('inline-doc-name');
+        var tagsEl = document.getElementById('inline-tagsinput');
+        var payload = {
+            doc_id: window._inlineDocId,
+            project: window._inlineProjectId,
+            doc_name: docName ? docName.value : '',
+            content: content,
+            pre_content: preContent,
+            doc_tag: tagsEl ? tagsEl.value : '',
+            status: window._inlineDocStatus !== undefined ? window._inlineDocStatus : 1,
+            editor_mode: window._docEditorMode || window._inlineEditorMode || 2
+        };
+        fetch('/modify_doc/' + window._inlineDocId + '/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: Object.keys(payload).map(function(k) {
+                return encodeURIComponent(k) + '=' + encodeURIComponent(payload[k] != null ? payload[k] : '');
+            }).join('&') + '&csrfmiddlewaretoken=' + (document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '')
+        }).then(function(r) { return r.json(); })
+        .then(function(r) {
+            if (r.status) {
+                window._inlineMdChanged = false;
+                window._docPreContent = preContent;
+                if (indicator) { indicator.textContent = '已自动保存 ' + new Date().toLocaleTimeString(); indicator.style.color = 'var(--ispace-color-text-tertiary)'; }
+            } else {
+                if (indicator) { indicator.textContent = '自动保存失败'; indicator.style.color = 'var(--ispace-color-error)'; }
+            }
+        }).catch(function() {
+            if (indicator) { indicator.textContent = '自动保存失败'; indicator.style.color = 'var(--ispace-color-error)'; }
+        });
+    } else {
+        // Creating new doc — skip auto-save, just update indicator
+        if (indicator) { indicator.textContent = ''; }
+    }
+}
+
 // ---- Default inline create submit ----
 function inlineCreateSubmit(status) {
     var docName = document.getElementById('inline-doc-name');
@@ -265,27 +463,49 @@ function inlineCreateSubmit(status) {
     var parentDoc = document.getElementById('inline-parent-doc').value || '0';
     var parentProject = document.getElementById('inline-parent-project').value || '0';
 
-    // If creating root doc from homepage (no parent context), use create_project API
+    // If creating root doc from homepage (no parent context),
+    // first create the top-level doc, then create content doc under it
     if (parentProject === '0' && parentDoc === '0') {
-        var payload = 'pname=' + encodeURIComponent(docName ? docName.value : '');
-        if (tagsEl && tagsEl.value) payload += '&tag=' + encodeURIComponent(tagsEl.value);
-        payload += '&csrfmiddlewaretoken=' + (document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '');
+        var projPayload = 'pname=' + encodeURIComponent(docName ? docName.value : '');
+        if (tagsEl && tagsEl.value) projPayload += '&tag=' + encodeURIComponent(tagsEl.value);
+        projPayload += '&csrfmiddlewaretoken=' + (document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '');
         fetch('/create_project/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'X-Requested-With': 'XMLHttpRequest' },
-            body: payload
+            body: projPayload
         }).then(function(r) { return r.json(); })
         .then(function(r) {
-            if (r.status) {
-                window._inlineMdChanged = false;
-                destroyInlineEditor();
-                // Navigate to new root doc page
-                var newUrl = '/docs/' + r.data.id + '/';
-                if (window.iSpaceNav) { window.iSpaceNav.navigateTo(newUrl); }
-                else { window.location.href = newUrl; }
-            } else {
+            if (!r.status) {
                 alert('创建失败：' + (r.data || ''));
+                return;
             }
+            var projId = r.data.id;
+            // Now create a document inside the project with the editor content
+            var docPayload = 'doc_name=' + encodeURIComponent(docName ? docName.value : '') +
+                '&project=' + encodeURIComponent(projId) +
+                '&parent_doc=0' +
+                '&content=' + encodeURIComponent(content) +
+                '&pre_content=' + encodeURIComponent(preContent) +
+                '&status=' + status +
+                '&editor_mode=' + (window._docEditorMode || window._inlineEditorMode || 1);
+            if (tagsEl && tagsEl.value) docPayload += '&doc_tag=' + encodeURIComponent(tagsEl.value);
+            docPayload += '&csrfmiddlewaretoken=' + (document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '');
+            return fetch('/create_doc/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'X-Requested-With': 'XMLHttpRequest' },
+                body: docPayload
+            }).then(function(r2) { return r2.json(); })
+            .then(function(r2) {
+                if (r2.status) {
+                    window._inlineMdChanged = false;
+                    destroyInlineEditor();
+                    var newUrl = '/docs/' + projId + '/' + r2.data.doc + '/';
+                    if (window.iSpaceNav) { window.iSpaceNav.navigateTo(newUrl); }
+                    else { window.location.href = newUrl; }
+                } else {
+                    alert('创建文档失败：' + (r2.data || ''));
+                }
+            });
         });
         return;
     }

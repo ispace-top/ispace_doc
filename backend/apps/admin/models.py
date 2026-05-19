@@ -20,7 +20,7 @@ class SysSetting(models.Model):
 class UserOptions(models.Model):
     user = models.ForeignKey(User,on_delete=models.CASCADE)
     # 用户配置的编辑器选项，1表示Editormd编辑器，2表示Vditor编辑器，默认为1
-    editor_mode = models.IntegerField(default=1,verbose_name="编辑器选项")
+    editor_mode = models.IntegerField(default=2,verbose_name="编辑器选项")
 
     def __str__(self):
         return self.user

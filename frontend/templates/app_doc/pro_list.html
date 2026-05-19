@@ -56,12 +56,6 @@
                 {% endif %}
             </select>
         </div>
-        {% if user.is_authenticated %}
-        <button class="ispace-btn ispace-btn-primary ispace-btn-sm" onclick="enterHomeCreateMode()">
-            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd"/></svg>
-            {% trans "新建文档" %}
-        </button>
-        {% endif %}
     </div>
 </div>
 
@@ -79,9 +73,7 @@
                 {% endif %}
             </span>
             <h3 class="home-card-title">{{ fav.name }}</h3>
-            <span class="home-fav-type">{{ fav.type }}</span>
         </div>
-        <p class="home-card-desc">{{ fav.user }}&nbsp;|&nbsp;&nbsp;{{ fav.time|date:"m-d H:i" }} </p>
     </a>
     {% endfor %}
 </div>
@@ -118,8 +110,7 @@
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
             </div>
             <div class="home-doc-card-body">
-                <span class="home-doc-card-title">{{ item.name }}</span>
-                <span class="home-card-desc">{{ item.time|date:"m-d H:i" }}</span>
+                <span class="home-doc-card-title">{{ item.name }}</span><span class="home-doc-card-title">{{ item.user }}</span>
             </div>
         </a>
         {% endfor %}
@@ -403,8 +394,9 @@ window._inlineUploadImgUrl = '{% url "upload_doc_img" %}';
 window._inlineUploadIceImgUrl = '{% url "upload_ice_img" %}';
 window._inlineSubmitFn = inlineCreateSubmit;
 window._inlineCancelFn = inlineCancelHomeCreate;
+window._homeDefaultEditorMode = {{ editor_mode|default:2 }};
 
-function enterHomeCreateMode() {
+function enterHomeCreateMode(forceEditorMode) {
     var viewWrap = document.getElementById('home-view-wrap');
     if (viewWrap) viewWrap.style.display = 'none';
     window._inlineIsCreate = true;
@@ -412,7 +404,7 @@ function enterHomeCreateMode() {
     window._inlineProjectId = 0;
     document.getElementById('inline-parent-doc').value = '0';
     document.getElementById('inline-parent-project').value = '0';
-    initInlineEditor({{ editor_mode|default:1 }}, true);
+    initInlineEditor(forceEditorMode || window._homeDefaultEditorMode, true);
 }
 
 function inlineCancelHomeCreate() {
@@ -454,5 +446,14 @@ function updateDropdownLabel(sel, labelId) {
     });
     if (!label.textContent.trim()) label.textContent = opt.text;
 }
+
+// Auto-trigger inline editor if ?create=1 in URL
+(function(){
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('create') === '1') {
+        var eid = params.get('eid');
+        enterHomeCreateMode(eid ? parseInt(eid) : undefined);
+    }
+})();
 </script>
 {% endblock %}

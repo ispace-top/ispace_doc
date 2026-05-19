@@ -47,21 +47,15 @@
                     </a>
                     <dl class="layui-nav-child">
                         <dd>
-                            <a href="{% url 'create_doc' %}">
+                            <a href="/?create=1">
                                 <img src="{% static 'icon_img/create-doc-icon.svg' %}" height="14px" width="14px"></img>
                                 <span class="layui-hide-xs">{% trans "新建文档" %}</span>
                             </a>
                         </dd>
                         <dd>
-                            <a href="{% url 'create_doc' %}?eid=4">
+                            <a href="/?create=1&eid=4">
                                 <img src="{% static 'icon_img/create-table-icon.svg' %}" height="14px" width="14px"></img>
                                 <span class="layui-hide-xs">{% trans "新建表格" %}</span>
-                            </a>
-                        </dd>
-                        <dd>
-                            <a href="javascript:void(0);" onclick="createPro();">
-                                <img src="{% static 'icon_img/create-pro-icon.svg' %}" height="14px" width="14px"></img>
-                                <span class="layui-hide-xs">{% trans "新建文集" %}</span>
                             </a>
                         </dd>
                     </dl>
@@ -88,7 +82,7 @@
                     </dd>
                     {% endif %}
                     <dd class="layui-hide-md layui-hide-sm layui-hide-lg">
-                        <a href="{% url 'create_doc' %}" title="新建文档">
+                        <a href="/?create=1" title="新建文档">
                             <i class="layui-icon layui-icon-add-1 layui-hide-md"></i>
                             <span class="layui-hide-xs">{% trans "新建文档" %}</span>
                         </a>

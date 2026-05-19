@@ -66,14 +66,19 @@ def sidebar_tree(request):
 
     for p in qs:
         docs = pro_docs_map.get(p.id, [])
-        tree.append({
-            'id': p.id,
-            'name': p.name,
-            'top_doc': p.id,
-            'children': build_tree(docs),
-            'has_children': len(docs) > 0,
-            'open_children': False,
-            'is_project': True,
-        })
+        root_docs = [d for d in docs if d.parent_doc == 0]
+        if len(docs) == 1 and len(root_docs) == 1:
+            # 含单一根级文档的项目：扁平化，文档直接显示在树根
+            tree.extend(build_tree(docs))
+        else:
+            tree.append({
+                'id': p.id,
+                'name': p.name,
+                'top_doc': p.id,
+                'children': build_tree(docs),
+                'has_children': len(docs) > 0,
+                'open_children': False,
+                'is_project': True,
+            })
 
     return {'sidebar_tree': tree}

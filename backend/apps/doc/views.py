@@ -440,6 +440,7 @@ def project_list(request):
                 if d:
                     recent_views.append({
                         'name': d.name,
+                        'user':d.create_user.username,
                         'url': reverse('doc', args=[d.top_doc, d.id]),
                     })
             elif r[0] == 'pro':
@@ -447,6 +448,7 @@ def project_list(request):
                 if p:
                     recent_views.append({
                         'name': p.name,
+                        'user': p.create_user.username,
                         'url': reverse('pro_index', args=[p.id]),
                     })
 

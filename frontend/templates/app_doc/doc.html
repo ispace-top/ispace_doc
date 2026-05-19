@@ -70,13 +70,17 @@
     </div>
     <div class="ispace-doc-toolbar-right">
         {% if user.is_authenticated %}
-        <button class="ispace-btn ispace-btn-ghost ispace-btn-sm" id="collect-pro-btn" onclick="toggleCollectPro()" title="{% if is_collect_pro %}取消收藏{% else %}收藏文集{% endif %}">
-            <svg width="14" height="14" viewBox="0 0 20 20" fill="{% if is_collect_pro %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-            <span id="collect-pro-text">{% if is_collect_pro %}已收藏{% else %}收藏{% endif %}</span>
+        <button class="ispace-btn-icon ispace-btn-icon-sm" id="collect-pro-icon-btn" onclick="toggleCollectPro()" tooltip="{% if is_collect_pro %}已收藏{% else %}收藏{% endif %}" placement="bottom">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="{% if is_collect_pro %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+        </button>
+        <button class="ispace-btn-icon ispace-btn-icon-sm" onclick="toggleProShare()" tooltip="分享" placement="bottom">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"/></svg>
         </button>
         {% endif %}
-        {% if request.user == project.create_user or colla_user > 0 %}
-        <button class="ispace-btn ispace-btn-primary ispace-btn-sm" onclick="enterCreateMode()" id="header-add-btn">添加文档</button>
+        {% if request.user == project.create_user %}
+        <button class="ispace-btn-icon ispace-btn-icon-sm ispace-text-danger" onclick="delPro()" tooltip="删除" placement="bottom">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+        </button>
         {% endif %}
     </div>
     {% else %}
@@ -104,7 +108,6 @@
         <button class="ispace-btn-icon ispace-btn-icon-sm" id="history-btn" tooltip="编辑历史" placement="bottom">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         </button>
-        {% if request.user.is_authenticated %}
         <button class="ispace-btn-icon ispace-btn-icon-sm" id="collect-icon-btn" onclick="toggleCollect()" tooltip="{% if is_collect_doc %}已收藏{% else %}收藏{% endif %}" placement="bottom">
             <svg width="16" height="16" viewBox="0 0 20 20" fill="{% if is_collect_doc %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
         </button>
@@ -112,9 +115,6 @@
             <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"/></svg>
         </button>
         {% if request.user == doc.create_user or request.user == project.create_user or colla_user_role == 1 %}
-        <button class="ispace-btn-icon ispace-btn-icon-sm" onclick="enterChildCreateMode()" id="add-child-btn" tooltip="添加子文档" placement="bottom">
-            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/><line x1="12" y1="13" x2="12" y2="19"/><line x1="9" y1="16" x2="15" y2="16"/></svg>
-        </button>
         {% if doc.editor_mode != 4 %}
         <button class="ispace-btn-icon ispace-btn-icon-sm" onclick="enterEditMode()" id="edit-icon-btn" tooltip="编辑" placement="bottom">
             <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z"/><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd"/></svg>
@@ -129,7 +129,6 @@
         <button class="ispace-btn-icon ispace-btn-icon-sm ispace-text-danger" onclick="delDoc()" tooltip="删除" placement="bottom">
             <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
         </button>
-        {% endif %}
         {% endif %}
     </div>
     {% endif %}
@@ -264,6 +263,32 @@
         </div>
         <div class="ispace-modal-footer">
             <button class="ispace-btn ispace-btn-secondary" onclick="document.getElementById('shareModal').style.display='none'">关闭</button>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% if is_project_root %}
+{# --- Project Share Modal --- #}
+<div class="ispace-modal-backdrop" id="proShareModal" style="display:none;">
+    <div class="ispace-modal ispace-modal-sm">
+        <div class="ispace-modal-header">
+            <h3 class="ispace-modal-title">分享文档</h3>
+            <button class="ispace-modal-close" onclick="document.getElementById('proShareModal').style.display='none'">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="ispace-modal-body">
+            <div class="ispace-form-group">
+                <label class="ispace-form-label">分享链接</label>
+                <div style="display:flex;gap:8px;">
+                    <input type="text" id="pro-share-url" class="ispace-form-input" readonly
+                           value="{{ request.scheme }}://{{ request.META.HTTP_HOST }}{% url 'pro_index' project.id %}" style="flex:1;">
+                    <button class="ispace-btn ispace-btn-primary ispace-btn-sm" onclick="copyProShareUrl()">复制</button>
+                </div>
+            </div>
+        </div>
+        <div class="ispace-modal-footer">
+            <button class="ispace-btn ispace-btn-secondary" onclick="document.getElementById('proShareModal').style.display='none'">关闭</button>
         </div>
     </div>
 </div>
@@ -538,6 +563,7 @@ window._docPreContent = '{{ doc.pre_content|escapejs }}';
 window._docContent = '{{ doc.content|escapejs }}';
 window._docName = '{{ doc.name|escapejs }}';
 window._docTags = '{{ doc_tags_str|default:""|escapejs }}';
+window._inlineDocStatus = {{ doc.status }};
 {% if is_project_root %}
 window._inlineSubmitFn = inlineCreateSubmit;
 window._inlineCancelFn = inlineCancelCreate;
@@ -673,7 +699,7 @@ function refreshDocView() {
             var vdEl = document.getElementById('vditor-doc-content');
             if (vdEl && typeof Vditor !== 'undefined') {
                 Vditor.preview(vdEl, window._docPreContent, {
-                    cdn: '{% static "vditor" %}/dist',
+                    cdn: '{% static "vditor" %}',
                     mode: 'light',
                     hljs: { style: 'github' }
                 });
@@ -702,8 +728,7 @@ window.addEventListener('beforeunload', function(e) {
 {% if is_project_root %}
 // ---- Project Root: Collection Toggle ----
 function toggleCollectPro(){
-    var btn = document.getElementById('collect-pro-btn');
-    var txt = document.getElementById('collect-pro-text');
+    var btn = document.getElementById('collect-pro-icon-btn');
     var fd = new FormData();
     fd.append('csrfmiddlewaretoken','{{ csrf_token }}');
     fd.append('collect_id',{{ project.id }});
@@ -715,12 +740,35 @@ function toggleCollectPro(){
             var iconSvg = btn.querySelector('svg');
             if(r.data==='add'){
                 iconSvg.setAttribute('fill','currentColor');
-                txt.textContent='已收藏';
+                btn.setAttribute('tooltip','已收藏');
             }else{
                 iconSvg.setAttribute('fill','none');
-                txt.textContent='收藏';
+                btn.setAttribute('tooltip','收藏');
             }
         }
+    });
+}
+
+function toggleProShare(){
+    document.getElementById('proShareModal').style.display='flex';
+}
+
+function copyProShareUrl(){
+    var input = document.getElementById('pro-share-url');
+    input.select();document.execCommand('copy');
+    if(window.iSpaceDoc&&iSpaceDoc.Toast){iSpaceDoc.Toast.success('链接已复制');}
+}
+
+async function delPro(){
+    if(!(await confirm('确认删除此文档及其所有子文档？此操作不可恢复！', { variant: 'danger' }))) return;
+    var formData = new FormData();
+    formData.append('csrfmiddlewaretoken','{{ csrf_token }}');
+    formData.append('project_id',{{ project.id }});
+    fetch('{% url "del_project" %}',{method:'POST',body:formData})
+    .then(function(r){return r.json();})
+    .then(function(r){
+        if(r.status){window.location.href='/';}
+        else{alert('删除失败：'+r.data);}
     });
 }
 
@@ -758,13 +806,28 @@ function exitCreateMode() {
 
 var _vditorReady = typeof Vditor !== 'undefined';
 
+var _isProjectRoot = {{ is_project_root|yesno:"true,false" }};
+// Auto-trigger inline editor if ?create=1 or ?create_child=1 in URL
+// Runs immediately (not in DOMContentLoaded) so it also works during SPA navigation
+(function(){
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('create') === '1') {
+        if (_isProjectRoot) { enterCreateMode(); }
+        else { enterChildCreateMode(); }
+    } else if (params.get('create_child') === '1') {
+        enterChildCreateMode();
+    }
+})();
+
 document.addEventListener('DOMContentLoaded',function(){
     // Apply doc-view-main class to reduce horizontal padding
     var main = document.querySelector('.ispace-main-content');
     if (main) main.classList.add('doc-view-main');
 
+//
+
     {% if doc.editor_mode == 2 %}
-    Vditor.preview(document.getElementById('vditor-doc-content'),'{{ doc.pre_content|escapejs }}',{cdn:'{% static "vditor" %}/dist',mode:'light',hljs:{style:'github'}});
+    Vditor.preview(document.getElementById('vditor-doc-content'),'{{ doc.pre_content|escapejs }}',{cdn:'{% static "vditor" %}',mode:'light',hljs:{style:'github'}});
     {% elif doc.editor_mode == 3 %}
     // HTML raw — already rendered server-side
     {% elif doc.editor_mode == 4 %}
