@@ -228,17 +228,25 @@ function openConfigForm(id) {
             });
         }
     }
-    // 关闭已有弹窗再打开新的，避免残留遮罩
-    if (_formLayerIndex !== null) { layer.close(_formLayerIndex); _formLayerIndex = null; }
-    _formLayerIndex = layer.open({
-        type: 1, title: id ? '编辑 WebHook' : '新建 WebHook', content: document.getElementById('webhook-form-dialog'),
-        area: ['520px', '500px'], btn: [], closeBtn: 1,
-        cancel: function() { _formLayerIndex = null; }
-    });
+    // 原生弹窗实现，不依赖 LayUI layer 模块
+    if (_formLayerIndex) { _formLayerIndex.remove(); _formLayerIndex = null; }
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:19999;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;';
+    var dlg = document.createElement('div');
+    dlg.style.cssText = 'background:#fff;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,0.2);width:520px;max-width:90vw;position:relative;';
+    dlg.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #e5e7eb;"><h3 style="margin:0;font-size:16px;">' + (id ? '编辑 WebHook' : '新建 WebHook') + '</h3><button style="border:none;background:none;font-size:22px;cursor:pointer;color:#94a3b8;line-height:1;" id="__wf_close_btn__">&times;</button></div>';
+    var formEl = document.getElementById('webhook-form-dialog');
+    formEl.style.display = 'block';
+    dlg.appendChild(formEl);
+    overlay.appendChild(dlg);
+    document.getElementById('__wf_close_btn__').onclick = function() { overlay.remove(); _formLayerIndex = null; };
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) { overlay.remove(); _formLayerIndex = null; } });
+    document.body.appendChild(overlay);
+    _formLayerIndex = overlay;
 }
 
 function closeConfigForm() {
-    if (_formLayerIndex) { layer.close(_formLayerIndex); _formLayerIndex = null; }
+    if (_formLayerIndex) { _formLayerIndex.remove(); _formLayerIndex = null; }
 }
 
 function editConfig(id) { openConfigForm(id); }
@@ -247,8 +255,8 @@ function submitConfigForm() {
     var id = document.getElementById('wf-id').value;
     var name = document.getElementById('wf-name').value.trim();
     var url = document.getElementById('wf-url').value.trim();
-    if (!name) { layer.msg('请输入名称'); return; }
-    if (!url) { layer.msg('请输入 URL'); return; }
+    if (!name) { alert('请输入名称'); return; }
+    if (!url) { alert('请输入 URL'); return; }
     var events = [];
     document.querySelectorAll('.wf-event-cb:checked').forEach(function(cb) { events.push(cb.value); });
     var payload = {
@@ -267,27 +275,26 @@ function submitConfigForm() {
     .then(function(r) { return r.json(); })
     .then(function(resp) {
         if (resp.id || resp.status === 'ok') {
-            layer.msg('保存成功', {icon: 1});
+            alert('保存成功');
             closeConfigForm();
             loadConfigs();
         } else {
-            layer.msg('保存失败: ' + (resp.error || '未知错误'), {icon: 2});
+            alert('保存失败: ' + (resp.error || '未知错误'));
         }
     })
-    .catch(function(e) { layer.msg('保存失败: ' + e.message, {icon: 2}); });
+    .catch(function(e) { alert('保存失败: ' + e.message); });
 }
 
 function deleteConfig(id) {
-    layer.confirm('确定删除此 WebHook 配置吗？', {icon: 3, title: '确认删除'}, function(idx) {
-        layer.close(idx);
-        fetch('/api/webhook/configs/' + id + '/delete/', {method: 'POST', headers: {'X-CSRFToken': getCSRF()}})
+    if (!confirm('确定删除此 WebHook 配置吗？')) return;
+    fetch('/api/webhook/configs/' + id + '/delete/', {method: 'POST', headers: {'X-CSRFToken': getCSRF()}})
             .then(function(r) { return r.json(); })
             .then(function(resp) {
-                if (resp.status === 'ok') { layer.msg('已删除', {icon: 1}); loadConfigs(); }
-                else { layer.msg('删除失败: ' + (resp.error || ''), {icon: 2}); }
+                if (resp.status === 'ok') { alert('已删除'); loadConfigs(); }
+                else { alert('删除失败: ' + (resp.error || '')); }
             })
-            .catch(function(e) { layer.msg('删除失败: ' + e.message, {icon: 2}); });
-    });
+            .catch(function(e) { alert('删除失败: ' + e.message); });
+}
 }
 
 function testWebhook(id) {
@@ -300,12 +307,12 @@ function testWebhook(id) {
             btn.textContent = '测试';
             btn.disabled = false;
             if (resp.success) {
-                layer.msg('测试成功 (HTTP ' + resp.response_status + ', ' + resp.duration_ms + 'ms)', {icon: 1});
+                alert('测试成功 (HTTP ' + resp.response_status + ', ' + resp.duration_ms + 'ms)');
             } else {
-                layer.msg('测试失败 (HTTP ' + resp.response_status + '): ' + (resp.response_body || '').substring(0, 100), {icon: 2, time: 5000});
+                alert('测试失败 (HTTP ' + resp.response_status + '): ' + (resp.response_body || '').substring(0, 100));
             }
         })
-        .catch(function(e) { btn.textContent = '测试'; btn.disabled = false; layer.msg('测试异常: ' + e.message, {icon: 2}); });
+        .catch(function(e) { btn.textContent = '测试'; btn.disabled = false; alert('测试异常: ' + e.message); });
 }
 
 // ---- Deliveries ----
@@ -392,7 +399,7 @@ function showDeliveryDetail(id) {
                 '<button class="ispace-btn ispace-btn-xs ispace-btn-secondary" style="margin-top:8px;" onclick="document.getElementById(\'delivery-detail-container\').innerHTML=\'\';">关闭</button>' +
                 '</div>';
         })
-        .catch(function(e) { layer.msg('获取详情失败: ' + e.message, {icon: 2}); });
+        .catch(function(e) { alert('获取详情失败: ' + e.message); });
 }
 
 // ---- Helpers ----
