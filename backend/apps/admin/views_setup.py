@@ -234,6 +234,15 @@ def api_setup_install(request):
                     name='enable_email', defaults={'value': 'on', 'types': 'basic'}
                 )
 
+        # 生成内置用户指南文档（以超级管理员为作者）
+        try:
+            admin_user = User.objects.filter(is_superuser=True).order_by('id').last()
+            if admin_user:
+                from backend.apps.admin.seed_guide import create_builtin_guide
+                create_builtin_guide(admin_user)
+        except Exception:
+            pass  # 用户指南生成失败不应阻断安装流程
+
         # 标记安装完成
         try:
             with open(SETUP_MARKER, 'w') as f:
