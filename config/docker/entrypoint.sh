@@ -17,8 +17,8 @@ else
     echo "Already initialized, skipping migrations."
 fi
 
-# 确保 media 和 log 目录存在
-mkdir -p /app/iSpaceDoc/media /app/iSpaceDoc/log
+# 确保持久化目录存在
+mkdir -p /app/iSpaceDoc/data /app/iSpaceDoc/media /app/iSpaceDoc/log
 
 # 执行传入的命令，如果 uwsgi ini 文件缺失则回退到命令行参数
 if [ "$1" = "uwsgi" ] && [ "$2" = "--ini" ]; then

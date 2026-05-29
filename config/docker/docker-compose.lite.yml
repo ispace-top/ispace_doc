@@ -17,7 +17,7 @@ services:
     environment:
       - ISDOC_CONFIG=config-lite.ini
     volumes:
-      - ispace_data:/app/iSpaceDoc/config/conf   # SQLite 数据库文件
+      - ispace_data:/app/iSpaceDoc/data            # SQLite 数据库文件
       - ispace_media:/app/iSpaceDoc/media         # 上传文件
       - ispace_index:/app/iSpaceDoc/whoosh_index  # 搜索索引
     ports:
