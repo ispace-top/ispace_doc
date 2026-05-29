@@ -667,7 +667,7 @@ def create_new_document(request):
                     try:
                         # 创建文档
                         em = int(editor_mode)
-                        source = pre_content if em == 2 else doc_content
+                        source = pre_content if em in (0, 2) else doc_content
                         outline = parse_outline(source, em)
                         doc = Doc.objects.create(
                             name=doc_name,
@@ -701,7 +701,7 @@ def create_new_document(request):
                             from backend.apps.doc.services import NotificationService
                             mentioned_users = User.objects.filter(
                                 username__in=set(mentions), is_active=True
-                            ).exclude(id=request.user.id)
+                            )
                             doc_url = f'/pages/{doc.id}/'
                             for mu in mentioned_users:
                                 NotificationService.send(
@@ -798,7 +798,7 @@ def edit_existing_document(request,doc_id):
                                     doc_name = doc_name[len(draft_prefix):]
                             # 更新文档内容，parent_doc 未传则保持原值
                             em = int(editor_mode)
-                            source = pre_content if em == 2 else doc_content
+                            source = pre_content if em in (0, 2) else doc_content
                             outline = parse_outline(source, em)
                             Doc.objects.filter(id=int(doc_id)).update(
                                 name=doc_name,
@@ -841,7 +841,7 @@ def edit_existing_document(request,doc_id):
                                 from backend.apps.doc.models import User
                                 mentioned_users = User.objects.filter(
                                     username__in=new_mentioned, is_active=True
-                                ).exclude(id=request.user.id)
+                                )
                                 doc_url = f'/pages/{doc_id}/'
                                 for mu in mentioned_users:
                                     NotificationService.send(

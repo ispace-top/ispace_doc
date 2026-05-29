@@ -205,7 +205,7 @@ def api_user_search(request):
     q = request.GET.get('q', '').strip()
     if not q or len(q) < 1:
         # 无搜索词时返回前 20 个活跃用户
-        users = User.objects.filter(is_active=True, is_superuser=False).select_related('profile')[:20]
+        users = User.objects.filter(is_active=True).select_related('profile')[:20]
         results = []
         for u in users:
             profile = getattr(u, 'profile', None)
@@ -223,7 +223,7 @@ def api_user_search(request):
         return JsonResponse({'results': results})
     users = User.objects.filter(
         Q(username__icontains=q) | Q(first_name__icontains=q) | Q(last_name__icontains=q),
-        is_active=True, is_superuser=False,
+        is_active=True,
     ).select_related('profile')[:20]
     results = []
     for u in users:
