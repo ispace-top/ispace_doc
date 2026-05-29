@@ -19,10 +19,10 @@ from backend.apps.doc.models import Notification
 
 NOTIFICATION_CHANNEL_ROUTES: dict[str, list[str]] = {
     'system': ['in_app', 'email'],
-    'comment': ['in_app'],
-    'reply': ['in_app'],
-    'mention': ['in_app', 'email'],
-    'doc_change': ['in_app'],
+    'comment': ['in_app', 'wecom'],
+    'reply': ['in_app', 'wecom'],
+    'mention': ['in_app', 'email', 'wecom'],
+    'doc_change': ['in_app', 'wecom'],
     'doc_like': ['in_app'],
     'perm_apply': ['in_app', 'email'],
     'perm_change': ['in_app', 'email'],
@@ -163,29 +163,121 @@ class EmailChannel(BaseNotificationChannel):
 
 
 class WeComChannel(BaseNotificationChannel):
-    """企业微信通知通道（预留）。"""
+    """企业微信通知通道 — 通过自建应用发送消息给指定用户。"""
 
     channel_id = 'wecom'
     channel_name = '企业微信'
 
+    def __init__(self):
+        self._access_token: str = ''
+        self._token_expires_at: float = 0.0
+
+    def _get_access_token(self) -> str:
+        """获取企业微信 access_token（含缓存）。"""
+        import time
+        if self._access_token and time.time() < self._token_expires_at - 60:
+            return self._access_token
+
+        # 从 config.ini 读取企业微信应用凭证
+        from backend.apps.doc.storage.config import _read_config
+        parser = _read_config()
+        if not parser.has_section('auth.wecom'):
+            raise RuntimeError('企业微信未配置 [auth.wecom] 段')
+
+        corp_id = parser.get('auth.wecom', 'corp_id', fallback='')
+        corp_secret = parser.get('auth.wecom', 'corp_secret', fallback='')
+        agent_id = parser.get('auth.wecom', 'agent_id', fallback='')
+
+        if not corp_id or not corp_secret:
+            raise RuntimeError('企业微信 corp_id / corp_secret 未配置')
+
+        import requests
+        resp = requests.get('https://qyapi.weixin.qq.com/cgi-bin/gettoken', params={
+            'corpid': corp_id, 'corpsecret': corp_secret,
+        }, timeout=15)
+        data = resp.json()
+        if data.get('errcode') != 0:
+            raise RuntimeError(f"企业微信 access_token 获取失败: {data.get('errmsg')}")
+
+        self._access_token = data['access_token']
+        self._token_expires_at = time.time() + data.get('expires_in', 7200)
+        return self._access_token
+
     def send(self, notification: Notification, recipient: User) -> bool:
-        logger.info(f'[WeComChannel] 预留通道，未实际发送: recipient={recipient.pk} type={notification.notification_type}')
-        return False
+        """通过企业微信应用消息发送通知。"""
+        try:
+            from backend.apps.admin.models import UserProfile
+            profile = UserProfile.objects.only('wecom_userid', 'notify_settings').get(user=recipient)
+        except UserProfile.DoesNotExist:
+            logger.info(f'[WeComChannel] 用户无 UserProfile: recipient={recipient.pk}')
+            return False
+
+        if not profile.wecom_userid:
+            logger.info(f'[WeComChannel] 用户未绑定企业微信: recipient={recipient.pk}')
+            return False
+
+        # 检查用户通知偏好
+        try:
+            settings = _json.loads(profile.notify_settings or '{}')
+            if not settings.get('wecom_enabled', True):
+                return False
+        except Exception:
+            pass
+
+        try:
+            token = self._get_access_token()
+            from backend.apps.doc.storage.config import _read_config
+            parser = _read_config()
+            agent_id = parser.get('auth.wecom', 'agent_id', fallback='')
+
+            sender_name = (notification.sender.first_name or notification.sender.username) if notification.sender else '系统'
+            link = notification.link or ''
+            # 企业微信 textcard 消息（带链接卡片）
+            if link:
+                body = {
+                    'touser': profile.wecom_userid,
+                    'msgtype': 'textcard',
+                    'agentid': int(agent_id) if agent_id else 0,
+                    'textcard': {
+                        'title': notification.title or 'iSpaceDoc 通知',
+                        'description': f'{sender_name}: {notification.body[:500]}',
+                        'url': link,
+                    },
+                }
+            else:
+                body = {
+                    'touser': profile.wecom_userid,
+                    'msgtype': 'text',
+                    'agentid': int(agent_id) if agent_id else 0,
+                    'text': {'content': f'【{notification.title}】\n{sender_name}: {notification.body[:1000]}'},
+                }
+
+            import requests
+            resp = requests.post(
+                f'https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token={token}',
+                json=body, timeout=10,
+            )
+            result = resp.json()
+            if result.get('errcode') == 0:
+                return True
+            logger.warning(f'[WeComChannel] 消息发送失败: {result.get("errmsg")} recipient={recipient.pk}')
+            return False
+        except Exception:
+            logger.exception(f'[WeComChannel] 发送异常: recipient={recipient.pk}')
+            return False
 
     def validate_config(self) -> bool:
-        from backend.apps.admin.models import SysConfig
         try:
-            enabled = SysConfig.objects.get(key='channel.wecom.enabled')
-            return enabled.value.lower() == 'true'
-        except SysConfig.DoesNotExist:
+            token = self._get_access_token()
+            return bool(token)
+        except Exception:
             return False
 
     def is_available_for(self, user: User) -> bool:
         try:
             from backend.apps.admin.models import UserProfile
-            profile = UserProfile.objects.only('notify_settings').get(user=user)
-            settings = _json.loads(profile.notify_settings or '{}')
-            return bool(settings.get('wecom_userid'))
+            profile = UserProfile.objects.only('wecom_userid').get(user=user)
+            return bool(profile.wecom_userid)
         except Exception:
             return False
 
