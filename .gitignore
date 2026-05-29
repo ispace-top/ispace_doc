@@ -64,6 +64,9 @@ whoosh_index/
 # 配置文件（包含敏感信息）
 config/conf/db.sqlite3
 
+# 本地数据目录（SQLite 数据库）
+data/
+
 # 安装标记
 .ispace_installed
 

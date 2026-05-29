@@ -32,10 +32,13 @@ def sys_setting(request):
     setting_dict['debug'] = settings.DEBUG
     # 站点地图状态
     setting_dict['sitemap'] = settings.SITEMAP
-    # 获取系统设置状态
-    datas = SysSetting.objects.filter(types__in=["basic","doc"])
-    for data in datas:
-        setting_dict[data.name] = data.value
+    # 获取系统设置状态（数据库未迁移时静默跳过）
+    try:
+        datas = SysSetting.objects.filter(types__in=["basic","doc"])
+        for data in datas:
+            setting_dict[data.name] = data.value
+    except Exception:
+        pass
 
     # 主题配置
     setting_dict['active_theme'] = _resolve_active_theme(setting_dict)
