@@ -27,7 +27,8 @@ class EmailService:
             try:
                 config['pwd'] = dectry(config['pwd'])
             except Exception:
-                pass
+                logger.warning('邮箱密码解密失败（密钥已变更？请在管理后台重新设置邮箱密码）')
+                config['pwd'] = ''
         # 检查是否启用了邮箱
         try:
             enable = SysSetting.objects.get(name='enable_email', types='basic')
