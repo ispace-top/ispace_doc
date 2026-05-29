@@ -20,5 +20,28 @@ fi
 # 确保 media 和 log 目录存在
 mkdir -p /app/iSpaceDoc/media /app/iSpaceDoc/log
 
-# 执行传入的命令（uwsgi / uvicorn / 其他）
+# 执行传入的命令，如果 uwsgi ini 文件缺失则回退到命令行参数
+if [ "$1" = "uwsgi" ] && [ "$2" = "--ini" ]; then
+    UWSGI_INI="$3"
+    if [ ! -f "$UWSGI_INI" ]; then
+        echo "WARNING: $UWSGI_INI not found, falling back to inline config."
+        echo "Contents of /app/iSpaceDoc/config/conf/:"
+        ls -la /app/iSpaceDoc/config/conf/ 2>&1 || echo "(directory not found)"
+        exec uwsgi \
+            --master \
+            --processes 5 \
+            --chdir /app/iSpaceDoc \
+            --wsgi-file /app/iSpaceDoc/backend/core/wsgi.py \
+            --http-socket "0.0.0.0:${LISTEN_PORT:-10086}" \
+            --logto /app/iSpaceDoc/log/uwsgi.log \
+            --log-maxsize 3000000 \
+            --chmod-socket 664 \
+            --vacuum \
+            --enable-threads \
+            --max-requests 1000 \
+            --buffer-size 65536 \
+            --die-on-term
+    fi
+fi
+
 exec "$@"
