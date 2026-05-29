@@ -86,8 +86,8 @@ def _check_step2(data):
     password = data.get('password', '').strip()
     password2 = data.get('password2', '').strip()
 
-    if not username or len(username) < 5 or not username.isalnum() or username.lower() != username:
-        return {'status': False, 'message': '用户名需为5位以上小写英文+数字'}
+    if not username or len(username) < 5 or not username.isalnum():
+        return {'status': False, 'message': '用户名需为5位以上大小写字母+数字'}
     if '@' not in email:
         return {'status': False, 'message': '请输入正确的邮箱格式'}
     if len(password) < 6:
