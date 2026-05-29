@@ -54,6 +54,9 @@ RUN mkdir -p /app/iSpaceDoc/config/conf-templates \
     && cp /app/iSpaceDoc/config/conf/config-lite.ini /app/iSpaceDoc/config/conf-templates/ \
     && cp /app/iSpaceDoc/config/conf/config-docker.ini /app/iSpaceDoc/config/conf-templates/
 
+# 收集静态文件（Whitenoise 生产环境需要）
+RUN python /app/iSpaceDoc/manage.py collectstatic --noinput
+
 # 设置启动脚本权限
 RUN chmod +x config/docker/entrypoint.sh config/tests/test_django.py
 
