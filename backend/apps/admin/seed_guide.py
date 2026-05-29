@@ -152,33 +152,27 @@ $$
 
 ## 思维导图
 
-```mindmap
-# 知识体系
-## 编程语言
-### Python
-### JavaScript
-### Go
-## 数据库
-### PostgreSQL
-### Redis
-## 前端框架
-### React
-### Vue
-```
+在 Markdown IR 编辑器中，使用 \`\`\`mindmap 代码块可以创建思维导图。编辑时输入：
+
+- 以 `#` 开头的行 → 根节点
+- 以 `##` 开头的行 → 一级分支
+- 以 `###` 开头的行 → 二级分支
+
+例如，构建一个知识体系图谱：
+- **编程语言**：Python、JavaScript、Go
+- **数据库**：PostgreSQL、Redis
+- **前端框架**：React、Vue
+
+> tip 思维导图在编辑模式下可以拖拽调整节点、添加兄弟/子节点、缩放画布。
 
 ## 流程图
 
-```flow
-st=>start: 开始
-op=>operation: 编写文档
-cond=>condition: 需要协作？
-pub=>operation: 发布分享
-end=>end: 完成
+在编辑器中，使用 \`\`\`flow 语法可以绘制流程图：
 
-st->op->cond
-cond(yes)->pub->end
-cond(no)->end
-```
+- `start` 起点 → `operation` 处理步骤 → `condition` 条件判断 → 分支 → `end` 终点
+- 支持 `yes`/`no` 条件分支自动连线
+
+例如："开始 → 编写文档 → 需要协作？→ 是 → 发布分享 → 完成"
 
 ## 代码块语法高亮
 
