@@ -366,11 +366,7 @@ function _loadCSS(href) {
 }
 
 function initInlineEditor(editorMode, isCreate) {
-    // 兼容旧编辑器编号：2(Vditor)→0(Markdown), 4(Luckysheet)→1(电子表格)
-    var mode = editorMode || 0;
-    if (mode === 2) mode = 0;
-    if (mode === 4) mode = 1;
-    window._inlineEditorMode = mode;
+    window._inlineEditorMode = editorMode || 0;
     window._inlineIsCreate = isCreate || false;
     window._inlineMdChanged = false;
 

@@ -75,10 +75,10 @@
                             <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b;margin-right:6px;"></span>
                             <a href="{% url 'modify_doc' d.id %}" target="_blank" title="{% blocktrans with name=d.name %}修改文档：{{ name }}{% endblocktrans %}" style="font-weight:500;">{{ d.name }}</a>
                             {% endif %}
-                            {% if d.editor_mode|stringformat:"s" in '0,2' %}
-                            <span title="{% trans '普通文档' %}" style="margin-left:4px;font-size:12px;">&#128196;</span>
-                            {% elif d.editor_mode|stringformat:"s" in '1,4' %}
-                            <span title="{% trans '表格文档' %}" style="margin-left:4px;font-size:12px;">&#128202;</span>
+                            {% if d.editor_mode == 0 %}
+                            <span title="Markdown" style="margin-left:4px;font-size:12px;">&#128196;</span>
+                            {% elif d.editor_mode == 1 %}
+                            <span title="{% trans '电子表格' %}" style="margin-left:4px;font-size:12px;">&#128202;</span>
                             {% endif %}
                         </td>
                         <td>
@@ -90,8 +90,8 @@
                         </td>
                         <td>{{ d.parent|default:'--' }}</td>
                                                 <td>
-                            {% if d.editor_mode == 0 or d.editor_mode == 2 %}Markdown
-                            {% elif d.editor_mode == 1 or d.editor_mode == 4 %}{% trans "电子表格" %}
+                            {% if d.editor_mode == 0 %}Markdown
+                            {% elif d.editor_mode == 1 %}{% trans "电子表格" %}
                             {% else %}--{% endif %}
                         </td>
                         <td>{% if d.open_children %}{% trans "展开" %}{% else %}{% trans "收起" %}{% endif %}</td>
