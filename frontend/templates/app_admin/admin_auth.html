@@ -222,7 +222,9 @@ function loadProviderConfigs() {
                 var hasConfig = Object.keys(cfg.config).length > 0;
                 html += '<div class="auth-card" id="auth-card-' + p + '">';
                 html += '<div class="auth-card-header">';
-                html += '<span class="auth-card-title">' + escapeHTML(cfg.label) + '</span>';
+                html += '<span class="auth-card-title">' + escapeHTML(cfg.label);
+                html += ' <a href="javascript:void(0)" onclick="showAuthHelp(\'' + p + '\')" title="{% trans '配置帮助' %}" style="font-size:14px;color:var(--ispace-color-brand-500);text-decoration:none;margin-left:4px;">&#9432;</a>';
+                html += '</span>';
                 html += '<span style="display:flex;align-items:center;gap:8px;">';
                 if (hasConfig) {
                     html += '<label class="auth-toggle-switch" title="' + (cfg.enabled ? '{% trans "已启用" %}' : '{% trans "已禁用" %}') + '">';
@@ -532,6 +534,97 @@ function pollSyncStatus(provider, attempt) {
                 _syncTimers[provider] = setTimeout(function() { pollSyncStatus(provider, next); }, 3000);
             }
         });
+}
+
+// ---- 认证配置帮助 ----
+var AUTH_HELP = {
+    wecom: '<div style="line-height:1.8;font-size:14px;">' +
+        '<h3 style="margin:0 0 12px;color:#1a1a2e;">企业微信接入指南</h3>' +
+        '<h4 style="margin:16px 0 8px;color:#3b82f6;">一、在企业微信管理后台操作</h4>' +
+        '<p>1. 登录 <a href="https://work.weixin.qq.com/" target="_blank">企业微信管理后台</a></p>' +
+        '<p>2. 进入 <b>应用管理 → 自建应用</b>，创建一个自建应用（如"iSpaceDoc"）</p>' +
+        '<p>3. 记录下应用的 <b>AgentId</b> 和 <b>Secret</b></p>' +
+        '<p>4. 进入 <b>我的企业 → 企业信息</b>，复制 <b>企业ID（CorpId）</b></p>' +
+        '<h4 style="margin:16px 0 8px;color:#3b82f6;">二、配置网页授权回调域名</h4>' +
+        '<p>在自建应用页面中，点击"网页授权及JS-SDK" → 设置 <b>可信域名</b>：</p>' +
+        '<div style="background:#f0f0f0;padding:10px;border-radius:6px;margin:8px 0;font-family:monospace;">' +
+        '将你的 iSpaceDoc 部署域名填写为可信域名（不带协议，如 <b>doc.example.com</b>）</div>' +
+        '<p style="color:#dc2626;">⚠ 必须配置可信域名，否则登录时会提示"redirect_uri 与配置的授权完成回调域名不一致"</p>' +
+        '<h4 style="margin:16px 0 8px;color:#3b82f6;">三、在本页面填写参数</h4>' +
+        '<table style="width:100%;border-collapse:collapse;">' +
+        '<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:6px 8px;font-family:monospace;">corp_id</td><td style="padding:6px 8px;">企业的 CorpId（从"我的企业"页面获取）</td></tr>' +
+        '<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:6px 8px;font-family:monospace;">corp_secret</td><td style="padding:6px 8px;">自建应用的 Secret</td></tr>' +
+        '<tr><td style="padding:6px 8px;font-family:monospace;">agent_id</td><td style="padding:6px 8px;">自建应用的 AgentId</td></tr>' +
+        '</table>' +
+        '<h4 style="margin:16px 0 8px;color:#3b82f6;">四、同步组织架构</h4>' +
+        '<p>配置完成并启用后，点击"同步"按钮即可从企业微信拉取部门和成员数据。</p>' +
+        '<p>同步后的用户名为 <b>wecom_{企业微信账号}</b>，通过企业微信 OAuth 扫码登录。</p>' +
+        '</div>',
+
+    oidc: '<div style="line-height:1.8;font-size:14px;">' +
+        '<h3 style="margin:0 0 12px;color:#1a1a2e;">OIDC 接入指南</h3>' +
+        '<h4 style="margin:16px 0 8px;color:#3b82f6;">回调地址（Redirect URI）</h4>' +
+        '<p>在 OIDC 服务端（Keycloak / Auth0 / Azure AD）配置回调地址：</p>' +
+        '<div style="background:#f0f0f0;padding:10px;border-radius:6px;margin:8px 0;font-family:monospace;">' +
+        'https://你的域名<b>/auth/oidc/callback/</b></div>' +
+        '<h4 style="margin:16px 0 8px;color:#3b82f6;">配置说明</h4>' +
+        '<table style="width:100%;border-collapse:collapse;">' +
+        '<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:6px 8px;font-family:monospace;">provider_name</td><td style="padding:6px 8px;">显示在登录页的名称，如 "Keycloak"</td></tr>' +
+        '<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:6px 8px;font-family:monospace;">discovery_url</td><td style="padding:6px 8px;">OIDC Discovery 端点，如 https://keycloak.example.com/realms/myrealm/.well-known/openid-configuration</td></tr>' +
+        '<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:6px 8px;font-family:monospace;">client_id</td><td style="padding:6px 8px;">在 IdP 注册的客户端 ID</td></tr>' +
+        '<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:6px 8px;font-family:monospace;">client_secret</td><td style="padding:6px 8px;">客户端密钥</td></tr>' +
+        '<tr><td style="padding:6px 8px;font-family:monospace;">scope</td><td style="padding:6px 8px;">如 openid profile email（空格分隔）</td></tr>' +
+        '</table>' +
+        '</div>',
+
+    ldap: '<div style="line-height:1.8;font-size:14px;">' +
+        '<h3 style="margin:0 0 12px;color:#1a1a2e;">LDAP 接入指南</h3>' +
+        '<h4 style="margin:16px 0 8px;color:#3b82f6;">配置说明</h4>' +
+        '<table style="width:100%;border-collapse:collapse;">' +
+        '<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:6px 8px;font-family:monospace;">server_uri</td><td style="padding:6px 8px;">LDAP 服务器地址，如 ldap://ldap.example.com:389</td></tr>' +
+        '<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:6px 8px;font-family:monospace;">bind_dn</td><td style="padding:6px 8px;">管理员绑定 DN，如 cn=admin,dc=example,dc=com</td></tr>' +
+        '<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:6px 8px;font-family:monospace;">bind_password</td><td style="padding:6px 8px;">管理员密码</td></tr>' +
+        '<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:6px 8px;font-family:monospace;">user_base_dn</td><td style="padding:6px 8px;">用户搜索基准 DN</td></tr>' +
+        '<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:6px 8px;font-family:monospace;">user_filter</td><td style="padding:6px 8px;">用户过滤器，如 (uid=%(user)s)，%(user)s 会被替换为登录用户名</td></tr>' +
+        '<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:6px 8px;font-family:monospace;">username_attr</td><td style="padding:6px 8px;">用户名属性，如 uid 或 sAMAccountName</td></tr>' +
+        '<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:6px 8px;font-family:monospace;">email_attr</td><td style="padding:6px 8px;">邮箱属性，如 mail</td></tr>' +
+        '<tr><td style="padding:6px 8px;font-family:monospace;">use_tls</td><td style="padding:6px 8px;">是否启用 TLS 加密，填写 true 或 false</td></tr>' +
+        '</table>' +
+        '<h4 style="margin:16px 0 8px;color:#3b82f6;">登录方式</h4>' +
+        '<p>配置启用后，登录页会出现"LDAP"入口。用户输入 LDAP 用户名和密码进行认证。</p>' +
+        '<h4 style="margin:16px 0 8px;color:#3b82f6;">同步组织架构</h4>' +
+        '<p>如需同步 LDAP 的 OU（组织单位），需额外配置 org_base_dn 和 org_filter。配置完成后点击"同步"按钮。</p>' +
+        '</div>',
+
+    dingtalk: '<div style="line-height:1.8;font-size:14px;">' +
+        '<h3 style="margin:0 0 12px;color:#1a1a2e;">钉钉接入指南</h3>' +
+        '<h4 style="margin:16px 0 8px;color:#3b82f6;">回调地址</h4>' +
+        '<p>在钉钉开放平台配置回调地址：</p>' +
+        '<div style="background:#f0f0f0;padding:10px;border-radius:6px;margin:8px 0;font-family:monospace;">' +
+        'https://你的域名<b>/auth/dingtalk/callback/</b></div>' +
+        '<h4 style="margin:16px 0 8px;color:#3b82f6;">配置说明</h4>' +
+        '<table style="width:100%;border-collapse:collapse;">' +
+        '<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:6px 8px;font-family:monospace;">app_id</td><td style="padding:6px 8px;">钉钉应用 AppID（AppKey）</td></tr>' +
+        '<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:6px 8px;font-family:monospace;">app_secret</td><td style="padding:6px 8px;">钉钉应用 AppSecret</td></tr>' +
+        '<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:6px 8px;font-family:monospace;">corp_id</td><td style="padding:6px 8px;">钉钉企业 CorpId</td></tr>' +
+        '<tr><td style="padding:6px 8px;font-family:monospace;">agent_id</td><td style="padding:6px 8px;">自建应用的 AgentId</td></tr>' +
+        '</table>' +
+        '</div>'
+};
+
+function showAuthHelp(provider) {
+    var title = { wecom: '企业微信', oidc: 'OIDC', ldap: 'LDAP', dingtalk: '钉钉' }[provider] || provider;
+    var content = AUTH_HELP[provider] || '<p>暂无帮助内容</p>';
+    if (typeof layer !== 'undefined') {
+        layer.open({
+            type: 1, title: title + ' 配置帮助',
+            content: '<div style="padding:20px;max-height:70vh;overflow-y:auto;">' + content + '</div>',
+            area: ['640px', '520px'], btn: ['关闭'], yes: function(idx) { layer.close(idx); }
+        });
+    } else {
+        var w = window.open('', '_blank', 'width=680,height=600');
+        w.document.write('<html><head><title>' + title + ' 配置帮助</title><meta charset="utf-8"><style>body{font-family:sans-serif;padding:20px;}</style></head><body>' + content + '</body></html>');
+    }
 }
 
 // Initial load
