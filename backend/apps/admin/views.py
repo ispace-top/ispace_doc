@@ -1308,8 +1308,9 @@ def admin_site_config(request):
 
 # 检测版本更新（功能已禁用，保留接口避免前端报错）
 def check_update(request):
-    """检查版本更新——通过 git tag 对比当前版本与远端最新 tag。"""
-    import subprocess
+    """检查版本更新——通过 GitHub Releases API 获取最新版本。"""
+    import re
+
     current_version = settings.VERSIONS.strip()
     result = {
         'status': True,
@@ -1318,49 +1319,47 @@ def check_update(request):
         'has_update': False,
         'update_info': '',
         'changelog': '',
+        'download_url': '',
     }
+
+    GITHUB_API = 'https://api.github.com/repos/ispace-top/ispace_doc/releases/latest'
+
     try:
-        repo_dir = settings.BASE_DIR
-        # 从远端获取最新 tags
-        fetch_proc = subprocess.run(
-            ['git', 'fetch', '--tags', 'origin'],
-            cwd=repo_dir, capture_output=True, text=True, timeout=30
-        )
-        # 获取所有 tag 并按版本排序，取最新
-        tag_proc = subprocess.run(
-            ['git', 'tag', '--sort=-version:refname'],
-            cwd=repo_dir, capture_output=True, text=True, timeout=10
-        )
-        tags = [t.strip() for t in tag_proc.stdout.strip().split('\n') if t.strip()]
-        import re
-        ver_tags = [t for t in tags if re.match(r'^v?\d', t)]
-        if ver_tags:
-            latest = ver_tags[0].lstrip('v')
-            result['latest_version'] = latest
-            if _version_greater(latest, current_version):
-                result['has_update'] = True
-                result['update_info'] = _('发现新版本 v{version}，当前版本为 v{current}').format(
-                    version=latest, current=current_version
-                )
-                try:
-                    log_proc = subprocess.run(
-                        ['git', 'log', '--oneline', '-5', '--'],
-                        cwd=repo_dir, capture_output=True, text=True, timeout=10
-                    )
-                    result['changelog'] = log_proc.stdout.strip()
-                except Exception:
-                    pass
-            else:
-                result['update_info'] = _('当前已是最新版本 v{version}').format(version=current_version)
+        import requests
+        resp = requests.get(GITHUB_API, timeout=15, headers={'Accept': 'application/vnd.github+json'})
+        if resp.status_code == 403 and 'X-RateLimit-Remaining' in resp.headers:
+            # 使用 GitHub API 频率限制豁免的回退 HEAD 请求
+            result['update_info'] = _('检查更新请求过于频繁，请稍后重试')
+            return JsonResponse(result)
+        if resp.status_code != 200:
+            result['update_info'] = _('检查更新失败：GitHub API 返回 {code}').format(code=resp.status_code)
+            return JsonResponse(result)
+
+        release = resp.json()
+        tag_name = release.get('tag_name', '')
+        latest = tag_name.lstrip('v').strip()
+        if not latest or not re.match(r'^\d', latest):
+            result['update_info'] = _('未找到正式版本发布记录')
+            return JsonResponse(result)
+
+        result['latest_version'] = latest
+        result['download_url'] = release.get('html_url', '')
+
+        if _version_greater(latest, current_version):
+            result['has_update'] = True
+            result['update_info'] = _('发现新版本 v{version}，当前版本为 v{current}').format(
+                version=latest, current=current_version
+            )
+            body = release.get('body', '')
+            if body:
+                # 取 release body 前 500 字符作为更新日志
+                result['changelog'] = body[:500]
         else:
-            result['latest_version'] = current_version
-            result['update_info'] = _('当前版本 v{version}（未检测到版本标签）').format(version=current_version)
-    except subprocess.TimeoutExpired:
-        result['update_info'] = _('检查更新超时，请稍后重试')
-    except FileNotFoundError:
-        result['update_info'] = _('Git 命令不可用，无法检查更新')
+            result['update_info'] = _('当前已是最新版本 v{version}').format(version=current_version)
+
     except Exception as e:
         result['update_info'] = _('检查更新失败：{error}').format(error=str(e)[:100])
+
     return JsonResponse(result)
 
 

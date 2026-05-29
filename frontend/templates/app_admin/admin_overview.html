@@ -444,16 +444,12 @@
         fetch("{% url 'check_update' %}")
             .then(function(r) { return r.json(); })
             .then(function(r) {
-                if (r.status) {
-                    var newVersion = r.data.name.slice(1, 6);
-                    var currentVersion = '{{ isdoc_version }}';
-                    if (newVersion > currentVersion) {
-                        var banner = document.createElement('div');
-                        banner.className = 'dashboard-debug-banner';
-                        banner.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>爱思文档已发布新版本 ' + r.data.name + '，请及时更新</span>';
-                        var wrapper = document.querySelector('.dashboard-wrapper');
-                        if (wrapper) wrapper.insertBefore(banner, wrapper.firstChild);
-                    }
+                if (r.status && r.has_update && r.latest_version) {
+                    var banner = document.createElement('div');
+                    banner.className = 'dashboard-debug-banner';
+                    banner.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>爱思文档已发布新版本 v' + r.latest_version + '，请及时更新</span>';
+                    var wrapper = document.querySelector('.dashboard-wrapper');
+                    if (wrapper) wrapper.insertBefore(banner, wrapper.firstChild);
                 }
             })
             .catch(function() {});
