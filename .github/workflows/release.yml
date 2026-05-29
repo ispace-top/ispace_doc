@@ -13,6 +13,9 @@ on:
 env:
   DOCKERHUB_REPO: wapedkj/ispace-doc
 
+permissions:
+  contents: write
+
 jobs:
   build-push:
     name: Build & Push Multi-Arch Image
@@ -37,7 +40,20 @@ jobs:
             VERSION="dev"
           fi
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "Resolved version: ${VERSION}"
+
+      # ============================================================
+      # 自动更新代码中的版本号
+      # ============================================================
+      - name: Update version in code
+        run: |
+          sed -i "s/VERSIONS = '.*'/VERSIONS = '${VERSION}'/" backend/core/settings.py
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add backend/core/settings.py
+          git commit -m "chore: bump version to ${VERSION}" || true
+          git push origin HEAD:main
 
       # ============================================================
       # 多架构构建环境（QEMU 模拟 ARM + Buildx 构建器）
