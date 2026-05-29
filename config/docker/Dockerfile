@@ -18,9 +18,9 @@ WORKDIR /app/iSpaceDoc
 COPY requirements.txt /app/iSpaceDoc/
 
 # 升级 pip 并安装 Python 依赖
-RUN python -m pip install --upgrade pip -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com \
-    && pip install --no-cache-dir -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com \
-    && pip install --no-cache-dir uwsgi -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com
+RUN python -m pip install --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt \
+    && pip install --no-cache-dir uwsgi
 
 # Stage 2: Final stage
 FROM python:3.11-alpine
