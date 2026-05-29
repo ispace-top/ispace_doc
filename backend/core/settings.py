@@ -157,7 +157,7 @@ if db_engine == 'sqlite':
     DATABASES = {
         'default': {
             'ENGINE': DATABASE_MAP[db_engine],
-            'NAME': os.path.join(CONFIG_DIR, 'db.sqlite3'),
+            'NAME': os.path.join(BASE_DIR, 'data', 'db.sqlite3'),
             'OPTIONS':{
                 'timeout':20,
             }

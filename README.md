@@ -296,7 +296,7 @@ Docker 容器本身是**无状态**的——容器删除后内部所有数据将
 
 | Volume 名称      | 容器内路径                      | 存储内容                            |      备份优先级      |
 | ---------------- | ------------------------------- | ----------------------------------- | :------------------: |
-| `ispace_data`  | `/app/iSpaceDoc/config/conf`  | SQLite 数据库文件（`db.sqlite3`） | ⭐⭐⭐**最高** |
+| `ispace_data`  | `/app/iSpaceDoc/data`          | SQLite 数据库文件（`db.sqlite3`） | ⭐⭐⭐**最高** |
 | `ispace_media` | `/app/iSpaceDoc/media`        | 用户上传的图片、附件、头像          | ⭐⭐⭐**最高** |
 | `ispace_index` | `/app/iSpaceDoc/whoosh_index` | Whoosh 搜索索引（可重建）           |       ⭐⭐ 高       |
 
