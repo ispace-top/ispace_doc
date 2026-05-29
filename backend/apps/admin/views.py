@@ -3432,10 +3432,10 @@ def api_admin_notification_channels(request):
         {
             'id': 'wecom',
             'name': '企业微信',
-            'description': '通过企业微信应用消息推送通知（开发中，暂不可用）',
+            'description': '通过企业微信自建应用发送通知消息',
             'enabled': _check_channel_config('wecom'),
             'configurable': True,
-            'summary': _get_stub_channel_summary('wecom'),
+            'summary': _get_wecom_channel_summary(),
         },
         {
             'id': 'dingtalk',
@@ -3514,6 +3514,26 @@ def _check_channel_config(channel_id):
         return enabled.value.lower() == 'true'
     except Exception:
         return False
+
+
+def _get_wecom_channel_summary():
+    """获取企业微信通道的配置摘要。"""
+    try:
+        import configparser
+        from backend.apps.doc.storage.config import _read_config
+        parser = _read_config()
+        if parser.has_section('auth.wecom'):
+            corp_id = parser.get('auth.wecom', 'corp_id', fallback='')
+            agent_id = parser.get('auth.wecom', 'agent_id', fallback='')
+            if corp_id:
+                return {
+                    '企业ID': corp_id[:8] + '***' if len(corp_id) > 8 else corp_id,
+                    '应用AgentId': agent_id or '未设置',
+                    '状态': '已配置，可发送' if _check_channel_config('wecom') else '未启用',
+                }
+        return {'状态': '未配置企业微信参数'}
+    except Exception:
+        return {'状态': '检查失败'}
 
 
 def _get_stub_channel_summary(channel_id):
