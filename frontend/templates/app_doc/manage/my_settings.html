@@ -42,12 +42,12 @@
                     <label class="ispace-form-label">{% trans "编辑器" %}</label>
                     <div class="ispace-radio-group">
                         <label>
-                            <input type="radio" name="editor_mode" value="2" {% if user_opt.editor_mode == 2 %}checked{% endif %}>
-                            Vditor(Markdown)
+                            <input type="radio" name="editor_mode" value="0" {% if user_opt.editor_mode == 0 or user_opt.editor_mode == 2 %}checked{% endif %}>
+                            Markdown
                         </label>
                         <label>
-                            <input type="radio" name="editor_mode" value="4" {% if user_opt.editor_mode == 4 %}checked{% endif %}>
-                            Luckysheet({% trans "在线表格" %})
+                            <input type="radio" name="editor_mode" value="1" {% if user_opt.editor_mode == 1 or user_opt.editor_mode == 4 %}checked{% endif %}>
+                            {% trans "电子表格" %}
                         </label>
                     </div>
                 </div>

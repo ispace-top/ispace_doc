@@ -658,11 +658,11 @@
 {% if doc.editor_mode != 1 %}
 <script src="{% static 'markdown-ext/marked/marked.min.js' %}?version={{ isdoc_version }}"></script>
 {% endif %}
-{% if doc.editor_mode == 0 %}
+{% if doc.editor_mode == 0 or doc.editor_mode == 2 %}
 <script src="{% static 'vditor/dist/index.min.js' %}?version={{ isdoc_version }}"></script>
 <script src="{% static 'js/icon-picker.js' %}?version={{ isdoc_version }}"></script>
 {% endif %}
-{% if doc.editor_mode == 1 %}
+{% if doc.editor_mode == 1 or doc.editor_mode == 4 %}
 <script src="{% static 'luckysheet/dist/plugins/js/plugin.js' %}?version={{ isdoc_version }}"></script>
 <script src="{% static 'luckysheet/dist/luckysheet.umd.js' %}?version={{ isdoc_version }}"></script>
 {% endif %}

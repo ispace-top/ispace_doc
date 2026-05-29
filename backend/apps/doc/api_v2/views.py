@@ -93,7 +93,7 @@ def doc_create(request):
         content_json=data.get("content_json", {}),
         content_plain=data.get("content", ""),
         parent=parent,
-        editor_mode=data.get("editor_mode", 2),
+        editor_mode=data.get("editor_mode", 0),
         status=data.get("status", 1),
         is_public=data.get("is_public", True),
         created_by=request.user,

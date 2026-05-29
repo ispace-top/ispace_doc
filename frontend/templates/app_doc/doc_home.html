@@ -512,13 +512,15 @@ window._isdocVersion = '{{ isdoc_version }}';
 window._inlineUploadImgUrl = '{% url "upload_doc_img" %}';
 window._inlineSubmitFn = inlineCreateSubmit;
 window._inlineCancelFn = inlineCancelHomeCreate;
-window._homeDefaultEditorMode = {{ editor_mode|default:2 }};
+window._homeDefaultEditorMode = {{ editor_mode|default:0 }};
 
 function enterHomeCreateMode(forceEditorMode) {
     var params = new URLSearchParams(window.location.search);
     var parentDoc = params.get('parent_doc');
     var mode = forceEditorMode || window._homeDefaultEditorMode;
-    if (mode === 3) mode = 2; // iceEditor removed, fallback to Vditor
+    // 兼容旧编辑器编号：2→0(Markdown) 3→0(已废弃) 4→1(电子表格)
+    if (mode === 2 || mode === 3) mode = 0;
+    if (mode === 4) mode = 1;
 
     var viewWrap = document.getElementById('home-view-wrap');
     if (viewWrap) viewWrap.style.display = 'none';
