@@ -11,7 +11,6 @@ def create_builtin_guide(user):
     from backend.apps.doc.models import Doc, DocPermission
 
     def _mkdoc(name, pre_content, parent_doc=0, sort=1):
-        """创建一篇 Vditor Markdown 文档并授予作者 admin 权限。"""
         doc = Doc.objects.create(
             name=name,
             pre_content=pre_content,
@@ -21,7 +20,7 @@ def create_builtin_guide(user):
             sort=sort,
             create_user=user,
             status=1,
-            editor_mode=0,  # Markdown
+            editor_mode=0,
         )
         DocPermission.objects.create(
             doc=doc, target_type='user', target_id=user.id,
@@ -29,22 +28,14 @@ def create_builtin_guide(user):
         )
         return doc
 
-    # ── 根文档：用户指南 ──────────────────────────────────
     guide = _mkdoc('📖 用户指南', _GUIDE_ROOT, sort=1)
-
-    # ── 子文档 ────────────────────────────────────────────
     _mkdoc('🚀 快速入门', _QUICK_START, parent_doc=guide.id, sort=1)
     _mkdoc('✏️ 文档编辑与特色组件', _EDITOR_FEATURES, parent_doc=guide.id, sort=2)
     _mkdoc('📂 文档管理与协作', _MANAGEMENT, parent_doc=guide.id, sort=3)
-
     return guide
 
 
-# ══════════════════════════════════════════════════════════════
-# 以下为各文档的 Markdown 正文（使用系统自身组件演示特性）
-# ══════════════════════════════════════════════════════════════
-
-_GUIDE_ROOT = """# 欢迎使用 iSpaceDoc 🎉
+_GUIDE_ROOT = r"""# 欢迎使用 iSpaceDoc 🎉
 
 感谢你选择 **iSpaceDoc** —— 一款企业级私有云文档与知识管理平台。
 
@@ -71,7 +62,7 @@ _GUIDE_ROOT = """# 欢迎使用 iSpaceDoc 🎉
 > tip **提示**：本指南由系统初始化时自动生成，作者为超级管理员。你可以随时修改或删除这些文档。
 """
 
-_QUICK_START = """# 快速入门
+_QUICK_START = r"""# 快速入门
 
 ## 创建你的第一篇文档
 
@@ -105,7 +96,7 @@ iSpaceDoc 提供两种编辑模式：
 > success 恭喜！你已经掌握了 iSpaceDoc 的基本操作。继续阅读其他指南了解更多高级功能。
 """
 
-_EDITOR_FEATURES = """# 文档编辑与特色组件
+_EDITOR_FEATURES = r"""# 文档编辑与特色组件
 
 本文档集中展示 iSpaceDoc 的各种编辑器特色组件。
 
@@ -121,7 +112,7 @@ _EDITOR_FEATURES = """# 文档编辑与特色组件
 
 ## 表格编辑
 
-| 功能 | 支持情况 | 快捷键 |
+| 功能 | 支持情况 | 操作方式 |
 |------|:---:|------|
 | 行插入 | ✅ | 点击表格浮动工具栏 |
 | 列插入 | ✅ | 点击表格浮动工具栏 |
@@ -135,7 +126,7 @@ _EDITOR_FEATURES = """# 文档编辑与特色组件
 块级公式：
 
 $$
-\\int_{a}^{b} f(x)\\,dx = F(b) - F(a)
+\int_{a}^{b} f(x)\,dx = F(b) - F(a)
 $$
 
 ## ECharts 图表
@@ -151,7 +142,7 @@ $$
 
 ## 思维导图
 
-在 Markdown IR 编辑器中，使用 \`\`\`mindmap 代码块可以创建思维导图。编辑时输入：
+在 Markdown IR 编辑器中，使用 ```mindmap 代码块可以创建思维导图。编辑时输入：
 
 - 以 `#` 开头的行 → 根节点
 - 以 `##` 开头的行 → 一级分支
@@ -166,7 +157,7 @@ $$
 
 ## 流程图
 
-在编辑器中，使用 \`\`\`flow 语法可以绘制流程图：
+在编辑器中，使用 ```flow 语法可以绘制流程图：
 
 - `start` 起点 → `operation` 处理步骤 → `condition` 条件判断 → 分支 → `end` 终点
 - 支持 `yes`/`no` 条件分支自动连线
@@ -186,7 +177,7 @@ print(greet("世界"))
 > tip 以上所有组件在 Markdown IR 编辑模式下即可直接编辑和预览。
 """
 
-_MANAGEMENT = """# 文档管理与协作
+_MANAGEMENT = r"""# 文档管理与协作
 
 ## 权限控制
 
@@ -231,7 +222,7 @@ iSpaceDoc 支持三级细粒度权限：
 
 ## 管理后台
 
-访问 `/admin/` 进入管理后台，可以：
+访问后台可以：
 - 查看系统健康状态和运行指标
 - 管理用户、文档、评论
 - 配置认证方式（OIDC / LDAP / 企业微信 / 钉钉）
