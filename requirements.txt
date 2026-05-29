@@ -5,6 +5,7 @@
 django==4.2.*  # LTS，Python 3.9+ 支持
 
 # ---- 基础通用库 ----
+whitenoise>=6.6
 beautifulsoup4>=4.12
 lxml
 pillow>=10.1

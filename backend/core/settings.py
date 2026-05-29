@@ -255,8 +255,12 @@ SESSION_COOKIE_HTTPONLY = CONFIG.getboolean('session','cookie_httponly',fallback
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
 
 STATIC_URL = '/static/'
-if DEBUG:
-    STATICFILES_DIRS = [os.path.join(BASE_DIR, 'frontend', 'static'), ]
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'frontend', 'static'), ]
+
+# Whitenoise 中间件（生产环境静态文件服务）
+MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
     STATICFILES_DIR = os.path.join(BASE_DIR, 'frontend', 'static')
 else:
     STATIC_ROOT = os.path.join(BASE_DIR,'frontend','static')
