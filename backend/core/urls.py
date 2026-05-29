@@ -59,7 +59,7 @@ if settings.EXTEND_ROOT_TXT:
 
 if settings.DEBUG:
     urlpatterns.append(
-        re_path('^static/(?P<path>.*)$',serve,{'document_root':settings.STATICFILES_DIR}),# 静态文件
+        re_path('^static/(?P<path>.*)$',serve,{'document_root': settings.STATICFILES_DIRS[0] if settings.STATICFILES_DIRS else settings.STATIC_ROOT}),
     )
     try:
         import debug_toolbar
