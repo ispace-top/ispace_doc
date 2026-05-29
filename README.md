@@ -627,11 +627,12 @@ python manage.py sync_ldap                           # 正式同步
 
 ## 📚 项目文档
 
-| 文档                              | 说明                                        |
-| --------------------------------- | ------------------------------------------- |
-| [OIDC 认证接入](docs/auth/oidc.md)   | Keycloak / Auth0 / Azure AD / Okta 配置示例 |
-| [企业微信接入](docs/auth/wecom.md)   | QR 登录、免登、通讯录同步完整文档           |
-| [LDAP 认证与同步](docs/auth/ldap.md) | 搜索模式/直接绑定模式、OU 同步配置          |
+| 文档                               | 说明                                        |
+| ---------------------------------- | ------------------------------------------- |
+| [认证体系总览](docs/auth/overview.md) | 认证架构、后端结构、用户绑定机制            |
+| [OIDC 认证接入](docs/auth/oidc.md)    | Keycloak / Auth0 / Azure AD / Okta 配置示例 |
+| [企业微信接入](docs/auth/wecom.md)    | QR 登录、免登、通讯录同步完整文档           |
+| [LDAP 认证与同步](docs/auth/ldap.md)  | 搜索模式/直接绑定模式、OU 同步配置          |
 
 ---
 
