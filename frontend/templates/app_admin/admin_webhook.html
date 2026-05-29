@@ -239,7 +239,8 @@ function openConfigForm(id) {
     formEl.style.display = 'block';
     dlg.appendChild(formEl);
     overlay.appendChild(dlg);
-    document.getElementById('__wf_close_btn__').onclick = function() { overlay.remove(); _formLayerIndex = null; };
+    var closeBtn = dlg.querySelector('#__wf_close_btn__');
+    if (closeBtn) closeBtn.onclick = function() { overlay.remove(); _formLayerIndex = null; };
     overlay.addEventListener('click', function(e) { if (e.target === overlay) { overlay.remove(); _formLayerIndex = null; } });
     document.body.appendChild(overlay);
     _formLayerIndex = overlay;
@@ -294,7 +295,6 @@ function deleteConfig(id) {
                 else { alert('删除失败: ' + (resp.error || '')); }
             })
             .catch(function(e) { alert('删除失败: ' + e.message); });
-}
 }
 
 function testWebhook(id) {
