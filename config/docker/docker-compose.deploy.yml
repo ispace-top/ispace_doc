@@ -71,6 +71,9 @@ services:
         condition: service_healthy
     environment:
       - ISDOC_CONFIG=config-docker.ini
+      - DB_NAME=${DB_NAME:-ispace}
+      - DB_USER=${DB_USER:-ispace}
+      - DB_PASSWORD=${DB_PASSWORD:?请设置 DB_PASSWORD 环境变量}
       - DATABASE_URL=postgresql+asyncpg://${DB_USER:-ispace}:${DB_PASSWORD}@db:5432/${DB_NAME:-ispace}
       - REDIS_URL=redis://redis:6379/0
       - ES_HOSTS=http://elasticsearch:9200
@@ -120,6 +123,9 @@ services:
         condition: service_healthy
     environment:
       - ISDOC_CONFIG=config-docker.ini
+      - DB_NAME=${DB_NAME:-ispace}
+      - DB_USER=${DB_USER:-ispace}
+      - DB_PASSWORD=${DB_PASSWORD:?请设置 DB_PASSWORD 环境变量}
       - DATABASE_URL=postgresql+asyncpg://${DB_USER:-ispace}:${DB_PASSWORD}@db:5432/${DB_NAME:-ispace}
       - REDIS_URL=redis://redis:6379/0
       - SECRET_KEY=${SECRET_KEY:?请设置 SECRET_KEY 环境变量}
@@ -140,6 +146,9 @@ services:
         condition: service_healthy
     environment:
       - ISDOC_CONFIG=config-docker.ini
+      - DB_NAME=${DB_NAME:-ispace}
+      - DB_USER=${DB_USER:-ispace}
+      - DB_PASSWORD=${DB_PASSWORD:?请设置 DB_PASSWORD 环境变量}
       - DATABASE_URL=postgresql+asyncpg://${DB_USER:-ispace}:${DB_PASSWORD}@db:5432/${DB_NAME:-ispace}
       - REDIS_URL=redis://redis:6379/0
       - SECRET_KEY=${SECRET_KEY:?请设置 SECRET_KEY 环境变量}
