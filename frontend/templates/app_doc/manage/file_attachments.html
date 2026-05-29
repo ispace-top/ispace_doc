@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+{% block title %}{% trans "附件管理" %}{% endblock %}
+{% block breadcrumb %}{% include "includes/breadcrumb.html" with breadcrumbs=breadcrumb_items %}{% endblock %}
+
+{% block content %}
+<div class="ispace-page">
+    <div class="ispace-page-header">
+        <h2 class="ispace-page-title">{% trans "附件管理" %}</h2>
+    </div>
+
+    <div class="ispace-content-card" style="margin-bottom:var(--ispace-spacing-4);">
+        <div style="padding:var(--ispace-spacing-4) var(--ispace-spacing-5);">
+            <form action="{% url 'manage_attachment' %}" method="get" style="display:flex;gap:var(--ispace-spacing-3);align-items:center;flex-wrap:wrap;">
+                <input type="text" name="kw" id="kw" class="ispace-form-input" placeholder="{% trans '输入附件名称' %}" value="{{ attachments.kw|default:'' }}" style="max-width:280px;">
+                <button type="submit" class="ispace-btn ispace-btn-secondary ispace-btn-sm">{% trans "搜索" %}</button>
+                <input type="file" id="attachment-file-input" style="display:none;" accept="*/*" name="attachment_upload">
+                <button type="button" class="ispace-btn ispace-btn-primary ispace-btn-sm" id="upload_attachment" title="{% trans '支持Zip格式压缩文件' %}">
+                    {% trans "上传附件" %}
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="ispace-content-card">
+        <div style="overflow-x:auto;">
+            <table class="ispace-table">
+                <thead>
+                    <tr>
+                        <th>{% trans "附件名称" %}</th>
+                        <th>{% trans "文件大小" %}</th>
+                        <th>{% trans "上传时间" %}</th>
+                        <th>{% trans "操作" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for attachment in attachments %}
+                    <tr>
+                        <td><a href="/media/{{ attachment.file_path }}" target="_blank" style="color:var(--ispace-color-brand-500);text-decoration:none;">{{ attachment.file_name }}</a></td>
+                        <td>{{ attachment.file_size }}</td>
+                        <td>{{ attachment.create_time }}</td>
+                        <td>
+                            <div style="display:flex;gap:var(--ispace-spacing-2);">
+                                <a href="javascript:void(0);" onclick="delAttach('{{ attachment.id }}');" class="ispace-btn ispace-btn-danger ispace-btn-sm">
+                                    {% trans "删除" %}
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" style="text-align:center;padding:var(--ispace-spacing-8) var(--ispace-spacing-4);color:var(--ispace-color-text-tertiary);">{% trans "暂无附件" %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% include 'includes/pagination.html' with page_obj=attachments %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    // Upload attachment
+    var fileInput = document.getElementById('attachment-file-input');
+    var uploadBtn = document.getElementById('upload_attachment');
+
+    if (uploadBtn && fileInput) {
+        uploadBtn.addEventListener('click', function() {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', function() {
+            if (!this.files || !this.files.length) return;
+
+            var formData = new FormData();
+            formData.append('attachment_upload', this.files[0]);
+            formData.append('types', '0');
+
+            var loadingEl = document.createElement('div');
+            loadingEl.className = 'ispace-loading-overlay';
+            loadingEl.innerHTML = '<div class="ispace-spinner"></div>';
+            document.body.appendChild(loadingEl);
+
+            fetch('{% url "manage_attachment" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken
+                },
+                body: formData
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(res) {
+                loadingEl.remove();
+                if (res.status == 1) {
+                    window.location.reload();
+                } else {
+                    showError(res.data || '{% trans "上传失败" %}');
+                }
+            })
+            .catch(function() {
+                loadingEl.remove();
+                showError('{% trans "上传异常" %}');
+            });
+
+            // Reset file input for re-upload
+            fileInput.value = '';
+        });
+    }
+
+    // Delete attachment
+    window.delAttach = function(attach_id) {
+        iSpaceDoc.confirm({
+            title: '{% trans "删除附件" %}',
+            message: '{% trans "警告：删除附件后，文档中引用的附件将失效！" %}'
+        }).then(function(confirmed) {
+            if (!confirmed) return;
+            var loadingEl = document.createElement('div');
+            loadingEl.className = 'ispace-loading-overlay';
+            loadingEl.innerHTML = '<div class="ispace-spinner"></div>';
+            document.body.appendChild(loadingEl);
+
+            var data = new URLSearchParams();
+            data.append('attach_id', attach_id);
+            data.append('types', '1');
+
+            fetch('{% url "manage_attachment" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: data.toString()
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                loadingEl.remove();
+                if (r.status) {
+                    window.location.reload();
+                } else {
+                    showError(r.data || '{% trans "删除失败" %}');
+                }
+            })
+            .catch(function() {
+                loadingEl.remove();
+                showError('{% trans "删除异常" %}');
+            });
+        });
+    };
+})();
+</script>
+{% endblock %}

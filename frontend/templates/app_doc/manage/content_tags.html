@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+{% load project_filter %}
+{% block title %}{% trans "文档标签管理" %}{% endblock %}
+{% block breadcrumb %}{% include "includes/breadcrumb.html" with breadcrumbs=breadcrumb_items %}{% endblock %}
+
+{% block content %}
+<div class="ispace-page">
+    <div class="ispace-page-header">
+        <h2 class="ispace-page-title">{% trans "文档标签管理" %}</h2>
+    </div>
+
+    <div class="ispace-content-card">
+        <div style="overflow-x:auto;">
+            <table class="ispace-table">
+                <thead>
+                    <tr>
+                        <th>{% trans "标签名称" %}</th>
+                        <th>{% trans "标签文档数量" %}</th>
+                        <th>{% trans "操作" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tag in tags %}
+                    <tr>
+                        <td><a href="{% url 'tag_docs' tag.id %}" target="_blank" style="color:var(--ispace-color-brand-500);text-decoration:none;">{{ tag.name }}</a></td>
+                        <td>{{ tag.id | tag_doc_cnt }}</td>
+                        <td>
+                            <div style="display:flex;gap:var(--ispace-spacing-2);">
+                                <a href="javascript:void(0);" onclick="modifyTag('{{ tag.id }}')" class="ispace-btn ispace-btn-secondary ispace-btn-sm">
+                                    {% trans "修改" %}
+                                </a>
+                                <a href="javascript:void(0);" onclick="delTag('{{ tag.id }}');" class="ispace-btn ispace-btn-danger ispace-btn-sm">
+                                    {% trans "删除" %}
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" style="text-align:center;padding:var(--ispace-spacing-8) var(--ispace-spacing-4);color:var(--ispace-color-text-tertiary);">{% trans "暂无标签" %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    window.delTag = function(tag_id) {
+        iSpaceDoc.confirm({
+            title: '{% trans "删除标签" %}',
+            message: '{% trans "警告：此操作将删除此标签！" %}'
+        }).then(function(confirmed) {
+            if (!confirmed) return;
+            var loadingEl = document.createElement('div');
+            loadingEl.className = 'ispace-loading-overlay';
+            loadingEl.innerHTML = '<div class="ispace-spinner"></div>';
+            document.body.appendChild(loadingEl);
+
+            var data = new URLSearchParams();
+            data.append('types', '2');
+            data.append('tag_id', tag_id);
+
+            fetch('{% url "manage_doc_tag" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: data.toString()
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                loadingEl.remove();
+                if (r.status) {
+                    window.location.reload();
+                } else {
+                    showError(r.data || '{% trans "删除失败" %}');
+                }
+            })
+            .catch(function() {
+                loadingEl.remove();
+                showError('{% trans "删除异常" %}');
+            });
+        });
+    };
+
+    window.modifyTag = function(tag_id) {
+        var modalContent = '<div class="ispace-form-group" style="padding:10px 0;">' +
+            '<label class="ispace-form-label">{% trans "标签新名称" %}</label>' +
+            '<input type="text" id="new-tag-name" class="ispace-form-input" placeholder="{% trans '输入标签的新名称' %}">' +
+        '</div>';
+
+        iSpaceDoc.Modal.open({
+            title: '{% trans "修改标签" %}',
+            content: modalContent,
+            onConfirm: function() {
+                var tagName = document.getElementById('new-tag-name').value.trim();
+
+                if (!tagName) {
+                    showWarning('{% trans "请输入标签名称" %}');
+                    return;
+                }
+
+                var data = new URLSearchParams();
+                data.append('types', '1');
+                data.append('tag_id', tag_id);
+                data.append('tag_name', tagName);
+
+                fetch('{% url "manage_doc_tag" %}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: data.toString()
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(r) {
+                    if (r.status) {
+                        window.location.reload();
+                    } else {
+                        showError(r.data || '{% trans "修改失败" %}');
+                    }
+                })
+                .catch(function() {
+                    showError('{% trans "修改异常" %}');
+                });
+            }
+        });
+    };
+})();
+</script>
+{% endblock %}

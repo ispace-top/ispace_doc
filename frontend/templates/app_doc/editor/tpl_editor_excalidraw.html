@@ -1,0 +1,182 @@
+<!-- Excalidraw 手绘图编辑器 (editor_mode=7) -->
+{% load static %}{% load i18n %}
+<div class="ispace-drawing-editor" id="excalidraw-editor-container">
+    <div class="ispace-drawing-toolbar" id="excalidraw-toolbar">
+        <button class="ispace-btn ispace-btn-sm ispace-btn-primary" onclick="saveExcalidraw()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            {% trans '保存' %}
+        </button>
+        <span class="ispace-toolbar-sep">|</span>
+        <button class="ispace-btn ispace-btn-sm ispace-btn-secondary" onclick="exportExcalidrawPNG()" title="{% trans '导出 PNG' %}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            导出PNG
+        </button>
+        <span class="ispace-toolbar-sep">|</span>
+        <span style="font-size:12px;color:#94a3b8;">
+            提示：需要连接互联网加载 Excalidraw 组件
+        </span>
+    </div>
+    <div class="ispace-drawing-canvas" id="excalidraw-canvas">
+        <div id="excalidraw-root" style="width:100%;height:100%;">
+            <div style="display:flex;align-items:center;justify-content:center;height:100%;color:#94a3b8;font-size:14px;">
+                正在加载 Excalidraw...
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.ispace-drawing-editor {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 120px);
+    border: 1px solid var(--ispace-color-border-light);
+    border-radius: var(--ispace-radius-lg);
+    overflow: hidden;
+    background: #fff;
+}
+.ispace-drawing-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--ispace-color-border-light);
+    background: #f8fafc;
+    flex-wrap: wrap;
+}
+.ispace-toolbar-sep {
+    color: var(--ispace-color-border);
+    margin: 0 4px;
+    user-select: none;
+}
+.ispace-drawing-canvas {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+</style>
+
+<!-- Load Excalidraw from CDN -->
+<script src="https://unpkg.com/@excalidraw/excalidraw@0.17.6/dist/excalidraw.production.min.js"></script>
+<script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+
+<script>
+(function() {
+    var EXCALIDRAW_API = '/api/drawing/excalidraw/' + window._docId + '/';
+    var CSRF_TOKEN = window.__ISPACEDOC__ && window.__ISPACEDOC__.csrfToken;
+
+    var excalidrawAPI = null;
+    var sceneData = { elements: [], appState: {}, files: {} };
+
+    // 加载已有数据
+    fetch(EXCALIDRAW_API)
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+            if (resp.data && resp.data.elements) {
+                sceneData.elements = resp.data.elements || [];
+                sceneData.appState = resp.data.appState || {};
+                sceneData.files = resp.data.files || {};
+            }
+            initExcalidraw();
+        })
+        .catch(function() { initExcalidraw(); });
+
+    function initExcalidraw() {
+        if (typeof React === 'undefined' || typeof ReactDOM === 'undefined' || typeof ExcalidrawLib === 'undefined') {
+            document.getElementById('excalidraw-root').innerHTML =
+                '<div style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:12px;color:#94a3b8;">' +
+                '<p style="font-size:16px;">Excalidraw 组件加载失败</p>' +
+                '<p style="font-size:13px;">请检查网络连接并刷新页面重试</p>' +
+                '</div>';
+            return;
+        }
+
+        var Excalidraw = ExcalidrawLib.Excalidraw;
+
+        var App = function() {
+            var excalidrawRef = React.useRef(null);
+            var viewModeEnabled = false;
+
+            React.useEffect(function() {
+                if (excalidrawRef.current) {
+                    excalidrawAPI = excalidrawRef.current;
+                }
+            }, []);
+
+            return React.createElement('div', { style: { width: '100%', height: '100%' } },
+                React.createElement(Excalidraw, {
+                    ref: excalidrawRef,
+                    initialData: {
+                        elements: sceneData.elements.map(function(el) {
+                            if (typeof el.version === 'undefined') el.version = 1;
+                            return el;
+                        }),
+                        appState: sceneData.appState,
+                        files: sceneData.files,
+                    },
+                    onChange: function(elements, appState, files) {
+                        sceneData.elements = elements;
+                        sceneData.appState = appState;
+                        sceneData.files = files || {};
+                    },
+                    viewModeEnabled: viewModeEnabled,
+                })
+            );
+        };
+
+        ReactDOM.render(
+            React.createElement(App),
+            document.getElementById('excalidraw-root')
+        );
+    }
+
+    window.saveExcalidraw = function() {
+        var payload = {
+            elements: sceneData.elements,
+            appState: sceneData.appState,
+            files: sceneData.files,};
+
+
+        fetch(EXCALIDRAW_API, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+            body: JSON.stringify(payload)
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+            if (resp.success) {
+                if (typeof layer !== 'undefined') layer.msg('保存成功', {icon: 1});
+            } else {
+                if (typeof layer !== 'undefined') layer.msg('保存失败: ' + (resp.error || '未知错误'), {icon: 2});
+            }
+        })
+        .catch(function(err) {
+            if (typeof layer !== 'undefined') layer.msg('保存失败: ' + err.message, {icon: 2});
+        });
+    };
+
+    window.exportExcalidrawPNG = function() {
+        if (excalidrawAPI) {
+            try {
+                excalidrawAPI.exportToCanvas({
+                    exportPadding: 10,
+                }).then(function(canvas) {
+                    var dataURL = canvas.toDataURL('image/png');
+                    var a = document.createElement('a');
+                    a.href = dataURL;
+                    a.download = (window._docName || 'excalidraw') + '.png';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                });
+            } catch(e) {
+                if (typeof layer !== 'undefined') layer.msg('导出失败，请确保原生应用支持');
+                console.error(e);
+            }
+        } else {
+            if (typeof layer !== 'undefined') layer.msg('绘图组件尚未就绪');
+        }
+    };
+})();
+</script>

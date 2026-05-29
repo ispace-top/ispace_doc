@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% load static %}{% load i18n %}
+
+{% block title %}{{ kw }} - {% trans "搜索结果" %} - {{ site_name|default:"爱思文档" }}{% endblock %}
+
+{% block header_center %}
+<form method="get" action="{% url 'search' %}" class="ispace-flex-center ispace-gap-3">
+    <div class="ispace-search-input-wrap" style="max-width:400px;width:100%;">
+        <svg class="ispace-search-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" name="kw" class="ispace-form-input ispace-form-input-sm" value="{{ kw }}" placeholder="{% trans '搜索...' %}">
+    </div>
+    <input type="hidden" name="type" value="{{ search_type|default:'doc' }}">
+    <button type="submit" class="ispace-btn ispace-btn-primary ispace-btn-sm">{% trans "搜索" %}</button>
+</form>
+{% endblock %}
+
+{% block content %}
+{# Search Type Tabs + Filters #}
+<div class="ispace-search-filters ispace-mb-4">
+    <div class="ispace-search-tabs">
+        <a href="?kw={{ kw }}&type=doc&d_range={{ date_range }}"
+           class="ispace-search-tab {% if search_type == 'doc' %}ispace-active{% endif %}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            {% trans "文档" %}
+        </a>
+        {#        <a href="?kw={{ kw }}&type=tag&d_range={{ date_range }}"#}
+        {#           class="ispace-search-tab {% if search_type == 'tag' %}ispace-active{% endif %}">#}
+        {#            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>#}
+        {#            {% trans "标签" %}#}
+        {#        </a>#}
+    </div>
+    <div class="ispace-search-filter-controls">
+        <select class="ispace-form-select ispace-form-select-sm" id="time-filter" onchange="applyTimeFilter(this.value)">
+            <option value="all" {% if date_range == 'all' %}selected{% endif %}>{% trans "全部时间" %}</option>
+            <option value="recent1" {% if date_range == 'recent1' %}selected{% endif %}>{% trans "近1天" %}</option>
+            <option value="recent7" {% if date_range == 'recent7' %}selected{% endif %}>{% trans "近7天" %}</option>
+            <option value="recent30" {% if date_range == 'recent30' %}selected{% endif %}>{% trans "近30天" %}</option>
+            <option value="recent365" {% if date_range == 'recent365' %}selected{% endif %}>{% trans "近1年" %}</option>
+        </select>
+    </div>
+</div>
+
+{# Results Summary #}
+<div class="ispace-page-header ispace-mb-4">
+    <p class="ispace-page-description">
+        搜索到 <strong>{{ paginator.count }}</strong> 条结果
+        {% if date_range and date_range != 'all' %}
+            {% if date_range == 'recent1' %}{% trans "（近1天内）" %}
+            {% elif date_range == 'recent7' %}{% trans "（近7天内）" %}
+            {% elif date_range == 'recent30' %}{% trans "（近30天内）" %}
+            {% elif date_range == 'recent365' %}{% trans "（近一年内）" %}
+            {% endif %}
+        {% endif %}
+    </p>
+</div>
+
+{% if datas %}
+<div style="display:flex;flex-direction:column;gap:var(--ispace-space-3);">
+    {% for result in datas %}
+    <div class="ispace-card">
+        <div class="ispace-card-body">
+            <h3><a href="{% url 'doc_id' doc_id=result.id %}" data-spa class="ispace-font-semibold" style="font-size:var(--ispace-font-lg);color:var(--ispace-color-text-link);">{{ result.name }}</a></h3>
+            <p class="ispace-text-sm ispace-text-tertiary ispace-line-clamp-2 ispace-mt-2">{{ result.pre_content|striptags|truncatechars:200 }}</p>
+            <p class="ispace-text-xs ispace-text-quaternary ispace-mt-2">{{ result.modify_time|date:"Y-m-d" }}</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% include "includes/pagination.html" with page_obj=datas %}
+{% else %}
+{% include "includes/empty_state.html" with title="未找到结果" description="换个关键词试试" %}
+{% endif %}
+{% endblock %}
+
+{% block custom_script %}
+<script>
+function applyTimeFilter(range) {
+    var params = new URLSearchParams(window.location.search);
+    params.set('d_range', range);
+    params.set('page', '1');
+    window.location.search = params.toString();
+}
+</script>
+{% endblock %}

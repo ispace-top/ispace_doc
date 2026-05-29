@@ -1,0 +1,433 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+{% block title %}附件管理{% endblock %}
+
+{% block styles %}
+<style>
+    .admin-attachment-toolbar {
+        display: flex;
+        align-items: center;
+        gap: var(--ispace-space-4);
+        flex-wrap: wrap;
+    }
+    .admin-attachment-toolbar .ispace-form-input {
+        max-width: 200px;
+    }
+    .admin-attachment-search-group {
+        display: flex;
+        align-items: center;
+        gap: var(--ispace-space-1);
+    }
+    .admin-attachment-table-wrap { overflow-x: auto; }
+    .attachment-name-link {
+        color: var(--ispace-color-text-link);
+        text-decoration: none;
+    }
+    .attachment-name-link:hover { text-decoration: underline; }
+    .admin-attachment-toolbar #select-user {
+        min-width: 150px;
+    }
+    .admin-attachment-toolbar xm-select {
+        min-width: 150px;
+        border: 1px solid var(--ispace-color-border-medium) !important;
+        border-radius: var(--ispace-radius-sm);
+        background: var(--ispace-color-surface-0) !important;
+        color: var(--ispace-color-text-primary) !important;
+        font-size: var(--ispace-font-sm);
+        height: 32px;
+        line-height: 32px;
+    }
+    .admin-attachment-toolbar xm-select .xm-tips {
+        color: var(--ispace-color-text-tertiary);
+    }
+    .admin-attachment-page-size {
+        display: flex;
+        align-items: center;
+        gap: var(--ispace-space-2);
+        font-size: var(--ispace-font-sm);
+        color: var(--ispace-color-text-tertiary);
+    }
+    .admin-attachment-page-size select {
+        height: 30px;
+        padding: 0 6px;
+        font-size: var(--ispace-font-sm);
+        border: 1px solid var(--ispace-color-border-medium);
+        border-radius: var(--ispace-radius-sm);
+        background: var(--ispace-color-surface-0);
+        color: var(--ispace-color-text-primary);
+    }
+    .attachment-table-col-name { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .attachment-table-col-path { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrapper">
+
+<div class="dashboard-card">
+    <div class="dashboard-card-header">
+        <div class="admin-attachment-toolbar">
+            <div class="admin-attachment-search-group">
+                <input type="text" id="attachment-kw" placeholder="请输入附件名称" class="ispace-form-input">
+                <button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="search-btn">搜索</button>
+            </div>
+            <div class="admin-attachment-search-group">
+                <span class="ispace-text-sm ispace-text-tertiary" style="white-space:nowrap;">用户</span>
+                <div id="select-user"></div>
+                <button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="searchUser-btn">筛选</button>
+            </div>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:var(--ispace-space-3);">
+                <span class="ispace-text-sm ispace-text-tertiary" id="attachment-count-info"></span>
+                <button class="ispace-btn ispace-btn-danger ispace-btn-sm" id="batch-remove-btn">批量删除</button>
+            </div>
+        </div>
+    </div>
+    <div class="dashboard-card-body">
+
+        <div class="admin-attachment-table-wrap">
+            <table class="ispace-table" id="attachment-table">
+                <thead>
+                    <tr>
+                        <th style="width:36px;"><input type="checkbox" id="select-all-attachments"></th>
+                        <th>附件名称</th>
+                        <th>附件路径</th>
+                        <th>附件大小</th>
+                        <th>用户</th>
+                        <th>上传时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="attachment-table-body">
+                </tbody>
+            </table>
+        </div>
+        <div class="ispace-flex-between ispace-mt-3">
+            <div id="attachment-pagination" class="ispace-pagination"></div>
+            <div class="admin-attachment-page-size">
+                <span>每页</span>
+                <select id="page-size-select">
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                </select>
+                <span>条</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'xm-select/dist/xm-select.js' %}"></script>
+<script>
+(function() {
+    const API_URL = "{% url 'api_admin_attachments' %}";
+    const USER_LIST_URL = "{% url 'api_usergroups_userlist' %}";
+    const CSRF_TOKEN = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    let currentPage = 1;
+    let currentFilters = {};
+    let selectUser = null;
+
+    function getPageSize() {
+        var sel = document.getElementById('page-size-select');
+        return sel ? parseInt(sel.value) : 10;
+    }
+
+    function getCSRFHeaders() {
+        return {
+            'X-CSRFToken': CSRF_TOKEN,
+            'Content-Type': 'application/x-www-form-urlencoded',
+        };
+    }
+
+    function formatDateTime(dateStr) {
+        if (!dateStr) return '-';
+        const d = new Date(dateStr);
+        const pad = n => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    function formatFileSize(bytes) {
+        if (!bytes) return '-';
+        bytes = parseInt(bytes);
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    async function loadTable(page) {
+        if (page === undefined) page = currentPage;
+        currentPage = page;
+
+        const params = new URLSearchParams();
+        params.set('page', page);
+        params.set('limit', getPageSize());
+        if (currentFilters.kw) params.set('kw', currentFilters.kw);
+        if (currentFilters.username) params.set('username', currentFilters.username);
+
+        try {
+            const resp = await fetch(`${API_URL}?${params.toString()}`);
+            const result = await resp.json();
+            if (result.code === 0) {
+                renderAttachmentRows(result.data || []);
+                renderPagination(result.count || 0, page);
+                document.getElementById('attachment-count-info').textContent = '共 ' + (result.count || 0) + ' 个附件';
+            } else {
+                showError(result.data || '获取附件列表失败');
+            }
+        } catch (err) {
+            showError('获取附件列表失败');
+        }
+    }
+
+    function renderAttachmentRows(rows) {
+        const tbody = document.getElementById('attachment-table-body');
+        if (!rows.length) {
+            tbody.innerHTML = '<tr><td colspan="7" class="ispace-text-center ispace-text-tertiary" style="padding:40px;">暂无数据</td></tr>';
+            return;
+        }
+        tbody.innerHTML = rows.map(function(row) {
+            const filePath = row.file_path ? decodeURIComponent(row.file_path) : '';
+            return `
+                <tr data-attachment-id="${row.id}">
+                    <td><input type="checkbox" class="attachment-checkbox" value="${row.id}"></td>
+                    <td class="attachment-table-col-name" title="${escapeHtml(row.file_name)}"><a class="attachment-name-link" href="/media/${filePath}" target="_blank">${escapeHtml(row.file_name)}</a></td>
+                    <td class="ispace-text-sm ispace-text-tertiary attachment-table-col-path" title="${escapeHtml(row.file_path || '')}">${escapeHtml(row.file_path || '-')}</td>
+                    <td>${formatFileSize(row.file_size)}</td>
+                    <td>${escapeHtml(row.username || '-')}</td>
+                    <td class="ispace-text-sm">${formatDateTime(row.create_time)}</td>
+                    <td>
+                        <button class="ispace-btn ispace-btn-danger ispace-btn-sm" data-action="delete" data-id="${row.id}">删除</button>
+                    </td>
+                </tr>`;
+        }).join('');
+    }
+
+    function renderPagination(count, page) {
+        const container = document.getElementById('attachment-pagination');
+        const totalPages = Math.ceil(count / getPageSize()) || 1;
+        let html = '';
+
+        html += `<button class="ispace-pagination-btn" data-page="${page - 1}" ${page <= 1 ? 'disabled' : ''}>上一页</button>`;
+
+        const startPage = Math.max(1, page - 2);
+        const endPage = Math.min(totalPages, page + 2);
+
+        if (startPage > 1) {
+            html += `<button class="ispace-pagination-btn" data-page="1">1</button>`;
+            if (startPage > 2) html += '<span class="ispace-pagination-info">...</span>';
+        }
+        for (let i = startPage; i <= endPage; i++) {
+            html += `<button class="ispace-pagination-btn ${i === page ? 'ispace-active' : ''}" data-page="${i}">${i}</button>`;
+        }
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) html += '<span class="ispace-pagination-info">...</span>';
+            html += `<button class="ispace-pagination-btn" data-page="${totalPages}">${totalPages}</button>`;
+        }
+
+        html += `<button class="ispace-pagination-btn" data-page="${page + 1}" ${page >= totalPages ? 'disabled' : ''}>下一页</button>`;
+        container.innerHTML = html;
+
+        container.querySelectorAll('.ispace-pagination-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const p = parseInt(this.dataset.page);
+                if (p >= 1 && p <= totalPages && p !== currentPage) {
+                    loadTable(p);
+                }
+            });
+        });
+    }
+
+    async function delAttachment(id) {
+        const confirmed = await iSpaceDoc.confirm(
+            '警告：此操作将<span style="font-weight:700;color:red;">删除此附件且不可恢复！</span>',
+            { title: '删除附件' }
+        );
+        if (!confirmed) return;
+
+        try {
+            const resp = await fetch('/admin/api/attachment/' + id + '/', {
+                method: 'DELETE',
+                headers: getCSRFHeaders()
+            });
+            const result = await resp.json();
+            if (result.code == 0) {
+                showSuccess('删除成功');
+                loadTable(1);
+            } else {
+                showError(result.data || '删除失败');
+            }
+        } catch (err) {
+            showError('删除异常');
+        }
+    }
+
+    async function batchRemove() {
+        const checkboxes = document.querySelectorAll('.attachment-checkbox:checked');
+        if (checkboxes.length === 0) {
+            showWarning("{% trans '未选中任何附件' %}");
+            return;
+        }
+        const ids = Array.from(checkboxes).map(function(cb) { return cb.value; });
+        const idStr = ids.join(',');
+
+        const modalId = 'batch-delete-attachment-modal';
+        let existing = document.getElementById(modalId);
+        if (existing) existing.remove();
+
+        const backdrop = document.createElement('div');
+        backdrop.className = 'ispace-modal-backdrop';
+        backdrop.id = modalId;
+        backdrop.innerHTML = `
+            <div class="ispace-modal ispace-modal-sm">
+                <div class="ispace-modal-header">
+                    <h3 class="ispace-modal-title">{% trans "删除附件" %}</h3>
+                    <button class="ispace-modal-close" data-ispace-modal-close>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="ispace-modal-body">
+                    <div style="margin-left:10px;">你正在批量删除附件！<br><br>警告！此操作将<span style="font-weight:700;color:red;">删除所选附件！</span>并且<span style="font-weight:700;color:red;">不可恢复！</span><br><br>请输入 "DELETE" 以再次确认删除。<br>
+                        <input class="ispace-form-input" style="width:95%;margin-top:8px;" id="confirm-batch-delete" placeholder="DELETE">
+                    </div>
+                </div>
+                <div class="ispace-modal-footer">
+                    <button class="ispace-btn ispace-btn-secondary" data-ispace-modal-close>{% trans "取消" %}</button>
+                    <button class="ispace-btn ispace-btn-danger" id="batch-delete-confirm">{% trans "批量删除" %}</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(backdrop);
+
+        function closeModal() {
+            iSpaceDoc.Modal.close(backdrop);
+            setTimeout(function() { backdrop.remove(); }, 300);
+        }
+
+        backdrop.querySelector('[data-ispace-modal-close]').addEventListener('click', closeModal);
+        backdrop.querySelector('#batch-delete-confirm').addEventListener('click', async function() {
+            const confirmInput = document.getElementById('confirm-batch-delete').value;
+            if (confirmInput !== 'DELETE') {
+                showWarning('输入错误！');
+                return;
+            }
+
+            const body = new URLSearchParams();
+            body.set('id', idStr);
+            body.set('csrfmiddlewaretoken', CSRF_TOKEN);
+
+            try {
+                const resp = await fetch(API_URL, {
+                    method: 'DELETE',
+                    headers: getCSRFHeaders(),
+                    body: body.toString()
+                });
+                const result = await resp.json();
+                closeModal();
+                if (result.code == 0) {
+                    showSuccess("{% trans '删除成功' %}");
+                    loadTable(1);
+                } else {
+                    showError(result.data || '删除失败');
+                }
+            } catch (err) {
+                closeModal();
+                showError('删除异常');
+            }
+        });
+
+        iSpaceDoc.Modal.open(backdrop);
+    }
+
+    document.getElementById('attachment-table-body').addEventListener('click', function(e) {
+        const btn = e.target.closest('[data-action]');
+        if (!btn) return;
+
+        const action = btn.dataset.action;
+        const id = btn.dataset.id;
+
+        if (action === 'delete') {
+            delAttachment(id);
+        }
+    });
+
+    document.getElementById('select-all-attachments').addEventListener('change', function() {
+        const checked = this.checked;
+        document.querySelectorAll('.attachment-checkbox').forEach(function(cb) {
+            cb.checked = checked;
+        });
+    });
+
+    document.getElementById('search-btn').addEventListener('click', function() {
+        currentFilters.kw = document.getElementById('attachment-kw').value.trim();
+        loadTable(1);
+    });
+
+    document.getElementById('attachment-kw').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            currentFilters.kw = this.value.trim();
+            loadTable(1);
+        }
+    });
+
+    document.getElementById('searchUser-btn').addEventListener('click', function() {
+        if (selectUser) {
+            currentFilters.username = selectUser.getValue('valueStr');
+            loadTable(1);
+        }
+    });
+
+    document.getElementById('batch-remove-btn').addEventListener('click', batchRemove);
+
+    document.getElementById('page-size-select').addEventListener('change', function() {
+        loadTable(1);
+    });
+
+    function initXmSelect() {
+        selectUser = xmSelect.render({
+            el: '#select-user',
+            filterable: true,
+            radio: true,
+            paging: true,
+            pageSize: 20,
+            theme: { color: '#4f46e5' },
+            data: []
+        });
+    }
+
+    function loadUserList() {
+        fetch(USER_LIST_URL)
+            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                if (r.code === 0) {
+                    selectUser.update({
+                        data: r.data,
+                        autoRow: true,
+                    });
+                } else {
+                    showError('用户列表获取出错');
+                }
+            })
+            .catch(function() {
+                showError('用户列表获取异常');
+            });
+    }
+
+    initXmSelect();
+    loadUserList();
+    loadTable(1);
+})();
+</script>
+{% endblock %}

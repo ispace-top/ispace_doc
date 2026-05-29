@@ -1,0 +1,660 @@
+{% extends "auth/base_auth.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "安装引导" %} - 爱思文档{% endblock %}
+
+{% block auth_title %}{% trans "安装引导" %}{% endblock %}
+{% block auth_subtitle %}{% trans "欢迎使用爱思文档，请完成以下配置" %}{% endblock %}
+
+{% block auth_form %}
+<div id="setup-app">
+    <!-- 步骤进度条 -->
+    <div class="ispace-setup-steps">
+        {% for step_num in "12345" %}
+        <div class="setup-step {% if forloop.counter == 1 %}active{% endif %}" data-step="{{ forloop.counter }}">
+            <div class="setup-step-circle">
+                <span class="setup-step-num">{{ forloop.counter }}</span>
+                <svg class="setup-step-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+            </div>
+            <span class="setup-step-label"></span>
+        </div>
+        {% if not forloop.last %}
+        <div class="setup-step-line"></div>
+        {% endif %}
+        {% endfor %}
+    </div>
+
+    <!-- 全局错误提示 -->
+    <div id="install-error" class="setup-error" style="display:none;"></div>
+
+    <!-- 步骤1：站点信息 -->
+    <div class="setup-panel active" data-panel="1">
+        <h3 class="setup-panel-title">{% trans "站点信息" %}</h3>
+        <p class="setup-panel-desc">{% trans "设置您文档站点的基本信息" %}</p>
+        <div class="ispace-form-group">
+            <label class="ispace-form-label ispace-form-label-required">{% trans "网站名称" %}</label>
+            <input type="text" id="site_name" class="ispace-form-input ispace-form-input-lg" placeholder="{% trans '我的文档站点' %}" maxlength="64" autofocus>
+            <div class="ispace-form-hint">{% trans "1-64个字符，将显示在页面标题和导航栏" %}</div>
+        </div>
+        <div class="ispace-form-group">
+            <label class="ispace-form-label">{% trans "网站描述" %}</label>
+            <input type="text" id="site_desc" class="ispace-form-input ispace-form-input-lg" placeholder="{% trans '一个在线文档管理系统' %}" maxlength="256">
+            <div class="ispace-form-hint">{% trans "可选，简要描述您的文档站点" %}</div>
+        </div>
+        <div class="ispace-form-group">
+            <label class="ispace-form-label">{% trans "默认语言" %}</label>
+            <select id="language" class="ispace-form-input ispace-form-input-lg">
+                <option value="zh-hans">中文简体</option>
+                <option value="zh-hant">中文繁體</option>
+                <option value="en">English</option>
+            </select>
+        </div>
+        <div class="setup-actions">
+            <span></span>
+            <button class="ispace-btn ispace-btn-primary ispace-btn-lg setup-next">
+                {% trans "下一步：创建管理员" %} →
+            </button>
+        </div>
+    </div>
+
+    <!-- 步骤2：超级管理员 -->
+    <div class="setup-panel" data-panel="2">
+        <h3 class="setup-panel-title">{% trans "创建管理员账号" %}</h3>
+        <p class="setup-panel-desc">{% trans "此账号将拥有系统的最高管理权限" %}</p>
+        <div class="ispace-form-group">
+            <label class="ispace-form-label ispace-form-label-required">{% trans "用户名" %}</label>
+            <input type="text" id="username" class="ispace-form-input ispace-form-input-lg" placeholder="{% trans '小写英文字母+数字，不少于5位' %}" maxlength="150" pattern="[a-z0-9]{5,}" required>
+        </div>
+        <div class="ispace-form-group">
+            <label class="ispace-form-label ispace-form-label-required">{% trans "邮箱" %}</label>
+            <input type="email" id="email" class="ispace-form-input ispace-form-input-lg" placeholder="admin@example.com" required>
+        </div>
+        <div class="ispace-form-group">
+            <label class="ispace-form-label ispace-form-label-required">{% trans "密码" %}</label>
+            <input type="password" id="password" class="ispace-form-input ispace-form-input-lg" placeholder="{% trans '不少于6位' %}" minlength="6" required>
+        </div>
+        <div class="ispace-form-group">
+            <label class="ispace-form-label ispace-form-label-required">{% trans "确认密码" %}</label>
+            <input type="password" id="password2" class="ispace-form-input ispace-form-input-lg" placeholder="{% trans '再次输入密码' %}" minlength="6" required>
+        </div>
+        <div class="setup-actions">
+            <button class="ispace-btn ispace-btn-secondary setup-prev">← {% trans "上一步" %}</button>
+            <button class="ispace-btn ispace-btn-primary ispace-btn-lg setup-next">
+                {% trans "下一步：数据库配置" %} →
+            </button>
+        </div>
+    </div>
+
+    <!-- 步骤3：数据库配置 -->
+    <div class="setup-panel" data-panel="3">
+        <h3 class="setup-panel-title">{% trans "数据库配置" %}</h3>
+        <p class="setup-panel-desc">{% trans "默认使用 SQLite，无需额外配置即可使用" %}</p>
+        <div class="ispace-form-group">
+            <label class="ispace-form-label">{% trans "数据库类型" %}</label>
+            <select id="db_type" class="ispace-form-input ispace-form-input-lg">
+                <option value="sqlite">SQLite（默认，无需额外配置）</option>
+                <option value="mysql">MySQL</option>
+                <option value="postgresql">PostgreSQL</option>
+            </select>
+        </div>
+        <div id="db_fields" style="display:none;">
+            <div class="ispace-form-row">
+                <div class="ispace-form-group" style="flex:1;">
+                    <label class="ispace-form-label">{% trans "主机地址" %}</label>
+                    <input type="text" id="db_host" class="ispace-form-input" placeholder="127.0.0.1">
+                </div>
+                <div class="ispace-form-group" style="flex:1;">
+                    <label class="ispace-form-label">{% trans "端口" %}</label>
+                    <input type="text" id="db_port" class="ispace-form-input" placeholder="3306">
+                </div>
+            </div>
+            <div class="ispace-form-group">
+                <label class="ispace-form-label">{% trans "数据库名" %}</label>
+                <input type="text" id="db_name" class="ispace-form-input" placeholder="ispace_doc">
+            </div>
+            <div class="ispace-form-row">
+                <div class="ispace-form-group" style="flex:1;">
+                    <label class="ispace-form-label">{% trans "用户名" %}</label>
+                    <input type="text" id="db_user" class="ispace-form-input" placeholder="root">
+                </div>
+                <div class="ispace-form-group" style="flex:1;">
+                    <label class="ispace-form-label">{% trans "密码" %}</label>
+                    <input type="password" id="db_password" class="ispace-form-input" placeholder="{% trans '数据库密码' %}">
+                </div>
+            </div>
+            <div style="margin-bottom:12px;">
+                <button type="button" id="btn-test-db" class="ispace-btn ispace-btn-secondary ispace-btn-sm">
+                    {% trans "测试连接" %}
+                </button>
+                <span id="db-test-result" style="margin-left:8px;font-size:13px;"></span>
+            </div>
+        </div>
+        <div class="setup-actions">
+            <button class="ispace-btn ispace-btn-secondary setup-prev">← {% trans "上一步" %}</button>
+            <button class="ispace-btn ispace-btn-primary ispace-btn-lg setup-next">
+                {% trans "下一步：邮件配置" %} →
+            </button>
+        </div>
+    </div>
+
+    <!-- 步骤4：邮件配置 -->
+    <div class="setup-panel" data-panel="4">
+        <h3 class="setup-panel-title">{% trans "邮件配置" %}</h3>
+        <p class="setup-panel-desc">{% trans "可选，用于密码找回和通知发送，后续可在后台设置" %}</p>
+        <div class="ispace-form-row">
+            <div class="ispace-form-group" style="flex:1;">
+                <label class="ispace-form-label">{% trans "SMTP 主机" %}</label>
+                <input type="text" id="smtp_host" class="ispace-form-input" placeholder="smtp.example.com">
+            </div>
+            <div class="ispace-form-group" style="flex:1;">
+                <label class="ispace-form-label">{% trans "端口" %}</label>
+                <input type="text" id="smtp_port" class="ispace-form-input" placeholder="465">
+            </div>
+        </div>
+        <div class="ispace-form-row">
+            <div class="ispace-form-group" style="flex:1;">
+                <label class="ispace-form-label">{% trans "用户名" %}</label>
+                <input type="text" id="smtp_user" class="ispace-form-input" placeholder="admin@example.com">
+            </div>
+            <div class="ispace-form-group" style="flex:1;">
+                <label class="ispace-form-label">{% trans "邮箱密码" %}</label>
+                <input type="password" id="smtp_password" class="ispace-form-input" placeholder="{% trans 'SMTP 密码' %}">
+            </div>
+        </div>
+        <div class="ispace-form-group">
+            <label class="ispace-form-label">{% trans "发件人地址" %}</label>
+            <input type="email" id="smtp_from" class="ispace-form-input" placeholder="noreply@example.com">
+        </div>
+        <div class="setup-actions">
+            <button class="ispace-btn ispace-btn-secondary setup-prev">← {% trans "上一步" %}</button>
+            <button class="ispace-btn ispace-btn-primary ispace-btn-lg setup-next">
+                {% trans "跳过，确认安装" %} →
+            </button>
+        </div>
+    </div>
+
+    <!-- 步骤5：确认安装 -->
+    <div class="setup-panel" data-panel="5">
+        <h3 class="setup-panel-title">{% trans "确认安装信息" %}</h3>
+        <p class="setup-panel-desc">{% trans "请确认以下配置，确认后将开始安装" %}</p>
+        <div class="setup-summary" id="setup-summary"></div>
+        <div class="setup-actions">
+            <button class="ispace-btn ispace-btn-secondary setup-prev">← {% trans "上一步" %}</button>
+            <button class="ispace-btn ispace-btn-primary ispace-btn-lg" id="btn-install">
+                {% trans "确认安装" %}
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block auth_footer %}
+<span>{% trans "安装完成后即可登录使用" %}</span>
+{% endblock %}
+
+{% block styles %}
+<style>
+/* ---- 扩大安装卡片宽度 ---- */
+.ispace-auth-card {
+    max-width: 520px;
+    padding: var(--ispace-space-5) var(--ispace-space-6) var(--ispace-space-4);
+}
+
+.ispace-auth-card .ispace-auth-header {
+    margin-bottom: var(--ispace-space-3);
+}
+
+/* ---- 步骤进度条 ---- */
+.ispace-setup-steps {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    margin-bottom: 20px;
+    padding: 0 16px;
+}
+.setup-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 52px;
+}
+.setup-step-circle {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--ispace-color-bg-tertiary, #f1f5f9);
+    color: var(--ispace-color-text-tertiary, #94a3b8);
+    font-size: 14px;
+    font-weight: 700;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+.setup-step.active .setup-step-circle {
+    background: var(--ispace-color-primary, #3b82f6);
+    color: #fff;
+    box-shadow: 0 0 0 5px rgba(59, 130, 246, 0.15);
+    transform: scale(1.1);
+}
+.setup-step.done .setup-step-circle {
+    background: #22c55e;
+    color: #fff;
+}
+.setup-step .setup-step-num {
+    display: block;
+}
+.setup-step.done .setup-step-num {
+    display: none;
+}
+.setup-step .setup-step-check {
+    display: none;
+    width: 18px;
+    height: 18px;
+}
+.setup-step.done .setup-step-check {
+    display: block;
+}
+.setup-step-label {
+    font-size: 11px;
+    color: var(--ispace-color-text-tertiary, #94a3b8);
+    font-weight: 500;
+    white-space: nowrap;
+    transition: color 0.3s;
+}
+.setup-step.active .setup-step-label {
+    color: var(--ispace-color-primary, #3b82f6);
+    font-weight: 600;
+}
+.setup-step.done .setup-step-label {
+    color: #22c55e;
+}
+.setup-step-line {
+    width: 36px;
+    height: 2px;
+    background: var(--ispace-color-border, #e2e8f0);
+    margin: 16px 2px 0;
+    border-radius: 2px;
+    transition: background 0.4s;
+    flex-shrink: 0;
+}
+.setup-step.done + .setup-step-line {
+    background: #22c55e;
+}
+
+/* ---- 面板容器 ---- */
+.setup-panel {
+    display: none;
+    animation: setupFadeIn 0.35s ease;
+}
+.setup-panel.active {
+    display: block;
+}
+@keyframes setupFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.setup-panel-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--ispace-color-text-primary, #1e293b);
+    margin: 0 0 4px;
+}
+.setup-panel-desc {
+    font-size: 13px;
+    color: var(--ispace-color-text-secondary, #64748b);
+    margin: 0 0 16px;
+}
+
+/* ---- 表单增强 ---- */
+.ispace-form-group {
+    margin-bottom: 12px;
+}
+.ispace-form-group:last-child {
+    margin-bottom: 0;
+}
+.ispace-form-label {
+    font-size: 13px;
+    margin-bottom: 4px;
+    display: block;
+    color: var(--ispace-color-text-secondary, #475569);
+    font-weight: 500;
+}
+.ispace-form-label-required::after {
+    content: ' *';
+    color: #ef4444;
+}
+.ispace-form-input-lg {
+    height: 40px;
+    font-size: 14px;
+    padding: 0 12px;
+    border-radius: var(--ispace-radius-md, 8px);
+    border: 1.5px solid var(--ispace-color-border, #e2e8f0);
+    width: 100%;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background: var(--ispace-color-bg-primary, #fff);
+    color: var(--ispace-color-text-primary, #1e293b);
+    box-sizing: border-box;
+}
+.ispace-form-input-lg:focus {
+    outline: none;
+    border-color: var(--ispace-color-primary, #3b82f6);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+.ispace-form-row {
+    display: flex;
+    gap: 12px;
+}
+@media (max-width: 480px) {
+    .ispace-form-row {
+        flex-direction: column;
+        gap: 0;
+    }
+}
+
+/* ---- 操作按钮行 ---- */
+.setup-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--ispace-color-border, #e2e8f0);
+}
+.setup-actions .ispace-btn-lg {
+    height: 38px;
+    font-size: 14px;
+    padding: 0 18px;
+}
+
+/* ---- 确认摘要 ---- */
+.setup-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.setup-summary-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--ispace-color-bg-secondary, #f8fafc);
+    border-radius: var(--ispace-radius-md, 8px);
+    border: 1px solid var(--ispace-color-border, #e2e8f0);
+}
+.setup-summary-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 16px;
+}
+.setup-summary-icon.icon-site  { background: #eff6ff; }
+.setup-summary-icon.icon-admin { background: #fef2f2; }
+.setup-summary-icon.icon-db    { background: #f0fdf4; }
+.setup-summary-icon.icon-email { background: #fefce8; }
+.setup-summary-body {
+    flex: 1;
+    min-width: 0;
+}
+.setup-summary-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--ispace-color-text-tertiary, #94a3b8);
+    margin-bottom: 3px;
+    font-weight: 600;
+}
+.setup-summary-value {
+    font-size: 14px;
+    color: var(--ispace-color-text-primary, #1e293b);
+    font-weight: 500;
+    word-break: break-all;
+}
+
+/* ---- 错误提示 ---- */
+.setup-error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+    padding: 12px 16px;
+    border-radius: var(--ispace-radius-md, 8px);
+    font-size: 14px;
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ---- 表单提示 ---- */
+.ispace-form-hint {
+    font-size: 12px;
+    color: var(--ispace-color-text-tertiary, #94a3b8);
+    margin-top: 4px;
+}
+</style>
+{% endblock %}
+
+{% block inline_bootstrap %}
+<script>
+(function() {
+    let currentStep = 1;
+    let formData = {};
+    var stepLabels = ['{% trans "站点信息" %}', '{% trans "管理员" %}', '{% trans "数据库" %}', '{% trans "邮件" %}', '{% trans "确认" %}'];
+
+    // 初始化步骤标签
+    document.querySelectorAll('.setup-step-label').forEach(function(l, i) {
+        l.textContent = stepLabels[i] || '';
+    });
+
+    function collectStep(step) {
+        switch (step) {
+            case 1:
+                return {
+                    site_name: document.getElementById('site_name').value,
+                    site_desc: document.getElementById('site_desc').value,
+                    language: document.getElementById('language').value,
+                };
+            case 2:
+                return {
+                    username: document.getElementById('username').value,
+                    email: document.getElementById('email').value,
+                    password: document.getElementById('password').value,
+                    password2: document.getElementById('password2').value,
+                };
+            case 3:
+                return {
+                    db_type: document.getElementById('db_type').value,
+                    db_host: document.getElementById('db_host').value,
+                    db_port: document.getElementById('db_port').value,
+                    db_name: document.getElementById('db_name').value,
+                    db_user: document.getElementById('db_user').value,
+                    db_password: document.getElementById('db_password').value,
+                };
+            case 4:
+                return {
+                    smtp_host: document.getElementById('smtp_host').value,
+                    smtp_port: document.getElementById('smtp_port').value,
+                    smtp_user: document.getElementById('smtp_user').value,
+                    smtp_from: document.getElementById('smtp_from').value,
+                    smtp_password: document.getElementById('smtp_password').value,
+                };
+        }
+        return {};
+    }
+
+    function setStep(step) {
+        document.querySelectorAll('.setup-panel').forEach(function(p) {
+            p.classList.remove('active');
+        });
+        var panel = document.querySelector('[data-panel="' + step + '"]');
+        if (panel) {
+            // force re-animation
+            panel.classList.remove('active');
+            void panel.offsetWidth;
+            panel.classList.add('active');
+        }
+        document.querySelectorAll('.setup-step').forEach(function(s) {
+            var sStep = parseInt(s.getAttribute('data-step'));
+            s.classList.remove('active', 'done');
+            if (sStep === step) s.classList.add('active');
+            if (sStep < step) s.classList.add('done');
+        });
+        currentStep = step;
+        // focus first input in panel
+        var firstInput = panel ? panel.querySelector('input:not([type=hidden]), select') : null;
+        if (firstInput) setTimeout(function() { firstInput.focus(); }, 400);
+    }
+
+    function showSummary() {
+        var s1 = formData.step1 || {};
+        var s2 = formData.step2 || {};
+        var s3 = formData.step3 || {};
+        var s4 = formData.step4 || {};
+
+        var items = [
+            { icon: 'icon-site', label: '{% trans "网站名称" %}', value: (s1.site_name || '-') + ' · ' + (s1.language || 'zh-hans') },
+            { icon: 'icon-admin', label: '{% trans "管理员账号" %}', value: (s2.username || '-') + ' (' + (s2.email || '-') + ')' },
+            { icon: 'icon-db', label: '{% trans "数据库" %}', value: s3.db_type === 'mysql' ? 'MySQL @ ' + (s3.db_host || '-') : (s3.db_type === 'postgresql' ? 'PostgreSQL @ ' + (s3.db_host || '-') : 'SQLite（本地）') },
+            { icon: 'icon-email', label: '{% trans "邮件服务" %}', value: s4.smtp_host || '跳过（可后续配置）' },
+        ];
+
+        var html = '';
+        var icons = { 'icon-site': '🌐', 'icon-admin': '👤', 'icon-db': '🗄️', 'icon-email': '✉️' };
+        items.forEach(function(item) {
+            html += '<div class="setup-summary-item">';
+            html += '<div class="setup-summary-icon ' + item.icon + '">' + (icons[item.icon] || '') + '</div>';
+            html += '<div class="setup-summary-body">';
+            html += '<div class="setup-summary-label">' + item.label + '</div>';
+            html += '<div class="setup-summary-value">' + item.value + '</div>';
+            html += '</div></div>';
+        });
+        document.getElementById('setup-summary').innerHTML = html;
+    }
+
+    async function nextStep() {
+        var data = collectStep(currentStep);
+        formData['step' + currentStep] = data;
+
+        var resp = await fetch('/api/setup/check/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() },
+            body: JSON.stringify({ step: currentStep, data: data })
+        });
+        var result = await resp.json();
+        if (!result.status) {
+            showError(result.message || '校验失败');
+            return;
+        }
+        if (currentStep < 5) {
+            setStep(currentStep + 1);
+            if (currentStep === 5) showSummary();
+        }
+    }
+
+    function prevStep() {
+        if (currentStep > 1) setStep(currentStep - 1);
+    }
+
+    function showError(msg) {
+        var el = document.getElementById('install-error');
+        if (el) {
+            el.textContent = '⚠ ' + msg;
+            el.style.display = 'flex';
+            setTimeout(function() { el.style.display = 'none'; }, 4000);
+        } else {
+            alert(msg);
+        }
+    }
+
+    function getCsrf() {
+        var cookie = document.cookie.match(/csrftoken=([^;]+)/);
+        return cookie ? cookie[1] : '';
+    }
+
+    // 事件绑定
+    document.querySelectorAll('.setup-next').forEach(function(btn) {
+        btn.addEventListener('click', nextStep);
+    });
+    document.querySelectorAll('.setup-prev').forEach(function(btn) {
+        btn.addEventListener('click', prevStep);
+    });
+
+    // 键盘支持：Enter 进入下一步
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
+            e.preventDefault();
+            nextStep();
+        }
+    });
+
+    // 数据库类型切换
+    var dbTypeEl = document.getElementById('db_type');
+    if (dbTypeEl) {
+        dbTypeEl.addEventListener('change', function() {
+            document.getElementById('db_fields').style.display =
+                this.value !== 'sqlite' ? 'block' : 'none';
+        });
+    }
+
+    // 测试数据库连接
+    var btnTest = document.getElementById('btn-test-db');
+    if (btnTest) {
+        btnTest.addEventListener('click', async function() {
+            var data = collectStep(3);
+            data.test_connection = true;
+            var resp = await fetch('/api/setup/check/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() },
+                body: JSON.stringify({ step: 3, data: data })
+            });
+            var result = await resp.json();
+            var el = document.getElementById('db-test-result');
+            if (el) {
+                el.textContent = result.status ? '连接成功 ✓' : '连接失败: ' + (result.message || '');
+                el.style.color = result.status ? '#22c55e' : '#dc2626';
+            }
+        });
+    }
+
+    // 执行安装
+    var btnInstall = document.getElementById('btn-install');
+    if (btnInstall) {
+        btnInstall.addEventListener('click', async function() {
+            btnInstall.disabled = true;
+            btnInstall.textContent = '安装中...';
+            var errEl = document.getElementById('install-error');
+            errEl.style.display = 'none';
+            try {
+                var resp = await fetch('/api/setup/install/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() },
+                    body: JSON.stringify(formData)
+                });
+                var result = await resp.json();
+                if (result.status) {
+                    window.location.href = result.redirect || '/login/';
+                } else {
+                    errEl.textContent = '⚠ ' + (result.message || '安装失败');
+                    errEl.style.display = 'flex';
+                }
+            } catch (e) {
+                errEl.textContent = '⚠ 网络错误: ' + e.message;
+                errEl.style.display = 'flex';
+            }
+            btnInstall.disabled = false;
+            btnInstall.textContent = '确认安装';
+        });
+    }
+})();
+</script>
+{% endblock %}

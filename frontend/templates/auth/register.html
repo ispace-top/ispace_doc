@@ -1,0 +1,65 @@
+{% extends "auth/base_auth.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "用户注册" %} - {{ site_name|default:"爱思文档" }}{% endblock %}
+
+{% block auth_title %}{% trans "注册" %}{% endblock %}
+{% block auth_subtitle %}{% trans "创建一个新账号" %}{% endblock %}
+
+{% block auth_form %}
+<form class="ispace-auth-form" method="post" action="{% url 'register' %}">
+    {% csrf_token %}
+
+    <div class="ispace-form-group">
+        <label class="ispace-form-label ispace-form-label-required" for="username">{% trans "用户名" %}</label>
+        <input type="text" id="username" name="username"
+               class="ispace-form-input" placeholder="{% trans '英文字母或数字，不少于5位' %}"
+               value="{{ username|default:'' }}"
+               required autocomplete="username" autofocus
+               minlength="5" pattern="[a-zA-Z0-9]+">
+        <div class="ispace-form-hint">{% trans "支持大小写英文字母和数字，至少5个字符" %}</div>
+    </div>
+
+    <div class="ispace-form-group">
+        <label class="ispace-form-label ispace-form-label-required" for="email">{% trans "电子邮箱" %}</label>
+        <input type="email" id="email" name="email"
+               class="ispace-form-input" placeholder="{% trans '请输入您的邮箱地址' %}"
+               value="{{ email|default:'' }}"
+               required autocomplete="email">
+    </div>
+
+    <div class="ispace-form-group">
+        <label class="ispace-form-label ispace-form-label-required" for="password">{% trans "密码" %}</label>
+        <input type="password" id="password" name="password"
+               class="ispace-form-input" placeholder="{% trans '请输入密码，不少于6位' %}"
+               required autocomplete="new-password"
+               minlength="6">
+        <div class="ispace-form-hint">{% trans "至少6个字符，建议包含字母和数字" %}</div>
+    </div>
+
+    <div class="ispace-form-group">
+        <label class="ispace-form-label ispace-form-label-required" for="password2">{% trans "确认密码" %}</label>
+        <input type="password" id="password2" name="password2"
+               class="ispace-form-input" placeholder="{% trans '请再次输入密码' %}"
+               required autocomplete="new-password">
+    </div>
+
+    {% if enable_register_code == 'on' %}
+    <div class="ispace-form-group">
+        <label class="ispace-form-label ispace-form-label-required" for="register_code">{% trans "注册邀请码" %}</label>
+        <input type="text" id="register_code" name="register_code"
+               class="ispace-form-input" placeholder="{% trans '请输入注册邀请码' %}"
+               required>
+    </div>
+    {% endif %}
+
+    <button type="submit" class="ispace-btn ispace-btn-primary ispace-btn-sm">
+        {% trans "注 册" %}
+    </button>
+</form>
+{% endblock %}
+
+{% block auth_footer %}
+<span>{% trans "已有账号？" %} <a href="{% url 'login' %}">{% trans "立即登录" %}</a></span>
+<span class="ispace-auth-back-link"><a href="/">&larr; {% trans "返回首页" %}</a></span>
+{% endblock %}

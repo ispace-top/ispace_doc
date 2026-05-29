@@ -1,0 +1,1612 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}站点设置{% endblock %}
+
+{% block head_extra %}
+<link href="{% static 'tags-input/tagsinput.css' %}" rel="stylesheet" type="text/css"/>
+{% endblock %}
+
+{% block styles %}
+<style>
+/* ================================================================
+   Tab Navigation — icon tabs with bottom border indicator
+   ================================================================ */
+.settings-tabs-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border-bottom: 2px solid var(--ispace-color-border-light);
+    margin-bottom: var(--ispace-space-5);
+    /* overflow-x: auto; */
+    -webkit-overflow-scrolling: touch;
+}
+.settings-tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ispace-space-2);
+    padding: var(--ispace-space-3) var(--ispace-space-5);
+    font-size: var(--ispace-font-sm);
+    font-weight: var(--ispace-font-medium);
+    color: var(--ispace-color-text-tertiary);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color var(--ispace-duration-fast), border-color var(--ispace-duration-fast);
+    font-family: inherit;
+    line-height: var(--ispace-leading-normal);
+}
+.settings-tab-btn:hover {
+    color: var(--ispace-color-text-primary);
+}
+.settings-tab-btn.ispace-active {
+    color: var(--ispace-color-brand-500);
+    border-bottom-color: var(--ispace-color-brand-500);
+}
+.settings-tab-btn svg {
+    flex-shrink: 0;
+    opacity: 0.7;
+}
+.settings-tab-btn.ispace-active svg {
+    opacity: 1;
+}
+
+/* ================================================================
+   Switch toggle — refined
+   ================================================================ */
+.ispace-switch {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    vertical-align: middle;
+}
+.ispace-switch input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+.ispace-switch-slider {
+    width: 44px;
+    height: 24px;
+    background: var(--ispace-color-border-medium);
+    border-radius: var(--ispace-radius-full);
+    transition: background var(--ispace-duration-fast) var(--ispace-ease-out);
+    position: relative;
+    display: inline-block;
+}
+.ispace-switch-slider::after {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #ffffff;
+    top: 3px;
+    left: 3px;
+    transition: transform var(--ispace-duration-fast) var(--ispace-ease-out);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+.ispace-switch input:checked + .ispace-switch-slider {
+    background: var(--ispace-color-brand-500);
+}
+.ispace-switch input:checked + .ispace-switch-slider::after {
+    transform: translateX(20px);
+}
+.ispace-switch input:focus-visible + .ispace-switch-slider {
+    box-shadow: 0 0 0 3px var(--ispace-color-brand-100);
+}
+
+/* ================================================================
+   Form layout
+   ================================================================ */
+.settings-form-row {
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    gap: var(--ispace-space-4);
+    margin-bottom: var(--ispace-space-4);
+    align-items: start;
+}
+.settings-form-label {
+    font-size: var(--ispace-font-sm);
+    font-weight: var(--ispace-font-medium);
+    color: var(--ispace-color-text-secondary);
+    text-align: right;
+    padding-top: var(--ispace-space-2);
+    line-height: var(--ispace-leading-normal);
+}
+.settings-form-control {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ispace-space-1);
+}
+.settings-form-control .ispace-form-input,
+.settings-form-control .ispace-form-textarea {
+    max-width: 520px;
+}
+.settings-form-hint {
+    font-size: var(--ispace-font-xs);
+    color: var(--ispace-color-text-quaternary);
+    line-height: var(--ispace-leading-relaxed);
+}
+.settings-form-control .bootstrap-tagsinput {
+    max-width: 520px;
+    min-width: 280px;
+}
+
+/* ================================================================
+   Card sections
+   ================================================================ */
+.settings-card {
+    background: var(--ispace-color-surface-0);
+    border: 1px solid var(--ispace-color-border-light);
+    border-radius: var(--ispace-radius-lg);
+    margin-bottom: var(--ispace-space-4);
+    overflow: hidden;
+}
+.settings-card-header {
+    display: flex;
+    align-items: center;
+    gap: var(--ispace-space-3);
+    padding: var(--ispace-space-4) var(--ispace-space-5);
+    border-bottom: 1px solid var(--ispace-color-border-light);
+    background: var(--ispace-color-surface-50);
+}
+.settings-card-header-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--ispace-radius-md);
+    background: var(--ispace-color-brand-50);
+    color: var(--ispace-color-brand-500);
+    flex-shrink: 0;
+}
+.settings-card-header-icon--info { background: var(--ispace-color-info-50, #eff6ff); color: var(--ispace-color-info-500, #3b82f6); }
+.settings-card-header-icon--warning { background: var(--ispace-color-warning-50, #fffbeb); color: var(--ispace-color-warning-500, #f59e0b); }
+.settings-card-header-icon--success { background: var(--ispace-color-success-50, #f0fdf4); color: var(--ispace-color-success-500, #22c55e); }
+.settings-card-header-icon--danger { background: var(--ispace-color-error-50, #fef2f2); color: var(--ispace-color-error-500, #ef4444); }
+.settings-card-title {
+    font-size: var(--ispace-font-sm);
+    font-weight: var(--ispace-font-semibold);
+    color: var(--ispace-color-text-primary);
+    margin: 0;
+}
+.settings-card-subtitle {
+    font-size: var(--ispace-font-xs);
+    color: var(--ispace-color-text-quaternary);
+    margin: 2px 0 0 0;
+}
+.settings-card-body {
+    padding: var(--ispace-space-5);
+}
+.settings-card-footer {
+    display: flex;
+    align-items: center;
+    gap: var(--ispace-space-3);
+    padding: var(--ispace-space-3) var(--ispace-space-5);
+    border-top: 1px solid var(--ispace-color-border-light);
+    background: var(--ispace-color-surface-50);
+}
+
+/* ================================================================
+   Data management cards
+   ================================================================ */
+.data-action-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--ispace-space-4);
+    background: var(--ispace-color-surface-50);
+    border: 1px solid var(--ispace-color-border-light);
+    border-radius: var(--ispace-radius-md);
+    margin-bottom: var(--ispace-space-3);
+    gap: var(--ispace-space-4);
+    transition: border-color var(--ispace-duration-fast);
+}
+.data-action-card:hover {
+    border-color: var(--ispace-color-brand-300);
+}
+.data-action-info {
+    flex: 1;
+    min-width: 0;
+}
+.data-action-title {
+    font-size: var(--ispace-font-sm);
+    font-weight: var(--ispace-font-semibold);
+    color: var(--ispace-color-text-primary);
+    margin: 0 0 var(--ispace-space-1) 0;
+}
+.data-action-desc {
+    font-size: var(--ispace-font-xs);
+    color: var(--ispace-color-text-quaternary);
+    margin: 0;
+    line-height: var(--ispace-leading-relaxed);
+}
+
+/* ================================================================
+   Inline save feedback
+   ================================================================ */
+.save-feedback {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ispace-space-1);
+    font-size: var(--ispace-font-xs);
+    padding: var(--ispace-space-1) var(--ispace-space-2);
+    border-radius: var(--ispace-radius-sm);
+    opacity: 0;
+    transition: opacity var(--ispace-duration-fast);
+}
+.save-feedback.ispace-visible {
+    opacity: 1;
+}
+.save-feedback--success {
+    color: var(--ispace-color-success-600, #16a34a);
+    background: var(--ispace-color-success-50, #f0fdf4);
+}
+.save-feedback--error {
+    color: var(--ispace-color-error-600, #dc2626);
+    background: var(--ispace-color-error-50, #fef2f2);
+}
+
+/* ================================================================
+   Logo upload
+   ================================================================ */
+.logo-upload-row {
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    gap: var(--ispace-space-4);
+    margin-bottom: var(--ispace-space-5);
+    align-items: center;
+}
+.logo-upload-label {
+    font-size: var(--ispace-font-sm);
+    font-weight: var(--ispace-font-medium);
+    color: var(--ispace-color-text-secondary);
+    text-align: right;
+    line-height: var(--ispace-leading-normal);
+}
+.logo-upload-control {
+    display: flex;
+    align-items: center;
+    gap: var(--ispace-space-4);
+}
+.logo-preview {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--ispace-radius-md);
+    border: 1px solid var(--ispace-color-border-light);
+    background: var(--ispace-color-surface-100);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.logo-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+.logo-preview-placeholder {
+    width: 24px;
+    height: 24px;
+    color: var(--ispace-color-text-quaternary);
+}
+.logo-upload-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ispace-space-1);
+}
+.logo-upload-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ispace-space-1);
+    padding: var(--ispace-space-1) var(--ispace-space-3);
+    font-size: var(--ispace-font-xs);
+    font-weight: var(--ispace-font-medium);
+    color: var(--ispace-color-brand-600);
+    background: var(--ispace-color-brand-50);
+    border: 1px solid var(--ispace-color-brand-200);
+    border-radius: var(--ispace-radius-md);
+    cursor: pointer;
+    font-family: inherit;
+    transition: all var(--ispace-duration-fast);
+}
+.logo-upload-btn:hover {
+    background: var(--ispace-color-brand-100);
+    border-color: var(--ispace-color-brand-300);
+}
+.logo-reset-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ispace-space-1);
+    padding: var(--ispace-space-1) var(--ispace-space-3);
+    font-size: var(--ispace-font-xs);
+    color: var(--ispace-color-text-quaternary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+}
+.logo-reset-btn:hover {
+    color: var(--ispace-color-error-500);
+}
+.logo-upload-hint {
+    font-size: var(--ispace-font-xs);
+    color: var(--ispace-color-text-quaternary);
+}
+.logo-file-input {
+    display: none;
+}
+@media (max-width: 768px) {
+    .logo-upload-row {
+        grid-template-columns: 1fr;
+        gap: var(--ispace-space-2);
+    }
+    .logo-upload-label {
+        text-align: left;
+    }
+}
+
+/* ================================================================
+   Responsive
+   ================================================================ */
+@media (max-width: 768px) {
+    .settings-form-row {
+        grid-template-columns: 1fr;
+        gap: var(--ispace-space-2);
+    }
+    .settings-form-label {
+        text-align: left;
+        padding-top: 0;
+    }
+    .settings-form-control .ispace-form-input,
+    .settings-form-control .ispace-form-textarea {
+        max-width: 100%;
+    }
+    .settings-tab-btn {
+        padding: var(--ispace-space-2) var(--ispace-space-3);
+        font-size: var(--ispace-font-xs);
+    }
+    .data-action-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--ispace-space-3);
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Tab Navigation -->
+<div class="settings-tabs-wrapper" id="settingsTabs">
+    <button class="settings-tab-btn ispace-active" data-tab="tab-basic">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+        基础设置
+    </button>
+    <button class="settings-tab-btn" data-tab="tab-email">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+        </svg>
+        邮箱设置
+    </button>
+    <button class="settings-tab-btn" data-tab="tab-doc">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+        文档设置
+    </button>
+    <button class="settings-tab-btn" data-tab="tab-data">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+        </svg>
+        站点数据管理
+    </button>
+</div>
+
+<!-- Tab 1: 基础设置 -->
+<div class="tab-panel" id="tab-basic">
+
+    {# 站点信息 #}
+    <div class="settings-card">
+        <div class="settings-card-header">
+            <div class="settings-card-header-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+            </div>
+            <div>
+                <h3 class="settings-card-title">站点信息</h3>
+                <p class="settings-card-subtitle">站点名称、描述、备案号、主题及首页排序</p>
+            </div>
+        </div>
+        <div class="settings-card-body">
+            <form id="formMetaConfig">
+                <div class="settings-form-row">
+                    <label class="settings-form-label">站点名称</label>
+                    <div class="settings-form-control">
+                        <input name="site_name" placeholder="请输入站点标题" class="ispace-form-input" value="{% if site_name != None %}{{site_name}}{% endif %}">
+                    </div>
+                </div>
+                <div class="settings-form-row">
+                    <label class="settings-form-label">子标题</label>
+                    <div class="settings-form-control">
+                        <input name="site_sub_name" placeholder="请输入站点的子标题" class="ispace-form-input" value="{% if site_sub_name != None %}{{site_sub_name}}{% endif %}">
+                    </div>
+                </div>
+                <div class="settings-form-row">
+                    <label class="settings-form-label">关键词</label>
+                    <div class="settings-form-control">
+                        <input name="site_keywords" placeholder="多个关键词请使用英文逗号,进行分隔" class="ispace-form-input" value="{% if site_keywords != None %}{{site_keywords}}{% endif %}">
+                    </div>
+                </div>
+                <div class="settings-form-row">
+                    <label class="settings-form-label">站点描述</label>
+                    <div class="settings-form-control">
+                        <input name="site_desc" placeholder="请用简短的文字描述你的爱思文档站点" class="ispace-form-input" value="{% if site_desc != None %}{{site_desc}}{% endif %}">
+                    </div>
+                </div>
+                <div class="settings-form-row">
+                    <label class="settings-form-label">备案号</label>
+                    <div class="settings-form-control">
+                        <input name="beian_code" placeholder="请输入网站的备案号" class="ispace-form-input" value="{% if beian_code != None %}{{beian_code}}{% endif %}">
+                    </div>
+                </div>
+                <div class="settings-form-row">
+                    <label class="settings-form-label">站点语言</label>
+                    <div class="settings-form-control">
+                        <select name="site_language" class="ispace-form-input" style="max-width:200px;">
+                            <option value="zh-hans" {% if site_language == 'zh-hans' or not site_language %}selected{% endif %}>中文简体</option>
+                            <option value="zh-hant" {% if site_language == 'zh-hant' %}selected{% endif %}>中文繁體</option>
+                            <option value="en" {% if site_language == 'en' %}selected{% endif %}>English</option>
+                        </select>
+                        <span class="settings-form-hint">站点默认显示语言，用户可手动切换覆盖此设置</span>
+                    </div>
+                </div>
+                <div class="settings-form-row">
+                    <label class="settings-form-label">站点主题</label>
+                    <div class="settings-form-control">
+                        <select name="site_theme" class="ispace-form-input" style="max-width:200px;">
+                            <option value="light" {% if site_theme == 'light' or not site_theme %}selected{% endif %}>浅色模式</option>
+                            <option value="dark" {% if site_theme == 'dark' %}selected{% endif %}>深色模式</option>
+                            <option value="auto" {% if site_theme == 'auto' %}selected{% endif %}>跟随系统</option>
+                        </select>
+                        <span class="settings-form-hint">站点默认颜色主题，用户可手动切换覆盖此设置</span>
+                    </div>
+                </div>
+            </form>
+            <form id="formIndexConfig" class="ispace-mt-3">
+                <div class="settings-form-row">
+                    <label class="settings-form-label">首页排序</label>
+                    <div class="settings-form-control">
+                        <label class="ispace-form-check ispace-mb-2">
+                            <input type="radio" name="index_project_sort" value="1" {% if index_project_sort != '-1' %}checked{% endif %}>
+                            <span>升序</span>
+                        </label>
+                        <label class="ispace-form-check">
+                            <input type="radio" name="index_project_sort" value="-1" {% if index_project_sort == '-1' %}checked{% endif %}>
+                            <span>降序</span>
+                        </label>
+                        <span class="settings-form-hint">首页文档列表的排序方式</span>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="settings-card-footer">
+            <button id="updateMetaBtn" type="button" class="ispace-btn ispace-btn-primary ispace-btn-sm">保存站点信息</button>
+            <span class="save-feedback" id="feedbackMeta"></span>
+        </div>
+    </div>
+
+    {# Logo 设置 #}
+    <div class="settings-card">
+        <div class="settings-card-header">
+            <div class="settings-card-header-icon settings-card-header-icon--info">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                </svg>
+            </div>
+            <div>
+                <h3 class="settings-card-title">Logo 设置</h3>
+                <p class="settings-card-subtitle">自定义站点各位置的 Logo 图标，支持 PNG/JPG/GIF/SVG/WebP 格式</p>
+            </div>
+        </div>
+        <div class="settings-card-body" id="logoUploadArea">
+            {# 首页 / 全局 Header Logo #}
+            <div class="logo-upload-row" data-logo-type="site_logo">
+                <label class="logo-upload-label">全局 Logo</label>
+                <div class="logo-upload-control">
+                    <div class="logo-preview" id="preview-site_logo">
+                        {% if site_logo %}
+                            <img src="{{ site_logo }}" alt="全局Logo">
+                        {% else %}
+                            <svg class="logo-preview-placeholder" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+                                <polyline points="21 15 16 10 5 21"/>
+                            </svg>
+                        {% endif %}
+                    </div>
+                    <div class="logo-upload-actions">
+                        <button type="button" class="logo-upload-btn" data-logo-type="site_logo">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            上传 Logo
+                        </button>
+                        <button type="button" class="logo-reset-btn" data-logo-type="site_logo" {% if not site_logo %}style="display:none"{% endif %}>
+                            恢复默认
+                        </button>
+                        <input type="file" class="logo-file-input" data-logo-type="site_logo" accept="image/png,image/jpeg,image/gif,image/svg+xml,image/webp,image/x-icon">
+                    </div>
+                </div>
+            </div>
+            <p class="logo-upload-hint" style="margin-left:140px;margin-top:-12px;margin-bottom:16px;">用于首页、文档页等全局 Header 区域的 Logo 展示</p>
+
+            {# 后台管理 Logo #}
+            <div class="logo-upload-row" data-logo-type="site_logo_admin">
+                <label class="logo-upload-label">后台管理 Logo</label>
+                <div class="logo-upload-control">
+                    <div class="logo-preview" id="preview-site_logo_admin">
+                        {% if site_logo_admin %}
+                            <img src="{{ site_logo_admin }}" alt="后台Logo">
+                        {% else %}
+                            <svg class="logo-preview-placeholder" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+                                <polyline points="21 15 16 10 5 21"/>
+                            </svg>
+                        {% endif %}
+                    </div>
+                    <div class="logo-upload-actions">
+                        <button type="button" class="logo-upload-btn" data-logo-type="site_logo_admin">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            上传 Logo
+                        </button>
+                        <button type="button" class="logo-reset-btn" data-logo-type="site_logo_admin" {% if not site_logo_admin %}style="display:none"{% endif %}>
+                            恢复默认
+                        </button>
+                        <input type="file" class="logo-file-input" data-logo-type="site_logo_admin" accept="image/png,image/jpeg,image/gif,image/svg+xml,image/webp,image/x-icon">
+                    </div>
+                </div>
+            </div>
+            <p class="logo-upload-hint" style="margin-left:140px;margin-top:-12px;margin-bottom:16px;">仅用于后台管理页面的 Header Logo，留空则使用全局 Logo</p>
+
+            {# 个人中心 Logo #}
+            <div class="logo-upload-row" data-logo-type="site_logo_user_center">
+                <label class="logo-upload-label">个人中心 Logo</label>
+                <div class="logo-upload-control">
+                    <div class="logo-preview" id="preview-site_logo_user_center">
+                        {% if site_logo_user_center %}
+                            <img src="{{ site_logo_user_center }}" alt="个人中心Logo">
+                        {% else %}
+                            <svg class="logo-preview-placeholder" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+                                <polyline points="21 15 16 10 5 21"/>
+                            </svg>
+                        {% endif %}
+                    </div>
+                    <div class="logo-upload-actions">
+                        <button type="button" class="logo-upload-btn" data-logo-type="site_logo_user_center">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            上传 Logo
+                        </button>
+                        <button type="button" class="logo-reset-btn" data-logo-type="site_logo_user_center" {% if not site_logo_user_center %}style="display:none"{% endif %}>
+                            恢复默认
+                        </button>
+                        <input type="file" class="logo-file-input" data-logo-type="site_logo_user_center" accept="image/png,image/jpeg,image/gif,image/svg+xml,image/webp,image/x-icon">
+                    </div>
+                </div>
+            </div>
+            <p class="logo-upload-hint" style="margin-left:140px;margin-top:-12px;margin-bottom:16px;">仅用于个人中心页面的 Header Logo，留空则使用全局 Logo</p>
+
+            {# Footer Logo #}
+            <div class="logo-upload-row" data-logo-type="site_logo_footer">
+                <label class="logo-upload-label">Footer Logo</label>
+                <div class="logo-upload-control">
+                    <div class="logo-preview" id="preview-site_logo_footer">
+                        {% if site_logo_footer %}
+                            <img src="{{ site_logo_footer }}" alt="Footer Logo">
+                        {% else %}
+                            <svg class="logo-preview-placeholder" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+                                <polyline points="21 15 16 10 5 21"/>
+                            </svg>
+                        {% endif %}
+                    </div>
+                    <div class="logo-upload-actions">
+                        <button type="button" class="logo-upload-btn" data-logo-type="site_logo_footer">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            上传 Logo
+                        </button>
+                        <button type="button" class="logo-reset-btn" data-logo-type="site_logo_footer" {% if not site_logo_footer %}style="display:none"{% endif %}>
+                            恢复默认
+                        </button>
+                        <input type="file" class="logo-file-input" data-logo-type="site_logo_footer" accept="image/png,image/jpeg,image/gif,image/svg+xml,image/webp,image/x-icon">
+                    </div>
+                </div>
+            </div>
+            <p class="logo-upload-hint" style="margin-left:140px;margin-top:-12px;">用于页面底部 Footer 区域的 Logo 展示，建议使用 20×20 像素的小图标</p>
+        </div>
+    </div>
+
+    {# 访问控制 #}
+    <div class="settings-card">
+        <div class="settings-card-header">
+            <div class="settings-card-header-icon settings-card-header-icon--warning">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+            </div>
+            <div>
+                <h3 class="settings-card-title">访问控制</h3>
+                <p class="settings-card-subtitle">注册、登录及全站访问权限管理</p>
+            </div>
+        </div>
+        <div class="settings-card-body">
+            <form id="formSiteCtrl">
+                <div class="settings-form-row">
+                    <label class="settings-form-label">禁止注册</label>
+                    <div class="settings-form-control">
+                        <label class="ispace-switch">
+                            <input type="checkbox" name="close_register" {% if close_register %}checked{% endif %}>
+                            <span class="ispace-switch-slider"></span>
+                        </label>
+                        <span class="settings-form-hint">开启后将禁止新用户注册</span>
+                    </div>
+                </div>
+                <div class="settings-form-row">
+                    <label class="settings-form-label">全站登录</label>
+                    <div class="settings-form-control">
+                        <label class="ispace-switch">
+                            <input type="checkbox" name="require_login" {% if require_login %}checked{% endif %}>
+                            <span class="ispace-switch-slider"></span>
+                        </label>
+                        <span class="settings-form-hint">开启后，除注册、登录页面外所有页面都需要登录访问</span>
+                    </div>
+                </div>
+                <div class="settings-form-row">
+                    <label class="settings-form-label">启用注册码</label>
+                    <div class="settings-form-control">
+                        <label class="ispace-switch">
+                            <input type="checkbox" name="enable_register_code" {% if enable_register_code %}checked{% endif %}>
+                            <span class="ispace-switch-slider"></span>
+                        </label>
+                        <span class="settings-form-hint">开启后新用户注册需要填写注册码</span>
+                    </div>
+                </div>
+                <div class="settings-form-row">
+                    <label class="settings-form-label">登录验证码</label>
+                    <div class="settings-form-control">
+                        <label class="ispace-switch">
+                            <input type="checkbox" name="enable_login_check_code" {% if enable_login_check_code %}checked{% endif %}>
+                            <span class="ispace-switch-slider"></span>
+                        </label>
+                        <span class="settings-form-hint">开启后登录需要填写验证码</span>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="settings-card-footer">
+            <button id="updateCtrlBtn" type="button" class="ispace-btn ispace-btn-primary ispace-btn-sm">保存访问控制</button>
+            <span class="save-feedback" id="feedbackCtrl"></span>
+        </div>
+    </div>
+
+    {# 功能开关 #}
+    <div class="settings-card">
+        <div class="settings-card-header">
+            <div class="settings-card-header-icon settings-card-header-icon--info">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
+                </svg>
+            </div>
+            <div>
+                <h3 class="settings-card-title">功能开关</h3>
+                <p class="settings-card-subtitle">版本更新检测、页面链接行为等全局开关</p>
+            </div>
+        </div>
+        <div class="settings-card-body">
+            <form id="formFeatureToggle">
+                <div class="settings-form-row">
+                    <label class="settings-form-label">禁止更新检测</label>
+                    <div class="settings-form-control">
+                        <label class="ispace-switch">
+                            <input type="checkbox" name="disable_update_check" {% if disable_update_check %}checked{% endif %}>
+                            <span class="ispace-switch-slider"></span>
+                        </label>
+                        <span class="settings-form-hint">开启后，后台将不会主动检测应用是否存在新版本</span>
+                    </div>
+                </div>
+                <div class="settings-form-row">
+                    <label class="settings-form-label">单标签页</label>
+                    <div class="settings-form-control">
+                        <label class="ispace-switch">
+                            <input type="checkbox" name="single_tab_link" {% if single_tab_link %}checked{% endif %}>
+                            <span class="ispace-switch-slider"></span>
+                        </label>
+                        <span class="settings-form-hint">开启后页面所有链接都将在同一个标签页内打开</span>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="settings-card-footer">
+            <button id="updateFeatureToggleBtn" type="button" class="ispace-btn ispace-btn-primary ispace-btn-sm">保存功能开关</button>
+            <span class="save-feedback" id="feedbackFeature"></span>
+        </div>
+    </div>
+
+    {# 页面代码嵌入 #}
+    <div class="settings-card">
+        <div class="settings-card-header">
+            <div class="settings-card-header-icon settings-card-header-icon--info">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+                </svg>
+            </div>
+            <div>
+                <h3 class="settings-card-title">页面代码嵌入</h3>
+                <p class="settings-card-subtitle">统计代码及广告位，支持 &lt;script&gt; 标签</p>
+            </div>
+        </div>
+        <div class="settings-card-body">
+            <form id="formAdConfig">
+                <div class="settings-form-row">
+                    <label class="settings-form-label">统计代码</label>
+                    <div class="settings-form-control">
+                        <textarea name="static_code" placeholder="第三方统计工具代码，可包含<script>标签" class="ispace-form-textarea" rows="3">{{static_code}}</textarea>
+                    </div>
+                </div>
+                <div class="settings-form-row">
+                    <label class="settings-form-label">广告位 ①</label>
+                    <div class="settings-form-control">
+                        <textarea name="ad_code" placeholder="文档正文上方广告位，可包含<script>标签" class="ispace-form-textarea" rows="3">{{ad_code}}</textarea>
+                        <span class="settings-form-hint">位于文档正文上方</span>
+                    </div>
+                </div>
+                <div class="settings-form-row">
+                    <label class="settings-form-label">广告位 ②</label>
+                    <div class="settings-form-control">
+                        <textarea name="ad_code_2" placeholder="文档下方广告位，可包含<script>标签" class="ispace-form-textarea" rows="3">{{ad_code_2}}</textarea>
+                        <span class="settings-form-hint">位于文档下方、分享按钮上方</span>
+                    </div>
+                </div>
+                <div class="settings-form-row">
+                    <label class="settings-form-label">广告位 ③</label>
+                    <div class="settings-form-control">
+                        <textarea name="ad_code_3" placeholder="左侧目录栏下方广告位，可包含<script>标签" class="ispace-form-textarea" rows="3">{{ad_code_3}}</textarea>
+                        <span class="settings-form-hint">位于文档左侧目录栏下方</span>
+                    </div>
+                </div>
+                <div class="settings-form-row">
+                    <label class="settings-form-label">广告位 ④</label>
+                    <div class="settings-form-control">
+                        <textarea name="ad_code_4" placeholder="左侧目录栏上方广告位，可包含<script>标签" class="ispace-form-textarea" rows="3">{{ad_code_4}}</textarea>
+                        <span class="settings-form-hint">位于文档左侧目录栏上方</span>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="settings-card-footer">
+            <button id="updateAdBtn" type="button" class="ispace-btn ispace-btn-primary ispace-btn-sm">保存页面代码</button>
+            <span class="save-feedback" id="feedbackAd"></span>
+        </div>
+    </div>
+
+    {# 搜索配置 #}
+    <div class="settings-card">
+        <div class="settings-card-header">
+            <div class="settings-card-header-icon settings-card-header-icon--success">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+            </div>
+            <div>
+                <h3 class="settings-card-title">搜索配置</h3>
+                <p class="settings-card-subtitle">站点全文搜索行为设置</p>
+            </div>
+        </div>
+        <div class="settings-card-body">
+            <form id="formSearchConfig">
+                <div class="settings-form-row">
+                    <label class="settings-form-label">搜索方式</label>
+                    <div class="settings-form-control">
+                        <label class="ispace-form-check ispace-mb-2">
+                            <input type="radio" name="search_type" value="0" {% if search_type != '1' %}checked{% endif %}>
+                            <span>精准搜索</span>
+                        </label>
+                        <label class="ispace-form-check">
+                            <input type="radio" name="search_type" value="1" {% if search_type == '1' %}checked{% endif %}>
+                            <span>全文搜索</span>
+                        </label>
+                        <span class="settings-form-hint">精准搜索仅匹配完整词语，全文搜索支持模糊匹配</span>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="settings-card-footer">
+            <button id="updateSearchBtn" type="button" class="ispace-btn ispace-btn-primary ispace-btn-sm">保存搜索配置</button>
+            <span class="save-feedback" id="feedbackSearch"></span>
+        </div>
+    </div>
+</div>
+
+<!-- Tab 2: 邮箱设置 -->
+<div class="tab-panel ispace-d-none" id="tab-email">
+    <div class="settings-card">
+        <div class="settings-card-header">
+            <div class="settings-card-header-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                    <polyline points="22,6 12,13 2,6"/>
+                </svg>
+            </div>
+            <div>
+                <h3 class="settings-card-title">SMTP 邮箱配置</h3>
+                <p class="settings-card-subtitle">配置邮件发送服务，用于通知、验证码等邮件发送</p>
+            </div>
+        </div>
+        <div class="settings-card-body">
+            <form id="formEmailConfig">
+                <div class="settings-form-row">
+                    <label class="settings-form-label">启用邮箱</label>
+                    <div class="settings-form-control">
+                        <label class="ispace-switch">
+                            <input type="checkbox" name="enable_email" {% if enable_email %}checked{% endif %}>
+                            <span class="ispace-switch-slider"></span>
+                        </label>
+                        <span class="settings-form-hint">开启后还需完成下方SMTP信息配置才能正常发送邮件</span>
+                    </div>
+                </div>
+                <div class="settings-form-row">
+                    <label class="settings-form-label">发件邮箱</label>
+                    <div class="settings-form-control">
+                        <input type="email" name="send_emailer" class="ispace-form-input" required value="{{emailer.value}}">
+                        <span class="settings-form-hint">邮件的发件人地址</span>
+                    </div>
+                </div>
+                <div class="settings-form-row">
+                    <label class="settings-form-label">SMTP 主机</label>
+                    <div class="settings-form-control">
+                        <input type="text" name="smtp_host" class="ispace-form-input" required value="{{email_host.value}}">
+                        <span class="settings-form-hint">如 smtp.qq.com、smtp.gmail.com</span>
+                    </div>
+                </div>
+                <div class="settings-form-row">
+                    <label class="settings-form-label">SMTP 端口</label>
+                    <div class="settings-form-control">
+                        <input type="number" name="smtp_port" class="ispace-form-input" required value="{{email_port.value}}" style="max-width:180px;">
+                        <span class="settings-form-hint">SSL 通常为 465，非 SSL 通常为 25 或 587</span>
+                    </div>
+                </div>
+                <div class="settings-form-row">
+                    <label class="settings-form-label">SMTP 用户名</label>
+                    <div class="settings-form-control">
+                        <input type="text" name="username" class="ispace-form-input" required value="{{email_username.value}}">
+                        <span class="settings-form-hint">通常与发件邮箱地址相同</span>
+                    </div>
+                </div>
+                <div class="settings-form-row">
+                    <label class="settings-form-label">SMTP 密码</label>
+                    <div class="settings-form-control">
+                        <input type="password" name="pwd" class="ispace-form-input" required value="{{email_dec_pwd}}">
+                        <span class="settings-form-hint">QQ邮箱请使用授权码，Gmail请使用应用专用密码</span>
+                    </div>
+                </div>
+                <div class="settings-form-row">
+                    <label class="settings-form-label">使用 SSL</label>
+                    <div class="settings-form-control">
+                        <label class="ispace-switch">
+                            <input type="checkbox" name="smtp_ssl" {% if email_ssl.value %}checked{% endif %}>
+                            <span class="ispace-switch-slider"></span>
+                        </label>
+                        <span class="settings-form-hint">开启后使用 SSL 加密连接，端口通常为 465</span>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="settings-card-footer">
+            <button id="updateEmailBtn" type="button" class="ispace-btn ispace-btn-primary ispace-btn-sm">保存邮箱设置</button>
+            <button id="checkEmail" type="button" class="ispace-btn ispace-btn-secondary ispace-btn-sm">验证邮箱设置</button>
+            <span class="save-feedback" id="feedbackEmail"></span>
+        </div>
+    </div>
+</div>
+
+<!-- Tab 3: 文档设置 -->
+<div class="tab-panel ispace-d-none" id="tab-doc">
+    {# 文档功能 #}
+    <div class="settings-card">
+        <div class="settings-card-header">
+            <div class="settings-card-header-icon settings-card-header-icon--info">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+            </div>
+            <div>
+                <h3 class="settings-card-title">文档功能配置</h3>
+                <p class="settings-card-subtitle">文档导出、图片显示、代码块行为等全局配置</p>
+            </div>
+        </div>
+        <div class="settings-card-body">
+            <form id="formDocConfig">
+                <div class="settings-form-row">
+                    <label class="settings-form-label">文档导出</label>
+                    <div class="settings-form-control">
+                        <label class="ispace-switch">
+                            <span class="ispace-switch-slider"></span>
+                        </label>
+                        <span class="settings-form-hint">允许文档导出为 EPUB、DOCX 等格式文件以供下载</span>
+                    </div>
+                </div>
+                <div class="settings-form-row">
+                    <label class="settings-form-label">图片缩略</label>
+                    <div class="settings-form-control">
+                        <label class="ispace-switch">
+                            <input type="checkbox" name="img_scale" {% if img_scale %}checked{% endif %}>
+                            <span class="ispace-switch-slider"></span>
+                        </label>
+                        <span class="settings-form-hint">开启后文档中的图片将显示为最大宽度 350px 的缩略图</span>
+                    </div>
+                </div>
+                <div class="settings-form-row">
+                    <label class="settings-form-label">长代码展开</label>
+                    <div class="settings-form-control">
+                        <label class="ispace-switch">
+                            <input type="checkbox" name="long_code" {% if long_code %}checked{% endif %}>
+                            <span class="ispace-switch-slider"></span>
+                        </label>
+                        <span class="settings-form-hint">默认代码块最高 500px 超出滚动；开启后按原高度完整显示</span>
+                    </div>
+                </div>
+                <div class="settings-form-row">
+                    <label class="settings-form-label">首行缩进</label>
+                    <div class="settings-form-control">
+                        <label class="ispace-switch">
+                            <input type="checkbox" name="enable_text_indent" {% if enable_text_indent %}checked{% endif %}>
+                            <span class="ispace-switch-slider"></span>
+                        </label>
+                        <span class="settings-form-hint">开启后文档正文段落首行按印刷习惯缩进 2 个字符</span>
+                    </div>
+                </div>
+                <div class="settings-form-row">
+                    <label class="settings-form-label">渲染主题</label>
+                    <div class="settings-form-control">
+                        <select class="ispace-form-input" name="md_render_theme" style="max-width:200px;">
+                            <option value="default" {% if md_render_theme == 'default' or not md_render_theme %}selected{% endif %}>默认主题</option>
+                            <option value="github" {% if md_render_theme == 'github' %}selected{% endif %}>GitHub 风格</option>
+                            <option value="minimal" {% if md_render_theme == 'minimal' %}selected{% endif %}>简约风格</option>
+                        </select>
+                        <span class="settings-form-hint">文档内容的渲染样式主题，可随时切换</span>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="settings-card-footer">
+            <button id="updateDocBtn" type="button" class="ispace-btn ispace-btn-primary ispace-btn-sm">保存文档配置</button>
+            <span class="save-feedback" id="feedbackDoc"></span>
+        </div>
+    </div>
+
+    {# 素材限制 #}
+    <div class="settings-card">
+        <div class="settings-card-header">
+            <div class="settings-card-header-icon settings-card-header-icon--warning">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                </svg>
+            </div>
+            <div>
+                <h3 class="settings-card-title">素材限制配置</h3>
+                <p class="settings-card-subtitle">上传图片、附件的格式与大小限制</p>
+            </div>
+        </div>
+        <div class="settings-card-body">
+            <form id="formMediaConfig">
+                <div class="settings-form-row">
+                    <label class="settings-form-label">图片大小</label>
+                    <div class="settings-form-control">
+                        <input class="ispace-form-input" type="number" name="img_size" id="img_size" value="{% if img_size != '' %}{{img_size}}{% endif %}" placeholder="10" style="max-width:180px;">
+                        <span class="settings-form-hint">单位 MB，默认 10MB</span>
+                    </div>
+                </div>
+                <div class="settings-form-row">
+                    <label class="settings-form-label">附件格式</label>
+                    <div class="settings-form-control">
+                        <input name="attachment_suffix" id="attachment_suffix" class="ispace-form-input" value="{% if attachment_suffix != '' %}{{attachment_suffix}}{% endif %}" placeholder="zip, rar, pdf">
+                        <span class="settings-form-hint">输入允许上传的附件格式后缀，如 zip、rar、pdf</span>
+                    </div>
+                </div>
+                <div class="settings-form-row">
+                    <label class="settings-form-label">附件大小</label>
+                    <div class="settings-form-control">
+                        <input class="ispace-form-input" type="number" name="attachment_size" id="attachment_size" value="{% if attachment_size != '' %}{{attachment_size}}{% endif %}" placeholder="50" style="max-width:180px;">
+                        <span class="settings-form-hint">单位 MB，默认 50MB</span>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="settings-card-footer">
+            <button id="updateMediaBtn" type="button" class="ispace-btn ispace-btn-primary ispace-btn-sm">保存素材配置</button>
+            <span class="save-feedback" id="feedbackMedia"></span>
+        </div>
+    </div>
+</div>
+
+<!-- Tab 4: 站点数据管理 -->
+<div class="tab-panel ispace-d-none" id="tab-data">
+    {# 数据备份与导出 #}
+    <div class="settings-card">
+        <div class="settings-card-header">
+            <div class="settings-card-header-icon settings-card-header-icon--danger">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+                    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+                </svg>
+            </div>
+            <div>
+                <h3 class="settings-card-title">数据备份与导出</h3>
+                <p class="settings-card-subtitle">导出站点数据和媒体文件到本地进行备份</p>
+            </div>
+        </div>
+        <div class="settings-card-body">
+            <div class="data-action-card">
+                <div class="data-action-info">
+                    <h4 class="data-action-title">导出站点数据</h4>
+                    <p class="data-action-desc">将站点所有数据（文档、用户、配置等）导出为 JSON 格式的 ZIP 压缩包。根据数据量大小，导出可能需要一定时间。</p>
+                </div>
+                <button class="ispace-btn ispace-btn-secondary ispace-btn-sm" id="backupDataBtn" style="flex-shrink:0;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    导出数据
+                </button>
+            </div>
+            <div class="data-action-card">
+                <div class="data-action-info">
+                    <h4 class="data-action-title">导出站点媒体文件</h4>
+                    <p class="data-action-desc">将站点所有上传的媒体文件（图片、附件等）导出为 ZIP 压缩包。根据媒体文件总量，导出可能需要较长时间。</p>
+                </div>
+                <button class="ispace-btn ispace-btn-secondary ispace-btn-sm" id="backupMediaBtn" style="flex-shrink:0;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    导出媒体
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {# 系统维护 #}
+    <div class="settings-card">
+        <div class="settings-card-header">
+            <div class="settings-card-header-icon settings-card-header-icon--warning">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
+                </svg>
+            </div>
+            <div>
+                <h3 class="settings-card-title">系统维护</h3>
+                <p class="settings-card-subtitle">缓存管理、搜索索引重建等系统维护操作</p>
+            </div>
+        </div>
+        <div class="settings-card-body">
+            <div class="data-action-card">
+                <div class="data-action-info">
+                    <h4 class="data-action-title">清除系统缓存</h4>
+                    <p class="data-action-desc">清除 Django 缓存服务中的所有数据。通常在修改代码或配置后执行，使更改立即生效。</p>
+                </div>
+                <button class="ispace-btn ispace-btn-secondary ispace-btn-sm" id="clearCacheBtn" style="flex-shrink:0;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;">
+                        <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                    </svg>
+                    清除缓存
+                </button>
+            </div>
+            <div class="data-action-card">
+                <div class="data-action-info">
+                    <h4 class="data-action-title">重建搜索索引</h4>
+                    <p class="data-action-desc">删除现有搜索索引目录，系统将在下次搜索时自动重建。在搜索功能异常时可尝试此操作。</p>
+                </div>
+                <button class="ispace-btn ispace-btn-secondary ispace-btn-sm" id="rebuildIndexBtn" style="flex-shrink:0;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;">
+                        <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                    </svg>
+                    重建索引
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'jquery/3.5.0/jquery.min.js' %}"></script>
+<script src="{% static '/tags-input/tagsinput.js' %}?version={{isdoc_version}}" type="text/javascript" charset="utf-8"></script>
+<script>
+(function() {
+    const CSRF_TOKEN = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    // ================================================================
+    // Tab switching
+    // ================================================================
+    document.getElementById('settingsTabs').addEventListener('click', function(e) {
+        const tab = e.target.closest('.settings-tab-btn');
+        if (!tab) return;
+
+        this.querySelectorAll('.settings-tab-btn').forEach(function(b) { b.classList.remove('ispace-active'); });
+        tab.classList.add('ispace-active');
+
+        const targetId = tab.dataset.tab;
+        document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.add('ispace-d-none'); });
+        const panel = document.getElementById(targetId);
+        if (panel) panel.classList.remove('ispace-d-none');
+    });
+
+    // ================================================================
+    // Inline save feedback
+    // ================================================================
+    function showFeedback(el, success, msg) {
+        el.textContent = msg || (success ? '保存成功' : '保存失败');
+        el.className = 'save-feedback ispace-visible ' + (success ? 'save-feedback--success' : 'save-feedback--error');
+        clearTimeout(el._timer);
+        el._timer = setTimeout(function() {
+            el.classList.remove('ispace-visible');
+        }, 2500);
+    }
+
+    // ================================================================
+    // Core API helper
+    // ================================================================
+    function postJSON(url, data) {
+        return fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': CSRF_TOKEN
+            },
+            body: JSON.stringify(data)
+        }).then(function(r) { return r.json(); });
+    }
+
+    function updateConfig(data, feedbackEl) {
+        postJSON("{% url 'site_config' %}", { data: JSON.stringify(data) }).then(function(r) {
+            if (r.code === 0) {
+                if (feedbackEl) showFeedback(feedbackEl, true);
+                else showSuccess('更新成功');
+            } else {
+                if (feedbackEl) showFeedback(feedbackEl, false, r.data || '更新失败');
+                else showError(r.data || '更新失败');
+            }
+        }).catch(function() {
+            if (feedbackEl) showFeedback(feedbackEl, false, '网络异常');
+            else showError('更新异常');
+        });
+    }
+
+    // ================================================================
+    // Form data helpers
+    // ================================================================
+    function getFormData(form) {
+        const data = {};
+        const inputs = form.querySelectorAll('input[name]:not([type="checkbox"]):not([type="submit"]):not([type="button"]), select[name], textarea[name]');
+        inputs.forEach(function(el) {
+            if (el.type === 'radio') {
+                if (el.checked) data[el.name] = el.value;
+            } else {
+                data[el.name] = el.value;
+            }
+        });
+        return data;
+    }
+
+    function getSwitchValue(form, name) {
+        const cb = form.querySelector('[name="' + name + '"]');
+        return (cb && cb.checked) ? 'on' : null;
+    }
+
+    function buildSwitchData(form, names, type) {
+        type = type || 'basic';
+        const data_list = [];
+        names.forEach(function(name) {
+            data_list.push({ type: type, name: name, value: getSwitchValue(form, name) });
+        });
+        return data_list;
+    }
+
+    function textInputsToList(form, type) {
+        type = type || 'basic';
+        const formData = getFormData(form);
+        const data_list = [];
+        for (const key in formData) {
+            if (formData.hasOwnProperty(key)) {
+                data_list.push({ type: type, name: key, value: formData[key] });
+            }
+        }
+        return data_list;
+    }
+
+    // ================================================================
+    // Logo upload handlers
+    // ================================================================
+    function getCsrfHeader() {
+        return { 'X-CSRFToken': CSRF_TOKEN };
+    }
+
+    // 上传按钮点击 → 触发隐藏的 file input
+    document.getElementById('logoUploadArea').addEventListener('click', function(e) {
+        const uploadBtn = e.target.closest('.logo-upload-btn');
+        if (uploadBtn) {
+            const logoType = uploadBtn.dataset.logoType;
+            const fileInput = document.querySelector('.logo-file-input[data-logo-type="' + logoType + '"]');
+            if (fileInput) fileInput.click();
+        }
+    });
+
+    // 恢复默认按钮 → 删除 Logo
+    document.getElementById('logoUploadArea').addEventListener('click', function(e) {
+        const resetBtn = e.target.closest('.logo-reset-btn');
+        if (!resetBtn) return;
+        const logoType = resetBtn.dataset.logoType;
+
+        postJSON("{% url 'site_config' %}", {
+            data: JSON.stringify([{ type: 'basic', name: logoType, value: '' }])
+        }).then(function(r) {
+            if (r.code === 0) {
+                const preview = document.getElementById('preview-' + logoType);
+                preview.innerHTML = '<svg class="logo-preview-placeholder" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>';
+                resetBtn.style.display = 'none';
+                showSuccess('Logo 已恢复默认');
+            } else {
+                showError('操作失败');
+            }
+        });
+    });
+
+    // 文件选择 → 上传
+    document.getElementById('logoUploadArea').addEventListener('change', function(e) {
+        const fileInput = e.target;
+        if (!fileInput.classList.contains('logo-file-input')) return;
+
+        const file = fileInput.files[0];
+        if (!file) return;
+
+        const logoType = fileInput.dataset.logoType;
+        const formData = new FormData();
+        formData.append('logo_type', logoType);
+        formData.append('logo_file', file);
+
+        const uploadBtn = document.querySelector('.logo-upload-btn[data-logo-type="' + logoType + '"]');
+        if (uploadBtn) {
+            uploadBtn.textContent = '';
+            uploadBtn.innerHTML = '<span class="ispace-spinner" style="width:14px;height:14px;border-width:2px;"></span> 上传中...';
+        }
+
+        fetch("{% url 'admin_upload_logo' %}", {
+            method: 'POST',
+            headers: getCsrfHeader(),
+            body: formData
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(r) {
+            // 恢复按钮文字
+            if (uploadBtn) {
+                uploadBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> 上传 Logo';
+            }
+
+            if (r.code === 0) {
+                // 更新预览
+                const preview = document.getElementById('preview-' + logoType);
+                preview.innerHTML = '<img src="' + r.data + '" alt="">';
+                // 显示重置按钮
+                const resetBtn = document.querySelector('.logo-reset-btn[data-logo-type="' + logoType + '"]');
+                if (resetBtn) resetBtn.style.display = '';
+                showSuccess('Logo 上传成功');
+            } else {
+                showError(r.data || '上传失败');
+            }
+        })
+        .catch(function() {
+            if (uploadBtn) {
+                uploadBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> 上传 Logo';
+            }
+            showError('上传异常');
+        });
+
+        // 允许重复上传同一文件
+        fileInput.value = '';
+    });
+
+    // ================================================================
+    // Tab 1: 基础设置 handlers
+    // ================================================================
+    document.getElementById('updateMetaBtn').addEventListener('click', function() {
+        const fb = document.getElementById('feedbackMeta');
+        var data = textInputsToList(document.getElementById('formMetaConfig'));
+        var indexData = textInputsToList(document.getElementById('formIndexConfig'));
+        updateConfig(data.concat(indexData), fb);
+    });
+
+    document.getElementById('updateCtrlBtn').addEventListener('click', function() {
+        const fb = document.getElementById('feedbackCtrl');
+        const form = document.getElementById('formSiteCtrl');
+        var data = buildSwitchData(form, ['close_register', 'require_login', 'enable_register_code', 'enable_login_check_code']);
+        updateConfig(data, fb);
+    });
+
+    document.getElementById('updateFeatureToggleBtn').addEventListener('click', function() {
+        const fb = document.getElementById('feedbackFeature');
+        const form = document.getElementById('formFeatureToggle');
+        var data = buildSwitchData(form, ['disable_update_check', 'single_tab_link']);
+        updateConfig(data, fb);
+    });
+
+    document.getElementById('updateAdBtn').addEventListener('click', function() {
+        const fb = document.getElementById('feedbackAd');
+        var data = textInputsToList(document.getElementById('formAdConfig'));
+        updateConfig(data, fb);
+    });
+
+    document.getElementById('updateSearchBtn').addEventListener('click', function() {
+        const fb = document.getElementById('feedbackSearch');
+        var data = textInputsToList(document.getElementById('formSearchConfig'));
+        updateConfig(data, fb);
+    });
+
+    // ================================================================
+    // Tab 2: 邮箱设置 handlers
+    // ================================================================
+    document.getElementById('updateEmailBtn').addEventListener('click', function() {
+        const fb = document.getElementById('feedbackEmail');
+        const form = document.getElementById('formEmailConfig');
+        const formData = getFormData(form);
+
+        const data_list = buildSwitchData(form, ['smtp_ssl'], 'email');
+        data_list.push({ type: 'basic', name: 'enable_email', value: getSwitchValue(form, 'enable_email') });
+
+        for (const key in formData) {
+            if (formData.hasOwnProperty(key) && key !== 'smtp_ssl' && key !== 'enable_email') {
+                data_list.push({ type: 'email', name: key, value: formData[key] });
+            }
+        }
+        updateConfig(data_list, fb);
+    });
+
+    document.getElementById('checkEmail').addEventListener('click', async function() {
+        const confirmed = await iSpaceDoc.confirm(
+            '将以现有配置发送一封测试邮件给发件邮箱，以检测邮箱配置是否正确！',
+            { title: '验证邮箱配置', confirmText: '发送', cancelText: '取消' }
+        );
+        if (confirmed) { sendEmailTest(); }
+    });
+
+    function sendEmailTest() {
+        const form = document.getElementById('formEmailConfig');
+        const emailData = getFormData(form);
+
+        const enableEmail = getSwitchValue(form, 'enable_email');
+        if (enableEmail) emailData.enable_email = enableEmail;
+        const smtpSsl = getSwitchValue(form, 'smtp_ssl');
+        if (smtpSsl) emailData.smtp_ssl = smtpSsl;
+
+        const loadingOverlay = document.createElement('div');
+        loadingOverlay.className = 'ispace-loading-overlay';
+        loadingOverlay.innerHTML = '<div class="ispace-spinner"></div>';
+        document.body.appendChild(loadingOverlay);
+
+        fetch('{% url "send_email_test" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': CSRF_TOKEN
+            },
+            body: JSON.stringify(emailData)
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(r) {
+            loadingOverlay.remove();
+            if (r.status) {
+                showSuccess('测试邮件发送成功');
+            } else {
+                showError('测试邮件发送失败: ' + (r.data || ''));
+            }
+        })
+        .catch(function() {
+            loadingOverlay.remove();
+            showError('测试邮件发送异常');
+        });
+    }
+
+    // ================================================================
+    // Tab 3: 文档设置 handlers
+    // ================================================================
+    document.getElementById('updateDocBtn').addEventListener('click', function() {
+        const fb = document.getElementById('feedbackDoc');
+        const form = document.getElementById('formDocConfig');
+        var data = buildSwitchData(form, ['img_scale', 'long_code', 'enable_text_indent']);
+        // Add select value for md_render_theme
+        var themeSelect = form.querySelector('[name="md_render_theme"]');
+        if (themeSelect) {
+            data.push({ type: 'doc', name: 'md_render_theme', value: themeSelect.value });
+        }
+        updateConfig(data, fb);
+    });
+
+    document.getElementById('updateMediaBtn').addEventListener('click', function() {
+        const fb = document.getElementById('feedbackMedia');
+        const form = document.getElementById('formMediaConfig');
+        const formData = getFormData(form);
+
+        const data_list = [];
+        for (const key in formData) {
+            if (formData.hasOwnProperty(key)) {
+                data_list.push({ type: 'doc', name: key, value: formData[key] });
+            }
+        }
+        updateConfig(data_list, fb);
+    });
+
+    // ================================================================
+    // Tab 4: 数据管理 handlers
+    // ================================================================
+    async function backupData(mode) {
+        let message;
+        if (mode === 'data') {
+            message = '你正在导出站点数据至本地，根据站点的数据量大小，此操作可能会消耗一定时间，请耐心等待，不要关闭或刷新页面！';
+        } else {
+            message = '你正在导出站点媒体文件至本地，根据站点的数据量大小，此操作可能会消耗一定时间，请耐心等待，不要关闭或刷新页面！';
+        }
+
+        const confirmed = await iSpaceDoc.confirm(message, {
+            title: '导出站点数据',
+            confirmText: '开始导出',
+            cancelText: '取消'
+        });
+
+        if (!confirmed) return;
+
+        const loadingOverlay = document.createElement('div');
+        loadingOverlay.className = 'ispace-loading-overlay';
+        loadingOverlay.innerHTML = '<div class="ispace-spinner"></div>';
+        document.body.appendChild(loadingOverlay);
+
+        fetch("{% url 'admin_backup' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': CSRF_TOKEN
+            },
+            body: 'mode=' + encodeURIComponent(mode)
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(r) {
+            loadingOverlay.remove();
+            if (r.status) {
+                downloadZip(r.data);
+            } else {
+                showError('导出站点数据失败: ' + (r.data || ''));
+            }
+        })
+        .catch(function(err) {
+            loadingOverlay.remove();
+            showError('导出站点数据请求异常: ' + (err.message || err));
+        });
+    }
+
+    function downloadZip(download_link) {
+        const backdrop = document.createElement('div');
+        backdrop.className = 'ispace-modal-backdrop';
+        backdrop.innerHTML =
+            '<div class="ispace-modal ispace-modal-sm">' +
+            '  <div class="ispace-modal-header">' +
+            '    <h3 class="ispace-modal-title">下载文件</h3>' +
+            '    <button class="ispace-modal-close">' +
+            '      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+            '        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>' +
+            '      </svg>' +
+            '    </button>' +
+            '  </div>' +
+            '  <div class="ispace-modal-body">' +
+            '    <p style="text-align:center;color:var(--ispace-color-error-text);margin-bottom:var(--ispace-space-4);">请尽快下载，避免失效！</p>' +
+            '    <a class="ispace-btn ispace-btn-primary" style="display:block;text-align:center;text-decoration:none;" href="' + download_link + '" download="isdoc_backup.zip">点击下载文件(zip)</a>' +
+            '  </div>' +
+            '</div>';
+        document.body.appendChild(backdrop);
+
+        requestAnimationFrame(function() {
+            backdrop.classList.add('ispace-active');
+        });
+
+        const closeBtn = backdrop.querySelector('.ispace-modal-close');
+        const downloadLink = backdrop.querySelector('a');
+
+        function cleanup() {
+            backdrop.classList.remove('ispace-active');
+            setTimeout(function() { backdrop.remove(); }, 300);
+        }
+
+        closeBtn.addEventListener('click', cleanup);
+        backdrop.addEventListener('click', function(e) {
+            if (e.target === backdrop) cleanup();
+        });
+        downloadLink.addEventListener('click', function() {
+            setTimeout(cleanup, 500);
+        });
+    }
+
+    document.getElementById('backupDataBtn').addEventListener('click', function() { backupData('data'); });
+    document.getElementById('backupMediaBtn').addEventListener('click', function() { backupData('media'); });
+
+    // ================================================================
+    // 系统维护 handlers
+    // ================================================================
+    function systemAction(url, actionName) {
+        const loadingOverlay = document.createElement('div');
+        loadingOverlay.className = 'ispace-loading-overlay';
+        loadingOverlay.innerHTML = '<div class="ispace-spinner"></div>';
+        document.body.appendChild(loadingOverlay);
+
+        fetch(url, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': CSRF_TOKEN }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(r) {
+            loadingOverlay.remove();
+            if (r.status) {
+                showSuccess(r.data || (actionName + '成功'));
+            } else {
+                showError(r.data || (actionName + '失败'));
+            }
+        })
+        .catch(function() {
+            loadingOverlay.remove();
+            showError(actionName + '异常');
+        });
+    }
+
+    document.getElementById('clearCacheBtn').addEventListener('click', async function() {
+        const confirmed = await iSpaceDoc.confirm(
+            '确认清除系统缓存？此操作安全，不会影响数据。',
+            { title: '清除缓存', confirmText: '确认清除', cancelText: '取消' }
+        );
+        if (confirmed) { systemAction("{% url 'admin_clear_cache' %}", '清除缓存'); }
+    });
+
+    document.getElementById('rebuildIndexBtn').addEventListener('click', async function() {
+        const confirmed = await iSpaceDoc.confirm(
+            '确认重建搜索索引？索引目录将被删除，下次搜索时将自动重建。',
+            { title: '重建搜索索引', confirmText: '确认重建', cancelText: '取消' }
+        );
+        if (confirmed) { systemAction("{% url 'admin_rebuild_index' %}", '重建索引'); }
+    });
+})();
+</script>
+{% endblock %}

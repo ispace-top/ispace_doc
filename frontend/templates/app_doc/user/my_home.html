@@ -1,0 +1,3075 @@
+{% extends "base.html" %}
+{% load static %}{% load i18n %}
+
+{% block title %}{% trans "个人中心" %} - {{ site_name|default:"爱思文档" }}{% endblock %}
+
+{% block breadcrumb %}{% endblock %}
+{% block body_class %}ispace-page-body{% endblock %}
+
+{% block header_logo %}
+{% if site_logo_user_center %}
+<a href="/" class="ispace-logo">
+    <img src="{{ site_logo_user_center }}" width="28" height="28" alt="logo">
+    {{ site_name|default:"爱思文档" }}
+</a>
+{% if site_sub_name %}<span class="ispace-header-subtitle">{{ site_sub_name }}</span>{% endif %}
+{% else %}
+{{ block.super }}
+{% endif %}
+{% endblock %}
+
+{% block sidebar %}
+<aside class="ispace-sidebar" id="userCenterSidebar">
+    <div class="ispace-profile-card">
+        <div class="ispace-profile-avatar" id="sidebarAvatar">
+            {% if user.profile.avatar %}
+                <img src="{{ user.profile.avatar.url }}" alt="{{ user.username }}">
+            {% else %}
+                {{ user.username|first|upper }}
+            {% endif %}
+        </div>
+        <div class="ispace-profile-info">
+            <h2 class="ispace-profile-name">
+                {% if user.first_name %}{{ user.first_name }}{% else %}{{ user.username }}{% endif %}
+            </h2>
+            <p class="ispace-profile-email">{{ user.email }}</p>
+        </div>
+    </div>
+
+    <nav>
+        <div class="ispace-sidebar-section">
+            <h3 class="ispace-sidebar-section-title">{% trans "个人资料" %}</h3>
+            <ul class="ispace-sidebar-nav">
+                <li class="ispace-sidebar-item">
+                    <a href="?tab=profile" class="ispace-sidebar-link {% if current_tab == 'profile' or not current_tab %}active{% endif %}" data-tab="profile">
+                        <span class="ispace-sidebar-icon">
+                            <svg viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                            </svg>
+                        </span>
+                        {% trans "基本信息" %}
+                    </a>
+                </li>
+                <li class="ispace-sidebar-item">
+                    <a href="?tab=security" class="ispace-sidebar-link {% if current_tab == 'security' %}active{% endif %}" data-tab="security">
+                        <span class="ispace-sidebar-icon">
+                            <svg viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 1.944A9.954 9.954 0 012.166 8C3.626 12.773 7.747 16.448 10 17.056c2.253-.608 6.374-4.283 7.834-9.056A9.954 9.954 0 0110 1.944zM11 14a1 1 0 11-2 0 1 1 0 012 0zm0-7a1 1 0 10-2 0v3a1 1 0 102 0V7z" clip-rule="evenodd"/>
+                            </svg>
+                        </span>
+                        {% trans "账号安全" %}
+                    </a>
+                </li>
+                <li class="ispace-sidebar-item">
+                    <a href="?tab=notifications" class="ispace-sidebar-link {% if current_tab == 'notifications' %}active{% endif %}" data-tab="notifications">
+                        <span class="ispace-sidebar-icon">
+                            <svg viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                            </svg>
+                        </span>
+                        {% trans "站内通知" %}
+                    </a>
+                </li>
+                <li class="ispace-sidebar-item">
+                    <a href="?tab=notify" class="ispace-sidebar-link {% if current_tab == 'notify' %}active{% endif %}" data-tab="notify">
+                        <span class="ispace-sidebar-icon">
+                            <svg viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/>
+                            </svg>
+                        </span>
+                        {% trans "通知设置" %}
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="ispace-sidebar-section">
+            <h3 class="ispace-sidebar-section-title">{% trans "内容管理" %}</h3>
+            <ul class="ispace-sidebar-nav">
+                <li class="ispace-sidebar-item">
+                    <a href="?tab=my_docs" class="ispace-sidebar-link" data-tab="my_docs">
+                        <span class="ispace-sidebar-icon">
+                            <svg viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0v12h8V4H6z" clip-rule="evenodd"/>
+                            </svg>
+                        </span>
+                        {% trans "我的文档" %}
+                    </a>
+                </li>
+                <li class="ispace-sidebar-item">
+                    <a href="?tab=my_templates" class="ispace-sidebar-link" data-tab="my_templates">
+                        <span class="ispace-sidebar-icon">
+                            <svg viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h4a1 1 0 010 2H6.414l2.293 2.293a1 1 0 01-1.414 1.414L5 6.414V8a1 1 0 01-2 0V4zm9 1a1 1 0 010-2h4a1 1 0 011 1v4a1 1 0 01-2 0V5.414l-2.293 2.293a1 1 0 11-1.414-1.414L13.586 4H12zm-9 7a1 1 0 112 0v1.586l2.293-2.293a1 1 0 111.414 1.414L6.414 14H8a1 1 0 110 2H4a1 1 0 01-1-1v-4zm13-1a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 110-2h1.586l-2.293-2.293a1 1 0 111.414-1.414L16 13.586V12a1 1 0 011-1z" clip-rule="evenodd"/>
+                            </svg>
+                        </span>
+                        {% trans "文档模板" %}
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="ispace-sidebar-section">
+            <h3 class="ispace-sidebar-section-title">{% trans "协作与组织" %}</h3>
+            <ul class="ispace-sidebar-nav">
+                <li class="ispace-sidebar-item">
+                    <a href="?tab=my_groups" class="ispace-sidebar-link" data-tab="my_groups">
+                        <span class="ispace-sidebar-icon">
+                            <svg viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 15a4 4 0 00-4 0v3h4v-3z"/>
+                            </svg>
+                        </span>
+                        {% trans "我的分组" %}
+                    </a>
+                </li>
+                <li class="ispace-sidebar-item">
+                    <a href="?tab=my_org" class="ispace-sidebar-link" data-tab="my_org">
+                        <span class="ispace-sidebar-icon">
+                            <svg viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm3 1h2v2H7V5zm0 4h2v2H7V9zm4-4h2v2h-2V5zm0 4h2v2h-2V9z" clip-rule="evenodd"/>
+                            </svg>
+                        </span>
+                        {% trans "组织架构" %}
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="ispace-sidebar-section">
+            <h3 class="ispace-sidebar-section-title">{% trans "收藏与工具" %}</h3>
+            <ul class="ispace-sidebar-nav">
+                <li class="ispace-sidebar-item">
+                    <a href="?tab=my_collects" class="ispace-sidebar-link" data-tab="my_collects">
+                        <span class="ispace-sidebar-icon">
+                            <svg viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                            </svg>
+                        </span>
+                        {% trans "收藏文档" %}
+                    </a>
+                </li>
+                <li class="ispace-sidebar-item">
+                    <a href="?tab=history" class="ispace-sidebar-link {% if current_tab == 'history' %}active{% endif %}" data-tab="history">
+                        <span class="ispace-sidebar-icon">
+                            <svg viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                            </svg>
+                        </span>
+                        {% trans "浏览记录" %}
+                    </a>
+                </li>
+                <li class="ispace-sidebar-item">
+                    <a href="?tab=my_tokens" class="ispace-sidebar-link" data-tab="my_tokens">
+                        <span class="ispace-sidebar-icon">
+                            <svg viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v-2l.257-.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clip-rule="evenodd"/>
+                            </svg>
+                        </span>
+                        {% trans "Token管理" %}
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+</aside>
+{% endblock %}
+
+{% block styles %}
+<style>
+.ispace-profile-stats { display: flex; gap: var(--ispace-space-4); justify-content: center; }
+.ispace-profile-stat { text-align: center; cursor: default; }
+.ispace-profile-stat-number { display: block; font-size: var(--ispace-font-lg); font-weight: var(--ispace-font-bold); color: var(--ispace-color-brand-500); }
+.ispace-profile-stat-label { display: block; font-size: var(--ispace-font-xs); color: var(--ispace-color-text-tertiary); margin-top: var(--ispace-space-1); }
+
+.ispace-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--ispace-space-4); }
+@media (max-width: 768px) { .ispace-form-grid { grid-template-columns: 1fr; } }
+
+/* 头像上传 */
+.ispace-avatar-upload { display: flex; align-items: center; gap: var(--ispace-space-4); margin-bottom: var(--ispace-space-4); }
+.ispace-avatar-preview { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; background: var(--ispace-color-surface-100); display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: var(--ispace-font-bold); color: #fff; cursor: pointer; overflow: hidden; flex-shrink: 0; }
+.ispace-avatar-preview img { width: 100%; height: 100%; object-fit: cover; }
+.ispace-avatar-hint { font-size: var(--ispace-font-xs); color: var(--ispace-color-text-tertiary); }
+
+/* 个人信息头部：头像 + 统计卡片 水平排列 */
+.ispace-profile-header-row { display: flex; align-items: center; justify-content: space-between; gap: var(--ispace-space-4); margin-bottom: var(--ispace-space-4); }
+.ispace-profile-header-row .ispace-avatar-upload { margin-bottom: 0; }
+.ispace-profile-stats { display: flex; gap: var(--ispace-space-3); flex-shrink: 0; }
+.ispace-stat-card--compact { padding: var(--ispace-space-3) var(--ispace-space-4); min-width: 120px; }
+.ispace-stat-card--compact .ispace-stat-icon { width: 36px; height: 36px; }
+.ispace-stat-card--compact .ispace-stat-icon svg { width: 18px; height: 18px; }
+.ispace-stat-card--compact .ispace-stat-value { font-size: var(--ispace-font-lg); }
+.ispace-stat-card--compact .ispace-stat-label { font-size: var(--ispace-font-xs); white-space: nowrap; }
+
+/* 信息表格（基本信息） */
+.ispace-info-table { border: 1px solid var(--ispace-color-border-light); border-radius: var(--ispace-radius-lg); overflow: hidden; }
+.ispace-info-row { display: flex; align-items: center; border-bottom: 1px solid var(--ispace-color-border-light); }
+.ispace-info-row:last-child { border-bottom: none; }
+.ispace-info-label { width: 120px; flex-shrink: 0; padding: var(--ispace-space-3) var(--ispace-space-4); font-size: var(--ispace-font-sm); font-weight: var(--ispace-font-medium); color: var(--ispace-color-text-secondary); background: var(--ispace-color-surface-100); }
+.ispace-info-value { flex: 1; padding: var(--ispace-space-3) var(--ispace-space-4); font-size: var(--ispace-font-sm); color: var(--ispace-color-text-primary); }
+.ispace-info-mono { font-family: var(--ispace-font-mono, "SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace); font-size: var(--ispace-font-xs); }
+.ispace-info-input { flex: 1; border: none !important; border-radius: 0 !important; background: transparent !important; padding: var(--ispace-space-3) var(--ispace-space-4); box-shadow: none !important; }
+.ispace-info-input:focus { background: var(--ispace-color-brand-50, #eff6ff) !important; box-shadow: inset 0 0 0 1px var(--ispace-color-brand-500) !important; }
+.ispace-info-row:has(.ispace-info-input:focus) { outline: 2px solid var(--ispace-color-brand-500); outline-offset: -2px; border-radius: var(--ispace-radius-md); }
+
+/* 组织标签 */
+.ispace-org-tag {
+    display: inline-block;
+    background: var(--ispace-color-surface-100);
+    padding: 2px 8px;
+    border-radius: var(--ispace-radius-sm);
+    font-size: var(--ispace-font-sm);
+    color: var(--ispace-color-text-secondary);
+    line-height: 1.6;
+}
+.ispace-org-tag--primary {
+    background: var(--ispace-color-brand-50, #eff6ff);
+    color: var(--ispace-color-brand-600, #2563eb);
+}
+.ispace-org-tag--primary small {
+    color: var(--ispace-color-brand-400);
+    font-size: var(--ispace-font-xs);
+}
+
+/* 开关样式 */
+.ispace-toggle-group { display: flex; flex-direction: column; gap: var(--ispace-space-3); }
+.ispace-toggle-item { display: flex; align-items: center; justify-content: space-between; padding: var(--ispace-space-3); background: var(--ispace-color-surface-100); border-radius: var(--ispace-radius-md); }
+.ispace-toggle-item:hover { background: var(--ispace-color-bg-tertiary); }
+.ispace-toggle-label { display: flex; flex-direction: column; }
+.ispace-toggle-title { font-size: var(--ispace-font-sm); font-weight: var(--ispace-font-medium); color: var(--ispace-color-text-primary); }
+.ispace-toggle-desc { font-size: var(--ispace-font-xs); color: var(--ispace-color-text-tertiary); margin-top: 2px; }
+.ispace-toggle { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
+.ispace-toggle input { opacity: 0; width: 0; height: 0; }
+.ispace-toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .2s; border-radius: 24px; }
+.ispace-toggle-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .2s; border-radius: 50%; }
+.ispace-toggle input:checked + .ispace-toggle-slider { background-color: var(--ispace-color-brand-500); }
+.ispace-toggle input:checked + .ispace-toggle-slider:before { transform: translateX(20px); }
+.ispace-toggle input:disabled + .ispace-toggle-slider { opacity: 0.5; cursor: not-allowed; }
+
+/* 登录记录 */
+.ispace-login-table { width: 100%; border-collapse: collapse; }
+.ispace-login-table th, .ispace-login-table td { padding: var(--ispace-space-2) var(--ispace-space-3); text-align: left; border-bottom: 1px solid var(--ispace-color-border-light); font-size: var(--ispace-font-base); }
+.ispace-login-table th { color: var(--ispace-color-text-secondary); font-weight: var(--ispace-font-medium); font-size: var(--ispace-font-xs); text-transform: uppercase; }
+.ispace-login-success { color: var(--ispace-color-success, #27AE60); }
+.ispace-login-fail { color: var(--ispace-color-danger, #E74C3C); }
+
+/* 分组/组织列表 */
+.ispace-item-list { display: flex; flex-direction: column; gap: var(--ispace-space-2); }
+.ispace-item-card { display: flex; align-items: center; justify-content: space-between; padding: var(--ispace-space-3) var(--ispace-space-4); background: var(--ispace-color-surface-100); border-radius: var(--ispace-radius-md); }
+.ispace-item-card:hover { background: var(--ispace-color-bg-tertiary); }
+.ispace-item-info { display: flex; flex-direction: column; }
+.ispace-item-name { font-size: var(--ispace-font-base); font-weight: var(--ispace-font-normal); color: var(--ispace-color-text-primary); }
+.ispace-item-meta { font-size: var(--ispace-font-xs); color: var(--ispace-color-text-tertiary); margin-top: 2px; }
+.ispace-item-badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 10px; font-size: var(--ispace-font-xs); background: var(--ispace-color-brand-100, #e8f0fe); color: var(--ispace-color-brand-600, #1a73e8); }
+.ispace-badge-primary { background: var(--ispace-color-success-100, #e6f7ee); color: var(--ispace-color-success-600, #27ae60); }
+
+.ispace-form-hint { font-size: var(--ispace-font-xs); color: var(--ispace-color-text-tertiary); margin-top: 2px; }
+.ispace-form-error { font-size: var(--ispace-font-xs); color: var(--ispace-color-danger, #E74C3C); margin-top: 2px; display: none; }
+
+.ispace-section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--ispace-space-4); }
+.ispace-section-title { font-size: var(--ispace-font-base); font-weight: var(--ispace-font-semibold); }
+
+.ispace-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #ccc; border-top-color: var(--ispace-color-brand-500); border-radius: 50%; animation: ispace-spin 0.6s linear infinite; margin-right: 6px; vertical-align: middle; }
+@keyframes ispace-spin { to { transform: rotate(360deg); } }
+
+.ispace-toast { position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: var(--ispace-radius-md); color: #fff; font-size: var(--ispace-font-sm); z-index: 9999; animation: ispace-fadeIn 0.3s; max-width: 360px; }
+.ispace-toast-success { background: var(--ispace-color-success, #27AE60); }
+.ispace-toast-error { background: var(--ispace-color-danger, #E74C3C); }
+@keyframes ispace-fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* 内容区域 */
+.ispace-page-main { background: var(--ispace-color-surface-0); border: 1px solid var(--ispace-color-border-light); border-radius: var(--ispace-radius-xl); min-height: 600px; display: flex; flex-direction: column; overflow: hidden; }
+
+.ispace-content-body { padding: var(--ispace-space-3); flex: 1; }
+
+.ispace-stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--ispace-space-4); margin-bottom: var(--ispace-space-6); }
+.ispace-stat-card { display: flex; align-items: center; gap: var(--ispace-space-4); padding: var(--ispace-space-4); background: var(--ispace-color-surface-50); border: 1px solid var(--ispace-color-border-light); border-radius: var(--ispace-radius-lg); }
+.ispace-stat-icon { width: 40px; height: 40px; border-radius: var(--ispace-radius-lg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ispace-stat-icon svg { width: 20px; height: 20px; }
+.ispace-stat-icon--brand { background: var(--ispace-color-brand-100); color: var(--ispace-color-brand-600); }
+.ispace-stat-icon--success { background: var(--ispace-color-success-100, #e6f7ee); color: var(--ispace-color-success-600, #27ae60); }
+.ispace-stat-icon--warning { background: var(--ispace-color-warning-100, #fef9e7); color: var(--ispace-color-warning-600, #e67e22); }
+.ispace-stat-content { display: flex; flex-direction: column; }
+.ispace-stat-value { font-size: var(--ispace-font-2xl); font-weight: var(--ispace-font-bold); color: var(--ispace-color-text-primary); }
+.ispace-stat-label { font-size: var(--ispace-font-xs); color: var(--ispace-color-text-tertiary); }
+
+.ispace-mb-6 { margin-bottom: var(--ispace-space-6); }
+.ispace-mt-6 { margin-top: var(--ispace-space-6); }
+
+.ispace-empty-state { text-align: center; padding: var(--ispace-space-16) var(--ispace-space-4); }
+.ispace-empty-state-icon { width: 64px; height: 64px; color: var(--ispace-color-text-quaternary); margin: 0 auto var(--ispace-space-6); display: block; }
+.ispace-empty-state-title { font-size: var(--ispace-font-xl); font-weight: var(--ispace-font-semibold); color: var(--ispace-color-text-primary); margin-bottom: var(--ispace-space-2); }
+.ispace-empty-state-description { font-size: var(--ispace-font-sm); color: var(--ispace-color-text-tertiary); max-width: 360px; margin: 0 auto; }
+
+/* 浏览记录列表 — 与首页最近浏览保持一致 */
+.ispace-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    border: 1px solid var(--ispace-color-border-light);
+    border-radius: var(--ispace-radius-lg);
+    overflow: hidden;
+    background: var(--ispace-color-border-light);
+}
+.ispace-history-list .home-doc-card {
+    display: flex;
+    align-items: center;
+    gap: var(--ispace-space-3);
+    padding: var(--ispace-space-3) var(--ispace-space-5);
+    background: var(--ispace-color-surface-0);
+    text-decoration: none;
+    transition: background var(--ispace-duration-fast);
+}
+.ispace-history-list .home-doc-card:hover {
+    background: var(--ispace-color-surface-50);
+    text-decoration: none;
+}
+.ispace-history-list .home-doc-card-icon {
+    flex-shrink: 0;
+    color: var(--ispace-color-text-quaternary);
+    display: flex;
+    align-items: center;
+}
+.ispace-history-list .home-doc-card-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--ispace-space-6);
+}
+.ispace-history-list .home-doc-card-title {
+    font-size: var(--ispace-font-base);
+    font-weight: var(--ispace-font-normal);
+    color: var(--ispace-color-text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-shrink: 1;
+}
+.ispace-history-list .home-doc-card:hover .home-doc-card-title { color: var(--ispace-color-brand-600); }
+.ispace-history-list .home-doc-card-meta {
+    font-size: var(--ispace-font-base);
+    color: var(--ispace-color-text-quaternary);
+    flex-shrink: 0;
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+.ispace-history-list .home-doc-card-meta svg {
+    flex-shrink: 0;
+    opacity: 0.6;
+}
+/* 已删除浏览记录 */
+.ispace-history-list .home-doc-card-deleted {
+    opacity: 0.45;
+    pointer-events: none;
+    cursor: default;
+    user-select: none;
+}
+.ispace-history-list .home-doc-card-deleted-badge,
+.home-doc-card-deleted-badge {
+    font-size: var(--ispace-font-xs);
+    color: var(--ispace-color-text-quaternary);
+    background: var(--ispace-color-surface-100);
+    padding: 2px 8px;
+    border-radius: var(--ispace-radius-sm);
+    flex-shrink: 0;
+}
+
+/* 自定义工具栏 */
+.ispace-section-toolbar { display: flex; align-items: center; gap: var(--ispace-space-2); flex-wrap: wrap; padding: var(--ispace-space-3) 0 var(--ispace-space-4); border-bottom: 1px solid var(--ispace-color-border-light); margin-bottom: var(--ispace-space-4); }
+.ispace-section-toolbar-count { font-size: var(--ispace-font-xs); color: var(--ispace-color-text-tertiary); margin-left: auto; flex-shrink: 0; }
+
+/* 分段标签（代替radio） */
+.ispace-toggle-tabs { display: inline-flex; gap: 0; border-radius: var(--ispace-radius-md); border: 1px solid var(--ispace-color-border-light); overflow: hidden; }
+.ispace-toggle-tab { padding: 4px 12px; font-size: var(--ispace-font-xs); color: var(--ispace-color-text-secondary); cursor: pointer; background: transparent; border-right: 1px solid var(--ispace-color-border-light); transition: all 0.15s; user-select: none; }
+.ispace-toggle-tab:last-child { border-right: none; }
+.ispace-toggle-tab.active { background: var(--ispace-color-brand-500); color: #fff; }
+.ispace-toggle-tab:hover:not(.active) { background: var(--ispace-color-surface-100); }
+
+/* 个人中心表格 */
+.ispace-table-wrap { overflow-x: auto; }
+.ispace-table { width: 100%; border-collapse: collapse; font-size: var(--ispace-font-base); }
+.ispace-table thead th { padding: var(--ispace-space-2) var(--ispace-space-3); text-align: left; border-bottom: 2px solid var(--ispace-color-border-light); color: var(--ispace-color-text-secondary); font-weight: var(--ispace-font-medium); font-size: var(--ispace-font-sm); white-space: nowrap; }
+.ispace-table tbody td { padding: var(--ispace-space-2) var(--ispace-space-3); border-bottom: 1px solid var(--ispace-color-border-light); vertical-align: middle; }
+.ispace-table tbody tr:hover { background: var(--ispace-color-surface-100); }
+.ispace-table a { color: var(--ispace-color-brand-500); text-decoration: none; }
+.ispace-table a:hover { text-decoration: underline; }
+
+.ispace-cell-name { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; vertical-align: middle; }
+.ispace-cell-nowrap { white-space: nowrap; }
+
+/* 分页 */
+.ispace-pagination { display: flex; align-items: center; justify-content: center; gap: var(--ispace-space-1); padding: var(--ispace-space-4) 0 var(--ispace-space-2); }
+.ispace-pagination button { min-width: 32px; height: 32px; padding: 0 8px; border: 1px solid var(--ispace-color-border-light); border-radius: var(--ispace-radius-sm); background: var(--ispace-color-surface-0); color: var(--ispace-color-text-secondary); font-size: var(--ispace-font-sm); cursor: pointer; transition: all 0.15s; }
+.ispace-pagination button:hover { border-color: var(--ispace-color-brand-500); color: var(--ispace-color-brand-500); }
+.ispace-pagination button.active { background: var(--ispace-color-brand-500); color: #fff; border-color: var(--ispace-color-brand-500); }
+.ispace-pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
+.ispace-pagination .ispace-pg-info { font-size: var(--ispace-font-xs); color: var(--ispace-color-text-tertiary); margin: 0 var(--ispace-space-2); }
+
+/* Token 卡片 */
+.ispace-token-card { display: flex; align-items: center; gap: var(--ispace-space-3); padding: var(--ispace-space-4); background: var(--ispace-color-surface-100); border-radius: var(--ispace-radius-lg); border: 1px solid var(--ispace-color-border-light); }
+.ispace-token-value { flex: 1; font-family: 'Consolas', 'Monaco', monospace; font-size: var(--ispace-font-base); color: var(--ispace-color-text-primary); background: var(--ispace-color-surface-0); padding: var(--ispace-space-2) var(--ispace-space-3); border-radius: var(--ispace-radius-md); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border: 1px dashed var(--ispace-color-border-light); }
+.ispace-token-empty { text-align: center; padding: var(--ispace-space-6); color: var(--ispace-color-text-tertiary); font-size: var(--ispace-font-sm); }
+.ispace-token-hint { margin-top: var(--ispace-space-4); font-size: var(--ispace-font-xs); color: var(--ispace-color-text-tertiary); line-height: 1.6; }
+
+/* 弹窗确认 */
+.ispace-confirm-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 9998; display: flex; align-items: center; justify-content: center; }
+.ispace-confirm-box { background: var(--ispace-color-surface-0); border-radius: var(--ispace-radius-xl); padding: var(--ispace-space-6); max-width: 400px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+.ispace-confirm-title { font-size: var(--ispace-font-lg); font-weight: var(--ispace-font-semibold); margin-bottom: var(--ispace-space-3); }
+.ispace-confirm-message { font-size: var(--ispace-font-sm); color: var(--ispace-color-text-secondary); margin-bottom: var(--ispace-space-6); }
+.ispace-confirm-actions { display: flex; justify-content: flex-end; gap: var(--ispace-space-3); }
+
+/* 文档模板卡片列表 */
+.ispace-doctemp-list { display: flex; flex-direction: column; gap: var(--ispace-space-3); }
+.ispace-doctemp-item { display: flex; align-items: flex-start; gap: var(--ispace-space-3); padding: var(--ispace-space-3) var(--ispace-space-4); border-radius: var(--ispace-radius-lg); border: 1px solid var(--ispace-color-border-light); background: var(--ispace-color-surface-0); transition: box-shadow 0.15s; }
+.ispace-doctemp-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.ispace-doctemp-item-icon { width: 36px; height: 36px; border-radius: var(--ispace-radius-md); background: var(--ispace-color-brand-100); color: var(--ispace-color-brand-600); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ispace-doctemp-item-icon svg { width: 18px; height: 18px; }
+.ispace-doctemp-item-content { flex: 1; min-width: 0; }
+.ispace-doctemp-item-name { font-size: var(--ispace-font-base); font-weight: var(--ispace-font-medium); color: var(--ispace-color-text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ispace-doctemp-item-preview { font-size: var(--ispace-font-xs); color: var(--ispace-color-text-tertiary); margin-top: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ispace-doctemp-item-meta { font-size: var(--ispace-font-xs); color: var(--ispace-color-text-quaternary); margin-top: 4px; }
+.ispace-doctemp-item-actions { display: flex; gap: var(--ispace-space-2); flex-shrink: 0; align-items: center; }
+
+/* 站内通知列表 */
+.ispace-notification-tabs {
+    display: flex; gap: var(--ispace-space-1); margin-bottom: var(--ispace-space-4);
+    flex-wrap: wrap; border-bottom: 1px solid var(--ispace-color-border-light);
+    padding-bottom: var(--ispace-space-3);
+}
+.ispace-notification-tab {
+    padding: var(--ispace-space-1) var(--ispace-space-3);
+    font-size: var(--ispace-font-sm); color: var(--ispace-color-text-tertiary);
+    background: transparent; border: 1px solid var(--ispace-color-border-light);
+    border-radius: var(--ispace-radius-full); cursor: pointer; transition: all var(--ispace-duration-fast);
+}
+.ispace-notification-tab:hover { color: var(--ispace-color-text-primary); background: var(--ispace-color-surface-100); }
+.ispace-notification-tab.ispace-active {
+    background: var(--ispace-color-brand-500); color: #fff; border-color: var(--ispace-color-brand-500);
+}
+
+.ispace-nlist-item {
+    display: flex; gap: var(--ispace-space-3); padding: var(--ispace-space-3) var(--ispace-space-4);
+    border-bottom: 1px solid var(--ispace-color-border-light); cursor: pointer;
+    transition: background var(--ispace-duration-fast); border-radius: var(--ispace-radius-md);
+    margin-bottom: 2px;
+}
+.ispace-nlist-item:hover { background: var(--ispace-color-surface-100); }
+.ispace-nlist-item.ispace-unread { background: var(--ispace-color-brand-50); }
+.ispace-nlist-item.ispace-highlighted {
+    background: var(--ispace-color-warning-50, #fffbeb); border: 1px solid var(--ispace-color-warning-200, #fde68a);
+    box-shadow: 0 0 0 3px var(--ispace-color-warning-100, #fef3c7);
+}
+.ispace-nlist-item.ispace-highlighted .ispace-nlist-body { max-height: none; }
+.ispace-nlist-avatar {
+    width: 36px; height: 36px; border-radius: 50%; background: var(--ispace-color-surface-200);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: var(--ispace-font-bold); color: #fff; flex-shrink: 0; overflow: hidden;
+}
+.ispace-nlist-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.ispace-nlist-body { flex: 1; min-width: 0; }
+.ispace-nlist-title { font-size: var(--ispace-font-base); font-weight: var(--ispace-font-medium); color: var(--ispace-color-text-primary); margin-bottom: 2px; }
+.ispace-nlist-text { font-size: var(--ispace-font-sm); color: var(--ispace-color-text-secondary); margin-bottom: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ispace-nlist-item.ispace-highlighted .ispace-nlist-text { -webkit-line-clamp: unset; display: block; }
+.ispace-nlist-time { font-size: var(--ispace-font-xs); color: var(--ispace-color-text-quaternary); }
+.ispace-nlist-action { margin-top: var(--ispace-space-2); display: none; }
+.ispace-nlist-item.ispace-highlighted .ispace-nlist-action { display: flex; gap: var(--ispace-space-2); align-items: center; }
+.ispace-nlist-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ispace-color-brand-600, #2563eb); flex-shrink: 0; align-self: center; }
+
+.ispace-form-check-sm { font-size: var(--ispace-font-xs); display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+
+/* 分组管理弹窗 */
+.ispace-group-modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 1050; align-items: center; justify-content: center; }
+.ispace-group-modal-overlay.active { display: flex; }
+#groupFormOverlay { z-index: 1060; }
+.ispace-group-modal { background: var(--ispace-color-surface-0); border-radius: var(--ispace-radius-xl); width: 520px; max-width: 95vw; max-height: 85vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.15); }
+.ispace-group-modal-header { padding: var(--ispace-space-4) var(--ispace-space-5); border-bottom: 1px solid var(--ispace-color-border-light); display: flex; align-items: center; justify-content: space-between; }
+.ispace-group-modal-title { font-size: var(--ispace-font-lg); font-weight: var(--ispace-font-semibold); }
+.ispace-group-modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--ispace-color-text-tertiary); padding: 4px; line-height: 1; }
+.ispace-group-modal-close:hover { color: var(--ispace-color-text-primary); }
+.ispace-group-modal-body { padding: var(--ispace-space-5); }
+.ispace-group-modal-footer { padding: var(--ispace-space-4) var(--ispace-space-5); border-top: 1px solid var(--ispace-color-border-light); display: flex; justify-content: flex-end; gap: var(--ispace-space-2); }
+.ispace-group-card-clickable { cursor: pointer; }
+.ispace-group-card-clickable:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.ispace-group-action-row { display: flex; gap: var(--ispace-space-2); align-items: center; }
+.ispace-group-action-link { background: none; border: none; cursor: pointer; font-size: var(--ispace-font-xs); color: var(--ispace-color-text-secondary); padding: 2px 6px; border-radius: var(--ispace-radius-sm); }
+.ispace-group-action-link:hover { color: var(--ispace-color-brand-500); background: var(--ispace-color-brand-50); }
+.ispace-group-action-link.ispace-danger:hover { color: #E74C3C; background: #fef2f2; }
+.ispace-group-action-sep { width: 1px; height: 14px; background: var(--ispace-color-border-light); }
+.ispace-member-list { display: flex; flex-direction: column; gap: var(--ispace-space-1); max-height: 300px; overflow-y: auto; }
+
+/* 分组成员列表 */
+.ispace-gm-member-item { display: flex; align-items: center; justify-content: space-between; padding: var(--ispace-space-2) var(--ispace-space-3); border-radius: var(--ispace-radius-md); font-size: var(--ispace-font-sm); transition: background var(--ispace-duration-fast); }
+.ispace-gm-member-item:hover { background: var(--ispace-color-surface-100); }
+.ispace-gm-member-info { display: flex; align-items: center; gap: var(--ispace-space-2); }
+.ispace-gm-member-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: var(--ispace-font-bold); color: #fff; flex-shrink: 0; }
+.ispace-gm-member-name { color: var(--ispace-color-text-primary); }
+.ispace-gm-member-badge-owner { font-size: 11px; color: var(--ispace-color-brand-500); }
+.ispace-gm-member-remove { background: none; border: 1px solid var(--ispace-color-border-light); border-radius: var(--ispace-radius-sm); padding: 2px 8px; font-size: var(--ispace-font-xs); color: var(--ispace-color-text-secondary); cursor: pointer; transition: all var(--ispace-duration-fast); }
+.ispace-gm-member-remove:hover { border-color: #E74C3C; color: #E74C3C; }
+
+/* 搜索下拉 */
+.ispace-gm-search-dropdown { display: none; position: fixed; background: var(--ispace-color-surface-0); border: 1px solid var(--ispace-color-border-light); border-radius: var(--ispace-radius-md); max-height: 200px; overflow-y: auto; z-index: 2000; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.ispace-gm-search-dropdown.active { display: block; }
+.ispace-gm-search-item { padding: var(--ispace-space-2) var(--ispace-space-3); cursor: pointer; font-size: var(--ispace-font-sm); display: flex; align-items: center; gap: var(--ispace-space-2); transition: background var(--ispace-duration-fast); }
+.ispace-gm-search-item:hover { background: var(--ispace-color-surface-100); }
+
+/* 管理员徽章 */
+.ispace-gm-member-badge-admin { font-size: 11px; color: #10B981; }
+
+/* 更多操作按钮 (⋮) */
+.ispace-gm-member-more { background: none; border: none; cursor: pointer; color: var(--ispace-color-text-tertiary); padding: 4px; border-radius: var(--ispace-radius-sm); display: flex; align-items: center; opacity: 0; transition: opacity var(--ispace-duration-fast), background var(--ispace-duration-fast); }
+.ispace-gm-member-item:hover .ispace-gm-member-more { opacity: 1; }
+.ispace-gm-member-more:hover { background: var(--ispace-color-surface-100); color: var(--ispace-color-text-primary); }
+
+/* 上下文菜单 (右键/⋮) */
+.ispace-gm-context-menu { position: fixed; background: var(--ispace-color-surface-0); border: 1px solid var(--ispace-color-border-light); border-radius: var(--ispace-radius-md); box-shadow: 0 4px 16px rgba(0,0,0,0.12); z-index: 1100; min-width: 150px; padding: 4px 0; }
+.ispace-gm-context-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; font-size: var(--ispace-font-sm); color: var(--ispace-color-text-primary); cursor: pointer; transition: background var(--ispace-duration-fast); }
+.ispace-gm-context-item:hover { background: var(--ispace-color-surface-100); }
+.ispace-gm-context-item.ispace-danger { color: #E74C3C; }
+.ispace-gm-context-item.ispace-danger:hover { background: #fef2f2; }
+
+/* 组织架构 Tab 树形视图 */
+.ispace-org-tab-tree { padding: var(--ispace-space-1) 0; }
+.ispace-org-tab-row { display: flex; align-items: center; padding: 6px var(--ispace-space-2); border-radius: var(--ispace-radius-sm); font-size: var(--ispace-font-sm); transition: all var(--ispace-duration-fast); gap: var(--ispace-space-1); cursor: default; position: relative; }
+.ispace-org-tab-row:hover { background: var(--ispace-color-surface-100); box-shadow: inset 3px 0 0 var(--ispace-color-brand-400); }
+.ispace-org-tab-row.my-org { background: var(--ispace-color-brand-50, #eff6ff); border: 1px solid var(--ispace-color-brand-100, #dbeafe); }
+.ispace-org-tab-row.my-org:hover { background: var(--ispace-color-brand-100, #dbeafe); }
+.ispace-org-tab-toggle { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--ispace-color-text-tertiary); flex-shrink: 0; border-radius: var(--ispace-radius-sm); transition: transform var(--ispace-duration-fast), color var(--ispace-duration-fast), background var(--ispace-duration-fast); font-size: 10px; }
+.ispace-org-tab-toggle:hover { color: var(--ispace-color-text-primary); background: var(--ispace-color-surface-100); }
+.ispace-org-tab-toggle.expanded { transform: rotate(90deg); }
+.ispace-org-tab-toggle.leaf { visibility: hidden; }
+.ispace-org-tab-icon { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ispace-org-tab-icon.ispace-branch { color: var(--ispace-color-brand-500, #3b82f6); }
+.ispace-org-tab-icon.ispace-team { color: var(--ispace-color-text-tertiary); }
+.ispace-org-tab-name { color: var(--ispace-color-text-primary); font-weight: var(--ispace-font-medium); }
+.ispace-org-tab-meta { color: var(--ispace-color-text-tertiary); font-size: var(--ispace-font-xs); white-space: nowrap; }
+.ispace-org-tab-badge { font-size: 10px; padding: 1px 6px; border-radius: 10px; white-space: nowrap; }
+.ispace-org-tab-badge.ispace-badge-primary { background: var(--ispace-color-brand-50,#eff6ff); color: var(--ispace-color-brand-600,#2563eb); }
+.ispace-org-tab-badge.ispace-badge-admin { background: #fef3c7; color: #b45309; }
+.ispace-org-tab-children { overflow: hidden; transition: max-height 0.25s ease; border-left: 1px solid var(--ispace-color-border-light); padding-left: 8px; margin-left: 4px; }
+.ispace-org-tab-children.collapsed { max-height: 0 !important; }
+.ispace-org-tab-action-btn { background: none; border: 1px solid var(--ispace-color-border-light); border-radius: var(--ispace-radius-sm); padding: 2px 8px; font-size: var(--ispace-font-xs); color: var(--ispace-color-text-secondary); cursor: pointer; transition: all var(--ispace-duration-fast); margin-left: auto; white-space: nowrap; }
+.ispace-org-tab-action-btn:hover { border-color: var(--ispace-color-brand-500); color: var(--ispace-color-brand-500); background: var(--ispace-color-brand-50, #eff6ff); }
+
+/* 组织架构面包屑 */
+.ispace-org-breadcrumb { margin-bottom: var(--ispace-space-4); padding: var(--ispace-space-4) var(--ispace-space-5); background: linear-gradient(135deg, var(--ispace-color-brand-50, #eff6ff) 0%, var(--ispace-color-surface-0) 100%); border: 1px solid var(--ispace-color-brand-100, #dbeafe); border-radius: var(--ispace-radius-xl); }
+.ispace-org-breadcrumb--empty { background: var(--ispace-color-surface-100); border-color: var(--ispace-color-border-light); }
+.ispace-org-breadcrumb--empty .ispace-org-breadcrumb-header svg { color: var(--ispace-color-text-tertiary); }
+.ispace-org-breadcrumb--empty .ispace-org-breadcrumb-title { color: var(--ispace-color-text-secondary); }
+.ispace-org-breadcrumb-header { display: flex; align-items: center; gap: var(--ispace-space-2); margin-bottom: var(--ispace-space-3); }
+.ispace-org-breadcrumb-header svg { color: var(--ispace-color-brand-500); flex-shrink: 0; }
+.ispace-org-breadcrumb-title { font-size: var(--ispace-font-xs); color: var(--ispace-color-brand-600); font-weight: var(--ispace-font-semibold); text-transform: uppercase; letter-spacing: 0.5px; }
+.ispace-org-breadcrumb-trail { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; }
+.ispace-org-breadcrumb-seg { font-size: var(--ispace-font-sm); color: var(--ispace-color-text-secondary); padding: 2px 6px; border-radius: var(--ispace-radius-sm); transition: all var(--ispace-duration-fast); white-space: nowrap; }
+.ispace-org-breadcrumb-seg:hover { color: var(--ispace-color-brand-600); background: var(--ispace-color-brand-100, #dbeafe); cursor: pointer; }
+.ispace-org-breadcrumb-seg.ispace-current { color: var(--ispace-color-text-primary); font-weight: var(--ispace-font-semibold); }
+.ispace-org-breadcrumb-sep { color: var(--ispace-color-text-quaternary); font-size: var(--ispace-font-xs); margin: 0 2px; user-select: none; }
+.ispace-org-breadcrumb-trails { display: flex; flex-direction: column; gap: var(--ispace-space-1); }
+.ispace-org-breadcrumb-trail-wrap { display: flex; align-items: center; flex-wrap: wrap; gap: var(--ispace-space-2); }
+.ispace-org-breadcrumb-trail-wrap .ispace-org-tab-badge { flex-shrink: 0; }
+
+/* 组织成员卡中的组织路径 */
+.ispace-om-member-org { font-size: var(--ispace-font-xs); color: var(--ispace-color-text-tertiary); }
+.ispace-om-member-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: var(--ispace-font-bold); color: #fff; flex-shrink: 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="ispace-page-main">
+    <div class="ispace-content-body">
+        <!-- ====== 个人资料 Tab ====== -->
+        <div id="tab-profile" class="ispace-tab-content" {% if current_tab and current_tab != 'profile' %}style="display:none"{% endif %}>
+            <div>
+                <div class="ispace-section-header">
+                    <h2 class="ispace-section-title">{% trans "基本信息" %}</h2>
+                </div>
+                <form id="profileForm">
+                    {% csrf_token %}
+                    <div class="ispace-profile-header-row">
+                        <div class="ispace-avatar-upload">
+                            <div class="ispace-avatar-preview" id="avatarPreview" title="{% trans '点击更换头像' %}">
+                                {% if user.profile.avatar %}
+                                    <img src="{{ user.profile.avatar.url }}" alt="">
+                                {% else %}
+                                    {{ user.username|first|upper }}
+                                {% endif %}
+                            </div>
+                            <div>
+                                <button type="button" class="ispace-btn ispace-btn-secondary" onclick="document.getElementById('avatarInput').click()" style="font-size:var(--ispace-font-sm)">
+                                    {% trans "更换头像" %}
+                                </button>
+                                <p class="ispace-avatar-hint">{% trans "支持 JPG/PNG/GIF/BMP/WebP，最大 5MB，自动裁剪为正方形" %}</p>
+                            </div>
+                            <input type="file" id="avatarInput" accept="image/*" style="display:none">
+                        </div>
+                        <div class="ispace-profile-stats">
+                            <div class="ispace-stat-card ispace-stat-card--compact">
+                                <div class="ispace-stat-icon ispace-stat-icon--success">
+                                    <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0v12h8V4H6z" clip-rule="evenodd"/></svg>
+                                </div>
+                                <div class="ispace-stat-content">
+                                    <div class="ispace-stat-value">{{ user_doc_count|default:0 }}</div>
+                                    <div class="ispace-stat-label">{% trans "创建的文档" %}</div>
+                                </div>
+                            </div>
+                            <div class="ispace-stat-card ispace-stat-card--compact">
+                                <div class="ispace-stat-icon ispace-stat-icon--warning">
+                                    <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                                </div>
+                                <div class="ispace-stat-content">
+                                    <div class="ispace-stat-value">{{ user_collect_count|default:0 }}</div>
+                                    <div class="ispace-stat-label">{% trans "收藏的内容" %}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ispace-info-table">
+                        <div class="ispace-info-row">
+                            <div class="ispace-info-label">{% trans "用户名" %}</div>
+                            <div class="ispace-info-value">{{ user.username }}</div>
+                        </div>
+                        <div class="ispace-info-row">
+                            <div class="ispace-info-label">{% trans "用户UID" %}</div>
+                            <div class="ispace-info-value ispace-info-mono">{{ user.id }}</div>
+                        </div>
+                        <div class="ispace-info-row">
+                            <div class="ispace-info-label">{% trans "注册时间" %}</div>
+                            <div class="ispace-info-value">{{ user.date_joined|date:'Y-m-d H:i' }}</div>
+                        </div>
+                        <div class="ispace-info-row">
+                            <div class="ispace-info-label">{% trans "归属组织" %}</div>
+                            <div class="ispace-info-value">
+                                {% if user_orgs %}
+                                    {% for org in user_orgs %}
+                                    <span class="ispace-org-tag{% if org.is_primary %} ispace-org-tag--primary{% endif %}">{{ org.path }}{% if org.is_primary %} <small>({% trans '主属' %})</small>{% endif %}</span>{% if not forloop.last %}<br>{% endif %}
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="ispace-text-quaternary">{% trans "未分配组织" %}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="ispace-info-row">
+                            <label class="ispace-info-label" for="profileFirstName">{% trans "真实姓名" %}</label>
+                            <input type="text" class="ispace-form-input ispace-info-input" name="first_name" id="profileFirstName" value="{{ user.first_name }}" maxlength="30">
+                        </div>
+                        <div class="ispace-info-row">
+                            <label class="ispace-info-label" for="profileGender">{% trans "性别" %}</label>
+                            <select class="ispace-form-input ispace-info-input" name="gender" id="profileGender">
+                                <option value="U" {% if user.profile.gender == 'U' %}selected{% endif %}>{% trans "未知" %}</option>
+                                <option value="M" {% if user.profile.gender == 'M' %}selected{% endif %}>{% trans "男" %}</option>
+                                <option value="F" {% if user.profile.gender == 'F' %}selected{% endif %}>{% trans "女" %}</option>
+                            </select>
+                        </div>
+                        <div class="ispace-info-row">
+                            <label class="ispace-info-label" for="profilePhone">{% trans "手机号" %}</label>
+                            <input type="text" class="ispace-form-input ispace-info-input" name="phone" id="profilePhone" value="{{ user.profile.phone|default:'' }}" maxlength="20">
+                        </div>
+                        <div class="ispace-info-row">
+                            <label class="ispace-info-label" for="profileEmail">{% trans "邮箱地址" %}</label>
+                            <input type="email" class="ispace-form-input ispace-info-input" name="email" id="profileEmail" value="{{ user.email }}" readonly disabled>
+                            <span class="ispace-form-hint" style="margin-left:8px">{% trans "暂不支持修改" %}</span>
+                        </div>
+                    </div>
+                    <div class="ispace-form-group" style="margin-top:var(--ispace-space-4)">
+                        <label class="ispace-form-label">{% trans "个性说明" %}</label>
+                        <textarea class="ispace-form-input" name="bio" id="profileBio" rows="3" maxlength="512" style="resize:vertical">{{ user.profile.bio|default:'' }}</textarea>
+                    </div>
+                    <button type="submit" class="ispace-btn ispace-btn-primary ispace-btn-sm" id="profileSaveBtn">{% trans "保存更改" %}</button>
+                    <span id="profileMsg" style="margin-left:12px;font-size:var(--ispace-font-sm)"></span>
+                </form>
+            </div>
+        </div>
+
+        <!-- ====== 账号安全 Tab ====== -->
+        <div id="tab-security" class="ispace-tab-content" {% if current_tab != 'security' %}style="display:none"{% endif %}>
+            <div class="ispace-section-header">
+                <h2 class="ispace-section-title">{% trans "修改密码" %}</h2>
+            </div>
+            <form id="passwordForm" style="max-width:400px">
+                {% csrf_token %}
+                <div class="ispace-form-group">
+                    <label class="ispace-form-label">{% trans "当前密码" %}</label>
+                    <input type="password" class="ispace-form-input" name="old_password" required>
+                </div>
+                <div class="ispace-form-group">
+                    <label class="ispace-form-label">{% trans "新密码" %}</label>
+                    <input type="password" class="ispace-form-input" name="new_password1" required minlength="6">
+                    <span class="ispace-form-hint">{% trans "至少6位，建议包含字母、数字、特殊字符" %}</span>
+                </div>
+                <div class="ispace-form-group">
+                    <label class="ispace-form-label">{% trans "确认新密码" %}</label>
+                    <input type="password" class="ispace-form-input" name="new_password2" required minlength="6">
+                </div>
+                <button type="submit" class="ispace-btn ispace-btn-primary ispace-btn-sm" id="passwordSaveBtn">{% trans "修改密码" %}</button>
+                <span id="passwordMsg" style="margin-left:12px;font-size:var(--ispace-font-sm)"></span>
+            </form>
+
+            <div class="ispace-section-header" style="margin-top:var(--ispace-space-8)">
+                <h2 class="ispace-section-title">{% trans "最近登录记录" %}</h2>
+            </div>
+            <div id="loginRecordsContainer">
+                <p style="color:var(--ispace-color-text-tertiary);font-size:var(--ispace-font-sm)">
+                    <span class="ispace-spinner"></span>{% trans "加载中..." %}
+                </p>
+            </div>
+        </div>
+
+        <!-- ====== 站内通知 Tab ====== -->
+        <div id="tab-notifications" class="ispace-tab-content" {% if current_tab != 'notifications' %}style="display:none"{% endif %}>
+            <div class="ispace-section-header">
+                <h2 class="ispace-section-title">{% trans "站内通知" %}</h2>
+                <div class="ispace-flex-center ispace-gap-2">
+                    <label class="ispace-form-check ispace-form-check-sm">
+                        <input type="checkbox" id="toggle-uc-unread-only">
+                        <span>{% trans "仅未读" %}</span>
+                    </label>
+                    <button class="ispace-btn ispace-btn-ghost ispace-btn-sm" id="btn-uc-mark-all-read" style="display:none;">
+                        {% trans "全部已读" %}
+                    </button>
+                    <button type="button" class="ispace-btn ispace-btn-ghost ispace-btn-sm ispace-btn-danger" id="btn-uc-clear-all" style="display:none;">
+                        {% trans "清空所有通知" %}
+                    </button>
+                </div>
+            </div>
+
+            <div class="ispace-notification-tabs" id="uc-notif-type-tabs">
+                <button class="ispace-notification-tab ispace-active" data-type="">{% trans "全部" %}</button>
+                <button class="ispace-notification-tab" data-type="system">{% trans "系统" %}</button>
+                <button class="ispace-notification-tab" data-type="comment">{% trans "评论" %}</button>
+                <button class="ispace-notification-tab" data-type="reply">{% trans "回复" %}</button>
+                <button class="ispace-notification-tab" data-type="mention">{% trans "@提及" %}</button>
+                <button class="ispace-notification-tab" data-type="doc_like">{% trans "点赞" %}</button>
+                <button class="ispace-notification-tab" data-type="perm_apply,perm_change">{% trans "权限" %}</button>
+            </div>
+
+            <div id="uc-notification-list"></div>
+            <div id="uc-notification-loading" style="text-align:center;padding:24px;color:var(--ispace-color-text-tertiary);">{% trans "加载中..." %}</div>
+            <div id="uc-notification-end" style="text-align:center;padding:16px;color:var(--ispace-color-text-quaternary);font-size:12px;display:none;">{% trans "已加载全部通知" %}</div>
+        </div>
+
+        <!-- ====== 通知设置 Tab ====== -->
+        <div id="tab-notify" class="ispace-tab-content" {% if current_tab != 'notify' %}style="display:none"{% endif %}>
+            <div class="ispace-section-header">
+                <h2 class="ispace-section-title">{% trans "邮件通知" %}</h2>
+                <p style="color:var(--ispace-color-text-tertiary);font-size:var(--ispace-font-sm);margin-top:4px">
+                    {% trans "以下设置仅在邮件服务配置完成后生效" %}
+                </p>
+            </div>
+            <div class="ispace-toggle-group" id="notifyToggles">
+                <p style="color:var(--ispace-color-text-tertiary);font-size:var(--ispace-font-sm)">
+                    <span class="ispace-spinner"></span>{% trans "加载中..." %}
+                </p>
+            </div>
+            <!-- 第三方通道绑定（预留） -->
+            <div class="ispace-section-header" style="margin-top:24px;padding-top:24px;border-top:1px solid var(--ispace-color-border-light)">
+                <h2 class="ispace-section-title">{% trans "第三方通知通道" %}</h2>
+                <p style="color:var(--ispace-color-text-tertiary);font-size:var(--ispace-font-sm);margin-top:4px">
+                    {% trans "绑定第三方平台账号以接收通知（需管理员配置后方可生效）" %}
+                </p>
+            </div>
+            <div id="thirdPartyBindings">
+                <p style="color:var(--ispace-color-text-tertiary);font-size:var(--ispace-font-sm)">
+                    <span class="ispace-spinner"></span>{% trans "加载中..." %}
+                </p>
+            </div>
+        </div>
+
+        <!-- ====== 我的分组 Tab ====== -->
+        <div id="tab-my_groups" class="ispace-tab-content" {% if current_tab != 'my_groups' %}style="display:none"{% endif %}>
+            <div class="ispace-section-header">
+                <h2 class="ispace-section-title">{% trans "我加入的分组" %}</h2>
+            </div>
+            <div id="myGroupsContainer">
+                <p style="color:var(--ispace-color-text-tertiary);font-size:var(--ispace-font-sm)">
+                    <span class="ispace-spinner"></span>{% trans "加载中..." %}
+                </p>
+            </div>
+        </div>
+
+        <!-- ====== 组织架构 Tab ====== -->
+        <div id="tab-my_org" class="ispace-tab-content" {% if current_tab != 'my_org' %}style="display:none"{% endif %}>
+            <div class="ispace-section-header" id="orgSectionHeader">
+                <h2 class="ispace-section-title">{% trans "组织架构" %}</h2>
+            </div>
+            <div id="orgBreadcrumb"></div>
+            <div id="myOrgContainer" data-is-superuser="{{ user.is_superuser|yesno:'true,false' }}">
+                <p style="color:var(--ispace-color-text-tertiary);font-size:var(--ispace-font-sm)">
+                    <span class="ispace-spinner"></span>{% trans "加载组织架构..." %}
+                </p>
+            </div>
+        </div>
+
+        <!-- ====== 浏览记录 Tab ====== -->
+        <div id="tab-history" class="ispace-tab-content" {% if current_tab != 'history' %}style="display:none"{% endif %}>
+            <div class="ispace-section-header">
+                <h2 class="ispace-section-title">{% trans "最近浏览" %}</h2>
+            </div>
+            <div id="historyContainer"></div>
+        </div>
+
+        <!-- ====== 我的文档 Tab ====== -->
+        <div id="tab-my_docs" class="ispace-tab-content" style="display:none">
+            <div class="ispace-section-header">
+                <h2 class="ispace-section-title">{% trans "我的文档" %}</h2>
+            </div>
+            <div class="ispace-section-toolbar" id="myDocsToolbar">
+                <input type="text" class="ispace-form-input ispace-form-input-sm" id="myDocsSearch" placeholder="{% trans '搜索文档...' %}" style="max-width:240px">
+                <button class="ispace-btn ispace-btn-secondary ispace-btn-sm" id="myDocsSearchBtn">{% trans "搜索" %}</button>
+                <div class="ispace-toggle-tabs" id="myDocsStatusFilter">
+                    <span class="ispace-toggle-tab active" data-status="-1">{% trans "全部" %}</span>
+                    <span class="ispace-toggle-tab" data-status="0">{% trans "草稿" %}</span>
+                    <span class="ispace-toggle-tab" data-status="1">{% trans "已发布" %}</span>
+                </div>
+                <button class="ispace-btn ispace-btn-danger ispace-btn-sm" id="myDocsBatchDel">{% trans "删除" %}</button>
+                <span class="ispace-section-toolbar-count" id="myDocsCount"></span>
+            </div>
+            <div id="myDocsContainer"></div>
+            <div id="myDocsPagination" class="ispace-pagination"></div>
+        </div>
+
+        <!-- ====== 文档模板 Tab ====== -->
+        <div id="tab-my_templates" class="ispace-tab-content" style="display:none">
+            <div class="ispace-section-header">
+                <h2 class="ispace-section-title">{% trans "文档模板" %}</h2>
+                <button class="ispace-btn ispace-btn-primary ispace-btn-sm" onclick="openCreateDoctempForm()">+ {% trans "新建" %}</button>
+            </div>
+            <div class="ispace-section-toolbar" id="myTemplatesToolbar">
+                <input type="text" class="ispace-form-input ispace-form-input-sm" id="myTemplatesSearch" placeholder="{% trans '搜索模板...' %}" style="max-width:280px">
+                <button class="ispace-btn ispace-btn-secondary ispace-btn-sm" id="myTemplatesSearchBtn">{% trans "搜索" %}</button>
+                <span class="ispace-section-toolbar-count" id="myTemplatesCount"></span>
+            </div>
+            <div id="myTemplatesContainer"></div>
+            <div id="myTemplatesPagination" class="ispace-pagination"></div>
+            {# Template create/edit modal #}
+            <div id="doctemp-form-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:10002;align-items:center;justify-content:center;" onclick="if(event.target===this)closeDoctempForm()">
+                <div style="background:var(--ispace-color-surface-0,#fff);border-radius:var(--ispace-radius-xl);padding:var(--ispace-space-6);max-width:520px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+                    <h3 style="font-size:var(--ispace-font-lg);font-weight:var(--ispace-font-semibold);margin-bottom:var(--ispace-space-4);" id="doctemp-form-title">{% trans "新建文档模板" %}</h3>
+                    <input type="hidden" id="doctemp-edit-id" value="">
+                    <div class="ispace-form-group">
+                        <label class="ispace-form-label">{% trans "模板名称" %}</label>
+                        <input type="text" class="ispace-form-input" id="doctemp-form-name" maxlength="50" placeholder="{% trans '输入模板名称' %}">
+                    </div>
+                    <div class="ispace-form-group">
+                        <label class="ispace-form-label">{% trans "模板内容（Markdown）" %}</label>
+                        <textarea class="ispace-form-input" id="doctemp-form-content" rows="10" style="resize:vertical;font-family:monospace;" placeholder="{% trans '输入 Markdown 内容...' %}"></textarea>
+                        <span class="ispace-form-hint" style="font-size:var(--ispace-font-xs);color:var(--ispace-color-text-quaternary);">{% trans "支持 Markdown 格式，创建文档时将替换编辑器内容" %}</span>
+                    </div>
+                    <div style="display:flex;justify-content:flex-end;gap:var(--ispace-space-3);margin-top:var(--ispace-space-4);">
+                        <button class="ispace-btn ispace-btn-secondary" onclick="closeDoctempForm()">{% trans "取消" %}</button>
+                        <button class="ispace-btn ispace-btn-primary" id="doctemp-form-submit-btn" onclick="submitDoctempForm()">{% trans "创建" %}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====== 收藏文档 Tab ====== -->
+        <div id="tab-my_collects" class="ispace-tab-content" style="display:none">
+            <div class="ispace-section-header">
+                <h2 class="ispace-section-title">{% trans "收藏文档" %}</h2>
+            </div>
+            <div class="ispace-section-toolbar" id="myCollectsToolbar">
+                <input type="text" class="ispace-form-input ispace-form-input-sm" id="myCollectsSearch" placeholder="{% trans '搜索收藏...' %}" style="max-width:240px">
+                <button class="ispace-btn ispace-btn-secondary ispace-btn-sm" id="myCollectsSearchBtn">{% trans "搜索" %}</button>
+                <button class="ispace-btn ispace-btn-danger ispace-btn-sm" id="myCollectsBatchDel">{% trans "取消收藏" %}</button>
+                <span class="ispace-section-toolbar-count" id="myCollectsCount"></span>
+            </div>
+            <div id="myCollectsContainer"></div>
+            <div id="myCollectsPagination" class="ispace-pagination"></div>
+        </div>
+
+        <!-- ====== Token管理 Tab ====== -->
+        <div id="tab-my_tokens" class="ispace-tab-content" style="display:none">
+            <div class="ispace-section-header">
+                <h2 class="ispace-section-title">{% trans "API Token" %}</h2>
+            </div>
+            <div id="myTokensContainer">
+                <p style="color:var(--ispace-color-text-tertiary);font-size:var(--ispace-font-sm)">
+                    <span class="ispace-spinner"></span>{% trans "加载中..." %}
+                </p>
+            </div>
+        </div>
+
+        <!-- ====== 其他标签空状态 ====== -->
+        <div id="tab-other" class="ispace-tab-content" style="display:none">
+            <div class="ispace-empty-state">
+                <svg class="ispace-empty-state-icon" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 010 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
+                </svg>
+                <h3 class="ispace-empty-state-title">{% trans "功能开发中" %}</h3>
+                <p class="ispace-empty-state-description">{% trans "此功能正在开发中，敬请期待。" %}</p>
+                <a href="?tab=profile" class="ispace-btn ispace-btn-primary ispace-mt-6">
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd"/></svg>
+                    {% trans "返回个人资料" %}
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {# 分组创建/编辑弹窗 #}
+    <div class="ispace-group-modal-overlay" id="groupFormOverlay">
+        <div class="ispace-group-modal">
+            <div class="ispace-group-modal-header">
+                <span class="ispace-group-modal-title" id="groupFormTitle">{% trans "创建分组" %}</span>
+                <button class="ispace-group-modal-close" onclick="closeGroupForm()">&times;</button>
+            </div>
+            <div class="ispace-group-modal-body">
+                <input type="hidden" id="groupFormId" value="">
+                <div class="ispace-form-group">
+                    <label class="ispace-form-label">{% trans "分组名称" %}</label>
+                    <input type="text" class="ispace-form-input" id="groupFormName" maxlength="64" placeholder="{% trans '请输入分组名称' %}">
+                </div>
+                <div class="ispace-form-group">
+                    <label class="ispace-form-label">{% trans "分组描述" %}</label>
+                    <textarea class="ispace-form-input" id="groupFormDesc" rows="3" maxlength="256" placeholder="{% trans '可选，简要描述分组用途' %}" style="resize:vertical"></textarea>
+                </div>
+                <p id="groupFormMsg" style="font-size:var(--ispace-font-sm);margin-top:var(--ispace-space-2)"></p>
+            </div>
+            <div class="ispace-group-modal-footer">
+                <button class="ispace-btn ispace-btn-secondary" onclick="closeGroupForm()">{% trans "取消" %}</button>
+                <button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="groupFormSubmitBtn" onclick="submitGroupForm()">{% trans "创建" %}</button>
+            </div>
+        </div>
+    </div>
+
+    {# 成员管理弹窗 #}
+    <div class="ispace-group-modal-overlay" id="groupMembersOverlay">
+        <div class="ispace-group-modal">
+            <div class="ispace-group-modal-header">
+                <span class="ispace-group-modal-title" id="groupMembersTitle"></span>
+                <button class="ispace-group-modal-close" onclick="closeGroupMembers()">&times;</button>
+            </div>
+            <div class="ispace-group-modal-body">
+                <div style="margin-bottom:var(--ispace-space-3)">
+                    <label class="ispace-form-label" style="display:block;margin-bottom:var(--ispace-space-2)">{% trans "成员列表" %} (<span id="gmMemberCount">0</span>)</label>
+                    <div class="ispace-member-list" id="gmMemberList">
+                        <p style="color:var(--ispace-color-text-tertiary);font-size:var(--ispace-font-sm)">{% trans "加载中..." %}</p>
+                    </div>
+                </div>
+                <div id="gmAddMemberWrap" style="display:none">
+                    <label class="ispace-form-label" style="display:block;margin-bottom:var(--ispace-space-2)">{% trans "添加成员" %}</label>
+                    <div style="position:relative;">
+                        <input type="text" class="ispace-form-input" id="gmUserSearch" placeholder="{% trans '搜索用户姓名或用户名...' %}" oninput="gmSearchUsers()" onfocus="gmSearchUsers()">
+                        <div class="ispace-gm-search-dropdown" id="gmUserResults"></div>
+                    </div>
+                </div>
+                {# 右键/操作上下文菜单 #}
+                <div class="ispace-gm-context-menu" id="gmContextMenu" style="display:none;">
+                    <div class="ispace-gm-context-item" id="gmCtxSetAdmin" onclick="gmSetAdminFromCtx()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                        <span id="gmCtxSetAdminText">{% trans "设为管理员" %}</span>
+                    </div>
+                    <div class="ispace-gm-context-item ispace-danger" id="gmCtxRemove" onclick="gmRemoveFromCtx()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        <span>{% trans "移除成员" %}</span>
+                    </div>
+                </div>
+                <div id="gmActionsWrap" style="display:none;margin-top:var(--ispace-space-3);">
+                    <div style="display:flex;gap:var(--ispace-space-2);flex-wrap:wrap;">
+                        <button class="ispace-btn ispace-btn-ghost ispace-btn-sm" onclick="openEditGroup()">{% trans "编辑信息" %}</button>
+                        <button class="ispace-btn ispace-btn-ghost ispace-btn-sm ispace-btn-danger" onclick="confirmDeleteGroup()">{% trans "删除分组" %}</button>
+                    </div>
+                </div>
+                <p id="gmMsg" style="font-size:var(--ispace-font-sm);margin-top:var(--ispace-space-2)"></p>
+            </div>
+            <div class="ispace-group-modal-footer">
+                <button class="ispace-btn ispace-btn-secondary" onclick="closeGroupMembers()">{% trans "关闭" %}</button>
+            </div>
+        </div>
+    </div>
+
+    {# 组织架构成员管理弹窗 #}
+    <div class="ispace-group-modal-overlay" id="orgMembersOverlay">
+        <div class="ispace-group-modal">
+            <div class="ispace-group-modal-header">
+                <span class="ispace-group-modal-title" id="orgMembersTitle"></span>
+                <button class="ispace-group-modal-close" onclick="closeOrgMembers()">&times;</button>
+            </div>
+            <div class="ispace-group-modal-body">
+                <div id="omAddMemberWrap" style="display:none;margin-bottom:var(--ispace-space-3)">
+                    <label class="ispace-form-label" style="display:block;margin-bottom:var(--ispace-space-2)">{% trans "添加成员" %}</label>
+                    <div style="position:relative;">
+                        <input type="text" class="ispace-form-input" id="omUserSearch" placeholder="{% trans '搜索用户姓名或用户名...' %}" oninput="omSearchUsers()" onfocus="omSearchUsers()">
+                        <div class="ispace-gm-search-dropdown" id="omUserResults"></div>
+                    </div>
+                </div>
+                <div>
+                    <label class="ispace-form-label" style="display:block;margin-bottom:var(--ispace-space-2)">
+                        {% trans "成员列表" %} (<span id="omMemberCount">0</span>)
+                    </label>
+                    <div class="ispace-member-list" id="omMemberList" style="max-height:300px;overflow-y:auto;">
+                        <p style="color:var(--ispace-color-text-tertiary);font-size:var(--ispace-font-sm)">{% trans "加载中..." %}</p>
+                    </div>
+                </div>
+                {# 成员右键操作菜单 #}
+                <div class="ispace-gm-context-menu" id="omMemberContextMenu" style="display:none;">
+                    <div class="ispace-gm-context-item" id="omCtxSetPrimary" onclick="omMemberSetPrimaryFromCtx()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+                        <span>{% trans "设为主属" %}</span>
+                    </div>
+                    <div class="ispace-gm-context-item" id="omCtxSetAdmin" onclick="omMemberSetAdminFromCtx()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                        <span id="omCtxSetAdminText">{% trans "设为管理员" %}</span>
+                    </div>
+                    <div class="ispace-gm-context-item ispace-danger" id="omCtxRemove" onclick="omMemberRemoveFromCtx()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        <span>{% trans "移除成员" %}</span>
+                    </div>
+                </div>
+                <p id="omMsg" style="font-size:var(--ispace-font-sm);margin-top:var(--ispace-space-2)"></p>
+            </div>
+            <div class="ispace-group-modal-footer">
+                <button class="ispace-btn ispace-btn-secondary" onclick="closeOrgMembers()">{% trans "关闭" %}</button>
+            </div>
+        </div>
+    </div>
+
+    {# 组织节点创建/重命名弹窗 #}
+    <div class="ispace-group-modal-overlay" id="orgNodeFormOverlay">
+        <div class="ispace-group-modal">
+            <div class="ispace-group-modal-header">
+                <span class="ispace-group-modal-title" id="orgNodeFormTitle">{% trans "创建子节点" %}</span>
+                <button class="ispace-group-modal-close" onclick="closeOrgNodeForm()">&times;</button>
+            </div>
+            <div class="ispace-group-modal-body">
+                <input type="hidden" id="orgNodeFormId" value="">
+                <input type="hidden" id="orgNodeParentId" value="">
+                <div class="ispace-form-group">
+                    <label class="ispace-form-label">{% trans "节点名称" %}</label>
+                    <input type="text" class="ispace-form-input" id="orgNodeFormName" maxlength="64" placeholder="{% trans '请输入节点名称' %}">
+                </div>
+                <p id="orgNodeFormMsg" style="font-size:var(--ispace-font-sm);margin-top:var(--ispace-space-2)"></p>
+            </div>
+            <div class="ispace-group-modal-footer">
+                <button class="ispace-btn ispace-btn-secondary" onclick="closeOrgNodeForm()">{% trans "取消" %}</button>
+                <button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="orgNodeFormSubmitBtn" onclick="submitOrgNodeForm()">{% trans "创建" %}</button>
+            </div>
+        </div>
+    </div>
+
+    {# 树节点右键菜单 #}
+    <div class="ispace-gm-context-menu" id="omNodeContextMenu" style="display:none;">
+        <div class="ispace-gm-context-item" id="omNodeCtxCreate" onclick="omNodeCreateFromCtx()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            <span>{% trans "创建子节点" %}</span>
+        </div>
+        <div class="ispace-gm-context-item" id="omNodeCtxRename" onclick="omNodeRenameFromCtx()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            <span>{% trans "重命名" %}</span>
+        </div>
+        <div class="ispace-gm-context-item ispace-danger" id="omNodeCtxDelete" onclick="omNodeDeleteFromCtx()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            <span>{% trans "删除节点" %}</span>
+        </div>
+    </div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/recent-views.js' %}?v={{ isdoc_version }}"></script>
+<script>
+(function() {
+    // ========== 获取 CSRF Token ==========
+    function getCSRF() {
+        var token = document.querySelector('[name=csrfmiddlewaretoken]');
+        return token ? token.value : '';
+    }
+
+    // ========== Toast 提示 ==========
+    function showToast(msg, type) {
+        type = type || 'success';
+        var toast = document.createElement('div');
+        toast.className = 'ispace-toast ispace-toast-' + type;
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        setTimeout(function() { toast.remove(); }, 3000);
+    }
+
+    // 从 URL 提取 open=<id> 参数（在 URL 被修改前捕获）
+    var notifHighlightId = new URLSearchParams(window.location.search).get('open');
+
+    // ========== Tab 切换 ==========
+    var tabLoaded = {};
+
+    function switchTab(tabName) {
+        // 更新侧边栏激活状态
+        document.querySelectorAll('#userCenterSidebar .ispace-sidebar-link').forEach(function(a) {
+            a.classList.remove('active');
+            if (a.getAttribute('data-tab') === tabName) a.classList.add('active');
+        });
+        // 显示/隐藏内容
+        document.querySelectorAll('.ispace-tab-content').forEach(function(el) { el.style.display = 'none'; });
+        var target = document.getElementById('tab-' + tabName);
+        if (target) { target.style.display = ''; }
+        else { document.getElementById('tab-other').style.display = ''; }
+        // 更新 URL
+        var url = new URL(window.location);
+        url.searchParams.set('tab', tabName);
+        window.history.replaceState({}, '', url);
+        // 加载数据
+        if (tabName === 'security') loadLoginRecords();
+        if (tabName === 'notifications') loadNotificationList();
+        if (tabName === 'notify') loadNotifySettings();
+        if (tabName === 'my_groups') loadMyGroups();
+        if (tabName === 'my_org') loadMyOrgs();
+        if (tabName === 'history') loadHistory();
+        if (tabName === 'my_docs') loadMyDocs();
+        if (tabName === 'my_templates') loadMyTemplates();
+        if (tabName === 'my_collects') loadMyCollects();
+
+        if (tabName === 'my_tokens') loadMyTokens();
+    }
+
+    // 侧边栏链接点击
+    document.querySelectorAll('#userCenterSidebar .ispace-sidebar-link[data-tab]').forEach(function(a) {
+        a.addEventListener('click', function(e) {
+            e.preventDefault();
+            switchTab(this.getAttribute('data-tab'));
+        });
+    });
+
+    // 初始 Tab
+    var initTab = '{{ current_tab }}' || 'profile';
+    var validTabs = ['profile', 'security', 'notifications', 'notify', 'my_docs', 'my_templates', 'my_groups', 'my_org', 'my_collects', 'history', 'my_tokens'];
+    if (validTabs.indexOf(initTab) === -1) initTab = 'profile';
+    if (initTab !== 'profile') switchTab(initTab);
+
+    // ========== 头像上传 ==========
+    var avatarInput = document.getElementById('avatarInput');
+    var avatarPreview = document.getElementById('avatarPreview');
+    if (avatarInput) {
+        avatarInput.addEventListener('change', function() {
+            var file = this.files[0];
+            if (!file) return;
+            if (file.size > 5 * 1024 * 1024) {
+                showToast('{% trans "图片大小不能超过5MB" %}', 'error');
+                return;
+            }
+            var formData = new FormData();
+            formData.append('avatar', file);
+            var csrf = getCSRF();
+            fetch('/api/user/avatar/upload/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrf },
+                body: formData
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.status) {
+                    avatarPreview.innerHTML = '<img src="' + data.url + '" alt="">';
+                    var sidebarAv = document.getElementById('sidebarAvatar');
+                    if (sidebarAv) sidebarAv.innerHTML = '<img src="' + data.url + '" alt="">';
+                    showToast('{% trans "头像已更新" %}');
+                } else {
+                    showToast(data.message || '{% trans "上传失败" %}', 'error');
+                }
+            })
+            .catch(function() { showToast('{% trans "上传失败" %}', 'error'); });
+        });
+    }
+    if (avatarPreview) {
+        avatarPreview.addEventListener('click', function() {
+            if (avatarInput) avatarInput.click();
+        });
+    }
+
+    // ========== 个人信息表单提交 ==========
+    var profileForm = document.getElementById('profileForm');
+    if (profileForm) {
+        profileForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var btn = document.getElementById('profileSaveBtn');
+            var msg = document.getElementById('profileMsg');
+            btn.disabled = true;
+            msg.textContent = '';
+            var payload = {
+                first_name: document.getElementById('profileFirstName').value.trim(),
+                gender: document.getElementById('profileGender').value,
+                phone: document.getElementById('profilePhone').value.trim(),
+                bio: document.getElementById('profileBio').value.trim()
+            };
+            var csrf = getCSRF();
+            fetch('/api/user/profile/edit/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                body: JSON.stringify(payload)
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                btn.disabled = false;
+                if (data.status) {
+                    msg.style.color = 'var(--ispace-color-success, #27AE60)';
+                    msg.textContent = '{% trans "保存成功" %}';
+                    // 更新侧边栏名称
+                    var sidebarName = document.querySelector('#userCenterSidebar .ispace-profile-name');
+                    if (sidebarName && payload.first_name) sidebarName.textContent = payload.first_name;
+                } else {
+                    msg.style.color = 'var(--ispace-color-danger, #E74C3C)';
+                    msg.textContent = data.message || '{% trans "保存失败" %}';
+                }
+            })
+            .catch(function() {
+                btn.disabled = false;
+                msg.style.color = 'var(--ispace-color-danger, #E74C3C)';
+                msg.textContent = '{% trans "网络错误" %}';
+            });
+        });
+    }
+
+    // ========== 密码修改 ==========
+    var passwordForm = document.getElementById('passwordForm');
+    if (passwordForm) {
+        passwordForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var btn = document.getElementById('passwordSaveBtn');
+            var msg = document.getElementById('passwordMsg');
+            btn.disabled = true;
+            msg.textContent = '';
+            var payload = {
+                old_password: this.old_password.value,
+                new_password1: this.new_password1.value,
+                new_password2: this.new_password2.value
+            };
+            var csrf = getCSRF();
+            fetch('/api/user/change-password/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                body: JSON.stringify(payload)
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                btn.disabled = false;
+                if (data.status) {
+                    msg.style.color = 'var(--ispace-color-success, #27AE60)';
+                    msg.textContent = data.message;
+                    passwordForm.reset();
+                } else {
+                    msg.style.color = 'var(--ispace-color-danger, #E74C3C)';
+                    msg.textContent = data.message || '{% trans "修改失败" %}';
+                }
+            })
+            .catch(function() {
+                btn.disabled = false;
+                msg.style.color = 'var(--ispace-color-danger, #E74C3C)';
+                msg.textContent = '{% trans "网络错误" %}';
+            });
+        });
+    }
+
+    // ========== 登录记录 ==========
+    var loginRecordsLoaded = false;
+    function loadLoginRecords() {
+        if (loginRecordsLoaded) return;
+        loginRecordsLoaded = true;
+        var container = document.getElementById('loginRecordsContainer');
+        var csrf = getCSRF();
+        fetch('/api/user/login-records/', {
+            headers: { 'X-CSRFToken': csrf }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.status || !data.records.length) {
+                container.innerHTML = '<p style="color:var(--ispace-color-text-tertiary);font-size:var(--ispace-font-sm)">{% trans "暂无登录记录" %}</p>';
+                return;
+            }
+            var html = '<div style="overflow-x:auto"><table class="ispace-login-table"><thead><tr><th>{% trans "时间" %}</th><th>{% trans "IP 地址" %}</th><th>{% trans "设备/浏览器" %}</th><th>{% trans "状态" %}</th><th>{% trans "详情" %}</th></tr></thead><tbody>';
+            data.records.forEach(function(r) {
+                var statusCls = r.success ? 'ispace-login-success' : 'ispace-login-fail';
+                var statusText = r.success ? '{% trans "成功" %}' : '{% trans "失败" %}';
+                html += '<tr><td>' + r.time + '</td><td>' + r.ip + '</td><td>' + r.ua + '</td><td class="' + statusCls + '">' + statusText + '</td><td>' + (r.reason || '-') + '</td></tr>';
+            });
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        })
+        .catch(function() {
+            container.innerHTML = '<p style="color:#E74C3C">{% trans "加载失败" %}</p>';
+        });
+    }
+
+    // ========== 通知设置 ==========
+    var notifySettingsLoaded = false;
+    var notifyToggleDefs = [
+        { key: 'email_enabled', title: '{% trans "启用邮件通知" %}', desc: '{% trans "全局开关，关闭后不再收到任何邮件" %}' },
+        { key: 'email_comment', title: '{% trans "评论通知" %}', desc: '{% trans "有人评论我的文档时发送邮件" %}' },
+        { key: 'email_mention', title: '{% trans "@提及通知" %}', desc: '{% trans "有人在评论中@我时发送邮件" %}' },
+        { key: 'email_perm_change', title: '{% trans "权限变更通知" %}', desc: '{% trans "文档权限被授予或撤销时发送邮件" %}' },
+        { key: 'email_perm_apply', title: '{% trans "权限申请通知" %}', desc: '{% trans "有人申请文档权限时发送邮件（仅管理员）" %}' },
+        { key: 'email_doc_change', title: '{% trans "文档变更通知" %}', desc: '{% trans "有权限的文档被编辑/移动/删除时发送邮件" %}' },
+        { key: 'email_daily_summary', title: '{% trans "每日汇总" %}', desc: '{% trans "每天定时发送未读通知汇总邮件" %}' }
+    ];
+
+    // ========== 站内通知列表 ==========
+    var notifPage = 1;
+    var notifLoading = false;
+    var notifHasMore = true;
+    var notifCurrentType = '';
+    var notifUnreadOnly = false;
+
+    function loadNotificationList() {
+        if (tabLoaded['notifications']) return;
+        tabLoaded['notifications'] = true;
+        notifPage = 1; notifHasMore = true;
+        notifCurrentType = ''; notifUnreadOnly = false;
+        // Clear existing state
+        document.getElementById('uc-notification-list').innerHTML = '';
+        document.getElementById('uc-notification-end').style.display = 'none';
+        document.getElementById('uc-notification-loading').style.display = '';
+        document.querySelectorAll('#uc-notif-type-tabs .ispace-notification-tab').forEach(function(t, i) {
+            t.classList.toggle('ispace-active', i === 0);
+        });
+        document.getElementById('toggle-uc-unread-only').checked = false;
+        document.getElementById('btn-uc-mark-all-read').style.display = 'none';
+        document.getElementById('btn-uc-clear-all').style.display = 'none';
+        loadNotifs();
+    }
+
+    function loadNotifs() {
+        if (notifLoading || !notifHasMore) return;
+        notifLoading = true;
+        var url = '/api/notifications/?page=' + notifPage + '&page_size=20';
+        if (notifCurrentType) url += '&notification_type=' + encodeURIComponent(notifCurrentType);
+        if (notifUnreadOnly) url += '&unread_only=true';
+        var csrf = getCSRF();
+        fetch(url, { headers: { 'X-CSRFToken': csrf } })
+            .then(function(r) { return r.json(); })
+            .then(function(resp) {
+                document.getElementById('uc-notification-loading').style.display = 'none';
+                if (resp.code !== 0) return;
+                var data = resp.data;
+                if (!data || !data.items || !data.items.length) {
+                    notifHasMore = false;
+                    document.getElementById('uc-notification-end').style.display = '';
+                    if (notifPage === 1) {
+                        document.getElementById('uc-notification-list').innerHTML = '<div class="ispace-empty-state" style="padding:48px 16px;"><div style="font-size:var(--ispace-font-base);color:var(--ispace-color-text-tertiary);">{% trans "暂无通知" %}</div></div>';
+                    }
+                    return;
+                }
+                if (data.unread_count > 0) {
+                    document.getElementById('btn-uc-mark-all-read').style.display = '';
+                }
+                if (data.total > 0) {
+                    document.getElementById('btn-uc-clear-all').style.display = '';
+                }
+                data.items.forEach(function(n) {
+                    var avatarHtml = n.sender_avatar_url
+                        ? '<img src="' + escHtml(n.sender_avatar_url) + '" alt="">'
+                        : (n.sender_initial || '?');
+                    var avatarBg = n.sender_avatar_url ? '' : 'background:' + (n.sender_color || '#4A90D9') + ';';
+                    var isHighlighted = (notifHighlightId && String(n.id) === String(notifHighlightId));
+                    var item = document.createElement('div');
+                    item.className = 'ispace-nlist-item' + (n.is_read ? '' : ' ispace-unread') + (isHighlighted ? ' ispace-highlighted' : '');
+                    item.setAttribute('data-nid', n.id);
+                    item.innerHTML =
+                        '<div class="ispace-nlist-avatar" data-user-id="' + (n.sender_id || '') + '" style="' + avatarBg + '">' + avatarHtml + '</div>'
+                        + '<div class="ispace-nlist-body">'
+                        + '<div class="ispace-nlist-title">' + escHtml(n.title) + '</div>'
+                        + '<div class="ispace-nlist-text">' + escHtml(n.body) + '</div>'
+                        + '<div class="ispace-nlist-time">' + escHtml(n.relative_time) + '</div>'
+                        + (isHighlighted ? '<div class="ispace-nlist-action"><a href="' + escHtml(n.link || '#') + '" class="ispace-btn ispace-btn-sm ispace-btn-primary" style="font-size:var(--ispace-font-xs);">{% trans "查看详情" %}</a></div>' : '')
+                        + '</div>'
+                        + (n.is_read ? '' : '<span class="ispace-nlist-dot"></span>');
+                    item.addEventListener('click', function(e) {
+                        // Don't navigate if clicking the action button
+                        if (e.target.closest('.ispace-btn')) return;
+                        if (n.link) window.location.href = n.link;
+                        fetch('/api/notifications/read/', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                            body: JSON.stringify({ id: n.id })
+                        });
+                    });
+                    document.getElementById('uc-notification-list').appendChild(item);
+                    // Scroll to highlighted item
+                    if (isHighlighted) {
+                        setTimeout(function() { item.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 200);
+                        notifHighlightId = null;
+                    }
+                });
+                notifPage++;
+                notifHasMore = data.has_next;
+                if (!notifHasMore) document.getElementById('uc-notification-end').style.display = '';
+            })
+            .catch(function() {
+                document.getElementById('uc-notification-loading').textContent = '{% trans "加载失败，请刷新重试" %}';
+            })
+            .finally(function() { notifLoading = false; });
+    }
+
+    // Infinite scroll inside the tab
+    var _notifScrollHandler = function() {
+        var list = document.getElementById('uc-notification-list');
+        var end = document.getElementById('uc-notification-end');
+        if (!list || !end || list.children.length === 0) return;
+        var lastItem = list.lastElementChild;
+        if (!lastItem) return;
+        var rect = lastItem.getBoundingClientRect();
+        if (rect.top < window.innerHeight + 400) loadNotifs();
+    };
+
+
+
+
+    // Esc HTML
+    function escHtml(s) { var d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+    // Type filter tabs
+    document.getElementById('uc-notif-type-tabs').addEventListener('click', function(e) {
+        var tab = e.target.closest('.ispace-notification-tab');
+        if (!tab) return;
+        document.querySelectorAll('#uc-notif-type-tabs .ispace-notification-tab').forEach(function(t) { t.classList.remove('ispace-active'); });
+        tab.classList.add('ispace-active');
+        notifCurrentType = tab.getAttribute('data-type');
+        notifPage = 1; notifHasMore = true;
+        document.getElementById('uc-notification-list').innerHTML = '';
+        document.getElementById('uc-notification-end').style.display = 'none';
+        document.getElementById('uc-notification-loading').style.display = '';
+        loadNotifs();
+    });
+
+    // Unread-only toggle
+    document.getElementById('toggle-uc-unread-only').addEventListener('change', function() {
+        notifUnreadOnly = this.checked;
+        notifPage = 1; notifHasMore = true;
+        document.getElementById('uc-notification-list').innerHTML = '';
+        document.getElementById('uc-notification-end').style.display = 'none';
+        document.getElementById('uc-notification-loading').style.display = '';
+        loadNotifs();
+    });
+
+    // Mark all read
+    document.getElementById('btn-uc-mark-all-read').addEventListener('click', function() {
+        var csrf = getCSRF();
+        fetch('/api/notifications/read/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+            body: JSON.stringify({ mark_all: true })
+        }).then(function(r) { return r.json(); })
+        .then(function() {
+            document.querySelectorAll('#uc-notification-list .ispace-nlist-item.ispace-unread').forEach(function(el) {
+                el.classList.remove('ispace-unread');
+                var dot = el.querySelector('.ispace-nlist-dot');
+                if (dot) dot.remove();
+            });
+            document.getElementById('btn-uc-mark-all-read').style.display = 'none';
+            // Also refresh global badge
+            if (window.iSpaceDoc && window.iSpaceDoc.Notification) {
+                window.iSpaceDoc.Notification.updateBadge(0);
+            }
+        });
+    });
+
+    // Clear all notifications
+    document.getElementById('btn-uc-clear-all').addEventListener('click', function() {
+        confirm('{% trans "确认清空所有通知？此操作不可恢复。" %}', { variant: 'danger', confirmText: '{% trans "确认清空" %}', cancelText: '{% trans "取消" %}' }).then(function(confirmed) {
+            if (!confirmed) return;
+            var csrf = getCSRF();
+            fetch('/api/notifications/clear-all/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                body: JSON.stringify({})
+            }).then(function(r) { return r.json(); })
+            .then(function(resp) {
+                if (resp.code !== 0) return;
+                document.getElementById('uc-notification-list').innerHTML = '<div class="ispace-empty-state" style="padding:48px 16px;"><div style="font-size:var(--ispace-font-base);color:var(--ispace-color-text-tertiary);">{% trans "暂无通知" %}</div></div>';
+                document.getElementById('btn-uc-clear-all').style.display = 'none';
+                document.getElementById('btn-uc-mark-all-read').style.display = 'none';
+                document.getElementById('uc-notification-end').style.display = 'none';
+                if (window.iSpaceDoc && window.iSpaceDoc.Notification) {
+                    window.iSpaceDoc.Notification.updateBadge(0);
+                }
+            });
+        });
+    });
+
+    // Infinite scroll
+    window.addEventListener('scroll', _notifScrollHandler);
+
+    function loadNotifySettings() {
+        if (notifySettingsLoaded) return;
+        notifySettingsLoaded = true;
+        var container = document.getElementById('notifyToggles');
+        var csrf = getCSRF();
+        fetch('/api/user/notify-settings/', {
+            headers: { 'X-CSRFToken': csrf }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.status) throw new Error('Failed');
+            var settings = data.settings;
+            var html = '';
+            notifyToggleDefs.forEach(function(item) {
+                var checked = settings[item.key] ? ' checked' : '';
+                html += '<div class="ispace-toggle-item">';
+                html += '<div class="ispace-toggle-label"><span class="ispace-toggle-title">' + item.title + '</span><span class="ispace-toggle-desc">' + item.desc + '</span></div>';
+                html += '<label class="ispace-toggle"><input type="checkbox" data-key="' + item.key + '"' + checked + ' onchange="saveNotifySetting()"><span class="ispace-toggle-slider"></span></label>';
+                html += '</div>';
+            });
+            // Daily summary hour selector
+            var hour = settings.daily_summary_hour || 9;
+            html += '<div class="ispace-toggle-item"><div class="ispace-toggle-label"><span class="ispace-toggle-title">{% trans "每日汇总时间" %}</span><span class="ispace-toggle-desc">{% trans "选择每天发送汇总邮件的时间" %}</span></div>';
+            html += '<select data-key="daily_summary_hour" onchange="saveNotifySetting()" style="padding:4px 8px;border-radius:4px;border:1px solid var(--ispace-color-border-light);font-size:var(--ispace-font-sm)">';
+            for (var h = 8; h <= 21; h++) {
+                html += '<option value="' + h + '"' + (h === hour ? ' selected' : '') + '>' + h + ':00</option>';
+            }
+            html += '</select></div>';
+            container.innerHTML = html;
+
+            // Render third-party channel bindings
+            renderThirdPartyBindings(settings);
+        })
+        .catch(function() {
+            container.innerHTML = '<p style="color:#E74C3C">{% trans "加载失败" %}</p>';
+        });
+    }
+
+    function renderThirdPartyBindings(settings) {
+        var container = document.getElementById('thirdPartyBindings');
+        if (!container) return;
+        var bindings = [
+            { key: 'wecom_userid', label: '{% trans "企业微信 UserID" %}', placeholder: '{% trans "请输入企业微信用户ID（暂未开放）" %}' },
+            { key: 'dingtalk_userid', label: '{% trans "钉钉 UserID" %}', placeholder: '{% trans "请输入钉钉用户ID（暂未开放）" %}' },
+            { key: 'oa_userid', label: '{% trans "企业OA UserID" %}', placeholder: '{% trans "请输入OA系统用户ID（暂未开放）" %}' }
+        ];
+        var html = '';
+        bindings.forEach(function(b) {
+            html += '<div class="ispace-toggle-item"><div class="ispace-toggle-label"><span class="ispace-toggle-title">' + b.label + '</span></div>';
+            html += '<input type="text" class="ispace-form-input" data-bind-key="' + b.key + '" value="' + (settings[b.key] || '') + '" placeholder="' + b.placeholder + '" disabled onchange="saveBindSetting()" style="max-width:320px">';
+            html += '</div>';
+        });
+        container.innerHTML = html;
+    }
+
+    window.saveBindSetting = function() {
+        var data = {};
+        document.querySelectorAll('#thirdPartyBindings [data-bind-key]').forEach(function(el) {
+            data[el.getAttribute('data-bind-key')] = el.value;
+        });
+        var csrf = getCSRF();
+        fetch('/api/user/notify-settings/save/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+            body: JSON.stringify(data)
+        }).then(function(r) { return r.json(); }).then(function(d) {
+            if (d.status) showToast('{% trans "设置已保存" %}', 'success');
+        }).catch(function() {
+            showToast('{% trans "保存失败" %}', 'error');
+        });
+    };
+
+    window.saveNotifySetting = function() {
+        var data = {};
+        document.querySelectorAll('#notifyToggles [data-key]').forEach(function(el) {
+            if (el.type === 'checkbox') data[el.getAttribute('data-key')] = el.checked;
+            else data[el.getAttribute('data-key')] = parseInt(el.value);
+        });
+        var csrf = getCSRF();
+        fetch('/api/user/notify-settings/save/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+            body: JSON.stringify(data)
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.status) showToast('{% trans "设置已保存" %}');
+        });
+    };
+
+    // ========== 我的分组 ==========
+    var myGroupsLoaded = false;
+    var _gmCurrentGroupId = null;
+    var _gmCurrentGroupIsOwner = false;
+    var _gmCurrentGroupIsAdmin = false;
+    var _groupDataCache = {};  // 缓存分组数据，供编辑时使用
+    var currentUserId = {{ user.id }};  // 当前用户ID，模板渲染时注入
+
+    // ========== 组织架构 ==========
+    var _orgTreeLoaded = false;
+    var _myOrgIds = {};       // {nodeId: {is_primary: bool}}
+    var _myPrimaryOrgId = null;
+    var _omCurrentNodeId = null;
+    var _omCurrentNodeName = '';
+    var _omNodeCtxNodeId = null;
+    var _omNodeCtxNodeName = '';
+    var _omNodeCtxParentId = null;
+    var _omMemberCtxMemberId = null;
+    var _omMemberCtxMemberName = '';
+    var _omMemberCtxIsPrimary = false;
+    var _omCurrentNodeAdminId = null;
+
+    function loadMyGroups() {
+        if (myGroupsLoaded) return;
+        myGroupsLoaded = true;
+        var container = document.getElementById('myGroupsContainer');
+        var csrf = getCSRF();
+        // Update header — remove "查看更多" link
+        var headerEl = document.querySelector('#tab-my_groups .ispace-section-header');
+        if (headerEl) {
+            headerEl.innerHTML = '<h2 class="ispace-section-title">{% trans "我加入的分组" %}</h2>'
+                + '<button class="ispace-btn ispace-btn-primary ispace-btn-sm" onclick="openGroupForm(\'create\')">+ {% trans "创建分组" %}</button>';
+        }
+        fetch('/api/user/my-groups/', {
+            headers: { 'X-CSRFToken': csrf }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.status || !data.groups.length) {
+                container.innerHTML = '<div class="ispace-empty-state" style="padding:var(--ispace-space-8)"><svg class="ispace-empty-state-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/></svg><h3 class="ispace-empty-state-title">{% trans "未加入任何分组" %}</h3><p class="ispace-empty-state-description">{% trans "创建一个分组或联系管理员将你添加到现有分组。" %}</p></div>';
+                return;
+            }
+            var html = '<div class="ispace-item-list">';
+            _groupDataCache = {};
+            data.groups.forEach(function(g) {
+                _groupDataCache[g.id] = { name: g.name, description: g.description || '', member_count: g.member_count, is_owner: g.is_owner, is_admin: g.is_admin || false };
+                html += '<div class="ispace-item-card ispace-group-card-clickable" onclick="openGroupMembers(' + g.id + ',\'' + escapeHTML(g.name) + '\',' + g.member_count + ',' + (g.is_owner ? 'true' : 'false') + ',' + (g.is_admin ? 'true' : 'false') + ')">';
+                html += '<div class="ispace-item-info">';
+                html += '<span class="ispace-item-name">' + escapeHTML(g.name);
+                if (g.is_owner) html += ' <span class="ispace-item-badge" style="margin-left:6px;background:var(--ispace-color-brand-100,#dbeafe);color:var(--ispace-color-brand-600,#2563eb);font-size:var(--ispace-font-xs);">{% trans "管理员" %}</span>';
+                html += '</span>';
+                html += '<span class="ispace-item-meta">' + g.member_count + ' {% trans "名成员" %} · {% trans "创建者：" %}' + escapeHTML(g.owner_name) + ' · {% trans "加入于 " %}' + g.joined_at + '</span>';
+                html += '</div>';
+                html += '<div class="ispace-group-action-row" onclick="event.stopPropagation()">';
+                html += '<button class="ispace-btn ispace-btn-ghost ispace-btn-sm" onclick="openGroupMembers(' + g.id + ',\'' + escapeHTML(g.name) + '\',' + g.member_count + ',' + (g.is_owner ? 'true' : 'false') + ',' + (g.is_admin ? 'true' : 'false') + ')">{% trans "查看成员" %}</button>';
+                if (!g.is_owner) {
+                    html += '<span class="ispace-group-action-sep"></span>';
+                    html += '<button class="ispace-group-action-link ispace-danger" onclick="leaveGroup(' + g.id + ',\'' + escapeHTML(g.name) + '\')">{% trans "退出" %}</button>';
+                }
+                html += '</div>';
+                html += '</div>';
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        })
+        .catch(function() {
+            container.innerHTML = '<p style="color:#E74C3C">{% trans "加载失败" %}</p>';
+        });
+    }
+
+    // ========== 创建/编辑分组弹窗 ==========
+    window.openGroupForm = function(mode, groupData) {
+        var overlay = document.getElementById('groupFormOverlay');
+        var title = document.getElementById('groupFormTitle');
+        var submitBtn = document.getElementById('groupFormSubmitBtn');
+        document.getElementById('groupFormId').value = '';
+        document.getElementById('groupFormName').value = '';
+        document.getElementById('groupFormDesc').value = '';
+        document.getElementById('groupFormMsg').textContent = '';
+
+        if (mode === 'edit' && groupData) {
+            title.textContent = '{% trans "编辑分组" %}';
+            submitBtn.textContent = '{% trans "保存" %}';
+            document.getElementById('groupFormId').value = groupData.id;
+            document.getElementById('groupFormName').value = groupData.name || '';
+            document.getElementById('groupFormDesc').value = groupData.description || '';
+        } else {
+            title.textContent = '{% trans "创建分组" %}';
+            submitBtn.textContent = '{% trans "创建" %}';
+        }
+        overlay.classList.add('active');
+        document.getElementById('groupFormName').focus();
+    };
+    window.closeGroupForm = function() {
+        document.getElementById('groupFormOverlay').classList.remove('active');
+    };
+    window.submitGroupForm = function() {
+        var editId = document.getElementById('groupFormId').value;
+        var name = document.getElementById('groupFormName').value.trim();
+        var desc = document.getElementById('groupFormDesc').value.trim();
+        var msgEl = document.getElementById('groupFormMsg');
+        if (!name) { msgEl.textContent = '{% trans "请输入分组名称" %}'; return; }
+
+        var btn = document.getElementById('groupFormSubmitBtn');
+        btn.disabled = true;
+        var csrf = getCSRF();
+        var url;
+        if (editId) {
+            url = '/api/groups/' + editId + '/';
+        } else {
+            url = '/api/groups/';
+        }
+        fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+            body: JSON.stringify({ name: name, description: desc })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            btn.disabled = false;
+            if (data.status) {
+                closeGroupForm();
+                showToast(editId ? '{% trans "分组已更新" %}' : '{% trans "分组创建成功" %}');
+                if (editId && _groupDataCache[editId]) {
+                    _groupDataCache[editId].name = name;
+                    _groupDataCache[editId].description = desc;
+                }
+                myGroupsLoaded = false;
+                loadMyGroups();
+                // If editing, also refresh the member modal if open
+                if (editId && _gmCurrentGroupId === parseInt(editId)) {
+                    document.getElementById('groupMembersTitle').textContent = name;
+                }
+            } else {
+                msgEl.textContent = data.message || '{% trans "操作失败" %}';
+            }
+        })
+        .catch(function() { btn.disabled = false; msgEl.textContent = '{% trans "网络错误" %}'; });
+    };
+    window.openEditGroup = function() {
+        if (!_gmCurrentGroupId) return;
+        var cached = _groupDataCache[_gmCurrentGroupId];
+        if (cached) {
+            openGroupForm('edit', { id: _gmCurrentGroupId, name: cached.name, description: cached.description });
+        } else {
+            openGroupForm('edit', { id: _gmCurrentGroupId, name: '', description: '' });
+        }
+    };
+
+    // ========== 删除分组 ==========
+    window.confirmDeleteGroup = function() {
+        if (!_gmCurrentGroupId) return;
+        confirm('{% trans "确定删除此分组吗？此操作不可恢复！" %}', { variant: 'danger', confirmText: '{% trans "确认删除" %}', cancelText: '{% trans "取消" %}' }).then(function(ok) {
+            if (!ok) return;
+            var csrf = getCSRF();
+            fetch('/api/groups/' + _gmCurrentGroupId + '/delete/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrf }
+            }).then(function(r) { return r.json(); }).then(function(data) {
+                if (data.status) {
+                    closeGroupMembers();
+                    showToast('{% trans "分组已删除" %}');
+                    myGroupsLoaded = false;
+                    loadMyGroups();
+                } else {
+                    document.getElementById('gmMsg').textContent = data.message || '{% trans "删除失败" %}';
+                }
+            });
+        });
+    };
+
+    // ========== 退出分组 ==========
+    window.leaveGroup = function(groupId, groupName) {
+        confirm('{% trans "确定要退出分组" %} "' + groupName + '"？', { variant: 'warning', confirmText: '{% trans "确认退出" %}', cancelText: '{% trans "取消" %}' }).then(function(ok) {
+            if (!ok) return;
+            var csrf = getCSRF();
+            fetch('/api/groups/' + groupId + '/leave/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrf }
+            }).then(function(r) { return r.json(); }).then(function(data) {
+                if (data.status) {
+                    showToast('{% trans "已退出分组" %}');
+                    myGroupsLoaded = false;
+                    loadMyGroups();
+                } else {
+                    showToast(data.message || '{% trans "操作失败" %}', 'error');
+                }
+            });
+        });
+    };
+
+    // ========== 成员管理弹窗 ==========
+    window.openGroupMembers = function(gid, gname, mcount, isOwner, isAdmin) {
+        _gmCurrentGroupId = gid;
+        _gmCurrentGroupIsOwner = isOwner;
+        _gmCurrentGroupIsAdmin = isAdmin || false;
+        var canManage = isOwner || _gmCurrentGroupIsAdmin;
+        document.getElementById('groupMembersTitle').textContent = gname;
+        document.getElementById('gmMemberCount').textContent = mcount;
+        document.getElementById('gmAddMemberWrap').style.display = canManage ? '' : 'none';
+        document.getElementById('gmActionsWrap').style.display = canManage ? '' : 'none';
+        document.getElementById('gmMsg').textContent = '';
+        document.getElementById('gmUserSearch').value = '';
+        var dd = document.getElementById('gmUserResults');
+        dd.classList.remove('active');
+        dd.innerHTML = '';
+        document.getElementById('groupMembersOverlay').classList.add('active');
+        gmLoadMembers();
+    };
+    window.closeGroupMembers = function() {
+        document.getElementById('groupMembersOverlay').classList.remove('active');
+        document.getElementById('gmContextMenu').style.display = 'none';
+        _gmCurrentGroupId = null;
+        _gmCurrentGroupIsOwner = false;
+        _gmCurrentGroupIsAdmin = false;
+    };
+
+    function gmLoadMembers() {
+        var list = document.getElementById('gmMemberList');
+        list.innerHTML = '<p style="color:var(--ispace-color-text-tertiary);font-size:var(--ispace-font-sm);text-align:center;padding:16px">{% trans "加载中..." %}</p>';
+        var csrf = getCSRF();
+        fetch('/api/groups/' + _gmCurrentGroupId + '/members/', { headers: { 'X-CSRFToken': csrf } })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            document.getElementById('gmMemberCount').textContent = d.members ? d.members.length : 0;
+            if (!d.status || !d.members.length) {
+                list.innerHTML = '<div class="ispace-empty-state" style="padding:24px 16px;text-align:center"><div style="font-size:var(--ispace-font-sm);color:var(--ispace-color-text-tertiary)">{% trans "暂无成员" %}</div></div>';
+                return;
+            }
+            // 如果当前用户不是owner，从成员列表中检测自己的is_admin状态
+            if (!_gmCurrentGroupIsOwner) {
+                var curMember = d.members.filter(function(m) { return m.id === currentUserId; })[0];
+                _gmCurrentGroupIsAdmin = curMember ? !!curMember.is_admin : false;
+                var canManage = _gmCurrentGroupIsOwner || _gmCurrentGroupIsAdmin;
+                document.getElementById('gmAddMemberWrap').style.display = canManage ? '' : 'none';
+                document.getElementById('gmActionsWrap').style.display = canManage ? '' : 'none';
+            }
+            var ownerId = d.owner_id;
+            var canManage = _gmCurrentGroupIsOwner || _gmCurrentGroupIsAdmin;
+            var h = '';
+            d.members.forEach(function(m) {
+                var isOwner = m.id === ownerId;
+                var isAdmin = !isOwner && m.is_admin;
+                var init = (m.display_name || m.username)[0].toUpperCase();
+                var color = gmAvatarColor(m.username, m.id);
+                h += '<div class="ispace-gm-member-item" data-user-id="' + m.id + '" data-member-id="' + m.id + '" oncontextmenu="gmShowContextMenu(event,' + m.id + ',' + (isOwner?1:0) + ',' + (isAdmin?1:0) + ',\'' + escapeHTML(m.display_name || m.username) + '\')">';
+                h += '<div class="ispace-gm-member-info">';
+                h += '<div class="ispace-gm-member-avatar" style="background:' + color + '">' + init + '</div>';
+                h += '<span class="ispace-gm-member-name">' + escapeHTML(m.display_name || m.username) + '</span>';
+                if (isOwner) h += ' <span class="ispace-gm-member-badge-owner">{% trans "创建者" %}</span>';
+                else if (isAdmin) h += ' <span class="ispace-gm-member-badge-admin">{% trans "管理员" %}</span>';
+                h += '</div>';
+                // Actions: owner can manage all non-owner members; admin can remove non-admin non-owner members
+                if (canManage && !isOwner) {
+                    if (_gmCurrentGroupIsOwner) {
+                        // Owner sees context menu trigger button
+                        h += '<button class="ispace-gm-member-more" onclick="event.stopPropagation();gmShowContextMenu(event,' + m.id + ',0,' + (isAdmin?1:0) + ',\'' + escapeHTML(m.display_name || m.username) + '\')" title="{% trans '更多操作' %}">';
+                        h += '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="3" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="8" cy="13" r="1.5"/></svg>';
+                        h += '</button>';
+                    } else if (_gmCurrentGroupIsAdmin && !isAdmin) {
+                        // Admin can only remove non-admin members
+                        h += '<button class="ispace-gm-member-remove" onclick="event.stopPropagation();gmRemoveMember(' + m.id + ',\'' + escapeHTML(m.display_name || m.username) + '\')">{% trans "移除" %}</button>';
+                    }
+                }
+                h += '</div>';
+            });
+            list.innerHTML = h;
+        });
+    }
+
+    window.gmRemoveMember = function(uid, uname) {
+        confirm('{% trans "确定要将" %} ' + uname + ' {% trans "移出分组吗？" %}', { variant: 'warning' }).then(function(ok) {
+            if (!ok) return;
+            var csrf = getCSRF();
+            fetch('/api/groups/' + _gmCurrentGroupId + '/members/remove/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                body: JSON.stringify({ user_id: uid })
+            }).then(function(r) { return r.json(); }).then(function(d) {
+                document.getElementById('gmMsg').textContent = d.message || '';
+                if (d.status) { gmLoadMembers(); myGroupsLoaded = false; loadMyGroups(); }
+            });
+        });
+    };
+
+    // ========== 上下文菜单 & 管理员设置 ==========
+    var _gmCtxTargetId = null;
+    var _gmCtxTargetName = '';
+    var _gmCtxIsAdmin = false;
+
+    window.gmShowContextMenu = function(e, memberId, isOwner, isAdmin, memberName) {
+        e.preventDefault();
+        e.stopPropagation();
+        // 仅 owner 可以对成员操作
+        if (!_gmCurrentGroupIsOwner) return;
+        _gmCtxTargetId = memberId;
+        _gmCtxTargetName = memberName;
+        _gmCtxIsAdmin = isAdmin;
+        var menu = document.getElementById('gmContextMenu');
+        // 根据当前管理员状态切换文案
+        document.getElementById('gmCtxSetAdminText').textContent = isAdmin ? '{% trans "取消管理员" %}' : '{% trans "设为管理员" %}';
+        document.getElementById('gmCtxSetAdmin').style.display = isOwner ? 'none' : '';
+        // 定位菜单
+        var x = e.clientX, y = e.clientY;
+        var vw = window.innerWidth, vh = window.innerHeight;
+        menu.style.display = 'block';
+        var mw = menu.offsetWidth || 160, mh = menu.offsetHeight || 80;
+        if (x + mw > vw) x = vw - mw - 8;
+        if (y + mh > vh) y = vh - mh - 8;
+        menu.style.left = x + 'px';
+        menu.style.top = y + 'px';
+        // 点击其他区域关闭
+        setTimeout(function() {
+            document.addEventListener('click', gmHideContextMenu, { once: true });
+        }, 0);
+    };
+
+    window.gmHideContextMenu = function() {
+        document.getElementById('gmContextMenu').style.display = 'none';
+        _gmCtxTargetId = null;
+    };
+
+    window.gmSetAdminFromCtx = function() {
+        if (!_gmCtxTargetId) return;
+        var newAdminStatus = !_gmCtxIsAdmin;
+        gmSetAdmin(_gmCtxTargetId, newAdminStatus, _gmCtxTargetName);
+        gmHideContextMenu();
+    };
+
+    window.gmRemoveFromCtx = function() {
+        if (!_gmCtxTargetId) return;
+        gmRemoveMember(_gmCtxTargetId, _gmCtxTargetName);
+        gmHideContextMenu();
+    };
+
+    function gmSetAdmin(uid, isAdmin, uname) {
+        var csrf = getCSRF();
+        fetch('/api/groups/' + _gmCurrentGroupId + '/members/set-admin/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+            body: JSON.stringify({ user_id: uid, is_admin: isAdmin })
+        }).then(function(r) { return r.json(); }).then(function(d) {
+            document.getElementById('gmMsg').textContent = d.message || '';
+            if (d.status) {
+                gmLoadMembers();
+                // 如果当前用户被取消管理员，更新自己的状态
+                if (uid === currentUserId) {
+                    _gmCurrentGroupIsAdmin = d.is_admin;
+                }
+            }
+        });
+    }
+
+    window.gmSearchUsers = function() {
+        var q = document.getElementById('gmUserSearch').value.trim();
+        var dd = document.getElementById('gmUserResults');
+        var input = document.getElementById('gmUserSearch');
+        if (q.length < 1) { dd.classList.remove('active'); dd.innerHTML = ''; return; }
+        var csrf = getCSRF();
+        fetch('/api/users/search/?q=' + encodeURIComponent(q), { headers: { 'X-CSRFToken': csrf } })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (!d.results || !d.results.length) { dd.innerHTML = '<div class="ispace-gm-search-item" style="color:var(--ispace-color-text-tertiary);cursor:default">{% trans "无匹配用户" %}</div>'; dd.classList.add('active'); gmPositionDropdown(input, dd); return; }
+            var h = '';
+            d.results.forEach(function(u) {
+                var init = u.avatar_initial || (u.display_name || u.username)[0].toUpperCase();
+                var color = u.avatar_color || '#4A90D9';
+                h += '<div class="ispace-gm-search-item" onmousedown="gmAddMember(' + u.id + ',\'' + escapeHTML(u.display_name || u.username) + '\')">';
+                h += '<div class="ispace-gm-member-avatar" style="background:' + color + ';width:28px;height:28px;font-size:12px">' + init + '</div>';
+                h += '<span>' + escapeHTML(u.display_name || u.username) + '</span>';
+                h += '</div>';
+            });
+            dd.innerHTML = h;
+            dd.classList.add('active');
+            gmPositionDropdown(input, dd);
+        });
+    };
+
+    function gmPositionDropdown(input, dropdown) {
+        if (!input || !dropdown) return;
+        var rect = input.getBoundingClientRect();
+        dropdown.style.left = rect.left + 'px';
+        dropdown.style.top = (rect.bottom + 4) + 'px';
+        dropdown.style.width = rect.width + 'px';
+    }
+
+    window.gmAddMember = function(uid) {
+        document.getElementById('gmUserSearch').value = '';
+        var dd = document.getElementById('gmUserResults');
+        dd.classList.remove('active');
+        dd.innerHTML = '';
+        var csrf = getCSRF();
+        fetch('/api/groups/' + _gmCurrentGroupId + '/members/add/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+            body: JSON.stringify({ user_ids: [uid] })
+        }).then(function(r) { return r.json(); }).then(function(d) {
+            document.getElementById('gmMsg').textContent = d.message || '';
+            if (d.status) { gmLoadMembers(); myGroupsLoaded = false; loadMyGroups(); }
+        });
+    };
+
+    function gmAvatarColor(username, uid) {
+        var colors = ['#4A90D9','#E67E22','#27AE60','#E74C3C','#8E44AD','#2C3E50','#16A085','#D35400','#2980B9','#C0392B'];
+        return colors[(uid || 0) % colors.length];
+    }
+
+    // Click overlay to close
+    document.querySelectorAll('.ispace-group-modal-overlay').forEach(function(ov) {
+        ov.addEventListener('click', function(e) { if (e.target === ov) { ov.classList.remove('active'); } });
+    });
+
+    // ========== 我的组织 ==========
+    function renderOrgBreadcrumb(orgs) {
+        var bc = document.getElementById('orgBreadcrumb');
+        if (!bc) return;
+        if (!orgs || !orgs.length) {
+            bc.innerHTML = '<div class="ispace-org-breadcrumb ispace-org-breadcrumb--empty">'
+                + '<div class="ispace-org-breadcrumb-header">'
+                + '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
+                + '<span class="ispace-org-breadcrumb-title">{% trans "未加入组织" %}</span>'
+                + '</div>'
+                + '<p style="margin:0;font-size:var(--ispace-font-sm);color:var(--ispace-color-text-secondary)">{% trans "你尚未加入任何组织部门，请联系管理员将你添加到相应的组织节点。" %}</p>'
+                + '</div>';
+            return;
+        }
+        var html = '<div class="ispace-org-breadcrumb">';
+        // 头部图标+标题
+        html += '<div class="ispace-org-breadcrumb-header">';
+        html += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="9" y1="6" x2="9" y2="10"/><line x1="15" y1="6" x2="15" y2="10"/><line x1="9" y1="14" x2="9" y2="18"/><line x1="15" y1="14" x2="15" y2="18"/></svg>';
+        html += '<span class="ispace-org-breadcrumb-title">{% trans "我的组织" %}</span>';
+        html += '</div>';
+        // 面包屑路径
+        html += '<div class="ispace-org-breadcrumb-trails">';
+        orgs.forEach(function(o) {
+            var segs = (o.path_display || o.name).split(' / ');
+            html += '<div class="ispace-org-breadcrumb-trail-wrap">';
+            html += '<div class="ispace-org-breadcrumb-trail">';
+            segs.forEach(function(seg, i) {
+                var isLast = i === segs.length - 1;
+                html += '<span class="ispace-org-breadcrumb-seg' + (isLast ? ' ispace-current' : '') + '">' + escapeHTML(seg) + '</span>';
+                if (!isLast) {
+                    html += '<span class="ispace-org-breadcrumb-sep">&#8250;</span>';
+                }
+            });
+            html += '</div>';
+            if (o.is_primary) {
+                html += '<span class="ispace-org-tab-badge ispace-badge-primary">{% trans "主属" %}</span>';
+            }
+            if (o.is_admin) {
+                html += '<span class="ispace-org-tab-badge ispace-badge-admin">{% trans "管理员" %}</span>';
+            }
+            html += '</div>';
+        });
+        html += '</div></div>';
+        bc.innerHTML = html;
+    }
+
+    function loadMyOrgs() {
+        if (_orgTreeLoaded) return;
+        _orgTreeLoaded = true;
+        var container = document.getElementById('myOrgContainer');
+        var csrf = getCSRF();
+
+        // 并行加载：组织树 + 我的组织
+        Promise.all([
+            fetch('/api/my/organization/', { headers: { 'X-CSRFToken': csrf } }).then(function(r) { return r.json(); }),
+            fetch('/api/user/my-orgs/', { headers: { 'X-CSRFToken': csrf } }).then(function(r) { return r.json(); })
+        ]).then(function(results) {
+            var treeData = results[0];
+            var myOrgsData = results[1];
+            if (!treeData.status || !treeData.tree || !treeData.tree.length) {
+                document.getElementById('orgBreadcrumb').innerHTML = '';
+                container.innerHTML = '<div class="ispace-empty-state" style="padding:var(--ispace-space-8)"><svg class="ispace-empty-state-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm3 1h2v2H7V5zm0 4h2v2H7V9zm4-4h2v2h-2V5zm0 4h2v2h-2V9z" clip-rule="evenodd"/></svg><h3 class="ispace-empty-state-title">{% trans "暂无组织架构" %}</h3><p class="ispace-empty-state-description">{% trans "组织架构尚未建立，请联系管理员。" %}</p></div>';
+                return;
+            }
+            // 构建用户组织ID查找表 + auto-expand 祖先ID集合
+            _myOrgIds = {};
+            _myPrimaryOrgId = null;
+            var _expandIds = {};
+            var _myOrgsList = [];
+            var isSuperuser = container.getAttribute('data-is-superuser') === 'true';
+            if (myOrgsData.status && myOrgsData.orgs) {
+                _myOrgsList = myOrgsData.orgs;
+                myOrgsData.orgs.forEach(function(o) {
+                    _myOrgIds[o.id] = { is_primary: !!o.is_primary, is_admin: !!o.is_admin };
+                    if (o.is_primary) _myPrimaryOrgId = o.id;
+                    if (o.path) {
+                        o.path.replace(/\/(\d+)/g, function(m, id) {
+                            _expandIds[parseInt(id)] = true;
+                        });
+                    }
+                });
+            }
+            // 渲染面包屑
+            renderOrgBreadcrumb(_myOrgsList);
+            // 普通用户未加入任何组织 → 不显示组织架构树
+            if (!_myOrgsList.length && !isSuperuser) {
+                container.innerHTML = '<div class="ispace-empty-state" style="padding:var(--ispace-space-8)"><svg class="ispace-empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><h3 class="ispace-empty-state-title">{% trans "暂无组织归属" %}</h3><p class="ispace-empty-state-description">{% trans "你尚未加入任何组织部门，请联系管理员处理。" %}</p></div>';
+                return;
+            }
+            // 渲染树
+            var html = '<div class="ispace-org-tab-tree">';
+            treeData.tree.forEach(function(node) {
+                html += buildOrgTabTreeHTML(node, 0, _expandIds);
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }).catch(function() {
+            container.innerHTML = '<p style="color:#E74C3C">{% trans "加载失败" %}</p>';
+        });
+    }
+
+    function buildOrgTabTreeHTML(node, level, expandIds) {
+        var hasChildren = node.children && node.children.length > 0;
+        var isMyOrg = _myOrgIds[node.id];
+        var isPrimary = node.id === _myPrimaryOrgId;
+        var isAdmin = node.is_admin;
+        var shouldExpand = expandIds[node.id];
+
+        var nodeNameEscaped = escapeHTML(node.name).replace(/'/g, "\\'");
+        var html = '';
+        html += '<div class="ispace-org-tab-row' + (isMyOrg ? ' my-org' : '') + '" style="padding-left:' + (12 + level * 20) + 'px" data-node-id="' + node.id + '" data-node-name="' + escapeHTML(node.name) + '" data-parent-id="' + (node.parent_id || '') + '" data-is-admin="' + (isAdmin ? '1' : '0') + '"' + (isAdmin ? ' oncontextmenu="omNodeShowContextMenu(event, this)"' : '') + '>';
+        // 展开/折叠箭头
+        html += '<span class="ispace-org-tab-toggle' + (hasChildren ? (shouldExpand ? ' expanded' : '') : ' leaf') + '" data-node-id="' + node.id + '" onclick="orgToggleNode(event, ' + node.id + ', this)">&#9654;</span>';
+        // 图标
+        if (hasChildren) {
+            html += '<span class="ispace-org-tab-icon ispace-branch"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="9" y1="6" x2="9" y2="10"/><line x1="15" y1="6" x2="15" y2="10"/><line x1="9" y1="14" x2="9" y2="18"/><line x1="15" y1="14" x2="15" y2="18"/></svg></span>';
+        } else {
+            html += '<span class="ispace-org-tab-icon ispace-team"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="3"/><path d="M3 21v-1a5 5 0 015-5h2a5 5 0 015 5v1"/><circle cx="18" cy="6" r="2"/><path d="M15 20v-1a4 4 0 00-3-3.87"/><path d="M21 20v-1a4 4 0 00-2-3.77"/></svg></span>';
+        }
+        // 名称
+        html += '<span class="ispace-org-tab-name">' + escapeHTML(node.name) + '</span>';
+        // 成员数
+        html += '<span class="ispace-org-tab-meta">(' + (node.member_count || 0) + '人)</span>';
+        // 主属徽章
+        if (isPrimary) {
+            html += ' <span class="ispace-org-tab-badge ispace-badge-primary">{% trans "主属" %}</span>';
+        }
+        // 管理员徽章
+        if (isAdmin) {
+            html += ' <span class="ispace-org-tab-badge ispace-badge-admin">{% trans "管理员" %}</span>';
+        }
+        // "创建子节点"和"管理成员"按钮
+        if (isAdmin) {
+            html += '<button class="ispace-org-tab-action-btn" onclick="event.stopPropagation();openOrgNodeForm(\'create\', ' + node.id + ', \'' + nodeNameEscaped + '\')" title="{% trans '创建子节点' %}">+</button>';
+            html += '<button class="ispace-org-tab-action-btn" style="margin-left:4px" onclick="event.stopPropagation();openOrgMembers(' + node.id + ', \'' + nodeNameEscaped + '\')">{% trans "管理成员" %}</button>';
+        }
+        html += '</div>';
+
+        // 子节点
+        if (hasChildren) {
+            var childrenHtml = '';
+            node.children.forEach(function(child) {
+                childrenHtml += buildOrgTabTreeHTML(child, level + 1, expandIds);
+            });
+            html += '<div class="ispace-org-tab-children' + (shouldExpand ? '' : ' collapsed') + '" data-parent-id="' + node.id + '" style="max-height:' + (shouldExpand ? '9999px' : '0') + '">';
+            html += childrenHtml;
+            html += '</div>';
+        }
+        return html;
+    }
+
+    window.orgToggleNode = function(e, nodeId, toggleEl) {
+        e.stopPropagation();
+        var children = document.querySelector('.ispace-org-tab-children[data-parent-id="' + nodeId + '"]');
+        if (!children) return;
+        var isCollapsed = children.classList.contains('collapsed');
+        if (isCollapsed) {
+            children.classList.remove('collapsed');
+            children.style.maxHeight = '9999px';
+            toggleEl.classList.add('expanded');
+        } else {
+            children.classList.add('collapsed');
+            children.style.maxHeight = '0';
+            toggleEl.classList.remove('expanded');
+        }
+    }
+
+    // ========== 节点 CRUD ==========
+    window.openOrgNodeForm = function(mode, nodeId, nodeName) {
+        var overlay = document.getElementById('orgNodeFormOverlay');
+        var title = document.getElementById('orgNodeFormTitle');
+        var submitBtn = document.getElementById('orgNodeFormSubmitBtn');
+        document.getElementById('orgNodeFormId').value = '';
+        document.getElementById('orgNodeParentId').value = '';
+        document.getElementById('orgNodeFormName').value = '';
+        document.getElementById('orgNodeFormMsg').textContent = '';
+
+        if (mode === 'rename') {
+            title.textContent = '{% trans "重命名节点" %}';
+            submitBtn.textContent = '{% trans "保存" %}';
+            document.getElementById('orgNodeFormId').value = nodeId;
+            document.getElementById('orgNodeFormName').value = nodeName || '';
+        } else {
+            title.textContent = '{% trans "创建子节点" %}';
+            submitBtn.textContent = '{% trans "创建" %}';
+            document.getElementById('orgNodeParentId').value = nodeId;
+        }
+        overlay.classList.add('active');
+        document.getElementById('orgNodeFormName').focus();
+    };
+    window.closeOrgNodeForm = function() {
+        document.getElementById('orgNodeFormOverlay').classList.remove('active');
+    };
+    window.submitOrgNodeForm = function() {
+        var editId = document.getElementById('orgNodeFormId').value;
+        var parentId = document.getElementById('orgNodeParentId').value;
+        var name = document.getElementById('orgNodeFormName').value.trim();
+        var msgEl = document.getElementById('orgNodeFormMsg');
+        if (!name) { msgEl.textContent = '{% trans "请输入节点名称" %}'; return; }
+        var btn = document.getElementById('orgNodeFormSubmitBtn');
+        btn.disabled = true;
+        var csrf = getCSRF();
+        var url, body;
+        if (editId) {
+            url = '/api/org/nodes/' + editId + '/rename/';
+            body = JSON.stringify({ name: name });
+        } else {
+            url = '/api/org/nodes/create/';
+            body = JSON.stringify({ name: name, parent_id: parentId || null });
+        }
+        fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+            body: body
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            btn.disabled = false;
+            if (data.status) {
+                closeOrgNodeForm();
+                showToast(editId ? '{% trans "节点已重命名" %}' : '{% trans "子节点创建成功" %}');
+                _orgTreeLoaded = false;
+                loadMyOrgs();
+            } else {
+                msgEl.textContent = data.message || '{% trans "操作失败" %}';
+            }
+        })
+        .catch(function() { btn.disabled = false; msgEl.textContent = '{% trans "网络错误" %}'; });
+    };
+
+    // ========== 树节点右键菜单 ==========
+    window.omNodeShowContextMenu = function(e, rowEl) {
+        e.preventDefault();
+        e.stopPropagation();
+        var isAdmin = rowEl.getAttribute('data-is-admin') === '1';
+        if (!isAdmin) return;
+        _omNodeCtxNodeId = parseInt(rowEl.getAttribute('data-node-id'));
+        _omNodeCtxNodeName = rowEl.getAttribute('data-node-name') || '';
+        _omNodeCtxParentId = rowEl.getAttribute('data-parent-id') || null;
+        var menu = document.getElementById('omNodeContextMenu');
+        menu.style.display = 'block';
+        var x = e.clientX, y = e.clientY;
+        var vw = window.innerWidth, vh = window.innerHeight;
+        var mw = menu.offsetWidth || 160, mh = menu.offsetHeight || 100;
+        if (x + mw > vw) x = vw - mw - 8;
+        if (y + mh > vh) y = vh - mh - 8;
+        menu.style.left = x + 'px';
+        menu.style.top = y + 'px';
+        setTimeout(function() {
+            document.addEventListener('click', omNodeHideContextMenu, { once: true });
+        }, 0);
+    };
+    window.omNodeHideContextMenu = function() {
+        document.getElementById('omNodeContextMenu').style.display = 'none';
+        _omNodeCtxNodeId = null;
+    };
+    window.omNodeCreateFromCtx = function() {
+        if (!_omNodeCtxNodeId) return;
+        openOrgNodeForm('create', _omNodeCtxNodeId, _omNodeCtxNodeName);
+        omNodeHideContextMenu();
+    };
+    window.omNodeRenameFromCtx = function() {
+        if (!_omNodeCtxNodeId) return;
+        openOrgNodeForm('rename', _omNodeCtxNodeId, _omNodeCtxNodeName);
+        omNodeHideContextMenu();
+    };
+    window.omNodeDeleteFromCtx = function() {
+        if (!_omNodeCtxNodeId) return;
+        var nodeName = _omNodeCtxNodeName;
+        var nodeId = _omNodeCtxNodeId;
+        omNodeHideContextMenu();
+        confirm('{% trans "确定要删除节点" %} "' + nodeName + '"？{% trans "子节点将迁移至上级节点。" %}', { variant: 'danger', confirmText: '{% trans "确认删除" %}', cancelText: '{% trans "取消" %}' }).then(function(ok) {
+            if (!ok) return;
+            var csrf = getCSRF();
+            fetch('/api/org/nodes/' + nodeId + '/delete/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                body: JSON.stringify({ migrate_children: true })
+            }).then(function(r) { return r.json(); }).then(function(data) {
+                if (data.status) {
+                    showToast('{% trans "节点已删除" %}');
+                    _orgTreeLoaded = false;
+                    loadMyOrgs();
+                } else {
+                    showToast(data.message || '{% trans "删除失败" %}', 'error');
+                }
+            });
+        });
+    };
+
+    // ========== 组织成员管理 ==========
+    window.openOrgMembers = function(nodeId, nodeName) {
+        _omCurrentNodeId = nodeId;
+        _omCurrentNodeName = nodeName;
+        var overlay = document.getElementById('orgMembersOverlay');
+        document.getElementById('orgMembersTitle').textContent = nodeName + ' - {% trans "成员管理" %}';
+        document.getElementById('omMemberList').innerHTML = '<p style="color:var(--ispace-color-text-tertiary);font-size:var(--ispace-font-sm)">{% trans "加载中..." %}</p>';
+        document.getElementById('omMemberCount').textContent = '0';
+        document.getElementById('omMsg').textContent = '';
+        document.getElementById('omUserSearch').value = '';
+        document.getElementById('omUserResults').classList.remove('active');
+        document.getElementById('omAddMemberWrap').style.display = '';
+        document.getElementById('omMemberContextMenu').style.display = 'none';
+        overlay.classList.add('active');
+        omLoadMembers();
+    }
+
+    window.closeOrgMembers = function() {
+        document.getElementById('orgMembersOverlay').classList.remove('active');
+        document.getElementById('omMemberContextMenu').style.display = 'none';
+        _omCurrentNodeId = null;
+        _omCurrentNodeName = '';
+        _omCurrentNodeAdminId = null;
+        _omMemberCtxMemberId = null;
+        // 重新加载树以刷新成员计数
+        _orgTreeLoaded = false;
+        loadMyOrgs();
+    }
+
+    function omLoadMembers() {
+        if (!_omCurrentNodeId) return;
+        var csrf = getCSRF();
+        fetch('/api/org/nodes/' + _omCurrentNodeId + '/', {
+            headers: { 'X-CSRFToken': csrf }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.status) {
+                document.getElementById('omMemberList').innerHTML = '<p style="color:#E74C3C">' + escapeHTML(data.message || '{% trans "加载失败" %}') + '</p>';
+                return;
+            }
+            var nodeData = data.node;
+            _omCurrentNodeAdminId = nodeData ? nodeData.admin_id : null;
+            var members = data.members;
+            document.getElementById('omMemberCount').textContent = members.length;
+            if (!members.length) {
+                document.getElementById('omMemberList').innerHTML = '<p style="color:var(--ispace-color-text-tertiary);font-size:var(--ispace-font-sm)">{% trans "暂无成员" %}</p>';
+                return;
+            }
+            var html = '';
+            members.forEach(function(m) {
+                var initial = (m.display_name || m.username).charAt(0).toUpperCase();
+                var avatarColor = gmAvatarColor(m.display_name || m.username, m.id);
+                var orgPathHtml = m.org_path ? '<div class="ispace-om-member-org">' + escapeHTML(m.org_path) + '</div>' : '';
+                var memberNameEscaped = escapeHTML(m.display_name || m.username).replace(/'/g, "\\'");
+                html += '<div class="ispace-gm-member-item" data-user-id="' + m.id + '" data-member-id="' + m.id + '" oncontextmenu="omMemberShowContextMenu(event,' + m.id + ',' + (m.is_primary ? 'true' : 'false') + ',\'' + memberNameEscaped + '\')">';
+                html += '<div class="ispace-gm-member-info">';
+                if (m.avatar_url) {
+                    html += '<img class="ispace-om-member-avatar" src="' + escapeHTML(m.avatar_url) + '" alt="">';
+                } else {
+                    html += '<div class="ispace-om-member-avatar" style="background:' + avatarColor + '">' + initial + '</div>';
+                }
+                html += '<div><span class="ispace-gm-member-name">' + escapeHTML(m.display_name || m.username) + '</span>';
+                html += orgPathHtml;
+                html += '</div>';
+                // 徽章
+                if (m.is_primary) {
+                    html += ' <span class="ispace-gm-member-badge-owner">{% trans "主属" %}</span>';
+                }
+                if (_omCurrentNodeAdminId === m.id) {
+                    html += ' <span class="ispace-gm-member-badge-admin">{% trans "管理员" %}</span>';
+                }
+                html += '</div>';
+                // 更多操作按钮 (仅当前节点管理员可见)
+                html += '<button class="ispace-gm-member-more" onclick="event.stopPropagation();omMemberShowContextMenu(event,' + m.id + ',' + (m.is_primary ? 'true' : 'false') + ',\'' + memberNameEscaped + '\')" title="{% trans '更多操作' %}">';
+                html += '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="3" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="8" cy="13" r="1.5"/></svg>';
+                html += '</button>';
+                html += '</div>';
+            });
+            document.getElementById('omMemberList').innerHTML = html;
+        })
+        .catch(function() {
+            document.getElementById('omMemberList').innerHTML = '<p style="color:#E74C3C">{% trans "加载失败" %}</p>';
+        });
+    }
+
+    var _omSearchTimer = null;
+    window.omSearchUsers = function() {
+        var q = document.getElementById('omUserSearch').value.trim();
+        var dropdown = document.getElementById('omUserResults');
+        var input = document.getElementById('omUserSearch');
+        clearTimeout(_omSearchTimer);
+        if (!q || q.length < 1) {
+            dropdown.innerHTML = '<div class="ispace-gm-search-item" style="color:var(--ispace-color-text-tertiary)">{% trans "输入关键字搜索..." %}</div>';
+            dropdown.classList.add('active');
+            omPositionDropdown(input, dropdown);
+            return;
+        }
+        _omSearchTimer = setTimeout(function() {
+            var csrf = getCSRF();
+            fetch('/api/users/search/?q=' + encodeURIComponent(q), {
+                headers: { 'X-CSRFToken': csrf }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!data.results || !data.results.length) {
+                    dropdown.innerHTML = '<div class="ispace-gm-search-item" style="color:var(--ispace-color-text-tertiary)">{% trans "未找到用户" %}</div>';
+                    dropdown.classList.add('active');
+                    omPositionDropdown(input, dropdown);
+                    return;
+                }
+                var html = '';
+                data.results.forEach(function(u) {
+                    var initial = (u.display_name || u.username).charAt(0).toUpperCase();
+                    var avatarColor = gmAvatarColor(u.display_name || u.username, u.id);
+                    html += '<div class="ispace-gm-search-item" onclick="omAddMember(' + u.id + ', \'' + escapeHTML(u.display_name || u.username).replace(/'/g, "\\'") + '\')">';
+                    if (u.avatar_url) {
+                        html += '<img class="ispace-om-member-avatar" src="' + escapeHTML(u.avatar_url) + '" alt="" style="width:24px;height:24px;">';
+                    } else {
+                        html += '<div class="ispace-om-member-avatar" style="background:' + avatarColor + ';width:24px;height:24px;font-size:11px;">' + initial + '</div>';
+                    }
+                    html += '<span>' + escapeHTML(u.display_name || u.username) + '</span>';
+                    html += '</div>';
+                });
+                dropdown.innerHTML = html;
+                dropdown.classList.add('active');
+                omPositionDropdown(input, dropdown);
+            })
+            .catch(function() {
+                dropdown.innerHTML = '<div class="ispace-gm-search-item" style="color:#E74C3C">{% trans "搜索失败" %}</div>';
+                dropdown.classList.add('active');
+                omPositionDropdown(input, dropdown);
+            });
+        }, 300);
+    }
+
+    function omPositionDropdown(input, dropdown) {
+        if (!input || !dropdown) return;
+        var rect = input.getBoundingClientRect();
+        dropdown.style.left = rect.left + 'px';
+        dropdown.style.top = (rect.bottom + 4) + 'px';
+        dropdown.style.width = rect.width + 'px';
+    }
+
+    // Reposition dropdowns on scroll/resize
+    window.addEventListener('scroll', function() {
+        ['omUserResults','gmUserResults'].forEach(function(id) {
+            var dd = document.getElementById(id);
+            if (dd && dd.classList.contains('active')) {
+                var inpId = id === 'omUserResults' ? 'omUserSearch' : 'gmUserSearch';
+                var inp = document.getElementById(inpId);
+                if (inp) {
+                    var rect = inp.getBoundingClientRect();
+                    dd.style.left = rect.left + 'px';
+                    dd.style.top = (rect.bottom + 4) + 'px';
+                    dd.style.width = rect.width + 'px';
+                }
+            }
+        });
+    }, true);
+
+    window.omAddMember = function(uid, uname) {
+        if (!_omCurrentNodeId) return;
+        confirm('{% trans "确认将用户" %} ' + uname + ' {% trans "添加到当前部门？" %}', { variant: 'warning' }).then(function(ok) {
+            if (!ok) return;
+            var csrf = getCSRF();
+            fetch('/api/org/nodes/' + _omCurrentNodeId + '/members/add/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_ids: [uid] })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                document.getElementById('omMsg').textContent = data.message || '';
+                document.getElementById('omMsg').style.color = data.status ? 'var(--ispace-color-success,#27AE60)' : '#E74C3C';
+                document.getElementById('omUserSearch').value = '';
+                document.getElementById('omUserResults').classList.remove('active');
+                if (data.status) omLoadMembers();
+            })
+            .catch(function() {
+                document.getElementById('omMsg').textContent = '{% trans "操作失败" %}';
+                document.getElementById('omMsg').style.color = '#E74C3C';
+            });
+        });
+    }
+
+    window.omRemoveMember = function(uid, uname) {
+        if (!_omCurrentNodeId) return;
+        confirm('{% trans "确认将用户" %} ' + uname + ' {% trans "从当前部门移除？" %}', { variant: 'warning' }).then(function(ok) {
+            if (!ok) return;
+            var csrf = getCSRF();
+            fetch('/api/org/nodes/' + _omCurrentNodeId + '/members/remove/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: uid })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                document.getElementById('omMsg').textContent = data.message || '';
+                document.getElementById('omMsg').style.color = data.status ? 'var(--ispace-color-success,#27AE60)' : '#E74C3C';
+                if (data.status) omLoadMembers();
+            })
+            .catch(function() {
+                document.getElementById('omMsg').textContent = '{% trans "操作失败" %}';
+                document.getElementById('omMsg').style.color = '#E74C3C';
+            });
+        });
+    }
+
+    // ========== 成员右键菜单 ==========
+    window.omMemberShowContextMenu = function(e, memberId, isPrimary, memberName) {
+        e.preventDefault();
+        e.stopPropagation();
+        _omMemberCtxMemberId = memberId;
+        _omMemberCtxMemberName = memberName;
+        _omMemberCtxIsPrimary = isPrimary;
+        var isAdmin = _omCurrentNodeAdminId === memberId;
+        var menu = document.getElementById('omMemberContextMenu');
+        // 根据状态调整菜单项
+        document.getElementById('omCtxSetPrimary').style.display = isPrimary ? 'none' : '';
+        document.getElementById('omCtxSetAdminText').textContent = isAdmin ? '{% trans "取消管理员" %}' : '{% trans "设为管理员" %}';
+        menu.style.display = 'block';
+        var x = e.clientX, y = e.clientY;
+        var vw = window.innerWidth, vh = window.innerHeight;
+        var mw = menu.offsetWidth || 160, mh = menu.offsetHeight || 100;
+        if (x + mw > vw) x = vw - mw - 8;
+        if (y + mh > vh) y = vh - mh - 8;
+        menu.style.left = x + 'px';
+        menu.style.top = y + 'px';
+        setTimeout(function() {
+            document.addEventListener('click', omMemberHideContextMenu, { once: true });
+        }, 0);
+    };
+    window.omMemberHideContextMenu = function() {
+        document.getElementById('omMemberContextMenu').style.display = 'none';
+        _omMemberCtxMemberId = null;
+    };
+    window.omMemberSetPrimaryFromCtx = function() {
+        if (!_omMemberCtxMemberId || !_omCurrentNodeId) return;
+        var uid = _omMemberCtxMemberId;
+        omMemberHideContextMenu();
+        var csrf = getCSRF();
+        fetch('/api/org/nodes/' + _omCurrentNodeId + '/members/primary/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+            body: JSON.stringify({ user_id: uid })
+        }).then(function(r) { return r.json(); }).then(function(d) {
+            if (d.status) {
+                showToast('{% trans "已设置为主属部门" %}');
+                omLoadMembers();
+                _orgTreeLoaded = false;
+                loadMyOrgs();
+            } else {
+                showToast(d.message || '{% trans "操作失败" %}', 'error');
+            }
+        });
+    };
+    window.omMemberSetAdminFromCtx = function() {
+        if (!_omMemberCtxMemberId || !_omCurrentNodeId) return;
+        var uid = _omMemberCtxMemberId;
+        var isAdmin = _omCurrentNodeAdminId === uid;
+        omMemberHideContextMenu();
+        var csrf = getCSRF();
+        if (isAdmin) {
+            // 撤销管理员
+            fetch('/api/org/nodes/' + _omCurrentNodeId + '/admin/revoke/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                body: JSON.stringify({})
+            }).then(function(r) { return r.json(); }).then(function(d) {
+                if (d.status) {
+                    showToast('{% trans "已撤销部门管理员" %}');
+                    omLoadMembers();
+                    _orgTreeLoaded = false;
+                    loadMyOrgs();
+                } else {
+                    showToast(d.message || '{% trans "操作失败" %}', 'error');
+                }
+            });
+        } else {
+            // 任命管理员
+            fetch('/api/org/nodes/' + _omCurrentNodeId + '/admin/appoint/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                body: JSON.stringify({ user_id: uid })
+            }).then(function(r) { return r.json(); }).then(function(d) {
+                if (d.status) {
+                    showToast('{% trans "已任命部门管理员" %}');
+                    omLoadMembers();
+                    _orgTreeLoaded = false;
+                    loadMyOrgs();
+                } else {
+                    showToast(d.message || '{% trans "操作失败" %}', 'error');
+                }
+            });
+        }
+    };
+    window.omMemberRemoveFromCtx = function() {
+        if (!_omMemberCtxMemberId) return;
+        var uid = _omMemberCtxMemberId;
+        var uname = _omMemberCtxMemberName;
+        omMemberHideContextMenu();
+        omRemoveMember(uid, uname);
+    };
+
+    // ========== 浏览记录（使用共享模块）==========
+    var historyLoaded = false;
+    function loadHistory() {
+        if (historyLoaded) return;
+        historyLoaded = true;
+        var container = document.getElementById('historyContainer');
+        if (!container) return;
+
+        // 文档图标
+        var docIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>';
+
+        RecentViews.init({
+            container: container,
+            listClassName: 'ispace-history-list',
+            loadingText: '{% trans "加载中..." %}',
+            endText: '',
+            emptyHTML: '<div class="ispace-empty-state" style="padding:var(--ispace-space-8)"><svg class="ispace-empty-state-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg><h3 class="ispace-empty-state-title">{% trans "暂无浏览记录" %}</h3><p class="ispace-empty-state-description">{% trans "浏览文档后将在此处显示。" %}</p></div>',
+            renderItem: function(item) {
+                if (item.is_deleted) {
+                    var div = document.createElement('div');
+                    div.className = 'home-doc-card home-doc-card-deleted';
+                    div.innerHTML = '<div class="home-doc-card-icon">' + docIcon + '</div>'
+                        + '<div class="home-doc-card-body">'
+                        + '<span class="home-doc-card-title">' + escapeHTML(item.name) + '</span>'
+                        + '<span class="home-doc-card-meta">' + escapeHTML(item.modify_time ? item.modify_time.substring(0, 16) : '') + '</span>'
+                        + '</div>'
+                        + '<span class="home-doc-card-deleted-badge">{% trans "已删除" %}</span>';
+                    return div;
+                }
+                var a = document.createElement('a');
+                a.href = item.url;
+                a.className = 'home-doc-card';
+                a.setAttribute('data-spa', '');
+                a.innerHTML = '<div class="home-doc-card-icon">' + docIcon + '</div>'
+                    + '<div class="home-doc-card-body">'
+                    + '<span class="home-doc-card-title">' + escapeHTML(item.name) + '</span>'
+                    + '<span class="home-doc-card-meta">'
+                    + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> '
+                    + '<span data-user-id="' + (item.user_id || '') + '">' + escapeHTML(item.user_name) + '</span>'
+                    + ' <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> '
+                    + escapeHTML(item.modify_time.substring(0, 16))
+                    + '</span></div>';
+                return a;
+            }
+        });
+    }
+
+    // ========== 我的文档 ==========
+    var myDocsPage = 1, myDocsPages = 1, myDocsChecked = {}, myDocsLoaded = false, myDocsFetchFn = null;
+    function loadMyDocs() {
+        if (myDocsLoaded) return;
+        myDocsLoaded = true;
+        var container = document.getElementById('myDocsContainer');
+        var countEl = document.getElementById('myDocsCount');
+        var paginationEl = document.getElementById('myDocsPagination');
+        var csrf = getCSRF();
+
+        function fetchDocs(page) {
+            myDocsPage = page;
+            var kw = document.getElementById('myDocsSearch').value.trim();
+            var status = document.querySelector('#myDocsStatusFilter .ispace-toggle-tab.active').getAttribute('data-status');
+            container.innerHTML = '<p style="text-align:center;padding:24px;color:var(--ispace-color-text-tertiary)"><span class="ispace-spinner"></span></p>';
+
+            fetch('{% url "manage_doc" %}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': csrf },
+                body: new URLSearchParams({ kw: kw, status: status, page: String(page), limit: '10' })
+            }).then(function(r) { return r.json(); }).then(function(data) {
+                if (data.code !== 0) { container.innerHTML = '<p style="text-align:center;padding:24px;color:#E74C3C">{% trans "加载失败" %}</p>'; return; }
+                countEl.textContent = '{% trans "共" %} ' + data.count + ' {% trans "篇文档" %}';
+                myDocsPages = Math.ceil(data.count / 10);
+                renderPagination(paginationEl, myDocsPage, myDocsPages, fetchDocs);
+                renderDocTable(container, data.data);
+            }).catch(function() { container.innerHTML = '<p style="text-align:center;padding:24px;color:#E74C3C">{% trans "加载失败" %}</p>'; });
+        }
+
+        // 搜索和筛选
+        document.getElementById('myDocsSearch').addEventListener('keyup', function(e) { if (e.key === 'Enter') { myDocsChecked = {}; fetchDocs(1); } });
+        document.getElementById('myDocsSearchBtn').addEventListener('click', function() { myDocsChecked = {}; fetchDocs(1); });
+        // 状态标签切换
+        document.querySelectorAll('#myDocsStatusFilter .ispace-toggle-tab').forEach(function(tab) {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('#myDocsStatusFilter .ispace-toggle-tab').forEach(function(t) { t.classList.remove('active'); });
+                this.classList.add('active');
+                myDocsChecked = {};
+                fetchDocs(1);
+            });
+        });
+        // 批量删除
+        document.getElementById('myDocsBatchDel').addEventListener('click', function() {
+            var ids = Object.keys(myDocsChecked).filter(function(k) { return myDocsChecked[k]; });
+            if (!ids.length) { showToast('{% trans "请先选择文档" %}', 'error'); return; }
+            confirmDialog('{% trans "删除文档" %}', '{% trans "确定要删除选中的文档？" %}', function() {
+                fetch('{% url "del_doc" %}', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ doc_id: ids.join(','), range: 'multi' })
+                }).then(function(r) { return r.json(); }).then(function(r) {
+                    if (r.status) { showToast('{% trans "删除成功" %}'); myDocsChecked = {}; fetchDocs(1); }
+                    else { showToast(r.data || '{% trans "删除失败" %}', 'error'); }
+                });
+            });
+        });
+
+        myDocsFetchFn = fetchDocs;
+        fetchDocs(1);
+    }
+
+    function renderDocTable(container, items) {
+        if (!items || !items.length) {
+            container.innerHTML = '<div class="ispace-empty-state" style="padding:var(--ispace-space-8)"><svg class="ispace-empty-state-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/></svg><h3 class="ispace-empty-state-title">{% trans "暂无文档" %}</h3><p class="ispace-empty-state-description">{% trans "当前没有符合条件的文档" %}</p></div>';
+            return;
+        }
+        var html = '<div class="ispace-table-wrap"><table class="ispace-table"><thead><tr><th style="width:36px"><input type="checkbox" id="myDocsSelectAll"></th><th>{% trans "文档名称" %}</th><th style="width:80px">{% trans "状态" %}</th><th style="width:150px">{% trans "最后编辑" %}</th><th style="width:120px">{% trans "操作" %}</th></tr></thead><tbody>';
+        items.forEach(function(d) {
+            var statusClass = d.status === 1 ? 'ispace-badge-success' : 'ispace-badge-warning';
+            var statusLabel = d.status === 1 ? '{% trans "已发布" %}' : '{% trans "草稿" %}';
+            html += '<tr>'
+                + '<td><input type="checkbox" class="myDocsCb" value="' + d.id + '"></td>'
+                + '<td><a href="' + (d.status === 1 ? '/pages/' + d.project_id + '/' + d.id + '/' : '{% url "modify_doc" 0 %}'.replace('0', d.id)) + '" target="_blank"><span class="ispace-cell-name">' + escapeHTML(d.name) + '</span></a></td>'
+                + '<td><span class="ispace-badge ' + statusClass + '">' + statusLabel + '</span></td>'
+                + '<td class="ispace-cell-nowrap">' + fmtTime(d.modify_time) + '</td>'
+                + '<td><a href="{% url "modify_doc" 0 %}'.replace('0', d.id) + '" target="_blank" class="ispace-btn ispace-btn-ghost ispace-btn-sm">{% trans "编辑" %}</a>'
+                + '<button class="ispace-btn ispace-btn-sm ispace-btn-text ispace-text-danger" onclick="myDocsDelSingle(' + d.id + ')">{% trans "删除" %}</button></td>'
+                + '</tr>';
+        });
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+        // 全选
+        var selectAllCb = document.getElementById('myDocsSelectAll');
+        if (selectAllCb) selectAllCb.addEventListener('change', function() {
+            var checked = this.checked;
+            document.querySelectorAll('.myDocsCb').forEach(function(cb) { cb.checked = checked; myDocsChecked[cb.value] = checked; });
+        });
+        // 复选框
+        document.querySelectorAll('.myDocsCb').forEach(function(cb) {
+            cb.addEventListener('change', function() { myDocsChecked[this.value] = this.checked;
+                var allOn = document.querySelectorAll('.myDocsCb:checked').length === document.querySelectorAll('.myDocsCb').length;
+                if (selectAllCb) selectAllCb.checked = allOn;
+            });
+        });
+    }
+
+    window.myDocsDelSingle = function(docId) {
+        confirmDialog('{% trans "删除文档" %}', '{% trans "确定要删除这篇文档？" %}', function() {
+            fetch('{% url "del_doc" %}', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCSRF(), 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ doc_id: String(docId) })
+            }).then(function(r) { return r.json(); }).then(function(r) {
+                if (r.status) { showToast('{% trans "删除成功" %}'); if (myDocsFetchFn) myDocsFetchFn(myDocsPage); }
+                else { showToast(r.data || '{% trans "删除失败" %}', 'error'); }
+            });
+        });
+    };
+
+    // ========== 文档模板 ==========
+    var myTemplatesPage = 1, myTemplatesPages = 1, myTemplatesLoaded = false, myTemplatesFetchFn = null;
+    function loadMyTemplates() {
+        if (myTemplatesLoaded) return;
+        myTemplatesLoaded = true;
+        var container = document.getElementById('myTemplatesContainer');
+        var countEl = document.getElementById('myTemplatesCount');
+        var paginationEl = document.getElementById('myTemplatesPagination');
+        var csrf = getCSRF();
+
+        function fetchTemplates(page) {
+            myTemplatesPage = page;
+            var kw = document.getElementById('myTemplatesSearch').value.trim();
+            container.innerHTML = '<p style="text-align:center;padding:24px;color:var(--ispace-color-text-tertiary)"><span class="ispace-spinner"></span></p>';
+
+            fetch('/api/user/doctemp-list/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': csrf },
+                body: new URLSearchParams({ kw: kw, page: String(page), page_size: '10' })
+            }).then(function(r) { return r.json(); }).then(function(data) {
+                if (!data.status) { container.innerHTML = '<p style="text-align:center;padding:24px;color:#E74C3C">{% trans "加载失败" %}</p>'; return; }
+                countEl.textContent = '{% trans "共" %} ' + data.total + ' {% trans "个模板" %}';
+                myTemplatesPages = Math.ceil(data.total / 10);
+                renderPagination(paginationEl, myTemplatesPage, myTemplatesPages, fetchTemplates);
+                renderDoctempList(container, data.items);
+            }).catch(function() { container.innerHTML = '<p style="text-align:center;padding:24px;color:#E74C3C">{% trans "加载失败" %}</p>'; });
+        }
+
+        document.getElementById('myTemplatesSearch').addEventListener('keyup', function(e) { if (e.key === 'Enter') fetchTemplates(1); });
+        document.getElementById('myTemplatesSearchBtn').addEventListener('click', function() { fetchTemplates(1); });
+        myTemplatesFetchFn = fetchTemplates;
+        fetchTemplates(1);
+    }
+
+    function renderDoctempList(container, items) {
+        if (!items || !items.length) {
+            container.innerHTML = '<div class="ispace-empty-state" style="padding:var(--ispace-space-8)"><svg class="ispace-empty-state-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 4a1 1 0 011-1h4a1 1 0 010 2H6.414l2.293 2.293a1 1 0 01-1.414 1.414L5 6.414V8a1 1 0 01-2 0V4zm9 1a1 1 0 010-2h4a1 1 0 011 1v4a1 1 0 01-2 0V5.414l-2.293 2.293a1 1 0 11-1.414-1.414L13.586 4H12zm-9 7a1 1 0 112 0v1.586l2.293-2.293a1 1 0 111.414 1.414L6.414 14H8a1 1 0 110 2H4a1 1 0 01-1-1v-4zm13-1a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 110-2h1.586l-2.293-2.293a1 1 0 111.414-1.414L16 13.586V12a1 1 0 011-1z" clip-rule="evenodd"/></svg><h3 class="ispace-empty-state-title">{% trans "暂无文档模板" %}</h3><p class="ispace-empty-state-description">{% trans "还没有创建任何文档模板" %}</p></div>';
+            return;
+        }
+        var iconSvg = '<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>';
+        var html = '<div class="ispace-doctemp-list">';
+        items.forEach(function(t) {
+            html += '<div class="ispace-doctemp-item">'
+                + '<div class="ispace-doctemp-item-icon">' + iconSvg + '</div>'
+                + '<div class="ispace-doctemp-item-content">'
+                + '<div class="ispace-doctemp-item-name">' + escapeHTML(t.name) + '</div>'
+                + '<div class="ispace-doctemp-item-preview">' + escapeHTML(t.content.replace(/<[^>]+>/g,'').substring(0, 120)) + '</div>'
+                + '<div class="ispace-doctemp-item-meta">' + t.modify_time + '</div>'
+                + '</div>'
+                + '<div class="ispace-doctemp-item-actions">'
+                + '<button class="ispace-btn ispace-btn-ghost ispace-btn-sm" onclick="openEditDoctempForm(' + t.id + ', \'' + escapeHTML(t.name).replace(/'/g, "\\'") + '\')">{% trans "编辑" %}</button>'
+                + '<button class="ispace-btn ispace-btn-sm ispace-btn-text ispace-text-danger" onclick="myTemplatesDel(' + t.id + ')">{% trans "删除" %}</button>'
+                + '</div></div>';
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    window.myTemplatesDel = function(tempId) {
+        confirmDialog('{% trans "删除模板" %}', '{% trans "确定要删除这个文档模板？" %}', function() {
+            fetch('/api/user/doctemp-delete/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCSRF(), 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ doctemp_id: String(tempId) })
+            }).then(function(r) { return r.json(); }).then(function(r) {
+                if (r.status) { showToast(r.message); if (myTemplatesFetchFn) myTemplatesFetchFn(myTemplatesPage); }
+                else { showToast(r.message || '{% trans "删除失败" %}', 'error'); }
+            });
+        });
+    };
+
+    // Template form modal (挂载到window以支持onclick调用)
+    window.openCreateDoctempForm = function() {
+        document.getElementById('doctemp-form-title').textContent = '{% trans "新建文档模板" %}';
+        document.getElementById('doctemp-edit-id').value = '';
+        document.getElementById('doctemp-form-name').value = '';
+        document.getElementById('doctemp-form-content').value = '';
+        document.getElementById('doctemp-form-submit-btn').textContent = '{% trans "创建" %}';
+        document.getElementById('doctemp-form-modal').style.display = 'flex';
+        document.getElementById('doctemp-form-name').focus();
+    }
+    window.openEditDoctempForm = function(id, name) {
+        document.getElementById('doctemp-form-title').textContent = '{% trans "修改文档模板" %}';
+        document.getElementById('doctemp-edit-id').value = id;
+        document.getElementById('doctemp-form-name').value = name;
+        document.getElementById('doctemp-form-content').value = '';
+        document.getElementById('doctemp-form-submit-btn').textContent = '{% trans "保存修改" %}';
+        document.getElementById('doctemp-form-modal').style.display = 'flex';
+        document.getElementById('doctemp-form-name').focus();
+        // Fetch current content
+        var csrf = getCSRF();
+        fetch('/content-templates/get/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ doctemp_id: String(id) })
+        }).then(function(r) { return r.json(); }).then(function(data) {
+            if (data.status) document.getElementById('doctemp-form-content').value = data.data;
+        });
+    }
+    window.closeDoctempForm = function() {
+        document.getElementById('doctemp-form-modal').style.display = 'none';
+    }
+    window.submitDoctempForm = function() {
+        var id = document.getElementById('doctemp-edit-id').value;
+        var name = document.getElementById('doctemp-form-name').value.trim();
+        var content = document.getElementById('doctemp-form-content').value;
+        if (!name) { showToast('{% trans "请输入模板名称" %}', 'error'); return; }
+        var csrf = getCSRF();
+        var url = id ? '/modify_doctemp/' : '/content-templates/create/';
+        var body = new URLSearchParams({ name: name, content: content });
+        if (id) body.set('doctemp_id', id);
+        fetch(url, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body
+        }).then(function(r) { return r.json(); }).then(function(data) {
+            if (data.status) {
+                closeDoctempForm();
+                showToast(id ? '{% trans "修改成功" %}' : '{% trans "创建成功" %}');
+                myTemplatesLoaded = false;
+                loadMyTemplates();
+            } else {
+                showToast(data.data || '{% trans "操作失败" %}', 'error');
+            }
+        });
+    }
+
+    // ========== 收藏文档 ==========
+    var myCollectsPage = 1, myCollectsPages = 1, myCollectsChecked = {}, myCollectsLoaded = false, myCollectsFetchFn = null;
+    function loadMyCollects() {
+        if (myCollectsLoaded) return;
+        myCollectsLoaded = true;
+        var container = document.getElementById('myCollectsContainer');
+        var countEl = document.getElementById('myCollectsCount');
+        var paginationEl = document.getElementById('myCollectsPagination');
+        var csrf = getCSRF();
+
+        function fetchCollects(page) {
+            myCollectsPage = page;
+            var kw = document.getElementById('myCollectsSearch').value.trim();
+            container.innerHTML = '<p style="text-align:center;padding:24px;color:var(--ispace-color-text-tertiary)"><span class="ispace-spinner"></span></p>';
+
+            fetch('{% url "manage_collect" %}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': csrf },
+                body: new URLSearchParams({ kw: kw, page: String(page), limit: '10' })
+            }).then(function(r) { return r.json(); }).then(function(data) {
+                if (data.code !== 0) { container.innerHTML = '<p style="text-align:center;padding:24px;color:#E74C3C">{% trans "加载失败" %}</p>'; return; }
+                countEl.textContent = '{% trans "共" %} ' + data.count + ' {% trans "项收藏" %}';
+                myCollectsPages = Math.ceil(data.count / 10);
+                renderPagination(paginationEl, myCollectsPage, myCollectsPages, fetchCollects);
+                renderCollectTable(container, data.data);
+            }).catch(function() { container.innerHTML = '<p style="text-align:center;padding:24px;color:#E74C3C">{% trans "加载失败" %}</p>'; });
+        }
+
+        document.getElementById('myCollectsSearch').addEventListener('keyup', function(e) { if (e.key === 'Enter') { myCollectsChecked = {}; fetchCollects(1); } });
+        document.getElementById('myCollectsSearchBtn').addEventListener('click', function() { myCollectsChecked = {}; fetchCollects(1); });
+        document.getElementById('myCollectsBatchDel').addEventListener('click', function() {
+            var ids = Object.keys(myCollectsChecked).filter(function(k) { return myCollectsChecked[k]; });
+            if (!ids.length) { showToast('{% trans "请先选择收藏" %}', 'error'); return; }
+            confirmDialog('{% trans "取消收藏" %}', '{% trans "确定要取消这些收藏？" %}', function() {
+                fetch('{% url "manage_collect" %}', {
+                    method: 'DELETE',
+                    headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ collect_id: ids.join(','), range: 'multi' })
+                }).then(function(r) { return r.json(); }).then(function(r) {
+                    if (r.status) { showToast('{% trans "已取消收藏" %}'); myCollectsChecked = {}; fetchCollects(1); }
+                    else { showToast(r.data || '{% trans "操作失败" %}', 'error'); }
+                });
+            });
+        });
+
+        myCollectsFetchFn = fetchCollects;
+        fetchCollects(1);
+    }
+
+    function renderCollectTable(container, items) {
+        if (!items || !items.length) {
+            container.innerHTML = '<div class="ispace-empty-state" style="padding:var(--ispace-space-8)"><svg class="ispace-empty-state-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg><h3 class="ispace-empty-state-title">{% trans "暂无收藏" %}</h3><p class="ispace-empty-state-description">{% trans "您还没有收藏任何内容" %}</p></div>';
+            return;
+        }
+        var html = '<div class="ispace-table-wrap"><table class="ispace-table"><thead><tr><th style="width:36px"><input type="checkbox" id="myCollectsSelectAll"></th><th>{% trans "名称" %}</th><th style="width:160px">{% trans "收藏时间" %}</th><th style="width:100px">{% trans "操作" %}</th></tr></thead><tbody>';
+        items.forEach(function(c) {
+            var url = '/pages/' + (c.item_project_id || '') + '/' + c.item_id + '/';
+            html += '<tr>'
+                + '<td><input type="checkbox" class="myCollectsCb" value="' + c.id + '"></td>'
+                + '<td><a href="' + url + '" target="_blank"><span class="ispace-cell-name">' + escapeHTML(c.item_name) + '</span></a></td>'
+                + '<td class="ispace-cell-nowrap">' + fmtTime(c.create_time) + '</td>'
+                + '<td><button class="ispace-btn ispace-btn-sm ispace-btn-text ispace-text-danger" onclick="myCollectsDelSingle(' + c.id + ')">{% trans "取消收藏" %}</button></td>'
+                + '</tr>';
+        });
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+        var selectAllCb = document.getElementById('myCollectsSelectAll');
+        if (selectAllCb) selectAllCb.addEventListener('change', function() {
+            var checked = this.checked;
+            document.querySelectorAll('.myCollectsCb').forEach(function(cb) { cb.checked = checked; myCollectsChecked[cb.value] = checked; });
+        });
+        document.querySelectorAll('.myCollectsCb').forEach(function(cb) {
+            cb.addEventListener('change', function() { myCollectsChecked[this.value] = this.checked;
+                if (selectAllCb) selectAllCb.checked = document.querySelectorAll('.myCollectsCb:checked').length === document.querySelectorAll('.myCollectsCb').length;
+            });
+        });
+    }
+
+    window.myCollectsDelSingle = function(collectId) {
+        confirmDialog('{% trans "取消收藏" %}', '{% trans "确定要取消这个收藏？" %}', function() {
+            fetch('{% url "manage_collect" %}', {
+                method: 'DELETE',
+                headers: { 'X-CSRFToken': getCSRF(), 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ collect_id: String(collectId), range: 'single' })
+            }).then(function(r) { return r.json(); }).then(function(r) {
+                if (r.status) { showToast('{% trans "已取消收藏" %}'); if (myCollectsFetchFn) myCollectsFetchFn(myCollectsPage); }
+                else { showToast(r.data || '{% trans "操作失败" %}', 'error'); }
+            });
+        });
+    };
+
+    // ========== Token管理 ==========
+    var myTokensLoaded = false;
+    function loadMyTokens() {
+        if (myTokensLoaded) return;
+        myTokensLoaded = true;
+        var container = document.getElementById('myTokensContainer');
+        var csrf = getCSRF();
+
+        fetch('/api/user/token-info/', { headers: { 'X-CSRFToken': csrf } })
+        .then(function(r) { return r.json(); }).then(function(data) {
+            if (!data.status) { container.innerHTML = '<p style="color:#E74C3C">{% trans "加载失败" %}</p>'; return; }
+            renderTokenCard(container, data.token);
+        }).catch(function() { container.innerHTML = '<p style="color:#E74C3C">{% trans "加载失败" %}</p>'; });
+
+        function renderTokenCard(container, token) {
+            var html = '';
+            if (token) {
+                html += '<div class="ispace-token-card">'
+                    + '<span class="ispace-token-value" id="tokenDisplay" title="' + escapeHTML(token) + '">' + escapeHTML(token) + '</span>'
+                    + '<button class="ispace-btn ispace-btn-secondary ispace-btn-sm" onclick="myTokensCopy()">{% trans "复制" %}</button>'
+                    + '<button class="ispace-btn ispace-btn-danger ispace-btn-sm" id="myTokensResetBtn">{% trans "重新生成" %}</button>'
+                    + '</div>';
+            } else {
+                html += '<div class="ispace-token-empty">{% trans "你还没有生成过 Token" %}</div>';
+                html += '<div style="text-align:center;margin-top:12px"><button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="myTokensGenBtn">{% trans "生成 Token" %}</button></div>';
+            }
+            html += '<p class="ispace-token-hint">{% trans "Token 用于第三方 API 调用，请在请求 URL 中添加 ?token= 参数。重新生成后旧 Token 立即失效，请及时更新您的客户端配置。" %}</p>';
+            container.innerHTML = html;
+
+            // 生成/重置按钮
+            var genBtn = document.getElementById('myTokensGenBtn');
+            var resetBtn = document.getElementById('myTokensResetBtn');
+            var doGen = function() {
+                fetch('{% url "manage_token" %}', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({})
+                }).then(function(r) { return r.json(); }).then(function(r) {
+                    if (r.status) { renderTokenCard(container, r.data); showToast('{% trans "Token 已生成" %}'); }
+                    else { showToast(r.data || '{% trans "生成失败" %}', 'error'); }
+                }).catch(function() { showToast('{% trans "生成失败" %}', 'error'); });
+            };
+            if (genBtn) genBtn.addEventListener('click', doGen);
+            if (resetBtn) resetBtn.addEventListener('click', function() {
+                confirmDialog('{% trans "重新生成 Token" %}', '{% trans "重新生成后旧 Token 将立即失效，确定继续？" %}', doGen);
+            });
+        }
+    }
+
+    window.myTokensCopy = function() {
+        var el = document.getElementById('tokenDisplay');
+        if (!el) return;
+        var text = el.getAttribute('title') || el.textContent;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function() { showToast('{% trans "已复制到剪贴板" %}'); });
+        } else {
+            var ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed'; ta.style.opacity = '0';
+            document.body.appendChild(ta); ta.select();
+            document.execCommand('copy'); document.body.removeChild(ta);
+            showToast('{% trans "已复制到剪贴板" %}');
+        }
+    };
+
+    // ========== 分页渲染（共享） ==========
+    function renderPagination(el, page, pages, fetchFn) {
+        if (pages <= 1) { el.innerHTML = ''; return; }
+        var html = '';
+        html += '<button ' + (page <= 1 ? 'disabled' : '') + ' onclick="void(0)" data-pg="' + (page - 1) + '">&laquo;</button>';
+        for (var i = 1; i <= pages; i++) {
+            if (pages > 7 && i > 2 && i < pages - 1 && Math.abs(i - page) > 2) {
+                if (i === 3 || i === pages - 2) html += '<span class="ispace-pg-info">...</span>';
+                continue;
+            }
+            html += '<button class="' + (i === page ? 'active' : '') + '" data-pg="' + i + '">' + i + '</button>';
+        }
+        html += '<button ' + (page >= pages ? 'disabled' : '') + '" data-pg="' + (page + 1) + '">&raquo;</button>';
+        el.innerHTML = html;
+        el.querySelectorAll('button[data-pg]').forEach(function(btn) {
+            btn.addEventListener('click', function() { fetchFn(parseInt(this.getAttribute('data-pg'))); });
+        });
+    }
+
+    // ========== 确认弹窗（共享） ==========
+    function confirmDialog(title, message, onConfirm) {
+        var overlay = document.createElement('div'); overlay.className = 'ispace-confirm-overlay';
+        overlay.innerHTML = '<div class="ispace-confirm-box">'
+            + '<div class="ispace-confirm-title">' + escapeHTML(title) + '</div>'
+            + '<div class="ispace-confirm-message">' + escapeHTML(message) + '</div>'
+            + '<div class="ispace-confirm-actions">'
+            + '<button class="ispace-btn ispace-btn-secondary ispace-btn-sm" id="confirmCancel">{% trans "取消" %}</button>'
+            + '<button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="confirmOk">{% trans "确定" %}</button>'
+            + '</div></div>';
+        document.body.appendChild(overlay);
+        document.getElementById('confirmCancel').addEventListener('click', function() { document.body.removeChild(overlay); });
+        document.getElementById('confirmOk').addEventListener('click', function() { document.body.removeChild(overlay); onConfirm(); });
+        overlay.addEventListener('click', function(e) { if (e.target === overlay) document.body.removeChild(overlay); });
+    }
+
+    function fmtTime(str) {
+        if (!str) return '';
+        // Format ISO datetime or "YYYY-MM-DD HH:MM:SS" to "YYYY-MM-DD HH:MM"
+        var d = str.replace('T', ' ').replace(/\.\d+/, '');
+        return d.length > 16 ? d.substring(0, 16) : d;
+    }
+
+    function escapeHTML(str) {
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+})();
+</script>
+{% endblock %}

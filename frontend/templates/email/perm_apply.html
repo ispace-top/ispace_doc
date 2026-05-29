@@ -1,0 +1,8 @@
+{% extends "email/base.html" %}
+{% block content %}
+<p><strong>{{ sender_name }}</strong> 申请查看文档 <strong>{{ doc_name }}</strong> 的权限。</p>
+{% if link %}
+<p style="margin-top:16px"><a href="{{ link }}" class="btn">授予查看权限</a></p>
+<p style="color:#999;font-size:13px">点击按钮后将自动授予 view 权限</p>
+{% endif %}
+{% endblock %}

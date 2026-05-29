@@ -1,0 +1,755 @@
+{% extends "base.html" %}
+{% load static %}{% load i18n %}
+
+{% block title %}{{ site_name|default:"爱思文档" }} — {% if site_sub_name %}{{ site_sub_name }}{% else %}{% trans "爱要春风化雨，思必汇流成渊" %}{% endif %}{% endblock %}
+
+{% block body_class %}ispace-page-body{% endblock %}
+
+{% block header_logo %}
+{{ block.super }}
+<span class="ispace-header-subtitle">{% if site_sub_name %}{{ site_sub_name }}{% else %}{% trans "爱要春风化雨，思必汇流成渊" %}{% endif %}</span>
+{% endblock %}
+
+{% block header_center %}
+<div class="ispace-header-search-center">
+    <div class="ispace-search-input-wrap" style="max-width:420px;width:100%;">
+        <svg class="ispace-search-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="ispace-form-input" id="searchKw" placeholder="{% trans '搜索文档...' %}" value="{{ kw|default:'' }}" onkeyup="if(event.key==='Enter')doSearch()">
+    </div>
+</div>
+{% endblock %}
+
+{% block head_extra %}
+{# 首页布局样式 —— 在 <head> 中加载，防止 FOUC #}
+<style>
+/* ---- Header ---- */
+.ispace-header-subtitle {
+    font-size: var(--ispace-font-sm);
+    color: var(--ispace-color-text-tertiary);
+    margin-left: var(--ispace-space-2);
+    white-space: nowrap;
+}
+/* ---- Header centered search ---- */
+.ispace-header-search-center {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 420px;
+    pointer-events: none;
+}
+.ispace-header-search-center .ispace-search-input-wrap {
+    pointer-events: auto;
+}
+
+/* ---- Hero Section (Guest Welcome) ---- */
+.ispace-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-height: 60vh;
+    padding: var(--ispace-space-10) var(--ispace-space-6) var(--ispace-space-8);
+    margin-bottom: var(--ispace-space-6);
+}
+.ispace-hero-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--ispace-color-brand-50, #eff6ff) 0%, var(--ispace-color-brand-100, #dbeafe) 100%);
+    color: var(--ispace-color-brand-500);
+    margin-bottom: var(--ispace-space-5);
+}
+.ispace-hero-title {
+    font-size: 1.75rem;
+    font-weight: var(--ispace-font-bold);
+    color: var(--ispace-color-text-primary);
+    margin: 0 0 var(--ispace-space-2);
+    letter-spacing: -0.5px;
+}
+.ispace-hero-desc {
+    font-size: var(--ispace-font-base);
+    color: var(--ispace-color-text-secondary);
+    margin: 0 0 var(--ispace-space-1);
+    font-style: italic;
+}
+.ispace-hero-hint {
+    font-size: var(--ispace-font-sm);
+    color: var(--ispace-color-text-quaternary);
+    margin: var(--ispace-space-6) 0 0;
+}
+.ispace-hero-actions {
+    display: flex;
+    justify-content: center;
+    gap: var(--ispace-space-3);
+}
+/* Outlined button variant */
+.ispace-btn-outline {
+    color: var(--ispace-color-brand-500);
+    background: transparent;
+    border-color: var(--ispace-color-brand-500);
+}
+.ispace-btn-outline:hover {
+    background: var(--ispace-color-brand-50);
+    color: var(--ispace-color-brand-600);
+    border-color: var(--ispace-color-brand-600);
+}
+.ispace-empty-state--compact {
+    padding: var(--ispace-space-6) !important;
+}
+.ispace-empty-state--compact .ispace-empty-state-icon {
+    width: 40px; height: 40px;
+}
+
+/* ---- Funcbar ---- */
+.home-funcbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: var(--ispace-space-3);
+    border-bottom: 1px solid var(--ispace-color-border-light);
+}
+.home-funcbar-left {
+    display: flex;
+    align-items: center;
+    gap: var(--ispace-space-2);
+}
+.home-funcbar-label {
+    font-size: var(--ispace-font-base);
+    font-weight: var(--ispace-font-semibold);
+    color: var(--ispace-color-text-primary);
+}
+/* ---- Project Cards Grid ---- */
+.home-card-scroll-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.home-card-scroll-container {
+    flex: 1;
+    overflow: hidden;
+}
+.home-card-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ispace-space-2);
+    max-height: 8.5rem;
+    overflow: hidden;
+    padding-top:var(--ispace-space-1);
+}
+.home-card {
+    display: flex;
+    flex-direction: column;
+    width: 220px;
+    padding: var(--ispace-space-3) var(--ispace-space-4);
+    border-radius: var(--ispace-radius-lg);
+    background: var(--ispace-color-surface-0);
+    border: 1px solid var(--ispace-color-border-light);
+    text-decoration: none;
+    transition: all var(--ispace-duration-fast);
+    gap: var(--ispace-space-2);
+}
+.home-card:hover {
+    border-color: var(--ispace-color-border-medium);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+    text-decoration: none;
+}
+.home-card-scroll-btn {
+    position: absolute;
+    z-index: 2;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--ispace-color-surface-0);
+    border: 1px solid var(--ispace-color-border-light);
+    box-shadow: var(--ispace-shadow-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--ispace-color-text-secondary);
+    transition: all var(--ispace-duration-fast);
+}
+.home-card-scroll-btn:hover {
+    border-color: var(--ispace-color-brand-300);
+    color: var(--ispace-color-brand-600);
+}
+.home-card-scroll-btn-left { left: -12px; }
+.home-card-scroll-btn-right { right: -12px; }
+.home-card-row {
+    display: flex;
+    align-items: center;
+    gap: var(--ispace-space-2);
+}
+.home-card-icon-fallback {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px; height: 32px;
+    border-radius: var(--ispace-radius-md);
+    background: var(--ispace-color-brand-50);
+    color: var(--ispace-color-brand-500);
+    flex-shrink: 0;
+}
+.home-card-row img {
+    flex-shrink: 0;
+}
+.home-card-title {
+    font-size: var(--ispace-font-base);
+    font-weight: var(--ispace-font-normal);
+    color: var(--ispace-color-text-primary);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin: 0;
+}
+.home-card-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: var(--ispace-font-xs);
+    color: var(--ispace-color-text-quaternary);
+    flex-shrink: 0;
+}
+.home-card-badge {
+    font-size: 10px;
+    color: var(--ispace-color-text-quaternary);
+    background: var(--ispace-color-surface-200);
+    padding: 1px 6px;
+    border-radius: var(--ispace-radius-sm);
+    line-height: 1.5;
+    flex-shrink: 0;
+}
+.home-card-desc {
+    font-size: var(--ispace-font-xs);
+    color: var(--ispace-color-text-tertiary);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* ---- Favorite type badge ---- */
+.home-fav-type {
+    font-size: 10px;
+    color: var(--ispace-color-text-quaternary);
+    background: var(--ispace-color-surface-200);
+    padding: 1px 6px;
+    border-radius: var(--ispace-radius-sm);
+    line-height: 1.5;
+    flex-shrink: 0;
+}
+
+/* ---- Recent Sections ---- */
+.home-recent-section {
+    margin-top: var(--ispace-space-8);
+}
+.home-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--ispace-space-4);
+}
+.home-section-title {
+     font-size: var(--ispace-font-base);
+    font-weight: var(--ispace-font-semibold);
+    color: var(--ispace-color-text-primary);
+}
+.home-doc-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    border: 1px solid var(--ispace-color-border-light);
+    border-radius: var(--ispace-radius-lg);
+    overflow: hidden;
+    background: var(--ispace-color-border-light);
+}
+.home-doc-card {
+    display: flex;
+    align-items: center;
+    gap: var(--ispace-space-3);
+    padding: var(--ispace-space-3) var(--ispace-space-5);
+    background: var(--ispace-color-surface-0);
+    text-decoration: none;
+    transition: background var(--ispace-duration-fast);
+}
+.home-doc-card:hover {
+    background: var(--ispace-color-surface-50);
+    text-decoration: none;
+}
+.home-doc-card-icon {
+    flex-shrink: 0;
+    color: var(--ispace-color-text-quaternary);
+    display: flex;
+    align-items: center;
+}
+.home-doc-card-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--ispace-space-6);
+}
+.home-doc-card-title {
+    font-size: var(--ispace-font-base);
+    font-weight: var(--ispace-font-normal);
+    color: var(--ispace-color-text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-shrink: 1;
+}
+.home-doc-card:hover .home-doc-card-title { color: var(--ispace-color-brand-600); }
+.home-doc-card-meta {
+    font-size: var(--ispace-font-sm);
+    color: var(--ispace-color-text-quaternary);
+    flex-shrink: 0;
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+.home-doc-card-meta svg {
+    flex-shrink: 0;
+    opacity: 0.6;
+}
+
+/* ---- Deleted browsing history entry ---- */
+.home-doc-card-deleted {
+    opacity: 0.5;
+    pointer-events: none;
+    cursor: default;
+    user-select: none;
+}
+.home-doc-card-deleted-badge {
+    font-size: var(--ispace-font-xs);
+    color: var(--ispace-color-text-quaternary);
+    background: var(--ispace-color-surface-100);
+    padding: 2px 8px;
+    border-radius: var(--ispace-radius-sm);
+    flex-shrink: 0;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 1024px) {
+    .ispace-header-subtitle {
+        display: none;
+    }
+}
+@media (max-width: 768px) {
+    .home-card-grid {
+        grid-template-columns: 1fr;
+        grid-auto-flow: row;
+        grid-template-rows: auto;
+        width: 100%;
+    }
+    .home-card {
+        width: 100%;
+    }
+    .home-card-scroll-btn { display: none !important; }
+    .home-funcbar {
+        flex-wrap: wrap;
+        gap: var(--ispace-space-2);
+    }
+    .ispace-header-search-center {
+        display: none;
+    }
+    .home-doc-card {
+        padding: var(--ispace-space-3) var(--ispace-space-3);
+    }
+    .home-doc-card-body {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+    }
+    .home-doc-card-meta {
+        margin-left: 0;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div id="home-view-wrap">
+
+{# ---- Authenticated User: Recent Favorites ---- #}
+{% if is_auth %}
+<div class="home-funcbar">
+    <div class="home-funcbar-left">
+        <span class="home-funcbar-label">{% trans "最近收藏" %}</span>
+    </div>
+    <div class="home-funcbar-right">
+        <button class="ispace-btn ispace-btn-ghost ispace-btn-sm" id="favExpandBtn" onclick="toggleFavExpand()" style="display:none;">
+            <span id="favExpandText">{% trans "展开" %}</span>
+            <svg id="favExpandIcon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.2s"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+    </div>
+</div>
+{% if recent_favorites %}
+<div class="home-card-scroll-wrap" id="favScrollWrap">
+    <div class="home-card-scroll-container" id="favScrollContainer">
+        <div class="home-card-grid" id="favGrid">
+            {% for fav in recent_favorites %}
+            <a href="{{ fav.url }}" class="home-card" data-spa>
+                <div class="home-card-row">
+                    <span class="home-card-icon-fallback">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+                    </span>
+                    <h3 class="home-card-title">{{ fav.name }}</h3>
+                </div>
+            </a>
+            {% endfor %}
+            <a href="/my/?tab=my_collects" class="home-card" id="favMoreCard" style="display:none;" data-spa>
+                <div class="home-card-row">
+                    <span class="home-card-icon-fallback" style="background:var(--ispace-color-warning-50,#fef9e7);color:var(--ispace-color-warning-600,#e67e22);">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+                    </span>
+                    <h3 class="home-card-title" style="color:var(--ispace-color-warning-600,#e67e22);">{% trans "查看更多" %}</h3>
+                </div>
+            </a>
+        </div>
+    </div>
+    <button class="home-card-scroll-btn home-card-scroll-btn-left ispace-btn ispace-btn-ghost ispace-btn-icon" id="favScrollLeft" aria-label="向左滚动" style="display:none;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <button class="home-card-scroll-btn home-card-scroll-btn-right ispace-btn ispace-btn-ghost ispace-btn-icon" id="favScrollRight" aria-label="向右滚动" style="display:none;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+</div>
+{% else %}
+<div class="ispace-empty-state ispace-empty-state--compact">
+    <svg class="ispace-empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+    <h3 class="ispace-empty-state-title">{% trans "暂无收藏" %}</h3>
+    <p class="ispace-empty-state-description">{% trans "浏览文档时点击收藏按钮即可添加到此处" %}</p>
+</div>
+{% endif %}
+
+{% else %}
+{# ---- Guest: Unified Welcome ---- #}
+<div class="ispace-hero">
+    <div class="ispace-hero-icon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+    </div>
+    <h1 class="ispace-hero-title">{{ site_name|default:"i·Space Doc" }}</h1>
+    <p class="ispace-hero-desc">{% if site_sub_name %}{{ site_sub_name }}{% else %}{% trans "爱要春风化雨，思必汇流成渊" %}{% endif %}</p>
+    <div class="ispace-hero-actions">
+        <a href="{% url 'login' %}" class="ispace-btn ispace-btn-primary ispace-btn-md">{% trans "登录使用" %}</a>
+        {% if not close_register %}
+        <a href="{% url 'register' %}" class="ispace-btn ispace-btn-outline ispace-btn-md">{% trans "注册账号" %}</a>
+        {% endif %}
+    </div>
+    {% if doc_items %}
+    <p class="ispace-hero-hint">{% blocktrans with count=doc_items|length %}登录后可创建文档，与 {{ count }} 篇公开文档的作者交流协作{% endblocktrans %}</p>
+    {% else %}
+    <p class="ispace-hero-hint">{% trans "登录后即可创建文档，开始你的知识沉淀之旅" %}</p>
+    {% endif %}
+</div>
+{% if doc_items %}
+<div class="home-funcbar">
+    <div class="home-funcbar-left">
+        <span class="home-funcbar-label">{% trans "公开文档" %}</span>
+    </div>
+</div>
+<div class="home-doc-list" style="border: 1px solid var(--ispace-color-border-light); border-radius: var(--ispace-radius-lg); overflow: hidden; background: var(--ispace-color-border-light);">
+    {% for item in doc_items %}
+    <a href="{% url 'doc_by_id' doc_id=item.doc.id %}" class="home-doc-card" data-spa>
+        <div class="home-doc-card-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+        </div>
+        <div class="home-doc-card-body">
+            <span class="home-doc-card-title">{{ item.doc.name }}</span>
+            <span class="home-doc-card-meta">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span data-user-id="{{ item.doc.create_user.id }}">{{ item.doc.create_user.username }}</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                {{ item.doc.modify_time|date:'Y-m-d' }}
+            </span>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% endif %}
+{% endif %}
+
+{# ---- Recently Viewed Section (AJAX 加载) ---- #}
+<div class="home-recent-section" id="recent-views-section" style="display:none;">
+    <div class="home-section-header">
+        <h2 class="home-section-title">{% trans "最近浏览" %}</h2>
+    </div>
+    <div class="home-doc-list" id="recent-views-container"></div>
+</div>
+
+{# ---- Continue Editing Drafts ---- #}
+<div class="home-recent-section" id="drafts-section" style="display:none;">
+    <div class="home-section-header">
+        <h2 class="home-section-title">{% trans "继续编辑" %}</h2>
+    </div>
+    <div class="home-doc-list" id="drafts-container"></div>
+</div>
+
+</div>{# end home-view-wrap #}
+{% include "includes/inline_editor.html" %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/recent-views.js' %}?v={{ isdoc_version }}"></script>
+<script>
+// ---- Inline Create Mode ----
+window._isdocVersion = '{{ isdoc_version }}';
+window._inlineUploadImgUrl = '{% url "upload_doc_img" %}';
+window._inlineSubmitFn = inlineCreateSubmit;
+window._inlineCancelFn = inlineCancelHomeCreate;
+window._homeDefaultEditorMode = {{ editor_mode|default:2 }};
+
+function enterHomeCreateMode(forceEditorMode) {
+    var params = new URLSearchParams(window.location.search);
+    var parentDoc = params.get('parent_doc');
+    var mode = forceEditorMode || window._homeDefaultEditorMode;
+    if (mode === 3) mode = 2; // iceEditor removed, fallback to Vditor
+
+    var viewWrap = document.getElementById('home-view-wrap');
+    if (viewWrap) viewWrap.style.display = 'none';
+    // Apply compact padding for inline editor
+    var main = document.querySelector('.ispace-main-content');
+    if (main) main.classList.add('doc-view-main');
+    window._inlineIsCreate = true;
+    window._inlineDocId = 0;
+    // Read parent context from URL params (from create_doc redirect or sidebar-tree.js)
+    document.getElementById('inline-parent-doc').value = parentDoc || '0';
+    initInlineEditor(mode, true);
+}
+
+// ---- Favorites horizontal scroll ----
+(function(){
+    var container = document.getElementById('favScrollContainer');
+    var btnLeft = document.getElementById('favScrollLeft');
+    var btnRight = document.getElementById('favScrollRight');
+    if (!container || !btnLeft || !btnRight) return;
+    function updateArrows() {
+        var overflow = container.scrollWidth > container.clientWidth + 2;
+        if (!overflow) {
+            btnLeft.style.display = 'none';
+            btnRight.style.display = 'none';
+            return;
+        }
+        btnLeft.style.display = container.scrollLeft <= 1 ? 'none' : 'flex';
+        var atEnd = container.scrollLeft + container.clientWidth >= container.scrollWidth - 2;
+        btnRight.style.display = atEnd ? 'none' : 'flex';
+    }
+    updateArrows();
+    container.addEventListener('scroll', updateArrows);
+    window.addEventListener('resize', updateArrows);
+    btnLeft.addEventListener('click', function(){
+        container.scrollBy({ left: -container.clientWidth * 0.7, behavior: 'smooth' });
+    });
+    btnRight.addEventListener('click', function(){
+        container.scrollBy({ left: container.clientWidth * 0.7, behavior: 'smooth' });
+    });
+})();
+
+// ---- Favorites expand/collapse ----
+var favGrid = document.getElementById('favGrid');
+var favExpandBtn = document.getElementById('favExpandBtn');
+var favExpandText = document.getElementById('favExpandText');
+var favExpandIcon = document.getElementById('favExpandIcon');
+var favMoreCard = document.getElementById('favMoreCard');
+var favExpanded = false;
+var favAllCards = [];
+var favCardsPerRow = 0;
+var favMaxCards5Rows = 0;
+
+function initFavExpand() {
+    if (!favGrid || !favExpandBtn) return;
+    favAllCards = Array.from(favGrid.querySelectorAll('.home-card:not(#favMoreCard)'));
+    if (favAllCards.length === 0) { favExpandBtn.style.display = 'none'; return; }
+
+    // Calculate cards per row based on container width
+    var gridWidth = favGrid.clientWidth;
+    var cardWidth = 220;
+    var gap = 8;
+    favCardsPerRow = Math.max(1, Math.floor((gridWidth + gap) / (cardWidth + gap)));
+    favMaxCards5Rows = favCardsPerRow * 5;
+
+    // Show toggle button if content exceeds 2 rows
+    var cards2Rows = favCardsPerRow * 2;
+    if (favAllCards.length > cards2Rows) {
+        favExpandBtn.style.display = '';
+    }
+}
+
+function updateFavVisibility() {
+    if (favExpanded) {
+        favGrid.style.maxHeight = '21rem';
+        favExpandText.textContent = '{% trans "收起" %}';
+        favExpandIcon.style.transform = 'rotate(180deg)';
+    } else {
+        favGrid.style.maxHeight = '8.5rem';
+        favExpandText.textContent = '{% trans "展开" %}';
+        favExpandIcon.style.transform = '';
+    }
+
+    var showMore = favExpanded && favAllCards.length > favMaxCards5Rows;
+    var regularLimit = showMore ? favMaxCards5Rows - 1 : favAllCards.length;
+
+    favAllCards.forEach(function(card, i) {
+        card.style.display = i < regularLimit ? '' : 'none';
+    });
+
+    favMoreCard.style.display = showMore ? '' : 'none';
+
+    // Update scroll arrows after layout change
+    setTimeout(function() {
+        var container = document.getElementById('favScrollContainer');
+        if (container) container.dispatchEvent(new Event('scroll'));
+    }, 50);
+}
+
+function toggleFavExpand() {
+    favExpanded = !favExpanded;
+    updateFavVisibility();
+}
+
+initFavExpand();
+
+function inlineCancelHomeCreate() {
+    if (window._inlineMdChanged) {
+        confirm('有未保存的更改，确定要取消吗？').then(function(ok) {
+            if (!ok) return;
+            exitHomeCreateMode();
+        });
+        return;
+    }
+    exitHomeCreateMode();
+}
+
+function exitHomeCreateMode() {
+    destroyInlineEditor();
+    var viewWrap = document.getElementById('home-view-wrap');
+    if (viewWrap) viewWrap.style.display = '';
+    // Restore default main-content padding
+    var main = document.querySelector('.ispace-main-content');
+    if (main) main.classList.remove('doc-view-main');
+}
+
+window.addEventListener('beforeunload', function(e) {
+    if (window._inlineMdChanged) {
+        e.preventDefault();
+        e.returnValue = '您有未保存的更改，确定要离开吗？';
+    }
+});
+
+function doSearch(){
+    var kw = document.getElementById('searchKw').value.trim();
+    if (kw) {
+        window.location.href = '/search/?kw=' + encodeURIComponent(kw) + '&type=doc';
+    } else {
+        window.location.href = '/';
+    }
+}
+
+// Shared utility
+function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+}
+
+// ---- Recently Viewed: 使用共享模块 ----
+(function() {
+    var container = document.getElementById('recent-views-container');
+    var section = document.getElementById('recent-views-section');
+    if (!container || !section) return;
+
+    RecentViews.init({
+        container: container,
+        listClassName: '',
+        renderItem: function(item) {
+            var iconType = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>';
+            if (item.is_deleted) {
+                var div = document.createElement('div');
+                div.className = 'home-doc-card home-doc-card-deleted';
+                div.innerHTML = '<div class="home-doc-card-icon">' + iconType + '</div>'
+                    + '<div class="home-doc-card-body">'
+                    + '<span class="home-doc-card-title">' + escapeHtml(item.name) + '</span>'
+                    + '<span class="home-doc-card-meta">' + escapeHtml(item.modify_time) + '</span>'
+                    + '</div>'
+                    + '<span class="home-doc-card-deleted-badge">已删除</span>';
+                return div;
+            }
+            var a = document.createElement('a');
+            a.href = item.url;
+            a.className = 'home-doc-card';
+            a.setAttribute('data-spa', '');
+            a.innerHTML = '<div class="home-doc-card-icon">' + iconType + '</div>'
+                + '<div class="home-doc-card-body">'
+                + '<span class="home-doc-card-title">' + escapeHtml(item.name) + '</span>'
+                + '<span class="home-doc-card-meta">'
+                + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> '
+                + '<span data-user-id="' + (item.user_id || '') + '">' + escapeHtml(item.user_name) + '</span>'
+                + ' <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> '
+                + escapeHtml(item.modify_time)
+                + '</span></div>';
+            return a;
+        },
+        onLoaded: function() {
+            section.style.display = '';
+        },
+        onEmpty: function() {
+            section.style.display = 'none';
+        }
+    });
+})();
+
+// Load drafts for "continue editing" section
+(function() {
+    var container = document.getElementById('drafts-container');
+    var section = document.getElementById('drafts-section');
+    if (!container || !section) return;
+    {% if user.is_authenticated %}
+    var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
+    fetch('/api/user/my-drafts/', {
+        headers: { 'X-CSRFToken': csrf ? csrf.value : '' }
+    }).then(function(r) { return r.json(); }).then(function(data) {
+        if (!data.status || !data.drafts.length) return;
+        section.style.display = '';
+        var html = '';
+        data.drafts.forEach(function(d) {
+            html += '<a href="/pages/' + d.id + '/?edit=1" class="home-doc-card" data-spa>'
+                + '<div class="home-doc-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg></div>'
+                + '<div class="home-doc-card-body">'
+                + '<span class="home-doc-card-title">' + escapeHtml(d.name) + '</span>'
+                + '<span class="home-doc-card-meta">'
+                + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> '
+                + escapeHtml(d.modify_time)
+                + '</span></div>'
+                + '<span class="ispace-badge" style="background:var(--ispace-color-warning-100,#fef9e7);color:var(--ispace-color-warning-600,#e67e22);font-size:var(--ispace-font-xs);padding:2px 6px;border-radius:10px;">{% trans "草稿" %}</span>'
+                + '</a>';
+        });
+        container.innerHTML = html;
+    }).catch(function() {});
+    {% endif %}
+})();
+
+// Auto-trigger inline editor if ?create=1 in URL
+(function(){
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('create') === '1') {
+        var eid = params.get('eid');
+        enterHomeCreateMode(eid ? parseInt(eid) : undefined);
+    }
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,381 @@
+{% extends "base.html" %}
+{% load static %}{% load i18n %}
+
+{% block title %}{% trans "组织架构管理" %} - {% trans "后台管理" %}{% endblock %}
+
+{% block styles %}
+<style>
+.admin-org-layout { display: grid; grid-template-columns: 1fr 380px; gap: var(--ispace-space-6); }
+@media (max-width: 900px) { .admin-org-layout { grid-template-columns: 1fr; } }
+
+.org-tree { background: var(--ispace-color-bg-primary); border: 1px solid var(--ispace-color-border); border-radius: var(--ispace-radius-lg); padding: var(--ispace-space-3); max-height: 70vh; overflow-y: auto; }
+.org-node-row { display: flex; align-items: center; padding: 4px 6px; border-radius: var(--ispace-radius-sm); cursor: pointer; font-size: var(--ispace-font-sm); margin: 1px 0; transition: background 0.15s; }
+.org-node-row:hover { background: var(--ispace-color-bg-secondary); }
+.org-node-row.active { background: var(--ispace-color-brand-100, #e8f0fe); }
+.org-toggle { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 2px; cursor: pointer; transition: transform 0.2s; }
+.org-toggle.expanded { transform: rotate(90deg); }
+.org-toggle.leaf { visibility: hidden; }
+.org-toggle svg { width: 12px; height: 12px; }
+.org-node-icon { width: 24px; height: 24px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; margin-right: 6px; flex-shrink: 0; }
+.org-node-icon.root { background: #4A90D9; color: #fff; }
+.org-node-icon.branch { background: #E67E22; color: #fff; }
+.org-node-icon.leaf-node { background: #95A5A6; color: #fff; }
+.org-node-icon svg { width: 14px; height: 14px; }
+.org-node-name { font-weight: var(--ispace-font-medium); }
+.org-node-meta { font-size: 11px; color: var(--ispace-color-text-tertiary); margin-left: auto; }
+.org-children { padding-left: 20px; }
+.org-children.collapsed { display: none; }
+
+.org-detail { background: var(--ispace-color-bg-secondary); border-radius: var(--ispace-radius-lg); padding: var(--ispace-space-4); position: sticky; top: var(--ispace-space-4); max-height: 80vh; overflow-y: auto; }
+.org-detail-empty { text-align: center; padding: var(--ispace-space-8) 0; color: var(--ispace-color-text-tertiary); }
+.org-toolbar { display: flex; align-items: center; gap: var(--ispace-space-2); flex-wrap: wrap; }
+.org-toolbar .ispace-btn { padding: 4px 12px; font-size: 12px; }
+.member-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; font-size: var(--ispace-font-sm); border-bottom: 1px solid var(--ispace-color-border); }
+.member-row:last-child { border-bottom: none; }
+.member-avatar { width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: #fff; margin-right: 8px; }
+
+/* 搜索用户下拉 */
+.org-search-results {
+    position: fixed;
+    z-index: 2000;
+    background: var(--ispace-color-surface-0);
+    border: 1px solid var(--ispace-color-border-medium);
+    border-radius: var(--ispace-radius-md);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 2px;
+}
+.org-search-item {
+    display: flex;
+    align-items: center;
+    gap: var(--ispace-space-3);
+    padding: var(--ispace-space-2) var(--ispace-space-3);
+    cursor: pointer;
+    font-size: var(--ispace-font-sm);
+    transition: background 0.15s;
+}
+.org-search-item:hover { background: var(--ispace-color-surface-50); }
+.org-search-item:first-child { border-radius: var(--ispace-radius-md) var(--ispace-radius-md) 0 0; }
+.org-search-item:last-child { border-radius: 0 0 var(--ispace-radius-md) var(--ispace-radius-md); }
+.org-search-avatar {
+    width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: bold; color: #fff;
+}
+.org-search-info { flex: 1; min-width: 0; }
+.org-search-name { color: var(--ispace-color-text-primary); }
+.org-search-username { font-size: var(--ispace-font-xs); color: var(--ispace-color-text-tertiary); margin-top: 1px; }
+.org-search-empty { padding: var(--ispace-space-4); text-align: center; color: var(--ispace-color-text-tertiary); font-size: var(--ispace-font-sm); }
+
+.modal-overlay { display: none; position: fixed; top:0;left:0;right:0;bottom:0; background:rgba(0,0,0,0.4); z-index:1050; align-items:center; justify-content:center; }
+.modal-overlay.active { display: flex; }
+.modal { background: var(--ispace-color-bg-primary); border-radius: var(--ispace-radius-xl); width: 480px; max-width: 95vw; max-height: 85vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.15); }
+.modal-header { padding: var(--ispace-space-4) var(--ispace-space-5); border-bottom: 1px solid var(--ispace-color-border); display: flex; align-items: center; justify-content: space-between; }
+.modal-title { font-size: var(--ispace-font-lg); font-weight: var(--ispace-font-semibold); }
+.modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--ispace-color-text-tertiary); }
+.modal-body { padding: var(--ispace-space-5); }
+.modal-footer { padding: var(--ispace-space-4) var(--ispace-space-5); border-top: 1px solid var(--ispace-color-border); display: flex; justify-content: flex-end; gap: var(--ispace-space-2); }
+
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-org-layout">
+    <div class="ispace-card">
+        <div class="ispace-card-header" style="display:flex;align-items:center;">
+            <div class="org-toolbar">
+                <button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="addRootBtn">{% trans "新增根节点" %}</button>
+                <button class="ispace-btn ispace-btn-secondary" id="addChildBtn" disabled>{% trans "新增子节点" %}</button>
+                <button class="ispace-btn ispace-btn-secondary" id="renameBtn" disabled>{% trans "重命名" %}</button>
+                <button class="ispace-btn ispace-btn-secondary" id="moveBtn" disabled>{% trans "移动" %}</button>
+                <button class="ispace-btn ispace-btn-secondary" id="deleteNodeBtn" disabled style="color:var(--ispace-color-danger)">{% trans "删除" %}</button>
+            </div>
+        </div>
+        <div class="ispace-card-body" style="padding:var(--ispace-space-3);">
+            <div class="org-tree" id="orgTree">
+                <p style="color:var(--ispace-color-text-tertiary);font-size:var(--ispace-font-sm)">{% trans "加载中..." %}</p>
+            </div>
+        </div>
+    </div>
+    <div class="org-detail" id="orgDetail">
+        <div class="org-detail-empty">{% trans "点击左侧节点查看成员" %}</div>
+    </div>
+</div>
+
+<!-- 创建/重命名弹窗 (shared) -->
+<div class="modal-overlay" id="nameModal">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="modal-title" id="nameModalTitle"></span>
+            <button class="modal-close" onclick="closeNameModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="ispace-form-group">
+                <input type="text" class="ispace-form-input" id="nameInput" maxlength="64">
+            </div>
+            <p id="nameMsg" style="font-size:var(--ispace-font-sm)"></p>
+        </div>
+        <div class="modal-footer">
+            <button class="ispace-btn ispace-btn-secondary" onclick="closeNameModal()">{% trans "取消" %}</button>
+            <button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="nameConfirmBtn">{% trans "确认" %}</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    var selectedNodeId = null;
+    var selectedNodeName = '';
+
+    function getCSRF() { var t = document.querySelector('[name=csrfmiddlewaretoken]'); return t ? t.value : ''; }
+
+    // ====== Load Tree ======
+    function loadTree() {
+        fetch('/admin/api/org/manage/?action=tree', { headers: { 'X-CSRFToken': getCSRF() } })
+        .then(function(r) { return r.json(); }).then(function(d) {
+            var container = document.getElementById('orgTree');
+            if (!d.tree || !d.tree.length) {
+                container.innerHTML = '<p style="color:var(--ispace-color-text-tertiary);padding:var(--ispace-space-4)">{% trans "暂无组织节点" %}</p>';
+                return;
+            }
+            container.innerHTML = d.tree.map(function(n) { return buildNodeHTML(n, true); }).join('');
+        });
+    }
+
+    function buildNodeHTML(node, isRoot) {
+        var hasChildren = node.children && node.children.length > 0;
+        var iconType = isRoot ? 'root' : (hasChildren ? 'branch' : 'leaf-node');
+        var folderIcon = '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4l2 2h6a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd"/></svg>';
+        if (!hasChildren) folderIcon = '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm3 1h2v2H7V5zm0 4h2v2H7V9zm4-4h2v2h-2V5zm0 4h2v2h-2V9z" clip-rule="evenodd"/></svg>';
+
+        var html = '<div class="org-node-row" data-id="' + node.id + '" onclick="selectNode(' + node.id + ', \'' + escapeHTML(node.name) + '\', this)">';
+        html += '<span class="org-toggle' + (hasChildren ? ' expanded' : ' leaf') + '" onclick="toggleNode(event, ' + node.id + ', this)"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg></span>';
+        html += '<span class="org-node-icon ' + iconType + '">' + folderIcon + '</span>';
+        html += '<span class="org-node-name">' + escapeHTML(node.name) + '</span>';
+        html += '<span class="org-node-meta">' + node.member_count + '人</span></div>';
+
+        if (hasChildren) {
+            html += '<div class="org-children" id="children-' + node.id + '">';
+            node.children.forEach(function(c) { html += buildNodeHTML(c, false); });
+            html += '</div>';
+        }
+        return html;
+    }
+
+    window.toggleNode = function(e, nodeId, toggleEl) {
+        e.stopPropagation();
+        var children = document.getElementById('children-' + nodeId);
+        if (!children) return;
+        children.classList.toggle('collapsed');
+        toggleEl.classList.toggle('expanded');
+    };
+
+    // ====== Select Node ======
+    window.selectNode = function(nodeId, nodeName, rowEl) {
+        document.querySelectorAll('.org-node-row').forEach(function(r) { r.classList.remove('active'); });
+        rowEl.classList.add('active');
+        selectedNodeId = nodeId;
+        selectedNodeName = nodeName;
+        document.getElementById('addChildBtn').disabled = false;
+        document.getElementById('renameBtn').disabled = false;
+        document.getElementById('moveBtn').disabled = false;
+        document.getElementById('deleteNodeBtn').disabled = false;
+        loadDetail(nodeId);
+    };
+
+    function loadDetail(nodeId) {
+        var detail = document.getElementById('orgDetail');
+        detail.innerHTML = '<p style="text-align:center;padding:var(--ispace-space-8)">{% trans "加载中..." %}</p>';
+        fetch('/admin/api/org/manage/?action=members&node_id=' + nodeId, { headers: { 'X-CSRFToken': getCSRF() } })
+        .then(function(r) { return r.json(); }).then(function(d) {
+            if (!d.status) { detail.innerHTML = '<p style="color:var(--ispace-color-danger)">{% trans "加载失败" %}</p>'; return; }
+            var h = '<h3 style="font-weight:600;margin-bottom:var(--ispace-space-2)">' + escapeHTML(d.node_name) + ' - {% trans "成员" %} (' + d.members.length + ')</h3>';
+            h += '<div style="margin-bottom:var(--ispace-space-3);position:relative"><input type="text" class="ispace-form-input" id="memberSearch" placeholder="{% trans "搜索用户添加..." %}" oninput="searchOrgUser()" autocomplete="off"><div id="memberSearchResults"></div></div>';
+            if (!d.members.length) {
+                h += '<p style="color:var(--ispace-color-text-tertiary);font-size:var(--ispace-font-sm)">{% trans "暂无成员" %}</p>';
+            } else {
+                d.members.forEach(function(m) {
+                    var init = (m.display_name || m.username)[0].toUpperCase();
+                    h += '<div class="member-row"><span><span class="member-avatar" style="background:#4A90D9">' + init + '</span>' + escapeHTML(m.display_name || m.username) + (m.is_primary ? ' <span style="font-size:11px;color:var(--ispace-color-success)">({% trans "主属" %})</span>' : '') + '</span>';
+                    h += '<button class="ispace-btn ispace-btn-secondary ispace-btn-sm" onclick="removeOrgMember(' + selectedNodeId + ',' + m.id + ')">{% trans "移除" %}</button></div>';
+                });
+            }
+            detail.innerHTML = h;
+        });
+    }
+
+    window.removeOrgMember = function(nid, uid) {
+        fetch('/admin/api/org/manage/', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
+            body: JSON.stringify({ action: 'remove_member', id: nid, user_id: uid })
+        }).then(function(r) { return r.json(); }).then(function(d) {
+            if (d.status) loadDetail(nid);
+        });
+    };
+
+    var _searchTimer = null;
+    window.searchOrgUser = function() {
+        var q = document.getElementById('memberSearch').value.trim();
+        var dd = document.getElementById('memberSearchResults');
+        var input = document.getElementById('memberSearch');
+        if (q.length < 1) { dd.innerHTML = ''; dd.className = ''; return; }
+        clearTimeout(_searchTimer);
+        _searchTimer = setTimeout(function() {
+            fetch('/api/users/search/?q=' + encodeURIComponent(q), { headers: { 'X-CSRFToken': getCSRF() } })
+            .then(function(r) { return r.json(); }).then(function(d) {
+                if (!d.results || !d.results.length) {
+                    dd.className = 'org-search-results';
+                    dd.innerHTML = '<div class="org-search-empty">{% trans "无匹配用户" %}</div>';
+                    orgPositionSearchDropdown(input, dd);
+                    return;
+                }
+                dd.className = 'org-search-results';
+                var colors = ['#4A90D9','#E67E22','#27AE60','#8E44AD','#16A085','#D35400','#2980B9','#C0392B','#2C3E50','#F39C12'];
+                dd.innerHTML = d.results.map(function(u, i) {
+                    var name = escapeHTML(u.display_name || u.username);
+                    var initial = name[0].toUpperCase();
+                    var bg = colors[i % colors.length];
+                    return '<div class="org-search-item" onclick="addOrgMember(' + u.id + ',\'' + escapeHTML(u.display_name || u.username) + '\')">' +
+                        '<span class="org-search-avatar" style="background:' + bg + '">' + initial + '</span>' +
+                        '<div class="org-search-info">' +
+                            '<div class="org-search-name">' + name + '</div>' +
+                            '<div class="org-search-username">@' + escapeHTML(u.username) + '</div>' +
+                        '</div>' +
+                    '</div>';
+                }).join('');
+                orgPositionSearchDropdown(input, dd);
+            });
+        }, 300);
+    };
+
+    function orgPositionSearchDropdown(input, dropdown) {
+        if (!input || !dropdown) return;
+        var rect = input.getBoundingClientRect();
+        dropdown.style.left = rect.left + 'px';
+        dropdown.style.top = (rect.bottom + 4) + 'px';
+        dropdown.style.width = rect.width + 'px';
+    }
+
+    window.addEventListener('scroll', function() {
+        var dd = document.getElementById('memberSearchResults');
+        if (dd && dd.className === 'org-search-results') {
+            var inp = document.getElementById('memberSearch');
+            orgPositionSearchDropdown(inp, dd);
+        }
+    }, true);
+
+    window.addOrgMember = function(uid, uname) {
+        if (!selectedNodeId) return;
+        document.getElementById('memberSearch').value = '';
+        var dd = document.getElementById('memberSearchResults');
+        dd.innerHTML = '';
+        dd.className = '';
+        fetch('/admin/api/org/manage/', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
+            body: JSON.stringify({ action: 'add_members', id: selectedNodeId, user_ids: [uid] })
+        }).then(function(r) { return r.json(); }).then(function(d) {
+            if (d.status) { loadDetail(selectedNodeId); loadTree(); }
+        });
+    };
+
+    // ====== Node Actions ======
+    var nameModalAction = '';
+    document.getElementById('addRootBtn').addEventListener('click', function() {
+        nameModalAction = 'create_root';
+        document.getElementById('nameModalTitle').textContent = '{% trans "新增根节点" %}';
+        document.getElementById('nameInput').value = '';
+        document.getElementById('nameMsg').textContent = '';
+        document.getElementById('nameModal').classList.add('active');
+        document.getElementById('nameInput').focus();
+    });
+    document.getElementById('addChildBtn').addEventListener('click', function() {
+        if (!selectedNodeId) return;
+        nameModalAction = 'create_child';
+        document.getElementById('nameModalTitle').textContent = '{% trans "新增子节点" %}';
+        document.getElementById('nameInput').value = '';
+        document.getElementById('nameMsg').textContent = '';
+        document.getElementById('nameModal').classList.add('active');
+        document.getElementById('nameInput').focus();
+    });
+    document.getElementById('renameBtn').addEventListener('click', function() {
+        if (!selectedNodeId) return;
+        nameModalAction = 'rename';
+        document.getElementById('nameModalTitle').textContent = '{% trans "重命名节点" %}';
+        document.getElementById('nameInput').value = selectedNodeName;
+        document.getElementById('nameMsg').textContent = '';
+        document.getElementById('nameModal').classList.add('active');
+        document.getElementById('nameInput').focus();
+    });
+    document.getElementById('moveBtn').addEventListener('click', function() {
+        if (!selectedNodeId) return;
+        iSpaceDoc.prompt('{% trans "输入目标父节点ID（留空移至根级）：" %}').then(function(pid) {
+            if (pid === null || pid === undefined) return;
+            fetch('/admin/api/org/manage/', {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
+                body: JSON.stringify({ action: 'move', id: selectedNodeId, new_parent_id: pid ? parseInt(pid) : null })
+            }).then(function(r) { return r.json(); }).then(function(d) {
+                if (d.status) { selectedNodeId = null; loadTree(); }
+                else alert(d.message);
+            });
+        });
+    });
+    document.getElementById('deleteNodeBtn').addEventListener('click', function() {
+        if (!selectedNodeId) return;
+        iSpaceDoc.confirm('{% trans "确认删除「" %}' + selectedNodeName + '{% trans "」吗？子节点将上移到父级。" %}').then(function(ok) {
+            if (!ok) return;
+            fetch('/admin/api/org/manage/', {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
+                body: JSON.stringify({ action: 'delete', id: selectedNodeId })
+            }).then(function(r) { return r.json(); }).then(function(d) {
+                if (d.status) { selectedNodeId = null; loadTree(); document.getElementById('orgDetail').innerHTML = '<div class="org-detail-empty">{% trans "点击左侧节点查看成员" %}</div>'; }
+                else alert(d.message);
+            });
+        });
+    });
+
+    // Name modal confirm
+    document.getElementById('nameConfirmBtn').addEventListener('click', function() {
+        var name = document.getElementById('nameInput').value.trim();
+        if (!name) { document.getElementById('nameMsg').textContent = '{% trans "请输入名称" %}'; return; }
+        var body;
+        if (nameModalAction === 'create_root') {
+            body = { action: 'create', name: name };
+        } else if (nameModalAction === 'create_child') {
+            body = { action: 'create', name: name, parent_id: selectedNodeId };
+        } else if (nameModalAction === 'rename') {
+            body = { action: 'rename', id: selectedNodeId, name: name };
+        }
+        fetch('/admin/api/org/manage/', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
+            body: JSON.stringify(body)
+        }).then(function(r) { return r.json(); }).then(function(d) {
+            if (d.status) { closeNameModal(); loadTree(); }
+            else document.getElementById('nameMsg').textContent = d.message;
+        });
+    });
+
+    window.closeNameModal = function() { document.getElementById('nameModal').classList.remove('active'); };
+    document.querySelectorAll('.modal-overlay').forEach(function(ov) {
+        ov.addEventListener('click', function(e) { if (e.target === ov) ov.classList.remove('active'); });
+    });
+
+    function escapeHTML(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+    // 点击外部关闭搜索下拉
+    document.addEventListener('click', function(e) {
+        var sr = document.getElementById('memberSearchResults');
+        var input = document.getElementById('memberSearch');
+        if (sr && input && !input.contains(e.target) && !sr.contains(e.target)) {
+            sr.innerHTML = '';
+            sr.className = '';
+        }
+    });
+
+    loadTree();
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% load static %}{% load i18n %}
+
+{% block title %}{% trans "搜索文档" %} - {{ site_name|default:"爱思文档" }}{% endblock %}
+{% block breadcrumb %}{% include "includes/breadcrumb.html" with breadcrumbs=breadcrumb_items %}{% endblock %}
+
+{% block content %}
+<div class="ispace-page-header" style="text-align:center;">
+    <h1 class="ispace-page-title">{% trans "搜索文档" %}</h1>
+</div>
+<div class="ispace-content-card" style="max-width:640px;margin:0 auto;">
+    <form method="get" action="{% url 'search' %}">
+        {% include "includes/search_bar.html" with placeholder="输入关键词搜索..." value=kw %}
+        <input type="hidden" name="type" value="doc">
+        <div class="ispace-flex-between ispace-mt-4">
+            <button type="submit" class="ispace-btn ispace-btn-primary ispace-btn-sm">{% trans "搜索" %}</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

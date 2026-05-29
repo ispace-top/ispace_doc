@@ -1,0 +1,402 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+{% block title %}{% trans "文档管理" %}{% endblock %}
+
+{% block styles %}
+<style>
+    .admin-doc-toolbar {
+        display: flex;
+        align-items: center;
+        gap: var(--ispace-space-4);
+        flex-wrap: wrap;
+    }
+    .admin-doc-toolbar .ispace-form-input {
+        max-width: 220px;
+    }
+    .admin-doc-radio-group {
+        display: flex;
+        align-items: center;
+        gap: var(--ispace-space-4);
+    }
+    .admin-doc-radio-group label {
+        display: flex;
+        align-items: center;
+        gap: var(--ispace-space-1);
+        font-size: var(--ispace-font-sm);
+        cursor: pointer;
+        color: var(--ispace-color-text-secondary);
+    }
+    .admin-doc-search-group {
+        display: flex;
+        align-items: center;
+        gap: var(--ispace-space-1);
+    }
+    .admin-doc-filter-spacer {
+        margin-left: var(--ispace-space-6);
+    }
+    .doc-name-link {
+        color: var(--ispace-color-text-link);
+        text-decoration: none;
+    }
+    .doc-name-link:hover { text-decoration: underline; }
+    .admin-doc-table-wrap { overflow-x: auto; }
+    .doc-status-draft {
+        cursor: pointer;
+        color: #f59e0b;
+    }
+    .admin-doc-page-size {
+        display: flex;
+        align-items: center;
+        gap: var(--ispace-space-2);
+        font-size: var(--ispace-font-sm);
+        color: var(--ispace-color-text-tertiary);
+    }
+    .admin-doc-page-size select {
+        height: 30px;
+        padding: 0 6px;
+        font-size: var(--ispace-font-sm);
+        border: 1px solid var(--ispace-color-border-medium);
+        border-radius: var(--ispace-radius-sm);
+        background: var(--ispace-color-surface-0);
+        color: var(--ispace-color-text-primary);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrapper">
+
+<div class="dashboard-card">
+    <div class="dashboard-card-header">
+        <div class="admin-doc-toolbar">
+            <div class="admin-doc-search-group">
+                <input type="text" id="doc-kw" placeholder="{% trans '输入标题搜索' %}" class="ispace-form-input">
+                <button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="search-btn">{% trans "搜索" %}</button>
+            </div>
+            <div class="admin-doc-radio-group admin-doc-filter-spacer">
+                <label><input type="radio" name="doc-status" value="-1" checked> {% trans "全部" %}({{ all_cnt }})</label>
+                <label><input type="radio" name="doc-status" value="0"> {% trans "草稿" %}({{ draft_doc_cnt }})</label>
+                <label><input type="radio" name="doc-status" value="1"> {% trans "已发布" %}({{ published_doc_cnt }})</label>
+            </div>
+            <button class="ispace-btn ispace-btn-danger ispace-btn-sm" id="batch-remove-btn" style="margin-left:auto;">{% trans "批量删除" %}</button>
+        </div>
+    </div>
+    <div class="dashboard-card-body">
+
+        <div class="admin-doc-table-wrap">
+            <table class="ispace-table" id="doc-table">
+                <thead>
+                    <tr>
+                        <th style="width:36px;"><input type="checkbox" id="select-all-docs"></th>
+                        <th>{% trans "文档名称" %}</th>
+                        <th>{% trans "状态" %}</th>
+                        <th>{% trans "上级" %}</th>
+                        <th>{% trans "编辑模式" %}</th>
+                        <th>{% trans "展开下级" %}</th>
+                        <th>{% trans "文档作者" %}</th>
+                        <th>{% trans "最后编辑" %}</th>
+                        <th>{% trans "操作" %}</th>
+                    </tr>
+                </thead>
+                <tbody id="doc-table-body">
+                </tbody>
+            </table>
+        </div>
+        <div class="ispace-flex-between ispace-mt-3">
+            <div id="doc-pagination" class="ispace-pagination"></div>
+            <div class="admin-doc-page-size">
+                <span>{% trans "每页" %}</span>
+                <select id="page-size-select">
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                </select>
+                <span>{% trans "条" %}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    const API_URL = "{% url 'doc_manage' %}";
+    const DEL_URL = "{% url 'del_doc' %}";
+    const FAST_PUB_URL = "{% url 'fast_pub_doc' %}";
+    const CSRF_TOKEN = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    let currentPage = 1;
+    let currentFilters = { type: 1 };
+
+    function getPageSize() {
+        var sel = document.getElementById('page-size-select');
+        return sel ? parseInt(sel.value) : 10;
+    }
+
+    function getCSRFHeaders() {
+        return {
+            'X-CSRFToken': CSRF_TOKEN,
+            'Content-Type': 'application/x-www-form-urlencoded',
+        };
+    }
+
+    function formatDateTime(dateStr) {
+        if (!dateStr) return '-';
+        const d = new Date(dateStr);
+        const pad = n => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
+
+    async function loadTable(page) {
+        if (page === undefined) page = currentPage;
+        currentPage = page;
+
+        const body = new URLSearchParams();
+        body.set('type', '1');
+        body.set('page', page);
+        body.set('limit', getPageSize());
+        body.set('csrfmiddlewaretoken', CSRF_TOKEN);
+
+        if (currentFilters.kw) body.set('kw', currentFilters.kw);
+        if (currentFilters.status && currentFilters.status !== '-1') body.set('status', currentFilters.status);
+
+        try {
+            const resp = await fetch(API_URL, {
+                method: 'POST',
+                headers: getCSRFHeaders(),
+                body: body.toString()
+            });
+            const result = await resp.json();
+            const rows = result.data || [];
+            const count = result.count || 0;
+
+            renderDocRows(rows);
+            renderPagination(count, page);
+        } catch (err) {
+            showError('{% trans "获取文档列表失败" %}');
+        }
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    function renderDocRow(row) {
+        let nameHtml = '';
+        if (row.status == 1) {
+            nameHtml = `<a class="doc-name-link" href="/pages/${row.id}/" target="_blank">${escapeHtml(row.name)}</a>`;
+        } else {
+            nameHtml = `<a class="doc-name-link" href="/documents/${row.id}/edit/" target="_blank" title="{% trans '修改文档' %}：${escapeHtml(row.name)}">${escapeHtml(row.name)}</a>`;
+        }
+
+        let statusHtml = '';
+        if (row.status == 1) {
+            statusHtml = '<span class="ispace-badge ispace-badge-success">{% trans "已发布" %}</span>';
+        } else {
+            statusHtml = `<span class="ispace-badge ispace-badge-warning doc-status-draft" data-action="publish" data-id="${row.id}" title="{% trans '点击一键发布' %}">{% trans "草稿" %}</span>`;
+        }
+
+        const editorModeMap = { 1: 'Editor.MD', 2: 'Vditor', 3: '{% trans "富文本" %}', 4: '{% trans "在线表格" %}' };
+        const editorMode = editorModeMap[row.editor_mode] || '-';
+        const openChildren = row.open_children ? '{% trans "展开" %}' : '{% trans "收起" %}';
+
+        return `
+            <tr data-doc-id="${row.id}">
+                <td><input type="checkbox" class="doc-checkbox" value="${row.id}"></td>
+                <td>${nameHtml}</td>
+                <td>${statusHtml}</td>
+                <td>${escapeHtml(row.parent || '-')}</td>
+                <td>${editorMode}</td>
+                <td>${openChildren}</td>
+                <td>${escapeHtml(row.create_user || '-')}</td>
+                <td class="ispace-text-sm">${formatDateTime(row.modify_time)}</td>
+                <td>
+                    <a href="/admin/doc_history_manage/${row.id}/" class="ispace-btn ispace-btn-sm ispace-btn-secondary" style="padding:2px 8px;" title="{% trans '文档历史' %}">&#x1F4C3;</a>
+                    <button class="ispace-btn ispace-btn-danger ispace-btn-sm" data-action="delete" data-id="${row.id}" style="padding:2px 8px;">{% trans "删除" %}</button>
+                </td>
+            </tr>`;
+    }
+
+    function renderDocRows(rows) {
+        const tbody = document.getElementById('doc-table-body');
+        if (!rows.length) {
+            tbody.innerHTML = '<tr><td colspan="10" class="ispace-text-center ispace-text-tertiary" style="padding:40px;">{% trans "暂无数据" %}</td></tr>';
+            return;
+        }
+        tbody.innerHTML = rows.map(renderDocRow).join('');
+    }
+
+    function renderPagination(count, page) {
+        const container = document.getElementById('doc-pagination');
+        const totalPages = Math.ceil(count / getPageSize()) || 1;
+        let html = '';
+
+        html += `<button class="ispace-pagination-btn" data-page="${page - 1}" ${page <= 1 ? 'disabled' : ''}>{% trans "上一页" %}</button>`;
+
+        const startPage = Math.max(1, page - 2);
+        const endPage = Math.min(totalPages, page + 2);
+
+        if (startPage > 1) {
+            html += `<button class="ispace-pagination-btn" data-page="1">1</button>`;
+            if (startPage > 2) html += '<span class="ispace-pagination-info">...</span>';
+        }
+        for (let i = startPage; i <= endPage; i++) {
+            html += `<button class="ispace-pagination-btn ${i === page ? 'ispace-active' : ''}" data-page="${i}">${i}</button>`;
+        }
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) html += '<span class="ispace-pagination-info">...</span>';
+            html += `<button class="ispace-pagination-btn" data-page="${totalPages}">${totalPages}</button>`;
+        }
+
+        html += `<button class="ispace-pagination-btn" data-page="${page + 1}" ${page >= totalPages ? 'disabled' : ''}>{% trans "下一页" %}</button>`;
+        container.innerHTML = html;
+
+        container.querySelectorAll('.ispace-pagination-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const p = parseInt(this.dataset.page);
+                if (p >= 1 && p <= totalPages && p !== currentPage) {
+                    loadTable(p);
+                }
+            });
+        });
+    }
+
+    async function delDoc(docId) {
+        const confirmed = await iSpaceDoc.confirm(
+            '{% trans "警告：此操作将删除此文档！" %}',
+            { title: '{% trans "删除文档" %}' }
+        );
+        if (!confirmed) return;
+
+        const body = new URLSearchParams();
+        body.set('doc_id', docId);
+        body.set('csrfmiddlewaretoken', CSRF_TOKEN);
+
+        try {
+            const resp = await fetch(DEL_URL, {
+                method: 'POST',
+                headers: getCSRFHeaders(),
+                body: body.toString()
+            });
+            const result = await resp.json();
+            if (result.status) {
+                showSuccess('{% trans "删除成功" %}');
+                loadTable(currentPage);
+            } else {
+                showError(result.data || '{% trans "删除失败" %}');
+            }
+        } catch (err) {
+            showError('{% trans "删除失败" %}');
+        }
+    }
+
+    async function fastPubDoc(docId) {
+        const body = new URLSearchParams();
+        body.set('doc_id', docId);
+        body.set('csrfmiddlewaretoken', CSRF_TOKEN);
+
+        try {
+            const resp = await fetch(FAST_PUB_URL, {
+                method: 'POST',
+                headers: getCSRFHeaders(),
+                body: body.toString()
+            });
+            const result = await resp.json();
+            if (result.status) {
+                showSuccess('{% trans "发布成功" %}');
+                loadTable(currentPage);
+            } else {
+                showError(result.data || '{% trans "发布失败" %}');
+            }
+        } catch (err) {
+            showError('{% trans "发布失败" %}');
+        }
+    }
+
+    async function batchRemoveDocs() {
+        const checkboxes = document.querySelectorAll('.doc-checkbox:checked');
+        if (checkboxes.length === 0) {
+            showWarning('{% trans "未选中任何文档" %}');
+            return;
+        }
+        const ids = Array.from(checkboxes).map(function(cb) { return cb.value; });
+        const docIdStr = ids.join(',');
+
+        const confirmed = await iSpaceDoc.confirm(
+            '{% trans "确定要删除这些文档？" %}',
+            { title: '{% trans "提示" %}' }
+        );
+        if (!confirmed) return;
+
+        const body = new URLSearchParams();
+        body.set('doc_id', docIdStr);
+        body.set('range', 'multi');
+        body.set('csrfmiddlewaretoken', CSRF_TOKEN);
+
+        try {
+            const resp = await fetch(DEL_URL, {
+                method: 'POST',
+                headers: getCSRFHeaders(),
+                body: body.toString()
+            });
+            const result = await resp.json();
+            if (result.status) {
+                showSuccess('{% trans "删除成功" %}');
+                loadTable(1);
+            } else {
+                showError(result.data || '{% trans "删除失败" %}');
+            }
+        } catch (err) {
+            showError('{% trans "删除失败" %}');
+        }
+    }
+
+    document.getElementById('doc-table-body').addEventListener('click', function(e) {
+        const btn = e.target.closest('[data-action]');
+        if (!btn) return;
+
+        const action = btn.dataset.action;
+        const docId = btn.dataset.id;
+
+        if (action === 'delete') {
+            delDoc(docId);
+        } else if (action === 'publish') {
+            fastPubDoc(docId);
+        }
+    });
+
+    document.getElementById('batch-remove-btn').addEventListener('click', batchRemoveDocs);
+
+    document.getElementById('select-all-docs').addEventListener('change', function() {
+        const checked = this.checked;
+        document.querySelectorAll('.doc-checkbox').forEach(function(cb) {
+            cb.checked = checked;
+        });
+    });
+
+    document.getElementById('search-btn').addEventListener('click', function() {
+        currentFilters.kw = document.getElementById('doc-kw').value.trim();
+        loadTable(1);
+    });
+
+    document.querySelectorAll('input[name="doc-status"]').forEach(function(radio) {
+        radio.addEventListener('change', function() {
+            currentFilters.status = this.value;
+            loadTable(1);
+        });
+    });
+
+    document.getElementById('page-size-select').addEventListener('change', function() {
+        loadTable(1);
+    });
+
+    loadTable(1);
+})();
+</script>
+{% endblock %}

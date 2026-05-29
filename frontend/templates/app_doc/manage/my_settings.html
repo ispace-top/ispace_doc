@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% load static %}{% load i18n %}
+{% block title %}{% trans "个人设置" %}{% endblock %}
+
+{% block body_class %}ispace-page-body{% endblock %}
+
+{% block styles %}
+<style>
+.ispace-radio-group { display: flex; flex-wrap: wrap; gap: var(--ispace-space-4); }
+.ispace-radio-group label { display: flex; align-items: center; gap: var(--ispace-space-2); cursor: pointer; font-size: var(--ispace-font-sm); color: var(--ispace-color-text-primary); }
+.ispace-radio-group input[type="radio"] { accent-color: var(--ispace-color-brand-500); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ispace-page">
+    <div class="ispace-page-card">
+        <div class="ispace-content-card">
+            <div class="ispace-content-header">
+                <h1 class="ispace-content-title">{% trans "个人设置" %}</h1>
+                <p class="ispace-content-subtitle">{% trans "管理您的个人资料和偏好" %}</p>
+            </div>
+            <div class="ispace-content-body" style="max-width:600px;">
+                <div class="ispace-form-group">
+                    <label class="ispace-form-label">{% trans "用户名" %}</label>
+                    <input type="text" class="ispace-form-input" value="{{ user.username }}" disabled>
+                    <span class="ispace-form-hint">{% trans "不可修改" %}</span>
+                </div>
+                <div class="ispace-form-group">
+                    <label class="ispace-form-label" for="first_name">{% trans "昵称" %}</label>
+                    <input type="text" id="first_name" name="firstname" class="ispace-form-input" value="{{ user.first_name }}" placeholder="{% trans '请输入昵称' %}" required>
+                </div>
+                <div class="ispace-form-group">
+                    <label class="ispace-form-label" for="email">{% trans "电子邮箱" %}</label>
+                    <input type="email" id="email" name="email" class="ispace-form-input" value="{{ user.email }}" placeholder="{% trans '请输入电子邮箱地址' %}" required>
+                </div>
+                <div class="ispace-form-group">
+                    <label class="ispace-form-label">{% trans "新密码" %}</label>
+                    <button type="button" class="ispace-btn ispace-btn-ghost ispace-btn-sm" onclick="changePwd();">{% trans "点击修改密码" %}</button>
+                </div>
+                <div class="ispace-form-group">
+                    <label class="ispace-form-label">{% trans "编辑器" %}</label>
+                    <div class="ispace-radio-group">
+                        <label>
+                            <input type="radio" name="editor_mode" value="2" {% if user_opt.editor_mode == 2 %}checked{% endif %}>
+                            Vditor(Markdown)
+                        </label>
+                        <label>
+                            <input type="radio" name="editor_mode" value="4" {% if user_opt.editor_mode == 4 %}checked{% endif %}>
+                            Luckysheet({% trans "在线表格" %})
+                        </label>
+                    </div>
+                </div>
+                <div style="padding-top:var(--ispace-space-3);">
+                    <button type="button" class="ispace-btn ispace-btn-primary ispace-btn-sm" onclick="updateUser();">{% trans "更新个人资料" %}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    var csrfToken = window.__ISPACEDOC__ && window.__ISPACEDOC__.csrfToken;
+
+    window.changePwd = function() {
+        var modalContent = '<div style="padding:10px 0;">' +
+            '<div class="ispace-form-group">' +
+                '<label class="ispace-form-label">{% trans "原密码" %}</label>' +
+                '<input type="password" id="oldPwd" class="ispace-form-input" placeholder="{% trans '输入原密码' %}" required>' +
+            '</div>' +
+            '<div class="ispace-form-group">' +
+                '<label class="ispace-form-label">{% trans "新密码" %}</label>' +
+                '<input type="password" id="newPwd1" class="ispace-form-input" placeholder="{% trans '输入新密码' %}" required>' +
+            '</div>' +
+            '<div class="ispace-form-group">' +
+                '<label class="ispace-form-label">{% trans "确认新密码" %}</label>' +
+                '<input type="password" id="newPwd2" class="ispace-form-input" placeholder="{% trans '再次确认新密码' %}" required>' +
+            '</div>' +
+        '</div>';
+
+        iSpaceDoc.Modal.open({
+            title: '{% trans "修改密码" %}',
+            content: modalContent,
+            onConfirm: function() {
+                var oldPwd = document.getElementById('oldPwd').value;
+                var newPwd1 = document.getElementById('newPwd1').value;
+                var newPwd2 = document.getElementById('newPwd2').value;
+
+                if (!oldPwd || !newPwd1 || !newPwd2) { showWarning('{% trans "请填写完整信息" %}'); return; }
+                if (newPwd1 !== newPwd2) { showWarning('{% trans "两次输入的新密码不一致" %}'); return; }
+
+                var data = new URLSearchParams();
+                data.append('old_pwd', oldPwd);
+                data.append('password', newPwd1);
+                data.append('password2', newPwd2);
+
+                fetch('{% url "modify_pwd" %}', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: data.toString()
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(r) {
+                    if (r.status) { showSuccess('{% trans "修改成功" %}'); }
+                    else { showError(r.data || '{% trans "修改失败" %}'); }
+                })
+                .catch(function() { showError('{% trans "修改异常" %}'); });
+            }
+        });
+    };
+
+    window.updateUser = function() {
+        var firstName = document.getElementById('first_name').value.trim();
+        var email = document.getElementById('email').value.trim();
+
+        if (!firstName) { showWarning('{% trans "请输入昵称" %}'); return; }
+        if (!email) { showWarning('{% trans "请输入电子邮箱地址" %}'); return; }
+
+        var checkedRadio = document.querySelector('input[name="editor_mode"]:checked');
+        var editorMode = checkedRadio ? checkedRadio.value : '1';
+
+        var data = new URLSearchParams();
+        data.append('first_name', firstName);
+        data.append('email', email);
+        data.append('editor_mode', editorMode);
+
+        var loadingEl = document.createElement('div');
+        loadingEl.className = 'ispace-loading-overlay';
+        loadingEl.innerHTML = '<div class="ispace-spinner"></div>';
+        document.body.appendChild(loadingEl);
+
+        fetch('{% url "manage_self" %}', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: data.toString()
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(r) {
+            loadingEl.remove();
+            if (r.status) {
+                showSuccess('{% trans "修改成功" %}');
+                setTimeout(function() { window.location.reload(); }, 1500);
+            } else {
+                showError(r.data || '{% trans "修改失败" %}');
+            }
+        })
+        .catch(function() { loadingEl.remove(); showError('{% trans "修改异常" %}'); });
+    };
+})();
+</script>
+{% endblock %}

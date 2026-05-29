@@ -1,0 +1,84 @@
+{% extends "auth/base_auth.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "找回密码" %} - {{ site_name|default:"爱思文档" }}{% endblock %}
+
+{% block auth_title %}{% trans "找回密码" %}{% endblock %}
+{% block auth_subtitle %}{% trans "通过注册邮箱重置密码" %}{% endblock %}
+
+{% block auth_form %}
+<form class="ispace-auth-form" method="post" action="{% url 'forget_pwd' %}">
+    {% csrf_token %}
+
+    <div class="ispace-form-group">
+        <label class="ispace-form-label ispace-form-label-required" for="email">{% trans "注册邮箱" %}</label>
+        <input type="email" id="email" name="email"
+               class="ispace-form-input" placeholder="{% trans '请输入注册时使用的邮箱' %}"
+               required autocomplete="email" autofocus>
+    </div>
+
+    <div class="ispace-form-group">
+        <label class="ispace-form-label ispace-form-label-required" for="vcode">{% trans "邮箱验证码" %}</label>
+        <div class="ispace-flex-center ispace-gap-3">
+            <input type="text" id="vcode" name="vcode"
+                   class="ispace-form-input" placeholder="{% trans '请输入邮箱验证码' %}"
+                   required maxlength="6" style="flex:1;">
+            <button type="button" class="ispace-btn ispace-btn-secondary ispace-btn-sm" style="white-space:nowrap;"
+                    onclick="sendVcode()">{% trans "发送验证码" %}</button>
+        </div>
+        <div class="ispace-form-hint">{% trans "点击发送验证码，系统会将验证码发送至您的邮箱" %}</div>
+    </div>
+
+    <div class="ispace-form-group">
+        <label class="ispace-form-label ispace-form-label-required" for="password">{% trans "新密码" %}</label>
+        <input type="password" id="password" name="password"
+               class="ispace-form-input" placeholder="{% trans '请输入新密码' %}"
+               required autocomplete="new-password">
+    </div>
+
+    <button type="submit" class="ispace-btn ispace-btn-primary ispace-btn-sm">
+        {% trans "重置密码" %}
+    </button>
+</form>
+{% endblock %}
+
+{% block auth_footer %}
+<span class="ispace-auth-back-link"><a href="{% url 'login' %}">&larr; {% trans "返回登录" %}</a></span>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function sendVcode() {
+    const email = document.getElementById('email').value.trim();
+    if (!email) {
+        showWarning('请先输入邮箱地址');
+        return;
+    }
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = '发送中...';
+
+    fetch('{% url "send_email_vcode" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: 'email=' + encodeURIComponent(email) + '&type=forget_pwd'
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.status) {
+            showSuccess('验证码已发送，请查收邮箱');
+        } else {
+            showError(data.msg || '发送失败');
+        }
+    })
+    .catch(function() { showError('发送失败，请重试'); })
+    .finally(function() {
+        btn.disabled = false;
+        btn.textContent = '发送验证码';
+    });
+}
+</script>
+{% endblock %}

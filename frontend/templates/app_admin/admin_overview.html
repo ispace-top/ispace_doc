@@ -1,0 +1,464 @@
+{% extends "base.html" %}
+{% load static %}{% load i18n %}
+
+{% block title %}{% trans "仪表盘" %}{% endblock %}
+
+{% block body_class %}ispace-page-body{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrapper">
+
+{# ── 运行状态 ── #}
+<div class="dashboard-card dashboard-status-card">
+    <div class="dashboard-card-header">
+        <h3 class="dashboard-card-title">{% trans "运行状态" %}</h3>
+        <div class="dashboard-card-header-meta">
+            <time class="dashboard-date">{{ today|date:"Y-m-d" }} {% now "l" %}</time>
+        </div>
+    </div>
+    <div class="dashboard-card-body">
+        <div class="dashboard-status-layout">
+            {# 左侧：3个仪表盘 #}
+            <div class="dashboard-gauges">
+                {% if sys_resources.cpu %}
+                <div class="dashboard-gauge">
+                    <div class="dashboard-gauge-ring" style="--gauge-pct:{{ sys_resources.cpu.percent|floatformat:'0' }}%;--gauge-color:#3b82f6;">
+                        <div class="dashboard-gauge-inner">
+                            <span class="dashboard-gauge-value">{{ sys_resources.cpu.percent|floatformat:"0" }}<small>%</small></span>
+                        </div>
+                    </div>
+                    <div class="dashboard-gauge-label">
+                        <span class="dashboard-gauge-name">CPU</span>
+                        <span class="dashboard-gauge-sub">{{ sys_resources.cpu.cores }} {% trans "核" %}</span>
+                    </div>
+                </div>
+                {% endif %}
+                {% if sys_resources.memory %}
+                <div class="dashboard-gauge">
+                    <div class="dashboard-gauge-ring" style="--gauge-pct:{{ sys_resources.memory.percent|floatformat:'0' }}%;--gauge-color:#f59e0b;">
+                        <div class="dashboard-gauge-inner">
+                            <span class="dashboard-gauge-value">{{ sys_resources.memory.percent|floatformat:"0" }}<small>%</small></span>
+                        </div>
+                    </div>
+                    <div class="dashboard-gauge-label">
+                        <span class="dashboard-gauge-name">{% trans "内存" %}</span>
+                        <span class="dashboard-gauge-sub">{{ sys_resources.memory.used|filesizeformat }} / {{ sys_resources.memory.total|filesizeformat }}</span>
+                    </div>
+                </div>
+                {% endif %}
+                {% if sys_resources.disk %}
+                <div class="dashboard-gauge">
+                    <div class="dashboard-gauge-ring" style="--gauge-pct:{{ sys_resources.disk.percent|floatformat:'0' }}%;--gauge-color:#8b5cf6;">
+                        <div class="dashboard-gauge-inner">
+                            <span class="dashboard-gauge-value">{{ sys_resources.disk.percent|floatformat:"0" }}<small>%</small></span>
+                        </div>
+                    </div>
+                    <div class="dashboard-gauge-label">
+                        <span class="dashboard-gauge-name">{% trans "磁盘" %}</span>
+                        <span class="dashboard-gauge-sub">{{ sys_resources.disk.used|filesizeformat }} / {{ sys_resources.disk.total|filesizeformat }}</span>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            {# 右侧：网站数据指标 #}
+            <div class="dashboard-metrics">
+                <div class="dashboard-metric-item">
+                    <span class="dashboard-metric-value">{{ user_cnt }}</span>
+                    <span class="dashboard-metric-label">{% trans "用户总数" %}</span>
+                </div>
+                <div class="dashboard-metric-item">
+                    <span class="dashboard-metric-value">{{ active_user_cnt|default:"0" }}</span>
+                    <span class="dashboard-metric-label">{% trans "7天活跃" %}</span>
+                </div>
+                <div class="dashboard-metric-item">
+                    <span class="dashboard-metric-value">{{ doc_cnt }}</span>
+                    <span class="dashboard-metric-label">{% trans "文档总数" %}</span>
+                </div>
+                <div class="dashboard-metric-item">
+                    <span class="dashboard-metric-value">{{ today_doc_cnt|default:"0" }}</span>
+                    <span class="dashboard-metric-label">{% trans "今日新增" %}</span>
+                </div>
+                <div class="dashboard-metric-item">
+                    <span class="dashboard-metric-value">{{ comment_cnt|default:"0" }}</span>
+                    <span class="dashboard-metric-label">{% trans "评论总数" %}</span>
+                </div>
+                <div class="dashboard-metric-item">
+                    <span class="dashboard-metric-value">{{ img_cnt }}</span>
+                    <span class="dashboard-metric-label">{% trans "图片总数" %}</span>
+                </div>
+                <div class="dashboard-metric-item">
+                    <span class="dashboard-metric-value">{{ attachment_cnt }}</span>
+                    <span class="dashboard-metric-label">{% trans "附件总数" %}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ── 最近动态 ── #}
+<div class="dashboard-card">
+    <div class="dashboard-card-header">
+        <h3 class="dashboard-card-title">{% trans "最近动态" %}</h3>
+    </div>
+    <div class="dashboard-card-body">
+        {% if audit_logs or doc_active_list %}
+        <ul class="dashboard-feed-list">
+            {% for log in audit_logs %}
+            <li class="dashboard-feed-item">
+                <div class="dashboard-feed-avatar">
+                    {{ log.user.first_name|default:log.user.username|first|upper }}
+                </div>
+                <div class="dashboard-feed-content">
+                    <p class="dashboard-feed-text">
+                        <strong>{{ log.user.first_name|default:log.user.username }}</strong>
+                        {{ log.get_action_display }}
+                        {% if log.detail %}— <span>{{ log.detail|truncatechars:60 }}</span>{% endif %}
+                    </p>
+                    <time class="dashboard-feed-time">{{ log.created_at|date:"m-d H:i" }}</time>
+                </div>
+            </li>
+            {% endfor %}
+            {% for doc in doc_active_list %}
+            <li class="dashboard-feed-item">
+                <div class="dashboard-feed-avatar">
+                    {{ doc.create_user.first_name|first|upper }}
+                </div>
+                <div class="dashboard-feed-content">
+                    <p class="dashboard-feed-text">
+                        {{ doc.create_user.first_name }}
+                        {% if doc.status == 1 %}
+                        {% trans "发布了文档" %}
+                        {% elif doc.status == 0 %}
+                        {% trans "保存了文档" %}
+                        {% else %}
+                        {% trans "删除了文档" %}
+                        {% endif %}
+                        <a href="{% if doc.status == 0 %}{% url 'modify_doc' doc.id %}{% else %}{% url 'doc_by_id' doc_id=doc.id %}{% endif %}" target="_blank" class="dashboard-feed-link">{{ doc.name }}</a>
+                    </p>
+                    <time class="dashboard-feed-time">{{ doc.modify_time|date:"m-d H:i" }}</time>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="dashboard-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+            <p>{% trans "暂无动态" %}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+/* ===== Dashboard Wrapper ===== */
+.dashboard-wrapper {
+    padding: 0;
+}
+
+.dashboard-card-header-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    margin-left: auto;
+}
+.dashboard-date {
+    font-size: var(--ispace-font-ms);
+    color: var(--ispace-color-text-secondary);
+}
+
+/* ===== Content Cards ===== */
+.dashboard-card {
+    background: var(--ispace-color-surface-0);
+    border: 1px solid var(--ispace-color-border-light);
+    border-radius: var(--ispace-radius-xl);
+    overflow: hidden;
+}
+.dashboard-card-header {
+    padding: var(--ispace-space-4) var(--ispace-space-5);
+    border-bottom: 1px solid var(--ispace-color-border-light);
+    display: flex;
+    align-items: center;
+    gap: var(--ispace-space-2);
+}
+.dashboard-card-title {
+    font-size: var(--ispace-font-base);
+    font-weight: var(--ispace-font-semibold);
+    color: var(--ispace-color-text-primary);
+    margin: 0;
+}
+.dashboard-card-body {
+    padding: 0;
+}
+
+/* ===== 运行状态 ===== */
+.dashboard-status-card {
+    margin-bottom: var(--ispace-space-4);
+}
+.dashboard-status-layout {
+    display: flex;
+    align-items: stretch;
+    min-height: 280px;
+}
+
+/* ===== 仪表盘（左侧） ===== */
+.dashboard-gauges {
+    display: flex;
+    gap: var(--ispace-space-6);
+    padding: var(--ispace-space-6) var(--ispace-space-8);
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+    border-right: 1px solid var(--ispace-color-border-light);
+}
+.dashboard-gauge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--ispace-space-3);
+}
+.dashboard-gauge-ring {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    background: conic-gradient(
+        var(--gauge-color, #3b82f6) 0% var(--gauge-pct, 0%),
+        #e5e7eb var(--gauge-pct, 0%) 100%
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+.dashboard-gauge-inner {
+    width: 82px;
+    height: 82px;
+    border-radius: 50%;
+    background: var(--ispace-color-surface-0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.dashboard-gauge-value {
+    font-size: 1.6rem;
+    font-weight: var(--ispace-font-bold);
+    color: var(--ispace-color-text-primary);
+    line-height: 1;
+}
+.dashboard-gauge-value small {
+    font-size: 0.75rem;
+    font-weight: var(--ispace-font-medium);
+    color: var(--ispace-color-text-tertiary);
+}
+.dashboard-gauge-label {
+    text-align: center;
+}
+.dashboard-gauge-name {
+    display: block;
+    font-size: var(--ispace-font-sm);
+    font-weight: var(--ispace-font-semibold);
+    color: var(--ispace-color-text-primary);
+}
+.dashboard-gauge-sub {
+    display: block;
+    font-size: var(--ispace-font-xs);
+    color: var(--ispace-color-text-tertiary);
+    margin-top: 2px;
+}
+
+/* ===== 网站数据指标（右侧） ===== */
+.dashboard-metrics {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-auto-rows: 1fr;
+    padding: var(--ispace-space-4) var(--ispace-space-6);
+    gap: 1px;
+    background: var(--ispace-color-border-light);
+}
+.dashboard-metric-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: var(--ispace-color-surface-0);
+    padding: var(--ispace-space-3);
+    transition: background 0.15s ease;
+}
+.dashboard-metric-item:hover {
+    background: var(--ispace-color-surface-100);
+}
+.dashboard-metric-value {
+    font-size: 1.75rem;
+    font-weight: var(--ispace-font-bold);
+    color: var(--ispace-color-text-primary);
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+}
+.dashboard-metric-label {
+    font-size: var(--ispace-font-xs);
+    color: var(--ispace-color-text-tertiary);
+    font-weight: var(--ispace-font-medium);
+}
+
+/* ===== Feed List ===== */
+.dashboard-feed-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.dashboard-feed-item {
+    display: flex;
+    gap: var(--ispace-space-3);
+    padding: var(--ispace-space-3) var(--ispace-space-5);
+    border-bottom: 1px solid var(--ispace-color-border-light);
+    align-items: flex-start;
+}
+.dashboard-feed-item:last-child {
+    border-bottom: none;
+}
+.dashboard-feed-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--ispace-color-brand-100);
+    color: var(--ispace-color-brand-600);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--ispace-font-xs);
+    font-weight: var(--ispace-font-semibold);
+    flex-shrink: 0;
+}
+.dashboard-feed-content {
+    flex: 1;
+    min-width: 0;
+}
+.dashboard-feed-text {
+    margin: 0;
+    font-size: var(--ispace-font-sm);
+    color: var(--ispace-color-text-secondary);
+    line-height: 1.5;
+}
+.dashboard-feed-text strong {
+    font-weight: var(--ispace-font-semibold);
+    color: var(--ispace-color-text-primary);
+}
+.dashboard-feed-text span {
+    color: var(--ispace-color-text-tertiary);
+}
+.dashboard-feed-time {
+    display: block;
+    font-size: var(--ispace-font-xs);
+    color: var(--ispace-color-text-quaternary);
+    margin-top: 2px;
+}
+.dashboard-feed-link {
+    color: var(--ispace-color-brand-500);
+    text-decoration: none;
+    font-weight: var(--ispace-font-medium);
+}
+.dashboard-feed-link:hover {
+    text-decoration: underline;
+}
+
+/* ===== Empty State ===== */
+.dashboard-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--ispace-space-10) var(--ispace-space-4);
+    color: var(--ispace-color-text-quaternary);
+}
+.dashboard-empty svg {
+    width: 40px;
+    height: 40px;
+    margin-bottom: var(--ispace-space-3);
+    opacity: 0.4;
+}
+.dashboard-empty p {
+    margin: 0;
+    font-size: var(--ispace-font-sm);
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 1200px) {
+    .dashboard-status-layout {
+        flex-direction: column;
+    }
+    .dashboard-gauges {
+        border-right: none;
+        border-bottom: 1px solid var(--ispace-color-border-light);
+        padding: var(--ispace-space-5) var(--ispace-space-4);
+    }
+    .dashboard-metrics {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+@media (max-width: 900px) {
+    .dashboard-feed-item {
+        padding: var(--ispace-space-3) var(--ispace-space-4);
+    }
+}
+@media (max-width: 640px) {
+    .dashboard-gauges {
+        gap: var(--ispace-space-4);
+        padding: var(--ispace-space-4);
+    }
+    .dashboard-gauge-ring {
+        width: 80px;
+        height: 80px;
+    }
+    .dashboard-gauge-inner {
+        width: 58px;
+        height: 58px;
+    }
+    .dashboard-gauge-value {
+        font-size: 1.2rem;
+    }
+    .dashboard-metrics {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .dashboard-metric-value {
+        font-size: 1.35rem;
+    }
+    .dashboard-card-header-meta {
+        align-items: flex-start;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    {% if not disable_update_check %}
+    (function() {
+        fetch("{% url 'check_update' %}")
+            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                if (r.status) {
+                    var newVersion = r.data.name.slice(1, 6);
+                    var currentVersion = '{{ isdoc_version }}';
+                    if (newVersion > currentVersion) {
+                        var banner = document.createElement('div');
+                        banner.className = 'dashboard-debug-banner';
+                        banner.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>爱思文档已发布新版本 ' + r.data.name + '，请及时更新</span>';
+                        var wrapper = document.querySelector('.dashboard-wrapper');
+                        if (wrapper) wrapper.insertBefore(banner, wrapper.firstChild);
+                    }
+                }
+            })
+            .catch(function() {});
+    })();
+    {% endif %}
+})();
+</script>
+{% endblock %}

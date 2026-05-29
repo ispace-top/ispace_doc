@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% load static %}{% load i18n %}
+
+{% block title %}{% trans "通知渠道" %}{% endblock %}
+
+{% block styles %}
+<style>
+.nc-page { padding: var(--ispace-space-6); max-width: 1100px; }
+.nc-page h2 { margin: 0 0 var(--ispace-space-5); font-size: var(--ispace-font-xl); color: var(--ispace-color-text-primary); }
+.nc-section { margin-bottom: var(--ispace-space-6); }
+.nc-section h3 { font-size: var(--ispace-font-base); font-weight: 600; color: var(--ispace-color-text-primary); margin: 0 0 var(--ispace-space-3); padding-bottom: var(--ispace-space-2); border-bottom: 1px solid var(--ispace-color-border-light); }
+
+/* Channel cards grid */
+.nc-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--ispace-space-4); }
+.nc-card { background: var(--ispace-color-surface-0); border: 1px solid var(--ispace-color-border-light); border-radius: var(--ispace-radius-lg); padding: var(--ispace-space-4); }
+.nc-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--ispace-space-3); }
+.nc-card-name { font-size: var(--ispace-font-base); font-weight: 600; color: var(--ispace-color-text-primary); }
+.nc-card-desc { font-size: var(--ispace-font-xs); color: var(--ispace-color-text-tertiary); margin-bottom: var(--ispace-space-3); }
+.nc-card-summary { margin-bottom: var(--ispace-space-3); }
+.nc-card-summary-item { display: flex; gap: var(--ispace-space-2); font-size: var(--ispace-font-xs); padding: 2px 0; }
+.nc-card-summary-item span:first-child { color: var(--ispace-color-text-tertiary); min-width: 80px; }
+.nc-card-summary-item span:last-child { color: var(--ispace-color-text-primary); }
+.nc-card-actions { border-top: 1px solid var(--ispace-color-border-light); padding-top: var(--ispace-space-3); display: flex; gap: var(--ispace-space-2); align-items: center; }
+
+/* Toggle switch */
+.nc-toggle { position: relative; width: 40px; height: 22px; cursor: pointer; }
+.nc-toggle input { display: none; }
+.nc-toggle .toggle-track { position: absolute; inset: 0; background: var(--ispace-color-border-medium); border-radius: 11px; transition: background var(--ispace-duration-fast); }
+.nc-toggle input:checked + .toggle-track { background: var(--ispace-color-brand-500); }
+.nc-toggle .toggle-thumb { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: transform var(--ispace-duration-fast); }
+.nc-toggle input:checked ~ .toggle-thumb { transform: translateX(18px); }
+
+/* Route table */
+.nc-route-table { width: 100%; border-collapse: collapse; }
+.nc-route-table th { text-align: left; padding: var(--ispace-space-2) var(--ispace-space-3); font-size: var(--ispace-font-xs); font-weight: 600; color: var(--ispace-color-text-tertiary); border-bottom: 1px solid var(--ispace-color-border-light); white-space: nowrap; }
+.nc-route-table td { padding: var(--ispace-space-2) var(--ispace-space-3); font-size: var(--ispace-font-sm); border-bottom: 1px solid var(--ispace-color-border-light); }
+.nc-channel-tag { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 10px; font-size: var(--ispace-font-xs); background: var(--ispace-color-surface-100); color: var(--ispace-color-text-secondary); margin-right: 4px; }
+.nc-note { font-size: var(--ispace-font-xs); color: var(--ispace-color-text-tertiary); margin-top: var(--ispace-space-3); padding-top: var(--ispace-space-3); border-top: 1px solid var(--ispace-color-border-light); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="nc-page">
+    <h2>{% trans "通知渠道" %}</h2>
+
+    <!-- Channel Status Cards -->
+    <div class="nc-section">
+        <h3>{% trans "通道状态" %}</h3>
+        <div class="nc-cards" id="nc-cards">
+            <p style="color:var(--ispace-color-text-tertiary);grid-column:1/-1;">{% trans "加载中..." %}</p>
+        </div>
+    </div>
+
+    <!-- Route Rules -->
+    <div class="nc-section">
+        <h3>{% trans "路由规则" %}</h3>
+        <table class="nc-route-table" id="nc-route-table">
+            <thead>
+                <tr>
+                    <th>{% trans "通知类型" %}</th>
+                    <th>{% trans "推送通道" %}</th>
+                </tr>
+            </thead>
+            <tbody id="nc-route-tbody">
+                <tr><td colspan="2" style="text-align:center;color:var(--ispace-color-text-tertiary);padding:var(--ispace-space-6);">{% trans "加载中..." %}</td></tr>
+            </tbody>
+        </table>
+        <p class="nc-note">{% trans "提示：路由规则由代码定义（notification_channels.py），如需调整请联系管理员编辑 NOTIFICATION_CHANNEL_ROUTES 字典。" %}</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function loadChannels() {
+    fetch('{% url "api_admin_notification_channels" %}')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.status) return;
+            renderChannelCards(data.channels);
+            renderRouteTable(data.routes);
+        })
+        .catch(function() {
+            document.getElementById('nc-cards').innerHTML = '<p style="color:var(--ispace-color-error-text);">{% trans "加载失败" %}</p>';
+        });
+}
+
+function renderChannelCards(channels) {
+    var html = '';
+    channels.forEach(function(ch) {
+        var summaryHtml = '';
+        for (var k in ch.summary) {
+            summaryHtml += '<div class="nc-card-summary-item"><span>' + escapeHTML(k) + '</span><span>' + escapeHTML(ch.summary[k]) + '</span></div>';
+        }
+        html += '<div class="nc-card">';
+        html += '<div class="nc-card-header">';
+        html += '<span class="nc-card-name">' + escapeHTML(ch.name) + '</span>';
+        if (ch.configurable) {
+            html += '<label class="nc-toggle">';
+            html += '<input type="checkbox" ' + (ch.enabled ? 'checked' : '') + ' onchange="toggleChannel(\'' + ch.id + '\', this.checked)" ' + (ch.id === 'in_app' ? 'disabled' : '') + '>';
+            html += '<span class="toggle-track"></span>';
+            html += '<span class="toggle-thumb"></span>';
+            html += '</label>';
+        } else {
+            html += '<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;font-size:var(--ispace-font-xs);background:#dcfce7;color:#166534;">{% trans "始终启用" %}</span>';
+        }
+        html += '</div>';
+        html += '<div class="nc-card-desc">' + escapeHTML(ch.description) + '</div>';
+        html += '<div class="nc-card-summary">' + summaryHtml + '</div>';
+        if (ch.id === 'email' || ch.id === 'webhook') {
+            html += '<div class="nc-card-actions">';
+            html += '<button class="ispace-btn ispace-btn-outline ispace-btn-sm" onclick="testChannel(\'' + ch.id + '\')">{% trans "测试连接" %}</button>';
+            html += '</div>';
+        }
+        html += '</div>';
+    });
+    document.getElementById('nc-cards').innerHTML = html;
+}
+
+function renderRouteTable(routes) {
+    var html = '';
+    routes.forEach(function(r) {
+        var tags = '';
+        r.channel_names.forEach(function(name) {
+            tags += '<span class="nc-channel-tag">' + escapeHTML(name) + '</span>';
+        });
+        html += '<tr>';
+        html += '<td><span style="font-weight:500;">' + escapeHTML(r.label) + '</span> <span style="color:var(--ispace-color-text-tertiary);font-size:var(--ispace-font-xs);">(' + escapeHTML(r.type) + ')</span></td>';
+        html += '<td>' + tags + '</td>';
+        html += '</tr>';
+    });
+    document.getElementById('nc-route-tbody').innerHTML = html;
+}
+
+function toggleChannel(channelId, enabled) {
+    var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+    fetch('{% url "api_admin_notification_channels" %}' + channelId + '/', {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfEl ? csrfEl.value : ''
+        },
+        body: JSON.stringify({ enabled: enabled })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (!data.status && typeof layer !== 'undefined') {
+            layer.msg(data.message, {icon: 2});
+        }
+    });
+}
+
+function testChannel(channelId) {
+    var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+    var url = '{% url "api_admin_notification_channels" %}' + channelId + '/';
+    if (typeof layer !== 'undefined') layer.load(1);
+    fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfEl ? csrfEl.value : '' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (typeof layer !== 'undefined') {
+            layer.closeAll();
+            layer.msg(data.message, { icon: data.status ? 1 : 2 });
+        } else {
+            alert(data.message);
+        }
+    })
+    .catch(function() {
+        if (typeof layer !== 'undefined') {
+            layer.closeAll();
+            layer.msg('{% trans "请求失败" %}', {icon: 2});
+        }
+    });
+}
+
+function escapeHTML(str) {
+    var div = document.createElement('div');
+    div.textContent = str || '';
+    return div.innerHTML;
+}
+
+loadChannels();
+</script>
+{% endblock %}

@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% load static %}{% load i18n %}
+
+{% block title %}{{ doc_name }} - 无权限访问 - {{ site_name|default:"爱思文档" }}{% endblock %}
+
+{% block layout_class %}{% endblock %}
+
+{% block head_extra %}
+<style>
+.ispace-access-denied-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    padding: var(--ispace-space-6);
+}
+.ispace-access-denied-card {
+    text-align: center;
+    max-width: 440px;
+    width: 100%;
+    padding: var(--ispace-space-10) var(--ispace-space-8);
+    background: var(--ispace-color-surface-0);
+    border: 1px solid var(--ispace-color-border-light);
+    border-radius: var(--ispace-radius-xl);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.04);
+}
+.ispace-access-denied-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--ispace-color-warning-bg, #fffbeb) 0%, var(--ispace-color-warning-bg-subtle, #fef3c7) 100%);
+    margin-bottom: var(--ispace-space-5);
+}
+.ispace-access-denied-icon svg {
+    color: var(--ispace-color-warning-text, #d97706);
+}
+.ispace-access-denied-title {
+    font-size: var(--ispace-font-xl);
+    font-weight: var(--ispace-font-semibold);
+    color: var(--ispace-color-text-primary);
+    margin: 0 0 var(--ispace-space-2);
+}
+.ispace-access-denied-desc {
+    color: var(--ispace-color-text-secondary);
+    font-size: var(--ispace-font-sm);
+    line-height: 1.6;
+    margin: 0 0 var(--ispace-space-5);
+}
+.ispace-access-denied-doc-name {
+    color: var(--ispace-color-text-primary);
+    font-weight: var(--ispace-font-semibold);
+}
+.ispace-access-denied-admins {
+    font-size: var(--ispace-font-xs);
+    color: var(--ispace-color-text-quaternary);
+    margin-bottom: var(--ispace-space-5);
+}
+.ispace-access-denied-admins span {
+    color: var(--ispace-color-text-secondary);
+    font-weight: var(--ispace-font-medium);
+    cursor: pointer;
+}
+.ispace-access-denied-admins span:hover {
+    color: var(--ispace-color-brand-500);
+}
+.ispace-access-denied-form {
+    margin-bottom: var(--ispace-space-5);
+}
+.ispace-access-denied-form label {
+    display: block;
+    font-size: var(--ispace-font-xs);
+    font-weight: var(--ispace-font-medium);
+    color: var(--ispace-color-text-tertiary);
+    margin-bottom: var(--ispace-space-1);
+    text-align: left;
+}
+.ispace-access-denied-form textarea {
+    width: 100%;
+    padding: var(--ispace-space-2) var(--ispace-space-3);
+    font-size: var(--ispace-font-sm);
+    color: var(--ispace-color-text-primary);
+    background: var(--ispace-color-surface-0);
+    border: 1px solid var(--ispace-color-border);
+    border-radius: var(--ispace-radius-md);
+    resize: vertical;
+    min-height: 80px;
+    transition: border-color var(--ispace-duration-fast);
+    font-family: inherit;
+    box-sizing: border-box;
+}
+.ispace-access-denied-form textarea:focus {
+    outline: none;
+    border-color: var(--ispace-color-brand-400);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+.ispace-access-denied-form textarea::placeholder {
+    color: var(--ispace-color-text-quaternary);
+}
+.ispace-access-denied-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--ispace-space-3);
+}
+.ispace-access-denied-success {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: var(--ispace-space-2);
+    padding: var(--ispace-space-3) var(--ispace-space-4);
+    background: var(--ispace-color-success-bg, #f0fdf4);
+    border-radius: var(--ispace-radius-md);
+    font-size: var(--ispace-font-sm);
+    color: var(--ispace-color-success-text, #16a34a);
+    margin-bottom: var(--ispace-space-4);
+}
+.ispace-access-denied-already {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--ispace-space-2);
+    padding: var(--ispace-space-3) var(--ispace-space-4);
+    background: var(--ispace-color-surface-100);
+    border-radius: var(--ispace-radius-md);
+    font-size: var(--ispace-font-sm);
+    color: var(--ispace-color-text-secondary);
+    margin-bottom: var(--ispace-space-4);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ispace-access-denied-wrap">
+  <div class="ispace-access-denied-card">
+    <div class="ispace-access-denied-icon">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
+      </svg>
+    </div>
+    <h2 class="ispace-access-denied-title">{% trans "无权限访问" %}</h2>
+    <p class="ispace-access-denied-desc">
+      {% blocktrans with doc_name=doc_name %}你没有权限查看文档<span class="ispace-access-denied-doc-name">《{{ doc_name }}》</span>{% endblocktrans %}
+    </p>
+    {% if admins %}
+    <p class="ispace-access-denied-admins">
+      {% trans "文档管理员：" %}
+      {% for admin in admins %}
+      <span data-user-id="{{ admin.id }}">{{ admin.display_name }}</span>{% if not forloop.last %}、{% endif %}
+      {% endfor %}
+    </p>
+    {% endif %}
+
+    {% if user.is_authenticated and not already_requested %}
+    <div class="ispace-access-denied-form">
+      <label for="apply-reason">{% trans "申请理由（可选）" %}</label>
+      <textarea id="apply-reason" placeholder="{% trans '简单说明您需要访问此文档的原因…' %}" rows="3"></textarea>
+    </div>
+    <div class="ispace-access-denied-actions">
+      <div class="ispace-access-denied-success" id="apply-result">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+        {% trans "已发送权限申请，管理员将尽快处理" %}
+      </div>
+      <button class="ispace-btn ispace-btn-primary" id="btn-apply-perm" onclick="applyPermission()">
+        {% trans "申请查看权限" %}
+      </button>
+      <a href="/" class="ispace-btn ispace-btn-ghost ispace-btn-sm">{% trans "返回首页" %}</a>
+    </div>
+    {% elif already_requested %}
+    <div class="ispace-access-denied-already">
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+      {% trans "已发送权限申请，请耐心等待管理员处理" %}
+    </div>
+    <a href="/" class="ispace-btn ispace-btn-ghost">{% trans "返回首页" %}</a>
+    {% else %}
+    <a href="{% url 'login' %}" class="ispace-btn ispace-btn-primary">{% trans "登录" %}</a>
+    <a href="/" class="ispace-btn ispace-btn-ghost ispace-btn-sm" style="margin-top:var(--ispace-space-3);display:inline-block;">{% trans "返回首页" %}</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function applyPermission() {
+  var btn = document.getElementById('btn-apply-perm');
+  var result = document.getElementById('apply-result');
+  btn.disabled = true;
+  btn.textContent = '发送中...';
+  var csrf = window.__ISPACEDOC__ ? window.__ISPACEDOC__.csrfToken : '';
+  var reasonEl = document.getElementById('apply-reason');
+  var reason = reasonEl ? reasonEl.value.trim() : '';
+  fetch('/api/docs/{{ doc_id }}/permissions/apply/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+    body: JSON.stringify({ reason: reason })
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.status) {
+        btn.style.display = 'none';
+        result.style.display = 'flex';
+        document.querySelector('.ispace-access-denied-form').style.display = 'none';
+      } else {
+        btn.disabled = false;
+        btn.textContent = '{% trans "申请查看权限" %}';
+        if (window.showError) window.showError(data.message || '申请失败');
+      }
+    })
+    .catch(function() {
+      btn.disabled = false;
+      btn.textContent = '{% trans "申请查看权限" %}';
+    });
+}
+</script>
+{% endblock %}

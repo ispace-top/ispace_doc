@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+{% load static %}{% load i18n %}
+
+{% block title %}{% trans "文档分享管理" %}{% endblock %}
+{% block breadcrumb %}{% include "includes/breadcrumb.html" with breadcrumbs=breadcrumb_items %}{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+
+<div class="ispace-content-card">
+    <div class="ispace-card-body">
+        <div class="ispace-flex-between ispace-mb-3">
+            <button class="ispace-btn ispace-btn-primary ispace-btn-sm" onclick="openCreateShare()">+ {% trans "新建分享" %}</button>
+            <button class="ispace-btn ispace-btn-danger ispace-btn-sm" id="batchRemove">{% trans "批量删除" %}</button>
+        </div>
+
+        {% if shares and shares.paginator.count > 0 %}
+        <div class="ispace-table-wrap" style="overflow-x:auto;">
+            <table class="ispace-table">
+                <thead>
+                    <tr>
+                        <th style="width:36px;"><input type="checkbox" id="selectAll" title="{% trans '全选' %}"></th>
+                        <th>{% trans "文档名称" %}</th>
+                        <th style="width:100px;">{% trans "分享类型" %}</th>
+                        <th style="width:90px;">{% trans "分享码" %}</th>
+                        <th style="width:140px;">{% trans "分享链接" %}</th>
+                        <th style="width:140px;">{% trans "分享时间" %}</th>
+                        <th style="width:80px;">{% trans "状态" %}</th>
+                        <th style="width:180px;">{% trans "操作" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in shares %}
+                    <tr>
+                        <td><input type="checkbox" class="share-checkbox" value="{{ s.token }}"></td>
+                        <td><a href="{% url 'doc' s.doc.top_doc s.doc.id %}" target="_blank" class="ispace-link">{{ s.doc.name }}</a></td>
+                        <td>
+                            <select class="ispace-form-select" style="width:auto;padding:2px 4px;font-size:12px;" onchange="changeShareType('{{ s.token }}', this.value)">
+                                <option value="0" {% if s.share_type == 0 %}selected{% endif %}>{% trans "公开" %}</option>
+                                <option value="1" {% if s.share_type == 1 %}selected{% endif %}>{% trans "私密" %}</option>
+                            </select>
+                        </td>
+                        <td>
+                            {% if s.share_value %}
+                            <code style="font-size:12px;">{{ s.share_value }}</code>
+                            <a href="javascript:void(0)" onclick="editShareValue('{{ s.token }}', '{{ s.share_value }}')" title="{% trans '修改分享码' %}" style="font-size:11px;margin-left:4px;">✎</a>
+                            {% else %}
+                            <span class="ispace-text-quaternary ispace-text-xs">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <button class="ispace-btn ispace-btn-sm ispace-btn-ghost" onclick="copyShareUrl('{{ s.token }}')" title="{% trans '复制分享链接' %}" style="font-size:11px;">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                {% trans "复制链接" %}
+                            </button>
+                        </td>
+                        <td>{{ s.create_time|date:"Y-m-d H:i" }}</td>
+                        <td>
+                            <label class="ispace-toggle">
+                                <input type="checkbox" class="share-enable-toggle" value="{{ s.token }}" {% if s.is_enable %}checked{% endif %}>
+                                <span class="ispace-toggle-slider"></span>
+                            </label>
+                        </td>
+                        <td class="ispace-flex-center ispace-gap-1">
+                            <button class="ispace-btn ispace-btn-sm ispace-btn-danger" onclick="removeShare('{{ s.token }}')">{% trans "删除" %}</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% include "includes/pagination.html" with page_obj=shares query_string=query_string %}
+        {% else %}
+        {% include "includes/empty_state.html" with title="暂无分享" description="还没有创建任何文档分享" %}
+        {% endif %}
+    </div>
+</div>
+
+{# --- Create Share Modal --- #}
+<div class="ispace-modal-backdrop" id="createShareModal">
+    <div class="ispace-modal ispace-modal-sm">
+        <div class="ispace-modal-header">
+            <h3 class="ispace-modal-title">{% trans "新建分享" %}</h3>
+            <button class="ispace-modal-close" onclick="iSpaceDoc.Modal.close('createShareModal')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="ispace-modal-body">
+            <div class="ispace-form-group">
+                <label class="ispace-form-label">{% trans "选择文档" %}</label>
+                <select id="create_share_doc" class="ispace-form-input">
+                    {% for d in user_docs %}
+                    <option value="{{ d.id }}">{{ d.name }}</option>
+                    {% empty %}
+                    <option value="">{% trans "没有可分享的文档" %}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="ispace-form-group">
+                <label class="ispace-form-label">{% trans "分享类型" %}</label>
+                <select id="create_share_type" class="ispace-form-input" onchange="toggleShareValueInput()">
+                    <option value="0">{% trans "公开分享" %}</option>
+                    <option value="1">{% trans "私密分享（需分享码访问）" %}</option>
+                </select>
+            </div>
+            <div class="ispace-form-group" id="create_share_value_group" style="display:none;">
+                <label class="ispace-form-label">{% trans "分享码" %}</label>
+                <input type="text" id="create_share_value" class="ispace-form-input" placeholder="{% trans '设置访问分享码' %}" maxlength="10">
+            </div>
+        </div>
+        <div class="ispace-modal-footer">
+            <button class="ispace-btn ispace-btn-secondary" onclick="iSpaceDoc.Modal.close('createShareModal')">{% trans "取消" %}</button>
+            <button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="confirmCreateShare">{% trans "创建" %}</button>
+        </div>
+    </div>
+</div>
+
+{# --- Edit Share Value Modal --- #}
+<div class="ispace-modal-backdrop" id="editShareValueModal">
+    <div class="ispace-modal ispace-modal-sm">
+        <div class="ispace-modal-header">
+            <h3 class="ispace-modal-title">{% trans "修改分享码" %}</h3>
+            <button class="ispace-modal-close" onclick="iSpaceDoc.Modal.close('editShareValueModal')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="ispace-modal-body">
+            <div class="ispace-form-group">
+                <label class="ispace-form-label">{% trans "新分享码" %}</label>
+                <input type="text" id="edit_share_value" class="ispace-form-input" placeholder="{% trans '输入新分享码，留空则取消分享码' %}" maxlength="10">
+                <input type="hidden" id="edit_share_token">
+            </div>
+        </div>
+        <div class="ispace-modal-footer">
+            <button class="ispace-btn ispace-btn-secondary" onclick="iSpaceDoc.Modal.close('editShareValueModal')">{% trans "取消" %}</button>
+            <button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="confirmEditShareValue">{% trans "保存" %}</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function getCSRF() { return document.querySelector('[name=csrfmiddlewaretoken]').value; }
+
+// --- Open Create Share Modal ---
+function openCreateShare() {
+    iSpaceDoc.Modal.open('createShareModal');
+    toggleShareValueInput();
+}
+
+function toggleShareValueInput() {
+    var type = document.getElementById('create_share_type').value;
+    var group = document.getElementById('create_share_value_group');
+    if (group) group.style.display = type === '1' ? '' : 'none';
+}
+
+// --- Create Share ---
+document.getElementById('confirmCreateShare').addEventListener('click', function() {
+    var docId = document.getElementById('create_share_doc').value;
+    if (!docId) { showError('{% trans "请选择文档" %}'); return; }
+    var shareType = document.getElementById('create_share_type').value;
+    var shareValue = document.getElementById('create_share_value').value.trim();
+    if (shareType === '1' && !shareValue) { showError('{% trans "私密分享需要设置分享码" %}'); return; }
+
+    var loadingEl = document.getElementById('loadingIndicator');
+    if (loadingEl) loadingEl.style.display = 'flex';
+    fetch('{% url "manage_doc_share" %}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRF(), 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ type: 4, doc_id: docId, share_type: shareType, share_value: shareValue })
+    }).then(function(r) { return r.json(); }).then(function(r) {
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (r.status) {
+            iSpaceDoc.Modal.close('createShareModal');
+            showSuccess('{% trans "创建成功" %}');
+            setTimeout(function() { window.location.reload(); }, 600);
+        } else {
+            showError(r.data || '{% trans "创建失败" %}');
+        }
+    }).catch(function(e) {
+        if (loadingEl) loadingEl.style.display = 'none';
+        showError('{% trans "网络异常" %}');
+    });
+});
+
+// --- Toggle share status ---
+document.querySelectorAll('.share-enable-toggle').forEach(function(el) {
+    el.addEventListener('change', function() {
+        var token = this.value;
+        var checked = this.checked;
+        var loadingEl = document.getElementById('loadingIndicator');
+        if (loadingEl) loadingEl.style.display = 'flex';
+        fetch('{% url "manage_doc_share" %}', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCSRF(), 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ type: 3, token: token, key: 'share_status', value: checked ? 'true' : 'false' })
+        }).then(function(r) { return r.json(); }).then(function(r) {
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (r.status) {
+                showSuccess(checked ? '{% trans "已启用" %}' : '{% trans "已禁用" %}');
+            } else {
+                showError('{% trans "设置失败" %}');
+                el.checked = !checked;
+            }
+        }).catch(function(e) {
+            if (loadingEl) loadingEl.style.display = 'none';
+            showError('{% trans "网络异常" %}');
+            el.checked = !checked;
+        });
+    });
+});
+
+// --- Change Share Type ---
+function changeShareType(token, value) {
+    var loadingEl = document.getElementById('loadingIndicator');
+    if (loadingEl) loadingEl.style.display = 'flex';
+    fetch('{% url "manage_doc_share" %}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRF(), 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ type: 3, token: token, key: 'share_type', value: value })
+    }).then(function(r) { return r.json(); }).then(function(r) {
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (r.status) {
+            showSuccess('{% trans "已更新" %}');
+        } else {
+            showError('{% trans "更新失败" %}');
+            setTimeout(function() { window.location.reload(); }, 600);
+        }
+    }).catch(function(e) {
+        if (loadingEl) loadingEl.style.display = 'none';
+        showError('{% trans "网络异常" %}');
+    });
+}
+
+// --- Copy Share URL ---
+function copyShareUrl(token) {
+    var url = window.location.origin + '/shared-links/create/?token=' + token;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(function() {
+            showSuccess('{% trans "已复制到剪贴板" %}');
+        }).catch(function() {
+            fallbackCopy(url);
+        });
+    } else {
+        fallbackCopy(url);
+    }
+}
+
+function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    ta.style.top = '-9999px';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try { document.execCommand('copy'); showSuccess('{% trans "已复制到剪贴板" %}'); }
+    catch(e) { showError('{% trans "复制失败" %}'); }
+    document.body.removeChild(ta);
+}
+
+// --- Edit Share Value ---
+function editShareValue(token, currentValue) {
+    document.getElementById('edit_share_token').value = token;
+    document.getElementById('edit_share_value').value = currentValue || '';
+    iSpaceDoc.Modal.open('editShareValueModal');
+}
+
+document.getElementById('confirmEditShareValue').addEventListener('click', function() {
+    var token = document.getElementById('edit_share_token').value;
+    var value = document.getElementById('edit_share_value').value.trim();
+    var loadingEl = document.getElementById('loadingIndicator');
+    if (loadingEl) loadingEl.style.display = 'flex';
+    fetch('{% url "manage_doc_share" %}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRF(), 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ type: 5, token: token, share_value: value })
+    }).then(function(r) { return r.json(); }).then(function(r) {
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (r.status) {
+            iSpaceDoc.Modal.close('editShareValueModal');
+            showSuccess('{% trans "修改成功" %}');
+            setTimeout(function() { window.location.reload(); }, 600);
+        } else {
+            showError(r.data || '{% trans "修改失败" %}');
+        }
+    }).catch(function(e) {
+        if (loadingEl) loadingEl.style.display = 'none';
+        showError('{% trans "网络异常" %}');
+    });
+});
+
+// --- Single Delete ---
+function removeShare(token) {
+    iSpaceDoc.confirm({
+        title: '{% trans "删除分享" %}',
+        message: '{% trans "确定要删除该分享？删除后分享链接将失效。" %}'
+    }).then(function(confirmed) {
+        if (!confirmed) return;
+        var loadingEl = document.getElementById('loadingIndicator');
+        if (loadingEl) loadingEl.style.display = 'flex';
+        fetch('{% url "manage_doc_share" %}', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCSRF(), 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ token: token, type: 2, range: 'single' })
+        }).then(function(r) { return r.json(); }).then(function(r) {
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (r.status) {
+                showSuccess('{% trans "删除成功" %}');
+                setTimeout(function() { window.location.reload(); }, 800);
+            } else {
+                showError(r.data || '{% trans "删除失败" %}');
+            }
+        }).catch(function(e) {
+            if (loadingEl) loadingEl.style.display = 'none';
+            showError('{% trans "网络异常" %}');
+        });
+    });
+}
+
+// --- Batch Delete ---
+document.getElementById('batchRemove').addEventListener('click', function() {
+    var checks = document.querySelectorAll('.share-checkbox:checked');
+    if (checks.length === 0) {
+        showError('{% trans "未选中数据" %}');
+        return;
+    }
+    var tokens = [];
+    checks.forEach(function(cb) { tokens.push(cb.value); });
+    iSpaceDoc.confirm({
+        title: '{% trans "批量删除" %}',
+        message: '{% trans "确定要删除这些分享？删除后分享链接将失效。" %}'
+    }).then(function(confirmed) {
+        if (!confirmed) return;
+        var loadingEl = document.getElementById('loadingIndicator');
+        if (loadingEl) loadingEl.style.display = 'flex';
+        fetch('{% url "manage_doc_share" %}', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCSRF(), 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ token: tokens.join(','), type: 2, range: 'multi' })
+        }).then(function(r) { return r.json(); }).then(function(r) {
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (r.status) {
+                showSuccess('{% trans "删除成功" %}');
+                setTimeout(function() { window.location.reload(); }, 800);
+            } else {
+                showError(r.data || '{% trans "删除失败" %}');
+            }
+        }).catch(function(e) {
+            if (loadingEl) loadingEl.style.display = 'none';
+            showError('{% trans "网络异常" %}');
+        });
+    });
+});
+
+var selAll = document.getElementById('selectAll');
+if (selAll) {
+    selAll.addEventListener('change', function() {
+        var checked = this.checked;
+        document.querySelectorAll('.share-checkbox').forEach(function(cb) { cb.checked = checked; });
+    });
+}
+</script>
+{% endblock %}

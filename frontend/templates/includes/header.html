@@ -1,0 +1,42 @@
+{% load static %}
+<header class="ispace-header">
+    <div class="ispace-header-container">
+        <div class="ispace-header-left">
+            {% block header_logo %}
+            <a href="/" class="ispace-logo">
+                <img src="{% static 'logo.png' %}" width="28" height="28" alt="logo">
+                {{ site_name|default:"爱思文档" }}
+            </a>
+            {% endblock %}
+
+            {% block breadcrumb %}{% endblock %}
+
+            {% if page_title %}
+            <span class="ispace-text-quaternary ispace-d-none-mobile">/</span>
+            <span class="ispace-text-secondary ispace-font-medium ispace-d-none-mobile">{{ page_title }}</span>
+            {% endif %}
+        </div>
+
+        <div class="ispace-header-center">
+            {% block header_center %}{% endblock %}
+        </div>
+
+        <div class="ispace-header-right">
+            {% block header_actions %}
+                {% include "includes/theme_toggle.html" %}
+
+                {% block header_actions_extra %}{% endblock %}
+
+                {% if user.is_authenticated %}
+                    {% include "includes/notification_dropdown.html" %}
+                    {% include "includes/user_dropdown.html" %}
+                {% else %}
+                    <a href="{% url 'login' %}" class="ispace-btn ispace-btn-ghost ispace-btn-sm">登录</a>
+                    {% if close_register != 'on' %}
+                    <a href="{% url 'register' %}" class="ispace-btn ispace-btn-primary ispace-btn-sm">注册</a>
+                    {% endif %}
+                {% endif %}
+            {% endblock %}
+        </div>
+    </div>
+</header>

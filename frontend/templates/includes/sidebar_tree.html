@@ -1,0 +1,223 @@
+{% load i18n %}{% load static %}
+<aside class="ispace-sidebar" id="globalSidebar">
+    <nav class="ispace-sidebar-nav" id="sidebarNav">
+        <button class="ispace-sidebar-toggle" id="sidebarCollapse" title="{% trans '折叠侧边栏' %}" aria-label="折叠侧边栏">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        {% if sidebar_tree %}
+            {% include "includes/sidebar_doc_node.html" with docs=sidebar_tree %}
+        {% else %}
+        <div class="ispace-sidebar-empty-state">
+            <p class="ispace-text-sm ispace-text-quaternary">{% trans "暂无文档" %}</p>
+        </div>
+        {% endif %}
+    </nav>
+</aside>
+
+{# ---- Context Menu ---- #}
+<div class="ispace-context-menu" id="sidebarContextMenu" style="display:none;"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script src="{% static 'js/sidebar-tree.js' %}?v={{ isdoc_version }}"></script>
+
+<style>
+/* ---- 侧边栏水平滚动条可见性增强 ---- */
+#globalSidebar::-webkit-scrollbar { height: 8px; }
+#globalSidebar::-webkit-scrollbar-track {
+    background: var(--ispace-color-surface-100);
+    border-radius: var(--ispace-radius-full);
+}
+#globalSidebar::-webkit-scrollbar-thumb {
+    background: var(--ispace-color-text-quaternary);
+    border-radius: var(--ispace-radius-full);
+}
+#globalSidebar::-webkit-scrollbar-thumb:hover {
+    background: var(--ispace-color-text-tertiary);
+}
+
+/* ---- 侧边栏抽屉折叠按钮（边缘标签式）---- */
+.ispace-sidebar-toggle {
+    position: absolute;
+    right: -8px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 44px;
+    border: 1px solid var(--ispace-color-border-medium);
+    background: var(--ispace-color-surface-0);
+    cursor: pointer;
+    color: var(--ispace-color-text-quaternary);
+    border-radius: var(--ispace-radius-md) 0 0 var(--ispace-radius-md);
+    padding: 0;
+    z-index: 10;
+    opacity: 0.35;
+    box-shadow: var(--ispace-shadow-xs);
+    transition: opacity var(--ispace-duration-normal) var(--ispace-ease-out),
+                color var(--ispace-duration-fast),
+                background var(--ispace-duration-fast),
+                box-shadow var(--ispace-duration-normal) var(--ispace-ease-out);
+}
+.ispace-sidebar-toggle svg { width: 16px; height: 16px; flex-shrink: 0; }
+.ispace-sidebar-toggle:hover {
+    opacity: 1;
+    color: var(--ispace-color-text-primary);
+    background: var(--ispace-color-surface-100);
+    border-color: var(--ispace-color-border-strong);
+    box-shadow: var(--ispace-shadow-sm);
+}
+
+/* ---- 文档树节点 ---- */
+.ispace-tree-row {
+    display: flex;
+    align-items: center;
+    gap: var(--ispace-space-1);
+    border-radius: var(--ispace-radius-md);
+    transition: background var(--ispace-duration-fast);
+}
+.ispace-tree-row:hover { background: var(--ispace-color-surface-100); }
+
+.ispace-tree-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 28px;
+    flex-shrink: 0;
+    cursor: pointer;
+    color: var(--ispace-color-text-quaternary);
+    border-radius: var(--ispace-radius-sm);
+    transition: color var(--ispace-duration-fast);
+}
+.ispace-tree-toggle svg { width: 14px; height: 14px; flex-shrink: 0; }
+.ispace-tree-toggle:hover { color: var(--ispace-color-brand-500); }
+.ispace-tree-toggle[data-has-children="0"] { cursor: default; }
+.ispace-tree-toggle[data-has-children="0"]:hover { color: var(--ispace-color-text-quaternary); }
+
+.ispace-tree-link {
+    flex: 1;
+    min-width: max-content;
+    padding: var(--ispace-space-1) var(--ispace-space-3);
+    padding-left: 0;
+    padding-right: var(--ispace-space-5);
+}
+.ispace-tree-link.ispace-active {
+    background: var(--ispace-color-brand-50);
+    color: var(--ispace-color-brand-600);
+    font-weight: var(--ispace-font-medium);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    transform: translateZ(0);
+}
+
+.ispace-tree-children {
+    padding-left: var(--ispace-space-5);
+}
+
+.ispace-sidebar-empty-state {
+    padding: var(--ispace-space-4) 0;
+    text-align: center;
+}
+
+/* 折叠侧边栏 */
+.ispace-sidebar--collapsed {
+    width: var(--ispace-sidebar-collapsed-width) !important;
+    overflow: visible;
+}
+.ispace-sidebar--collapsed .ispace-tree-row,
+.ispace-sidebar--collapsed .ispace-sidebar-empty-state { display: none; }
+.ispace-sidebar--collapsed .ispace-sidebar-toggle {
+    right: 50%;
+    transform: translate(50%, -50%);
+    border-radius: var(--ispace-radius-md);
+    opacity: 0.7;
+    width: 28px;
+    height: 40px;
+    border: 1px solid var(--ispace-color-border-light);
+}
+.ispace-sidebar--collapsed .ispace-sidebar-toggle:hover { opacity: 1; }
+.ispace-sidebar--collapsed .ispace-sidebar-toggle svg { transform: rotate(180deg); }
+
+/* 右键上下文菜单 */
+.ispace-context-menu {
+    position: fixed;
+    z-index: 1100;
+    min-width: 170px;
+    background: var(--ispace-color-surface-0);
+    border: 1px solid var(--ispace-color-border-medium);
+    border-radius: var(--ispace-radius-lg);
+    box-shadow: var(--ispace-shadow-lg);
+    padding: var(--ispace-space-1);
+    overflow: hidden;
+}
+.ispace-context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: var(--ispace-space-2);
+    width: 100%;
+    padding: var(--ispace-space-2) var(--ispace-space-3);
+    font-size: var(--ispace-font-sm);
+    font-weight: var(--ispace-font-normal);
+    color: var(--ispace-color-text-secondary);
+    background: none;
+    border: none;
+    border-radius: var(--ispace-radius-md);
+    cursor: pointer;
+    text-align: left;
+    transition: all var(--ispace-duration-fast);
+}
+.ispace-context-menu-item svg {
+    width: 14px; height: 14px;
+    flex-shrink: 0;
+    color: var(--ispace-color-text-quaternary);
+    transition: color var(--ispace-duration-fast);
+}
+.ispace-context-menu-item:hover {
+    background: var(--ispace-color-surface-100);
+    color: var(--ispace-color-text-primary);
+}
+.ispace-context-menu-item:hover svg { color: var(--ispace-color-text-secondary); }
+.ispace-context-menu-item--danger { color: var(--ispace-color-error-text); }
+.ispace-context-menu-item--danger:hover {
+    background: var(--ispace-color-error-bg);
+    color: var(--ispace-color-error-text);
+}
+.ispace-context-menu-item--danger:hover svg { color: var(--ispace-color-error-text); }
+.ispace-context-menu-item--danger svg { color: var(--ispace-color-error-text); opacity: 0.7; }
+
+/* Sortable drag ghost / drop placeholder */
+.ispace-sortable-ghost {
+    opacity: 0.35;
+    background: var(--ispace-color-brand-50) !important;
+    border-radius: var(--ispace-radius-md);
+}
+.ispace-sortable-drag {
+    opacity: 0.95;
+    background: var(--ispace-color-surface-0) !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.06);
+    border-radius: var(--ispace-radius-md);
+    transform: scale(1.02);
+}
+/* Drop target: glow indicator when hovering over a collapsed folder */
+.ispace-tree-node.ispace-drop-target > .ispace-tree-row {
+    border-radius: var(--ispace-radius-md);
+    background: var(--ispace-color-brand-50) !important;
+    box-shadow: 0 0 16px rgba(99,102,241,0.25), 0 0 4px rgba(99,102,241,0.12);
+}
+/* Children container as drop zone: subtle projection when a dragged item hovers nearby */
+.ispace-tree-children.ispace-drop-zone {
+    box-shadow: 0 0 12px rgba(99,102,241,0.2), 0 2px 8px rgba(99,102,241,0.1);
+    border-radius: var(--ispace-radius-md);
+    background: rgba(99,102,241,0.03);
+    padding-top: 4px;
+    padding-bottom: 4px;
+    transition: box-shadow var(--ispace-duration-fast), background var(--ispace-duration-fast);
+}
+.ispace-tree-row {
+    cursor: grab;
+}
+.ispace-tree-row:active {
+    cursor: grabbing;
+}
+</style>

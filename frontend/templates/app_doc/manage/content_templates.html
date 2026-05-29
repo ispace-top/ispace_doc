@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+{% block title %}{% trans "文档模板管理" %}{% endblock %}
+{% block breadcrumb %}{% include "includes/breadcrumb.html" with breadcrumbs=breadcrumb_items %}{% endblock %}
+
+{% block content %}
+<div class="ispace-page">
+    <div class="ispace-page-header">
+        <h2 class="ispace-page-title">{% trans "文档模板管理" %}</h2>
+        <div class="ispace-page-actions">
+            <a href="{% url 'create_doctemp' %}" target="_blank" class="ispace-btn ispace-btn-primary ispace-btn-sm">
+                {% trans "新建" %}
+            </a>
+        </div>
+    </div>
+
+    <div class="ispace-content-card" style="margin-bottom:var(--ispace-spacing-4);">
+        <div style="padding:var(--ispace-spacing-4) var(--ispace-spacing-5);">
+            <form action="{% url 'manage_doctemp' %}" method="get" style="display:flex;gap:var(--ispace-spacing-3);align-items:center;">
+                <input type="text" name="kw" id="kw" class="ispace-form-input" placeholder="{% trans '输入文档模板内容' %}" value="{{ doctemps.kw|default:'' }}" style="max-width:280px;">
+                <button type="submit" class="ispace-btn ispace-btn-secondary ispace-btn-sm">{% trans "搜索" %}</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="ispace-content-card">
+        <div style="overflow-x:auto;">
+            <table class="ispace-table">
+                <thead>
+                    <tr>
+                        <th>{% trans "模板名称" %}</th>
+                        <th style="min-width:200px;">{% trans "内容预览" %}</th>
+                        <th>{% trans "创建时间" %}</th>
+                        <th>{% trans "操作" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for temp in doctemps %}
+                    <tr>
+                        <td style="font-weight:var(--ispace-font-medium);">{{ temp.name }}</td>
+                        <td>
+                            <span style="color:var(--ispace-color-text-tertiary);font-size:var(--ispace-font-sm);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">{{ temp.content|default:"-"|truncatechars:100 }}</span>
+                        </td>
+                        <td style="white-space:nowrap;">{{ temp.create_time|date:"Y-m-d H:i" }}</td>
+                        <td>
+                            <div style="display:flex;gap:var(--ispace-spacing-2);">
+                                <a href="{% url 'modify_doctemp' doctemp_id=temp.id %}" target="_blank" class="ispace-btn ispace-btn-secondary ispace-btn-sm">
+                                    {% trans "修改" %}
+                                </a>
+                                <a href="javascript:void(0);" onclick="delTemp('{{ temp.id }}');" class="ispace-btn ispace-btn-danger ispace-btn-sm">
+                                    {% trans "删除" %}
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" style="text-align:center;padding:var(--ispace-spacing-8) var(--ispace-spacing-4);color:var(--ispace-color-text-tertiary);">{% trans "暂无文档模板" %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% include 'includes/pagination.html' with page_obj=doctemps query_string=query_string_kw %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    window.delTemp = function(doctemp_id) {
+        iSpaceDoc.confirm({
+            title: '{% trans "删除模板" %}',
+            message: '{% trans "警告：此操作将删除此文档模板！" %}'
+        }).then(function(confirmed) {
+            if (!confirmed) return;
+            var loadingEl = document.createElement('div');
+            loadingEl.className = 'ispace-loading-overlay';
+            loadingEl.innerHTML = '<div class="ispace-spinner"></div>';
+            document.body.appendChild(loadingEl);
+
+            var data = new URLSearchParams();
+            data.append('doctemp_id', doctemp_id);
+
+            fetch('{% url "del_doctemp" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: data.toString()
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                loadingEl.remove();
+                if (r.status) {
+                    window.location.reload();
+                } else {
+                    showError(r.data || '{% trans "删除失败" %}');
+                }
+            })
+            .catch(function() {
+                loadingEl.remove();
+                showError('{% trans "删除异常" %}');
+            });
+        });
+    };
+})();
+</script>
+{% endblock %}

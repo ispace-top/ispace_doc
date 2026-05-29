@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load static %}{% load i18n %}
+
+{% block title %}{{ doc.name }} - {{ site_name|default:"爱思文档" }}{% endblock %}
+
+{% block content %}
+<div class="ispace-page-header">
+    <h1 class="ispace-page-title">{{ doc.name }}</h1>
+    <p class="ispace-page-description">
+        {% trans "标签" %}：<a href="{% url 'tag_docs' tag_id=tag.id %}">{{ tag.name }}</a>
+    </p>
+</div>
+
+<div class="ispace-content-card">
+    <div class="ispace-mb-4">
+        {% for dt in doc_tags %}
+        <a href="{% url 'tag_docs' tag_id=dt.tag.id %}" class="ispace-badge ispace-badge-primary ispace-mr-2">{{ dt.tag.name }}</a>
+        {% endfor %}
+    </div>
+    <div class="ispace-content" style="min-height:300px;">
+        {{ doc.pre_content|safe }}
+    </div>
+</div>
+
+<div class="ispace-flex-between ispace-mt-6">
+    <a href="{% url 'pro_list' %}" class="ispace-btn ispace-btn-ghost">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        {% trans "返回首页" %}
+    </a>
+    <a href="{% url 'doc_id' doc_id=doc.id %}" class="ispace-btn ispace-btn-primary">{% trans "查看完整文档" %}</a>
+</div>
+{% endblock %}

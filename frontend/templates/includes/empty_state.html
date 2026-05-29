@@ -1,0 +1,18 @@
+{% comment %}
+Usage: {% include "includes/empty_state.html" with icon=True title="No data" description="Nothing here yet." action_url="/create/" action_text="Create" %}
+{% endcomment %}
+<div class="ispace-empty-state">
+    {% if icon|default:True %}
+    <svg class="ispace-empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+        <polyline points="13 2 13 9 20 9"/>
+    </svg>
+    {% endif %}
+    <h3 class="ispace-empty-state-title">{{ title|default:"暂无数据" }}</h3>
+    {% if description %}
+    <p class="ispace-empty-state-description">{{ description }}</p>
+    {% endif %}
+    {% if action_url %}
+    <a href="{{ action_url }}" class="ispace-btn ispace-btn-primary ispace-mt-6">{{ action_text|default:"创建" }}</a>
+    {% endif %}
+</div>

@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+{% load static %}{% load i18n %}
+
+{% block title %}{% trans "关于我们" %} - {{ site_name|default:_("爱思文档") }}{% endblock %}
+
+{% block styles %}
+<style>
+.about-page { max-width: 880px; margin: 0 auto; padding: var(--ispace-space-8) var(--ispace-space-6); }
+
+/* ── Hero ── */
+.about-hero { display: flex; align-items: center; gap: var(--ispace-space-5); margin-bottom: var(--ispace-space-8); padding-bottom: var(--ispace-space-8); border-bottom: 1px solid var(--ispace-color-border-light); }
+.about-hero-logo { width: 80px; height: 80px; border-radius: var(--ispace-radius-xl); flex-shrink: 0; object-fit: contain; box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+.about-hero-text { flex: 1; min-width: 0; }
+.about-hero-name { font-size: 1.75rem; font-weight: var(--ispace-font-bold); color: var(--ispace-color-text-primary); margin: 0 0 var(--ispace-space-1); }
+.about-hero-version { display: inline-block; font-size: var(--ispace-font-sm); font-family: "SF Mono","Fira Code",monospace; color: var(--ispace-color-brand-600); background: var(--ispace-color-brand-50); padding: 2px 10px; border-radius: var(--ispace-radius-full); margin-left: var(--ispace-space-2); vertical-align: middle; }
+.about-hero-tagline { font-size: var(--ispace-font-base); color: var(--ispace-color-text-tertiary); margin: var(--ispace-space-2) 0 0; }
+
+/* ── Section ── */
+.about-section { margin-bottom: var(--ispace-space-7); }
+.about-section-title { font-size: var(--ispace-font-lg); font-weight: var(--ispace-font-bold); color: var(--ispace-color-text-primary); margin: 0 0 var(--ispace-space-2); display: flex; align-items: center; gap: var(--ispace-space-2); }
+.about-section-title .icon { font-size: 1.25rem; }
+.about-section-desc { font-size: var(--ispace-font-sm); color: var(--ispace-color-text-tertiary); line-height: var(--ispace-leading-relaxed); margin: 0 0 var(--ispace-space-4); }
+
+/* ── Intro text ── */
+.about-intro { font-size: var(--ispace-font-base); color: var(--ispace-color-text-secondary); line-height: var(--ispace-leading-relaxed); }
+.about-intro p { margin: 0 0 var(--ispace-space-3); }
+.about-intro p:last-child { margin-bottom: 0; }
+
+/* ── Feature grid ── */
+.about-features { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--ispace-space-4); }
+.about-feature { background: var(--ispace-color-surface-0); border: 1px solid var(--ispace-color-border-light); border-radius: var(--ispace-radius-lg); padding: var(--ispace-space-5); transition: border-color 0.15s, box-shadow 0.15s; }
+.about-feature:hover { border-color: var(--ispace-color-brand-200); box-shadow: var(--ispace-shadow-sm); }
+.about-feature-icon { width: 44px; height: 44px; border-radius: var(--ispace-radius-lg); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: var(--ispace-space-3); }
+.about-feature-icon.doc   { background: #eff6ff; color: #3b82f6; }
+.about-feature-icon.search { background: #fef3c7; color: #d97706; }
+.about-feature-icon.collab { background: #dcfce7; color: #16a34a; }
+.about-feature-icon.admin  { background: #f3e8ff; color: #9333ea; }
+.about-feature-icon.api    { background: #fce7f3; color: #db2777; }
+.about-feature-icon.auth   { background: #e0f2fe; color: #0891b2; }
+.about-feature h4 { font-size: var(--ispace-font-base); font-weight: var(--ispace-font-semibold); color: var(--ispace-color-text-primary); margin: 0 0 var(--ispace-space-1); }
+.about-feature p { font-size: var(--ispace-font-sm); color: var(--ispace-color-text-tertiary); line-height: var(--ispace-leading-normal); margin: 0; }
+
+/* ── Info grid ── */
+.about-info-card { background: var(--ispace-color-surface-0); border: 1px solid var(--ispace-color-border-light); border-radius: var(--ispace-radius-lg); padding: var(--ispace-space-5); }
+.about-info-grid { display: grid; grid-template-columns: 130px 1fr; gap: var(--ispace-space-2) var(--ispace-space-4); }
+.about-info-label { font-size: var(--ispace-font-sm); color: var(--ispace-color-text-tertiary); }
+.about-info-value { font-size: var(--ispace-font-sm); color: var(--ispace-color-text-primary); font-family: "SF Mono","Fira Code",monospace; word-break: break-all; }
+
+/* ── Update ── */
+.about-update-row { display: flex; align-items: center; gap: var(--ispace-space-3); flex-wrap: wrap; }
+.about-btn { display: inline-flex; align-items: center; gap: var(--ispace-space-1); padding: var(--ispace-space-2) var(--ispace-space-4); border: 1px solid var(--ispace-color-border-medium); border-radius: var(--ispace-radius-md); background: var(--ispace-color-surface-0); color: var(--ispace-color-text-primary); font-size: var(--ispace-font-sm); cursor: pointer; transition: all 0.15s; }
+.about-btn:hover { background: var(--ispace-color-surface-100); border-color: var(--ispace-color-brand-300); color: var(--ispace-color-brand-600); }
+.about-btn.loading .spinner { display: inline-block; }
+.about-btn.loading .btn-text { display: none; }
+.about-btn .spinner { display: none; width: 14px; height: 14px; border: 2px solid var(--ispace-color-border-medium); border-top-color: var(--ispace-color-brand-500); border-radius: 50%; animation: about-spin 0.6s linear infinite; }
+@keyframes about-spin { to { transform: rotate(360deg); } }
+.about-update-badge { display: inline-flex; align-items: center; gap: 4px; padding: var(--ispace-space-1) var(--ispace-space-3); border-radius: var(--ispace-radius-full); font-size: var(--ispace-font-sm); font-weight: var(--ispace-font-medium); }
+.about-update-badge.up-to-date { background: #dcfce7; color: #166534; }
+.about-update-badge.has-update { background: #fef3c7; color: #92400e; }
+.about-update-badge.error { background: #fef2f2; color: #991b1b; }
+.about-update-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.about-update-dot.green { background: #22c55e; }
+.about-update-dot.amber { background: #f59e0b; }
+.about-update-dot.red { background: #ef4444; }
+.about-update-msg { font-size: var(--ispace-font-sm); color: var(--ispace-color-text-secondary); margin-top: var(--ispace-space-2); }
+.about-update-status { display: flex; align-items: center; gap: var(--ispace-space-3); margin-top: var(--ispace-space-3); }
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+    .about-page { padding: var(--ispace-space-5) var(--ispace-space-4); }
+    .about-hero { flex-direction: column; text-align: center; }
+    .about-features { grid-template-columns: 1fr; }
+    .about-info-grid { grid-template-columns: 1fr; gap: var(--ispace-space-1); }
+    .about-info-label { font-weight: var(--ispace-font-semibold); }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="about-page">
+
+    {# ── Hero ── #}
+    <div class="about-hero">
+        <img class="about-hero-logo" src="{% if site_logo %}{{ site_logo }}{% else %}{% static 'logo.png' %}{% endif %}" alt="i·Space Doc" onerror="this.style.display='none'">
+        <div class="about-hero-text">
+            <h1 class="about-hero-name">
+                {{ site_name|default:_("爱思文档") }}
+                <span class="about-hero-version">v{{ app_version }}</span>
+            </h1>
+            <p class="about-hero-tagline">{% trans "爱要春风化雨，思必汇流成渊" %}</p>
+        </div>
+    </div>
+
+    {# ── 项目简介 ── #}
+    <div class="about-section">
+        <h2 class="about-section-title">
+            <span class="icon">📖</span> {% trans "关于 i·Space Doc" %}
+        </h2>
+        <div class="about-intro">
+            <p>{% trans "i·Space Doc（爱思文档）是一套轻量级、开箱即用的企业知识库与文档管理系统。它支持 Markdown 所见即所得编辑、富文本编辑、在线电子表格等多种内容创作方式，提供全文搜索、划词评论、细粒度权限控制、组织架构同步等企业级功能，帮助团队高效沉淀、共享和管理知识资产。" %}</p>
+            <p>{% trans "系统采用 Django 后端 + 纯 JavaScript 前端架构，无需 Node.js 构建工具，部署简单、运行高效。支持 SQLite/MySQL/PostgreSQL 多种数据库，内置暗黑主题、多语言界面、第三方认证集成（企业微信 / 钉钉 / LDAP / OIDC），适合中小型团队快速搭建内部文档中心。" %}</p>
+        </div>
+    </div>
+
+    {# ── 核心特性 ── #}
+    <div class="about-section">
+        <h2 class="about-section-title">
+            <span class="icon">✨</span> {% trans "核心特性" %}
+        </h2>
+        <div class="about-features">
+            <div class="about-feature">
+                <div class="about-feature-icon doc">📝</div>
+                <h4>{% trans "多编辑器支持" %}</h4>
+                <p>{% trans "Markdown 所见即所得 / 富文本 / 在线表格，满足不同场景的文档创作需求" %}</p>
+            </div>
+            <div class="about-feature">
+                <div class="about-feature-icon search">🔍</div>
+                <h4>{% trans "全文搜索" %}</h4>
+                <p>{% trans "基于 Whoosh + jieba 中文分词，毫秒级全文检索，搜索结果关键词高亮" %}</p>
+            </div>
+            <div class="about-feature">
+                <div class="about-feature-icon collab">👥</div>
+                <h4>{% trans "权限与协作" %}</h4>
+                <p>{% trans "文档级权限控制（查看/编辑/管理）、用户组、组织架构多维度授权" %}</p>
+            </div>
+            <div class="about-feature">
+                <div class="about-feature-icon admin">⚙️</div>
+                <h4>{% trans "后台管理" %}</h4>
+                <p>{% trans "可视化后台：用户管理、系统监控、审计日志、备份恢复、WebHook 集成" %}</p>
+            </div>
+            <div class="about-feature">
+                <div class="about-feature-icon api">🔌</div>
+                <h4>{% trans "API 开放" %}</h4>
+                <p>{% trans "RESTful API + Token 认证，支持第三方系统集成与自动化流程对接" %}</p>
+            </div>
+            <div class="about-feature">
+                <div class="about-feature-icon auth">🔐</div>
+                <h4>{% trans "统一认证" %}</h4>
+                <p>{% trans "内置企业微信/钉钉/LDAP/OIDC 第三方登录，一键同步组织架构" %}</p>
+            </div>
+        </div>
+    </div>
+
+    {# ── 系统环境（仅超管可见） ── #}
+    {% if is_superuser %}
+    <div class="about-section">
+        <h2 class="about-section-title">
+            <span class="icon">🖥</span> {% trans "系统环境" %}
+        </h2>
+        <div class="about-info-card">
+            <div class="about-info-grid">
+                <span class="about-info-label">iSpaceDoc</span>
+                <span class="about-info-value">v{{ app_version }}</span>
+                <span class="about-info-label">Django</span>
+                <span class="about-info-value">{{ django_version }}</span>
+                <span class="about-info-label">Python</span>
+                <span class="about-info-value">{{ python_version }}</span>
+                <span class="about-info-label">{% trans "操作系统" %}</span>
+                <span class="about-info-value">{{ os_name }} {{ os_release }}</span>
+                <span class="about-info-label">{% trans "数据库引擎" %}</span>
+                <span class="about-info-value">{{ db_engine }}</span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ── 版本信息 ── #}
+    <div class="about-section">
+        <h2 class="about-section-title">
+            <span class="icon">🚀</span> {% trans "版本信息" %}
+        </h2>
+        <div class="about-info-card">
+            <div class="about-info-grid">
+                <span class="about-info-label">iSpaceDoc</span>
+                <span class="about-info-value">v{{ app_version }}</span>
+            </div>
+        </div>
+        {% if is_superuser %}
+        <p class="about-section-desc" style="margin-top:var(--ispace-space-4);">{% trans "通过 Git 标签检测最新版本" %}</p>
+        <div class="about-update-row">
+            <button class="about-btn" id="checkUpdateBtn" onclick="checkForUpdate()">
+                <span class="spinner"></span>
+                <span class="btn-text">{% trans "检查更新" %}</span>
+            </button>
+        </div>
+        <div class="about-update-status" id="updateStatus" style="display:none;">
+            <span class="about-update-badge" id="updateBadge"></span>
+            <span class="about-update-msg" id="updateMsg"></span>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<script>
+function checkForUpdate() {
+    var btn = document.getElementById('checkUpdateBtn');
+    var status = document.getElementById('updateStatus');
+    var badge = document.getElementById('updateBadge');
+    var msg = document.getElementById('updateMsg');
+    btn.classList.add('loading');
+    status.style.display = 'none';
+
+    fetch('/admin/system/update/', { method: 'GET' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            btn.classList.remove('loading');
+            status.style.display = 'flex';
+            badge.style.display = 'inline-flex';
+
+            if (data.status !== true || !data.current_version) {
+                badge.className = 'about-update-badge error';
+                badge.innerHTML = '<span class="about-update-dot red"></span>' + '{% trans "检查失败" %}';
+                msg.textContent = data.update_info || '{% trans "无法获取更新信息" %}';
+            } else if (data.has_update) {
+                badge.className = 'about-update-badge has-update';
+                badge.innerHTML = '<span class="about-update-dot amber"></span>' + '{% trans "有新版本" %}';
+                msg.textContent = data.update_info || '';
+            } else {
+                badge.className = 'about-update-badge up-to-date';
+                badge.innerHTML = '<span class="about-update-dot green"></span>' + '{% trans "已是最新" %}';
+                msg.textContent = data.update_info || ('v' + (data.current_version || ''));
+            }
+        })
+        .catch(function(err) {
+            btn.classList.remove('loading');
+            status.style.display = 'flex';
+            badge.style.display = 'inline-flex';
+            badge.className = 'about-update-badge error';
+            badge.innerHTML = '<span class="about-update-dot red"></span>' + '{% trans "检查失败" %}';
+            msg.textContent = '{% trans "网络请求异常，请稍后重试" %}';
+        });
+}
+</script>
+{% endblock %}

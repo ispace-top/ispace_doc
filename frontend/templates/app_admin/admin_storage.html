@@ -1,0 +1,550 @@
+{% extends "base.html" %}
+{% load static %}{% load i18n %}
+
+{% block title %}{% trans "基础配置" %}{% endblock %}
+
+{% block styles %}
+<style>
+.infra-page { padding: var(--ispace-space-6); max-width: 960px; }
+.infra-page h2 { margin: 0 0 var(--ispace-space-5); font-size: var(--ispace-font-xl); color: var(--ispace-color-text-primary); }
+.infra-tabs { display: flex; gap: 0; border-bottom: 2px solid var(--ispace-color-border-light); margin-bottom: var(--ispace-space-5); }
+.infra-tab-btn { padding: var(--ispace-space-2) var(--ispace-space-4); font-size: var(--ispace-font-sm); font-weight: 500; color: var(--ispace-color-text-tertiary); border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all var(--ispace-duration-fast); }
+.infra-tab-btn:hover { color: var(--ispace-color-text-primary); }
+.infra-tab-btn.active { color: var(--ispace-color-brand-500); border-bottom-color: var(--ispace-color-brand-500); }
+.infra-tab-panel { display: none; }
+.infra-tab-panel.active { display: block; }
+.infra-section { margin-bottom: var(--ispace-space-6); }
+.infra-section h3 { font-size: var(--ispace-font-base); font-weight: 600; color: var(--ispace-color-text-primary); margin: 0 0 var(--ispace-space-3); padding-bottom: var(--ispace-space-2); border-bottom: 1px solid var(--ispace-color-border-light); }
+.infra-info-grid { display: grid; grid-template-columns: 180px 1fr; gap: var(--ispace-space-2) var(--ispace-space-4); }
+.infra-info-label { font-size: var(--ispace-font-sm); color: var(--ispace-color-text-tertiary); }
+.infra-info-value { font-size: var(--ispace-font-sm); color: var(--ispace-color-text-primary); font-family: "SF Mono","Fira Code","Cascadia Code",monospace; }
+.infra-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: var(--ispace-radius-full); font-size: var(--ispace-font-xs); font-weight: 500; }
+.infra-badge-ok { background: #dcfce7; color: #166534; }
+.infra-badge-error { background: #fef2f2; color: #991b1b; }
+.infra-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.infra-dot.ok { background: #22c55e; }
+.infra-dot.error { background: #ef4444; }
+.infra-empty { color: var(--ispace-color-text-tertiary); font-size: var(--ispace-font-sm); }
+.infra-rules-table { width: 100%; border-collapse: collapse; font-size: var(--ispace-font-sm); }
+.infra-rules-table th, .infra-rules-table td { text-align: left; padding: 6px 12px; border-bottom: 1px solid var(--ispace-color-border-light); }
+.infra-rules-table th { color: var(--ispace-color-text-secondary); font-weight: 500; background: #f8fafc; }
+.infra-note { font-size: var(--ispace-font-xs); color: var(--ispace-color-text-tertiary); margin-top: var(--ispace-space-4); padding-top: var(--ispace-space-3); border-top: 1px solid var(--ispace-color-border-light); }
+.infra-form-group { margin-bottom: var(--ispace-space-3); }
+.infra-form-group label { display: block; font-size: var(--ispace-font-sm); color: var(--ispace-color-text-secondary); margin-bottom: 4px; font-weight: 500; }
+.infra-form-group input, .infra-form-group select { width: 100%; max-width: 420px; padding: 6px 10px; font-size: var(--ispace-font-sm); border: 1px solid var(--ispace-color-border-medium); border-radius: var(--ispace-radius-md); background: var(--ispace-color-surface-0); font-family: "SF Mono","Fira Code","Cascadia Code",monospace; }
+.infra-form-group .hint { font-size: 11px; color: var(--ispace-color-text-tertiary); margin-top: 2px; }
+.infra-edit-actions { display: flex; gap: var(--ispace-space-2); margin-top: var(--ispace-space-4); }
+.infra-view-wrap { display: none; }
+.infra-edit-wrap { display: none; }
+.infra-view-wrap.active { display: block; }
+.infra-edit-wrap.active { display: block; }
+.infra-result { font-size: var(--ispace-font-sm); margin-left: var(--ispace-space-3); padding: 4px 10px; border-radius: var(--ispace-radius-md); }
+.infra-result.success { background: #dcfce7; color: #166534; }
+.infra-result.error { background: #fef2f2; color: #991b1b; }
+.infra-save-hint { font-size: 11px; color: #b45309; background: #fef3c7; padding: 6px 12px; border-radius: var(--ispace-radius-md); margin-top: var(--ispace-space-3); display: inline-block; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="infra-page">
+    <h2>{% trans "基础配置" %}</h2>
+
+    <div class="infra-tabs">
+        <button class="infra-tab-btn active" onclick="switchInfraTab('storage', this)">{% trans "文件存储配置" %}</button>
+        <button class="infra-tab-btn" onclick="switchInfraTab('database', this)">{% trans "数据库" %}</button>
+    </div>
+
+    <!-- Tab 1: 文件存储配置 -->
+    <div class="infra-tab-panel active" id="tab-storage">
+        <!-- View mode -->
+        <div class="infra-view-wrap active" id="storage-view">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--ispace-space-4);">
+                <span style="font-size:var(--ispace-font-sm);color:var(--ispace-color-text-tertiary);">{% trans "当前运行中的配置（只读）" %}</span>
+                <button class="ispace-btn ispace-btn-outline ispace-btn-sm" onclick="enterStorageEdit()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    {% trans "编辑配置" %}
+                </button>
+            </div>
+
+            <div class="infra-section">
+                <h3>{% trans "当前存储后端" %}</h3>
+                <div class="infra-info-grid">
+                    <span class="infra-info-label">{% trans "后端类型" %}</span>
+                    <span class="infra-info-value">{{ backend_label }} ({{ backend_name }})</span>
+                    <span class="infra-info-label">{% trans "运行状态" %}</span>
+                    <span class="infra-info-value">
+                        {% if storage_status == 'ok' %}
+                        <span class="infra-badge infra-badge-ok"><span class="infra-dot ok"></span> 正常运行</span>
+                        {% else %}
+                        <span class="infra-badge infra-badge-error"><span class="infra-dot error"></span> 异常</span>
+                        <span style="font-size:12px;color:#991b1b;margin-left:8px;">{{ storage_message }}</span>
+                        {% endif %}
+                    </span>
+                    {% if local_path %}
+                    <span class="infra-info-label">{% trans "存储路径" %}</span>
+                    <span class="infra-info-value">{{ local_path }}</span>
+                    {% endif %}
+                    {% if public_base_url %}
+                    <span class="infra-info-label">{% trans "CDN / 自定义域名" %}</span>
+                    <span class="infra-info-value">{{ public_base_url }}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if backend_config %}
+            <div class="infra-section">
+                <h3>{% trans "后端配置详情" %} [storage.{{ backend_name }}]</h3>
+                <div class="infra-info-grid">
+                    {% for key, value in backend_config.items %}
+                    <span class="infra-info-label">{{ key }}</span>
+                    <span class="infra-info-value">
+                        {% if 'key' in key or 'secret' in key or 'password' in key or 'token' in key %}
+                        {{ value|slice:":2" }}***{% if value|length > 3 %}{{ value|slice:"-2:" }}{% endif %}
+                        {% else %}
+                        {{ value }}
+                        {% endif %}
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="infra-section">
+                <h3>{% trans "上传限制" %}</h3>
+                <div class="infra-info-grid">
+                    <span class="infra-info-label">{% trans "最大请求体大小" %}</span>
+                    <span class="infra-info-value">{% if upload_max.DATA_UPLOAD_MAX_MEMORY_SIZE %}{{ upload_max.DATA_UPLOAD_MAX_MEMORY_SIZE }}{% else %}无限制{% endif %}</span>
+                    <span class="infra-info-label">{% trans "最大文件上传大小" %}</span>
+                    <span class="infra-info-value">{% if upload_max.FILE_UPLOAD_MAX_MEMORY_SIZE %}{{ upload_max.FILE_UPLOAD_MAX_MEMORY_SIZE }}{% else %}无限制{% endif %}</span>
+                </div>
+            </div>
+
+            <div class="infra-section">
+                <h3>{% trans "MIME 类型路由规则" %} [storage.rules]</h3>
+                {% if rules %}
+                <table class="infra-rules-table">
+                    <thead><tr><th>{% trans "MIME 匹配" %}</th><th>{% trans "目标后端" %}</th></tr></thead>
+                    <tbody>
+                    {% for pattern, target in rules.items %}
+                    <tr><td><code>{{ pattern }}</code></td><td>{{ target }}</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="infra-empty">{% trans "未配置 MIME 类型路由规则，所有文件使用默认后端存储。" %}</p>
+                {% endif %}
+            </div>
+
+            <div class="infra-section">
+                <h3>{% trans "连接测试" %}</h3>
+                <p style="font-size:var(--ispace-font-sm);color:var(--ispace-color-text-tertiary);margin-bottom:var(--ispace-space-3);">
+                    {% trans "测试当前存储后端是否可正常读写。" %}
+                </p>
+                <button class="ispace-btn ispace-btn-outline ispace-btn-sm" id="storageTestBtn" onclick="testStorage()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    {% trans "测试连接" %}
+                </button>
+                <span id="storageTestResult" style="margin-left:12px;font-size:var(--ispace-font-sm);"></span>
+            </div>
+        </div>
+
+        <!-- Edit mode for Storage -->
+        <div class="infra-edit-wrap" id="storage-edit">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--ispace-space-4);">
+                <span style="font-size:var(--ispace-font-sm);font-weight:600;color:var(--ispace-color-brand-500);">{% trans "编辑文件存储配置" %}</span>
+            </div>
+
+            <div class="infra-section">
+                <h3>{% trans "存储后端类型" %}</h3>
+                <div class="infra-form-group">
+                    <select id="se-backend" onchange="renderStorageFields()">
+                        <option value="local">{% trans "本地存储 (local)" %}</option>
+                        <option value="s3">{% trans "AWS S3 / MinIO / R2 (s3)" %}</option>
+                        <option value="oss">{% trans "阿里云 OSS (oss)" %}</option>
+                        <option value="cos">{% trans "腾讯云 COS (cos)" %}</option>
+                        <option value="kodo">{% trans "七牛云 Kodo (kodo)" %}</option>
+                    </select>
+                    <p class="hint">{% trans "切换后端类型后将显示对应的配置字段" %}</p>
+                </div>
+            </div>
+
+            <div class="infra-section" id="se-backend-fields">
+                <h3 id="se-backend-title">{% trans "后端配置参数" %}</h3>
+                <div id="se-fields"></div>
+            </div>
+
+            <div class="infra-section">
+                <h3>{% trans "公共配置" %}</h3>
+                <div class="infra-form-group">
+                    <label>public_base_url <span class="hint">— {% trans "CDN / 自定义域名（可选）" %}</span></label>
+                    <input type="text" id="se-public-url" placeholder="https://cdn.example.com">
+                </div>
+            </div>
+
+            <div class="infra-edit-actions">
+                <button class="ispace-btn ispace-btn-primary ispace-btn-sm" onclick="saveStorageConfig()">{% trans "保存配置" %}</button>
+                <button class="ispace-btn ispace-btn-outline ispace-btn-sm" onclick="cancelStorageEdit()">{% trans "取消" %}</button>
+                <span id="se-result"></span>
+            </div>
+            <div class="infra-save-hint">{% trans "提示：修改存储配置后需重启服务才能生效。" %}</div>
+        </div>
+    </div>
+
+    <!-- Tab 2: 数据库 -->
+    <div class="infra-tab-panel" id="tab-database">
+        <!-- View mode -->
+        <div class="infra-view-wrap active" id="db-view">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--ispace-space-4);">
+                <span style="font-size:var(--ispace-font-sm);color:var(--ispace-color-text-tertiary);">{% trans "当前运行中的配置（只读）" %}</span>
+                <button class="ispace-btn ispace-btn-outline ispace-btn-sm" onclick="enterDbEdit()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    {% trans "编辑配置" %}
+                </button>
+            </div>
+
+            <div class="infra-section">
+                <h3>{% trans "连接状态" %}</h3>
+                <div class="infra-info-grid">
+                    <span class="infra-info-label">{% trans "连接状态" %}</span>
+                    <span class="infra-info-value">
+                        {% if db_status == 'ok' %}
+                        <span class="infra-badge infra-badge-ok"><span class="infra-dot ok"></span> 连接正常</span>
+                        {% else %}
+                        <span class="infra-badge infra-badge-error"><span class="infra-dot error"></span> 连接异常</span>
+                        <span style="font-size:12px;color:#991b1b;margin-left:8px;">{{ db_message }}</span>
+                        {% endif %}
+                    </span>
+                    {% if db_version %}
+                    <span class="infra-info-label">{% trans "数据库版本" %}</span>
+                    <span class="infra-info-value">{{ db_version }}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="infra-section">
+                <h3>{% trans "实际连接信息" %}</h3>
+                <div class="infra-info-grid">
+                    <span class="infra-info-label">{% trans "引擎" %}</span>
+                    <span class="infra-info-value">{{ dj_vendor }}</span>
+                    {% if dj_db_name %}
+                    <span class="infra-info-label">{% trans "数据库名" %}</span>
+                    <span class="infra-info-value">{{ dj_db_name }}</span>
+                    {% endif %}
+                    {% if dj_db_host %}
+                    <span class="infra-info-label">{% trans "主机地址" %}</span>
+                    <span class="infra-info-value">{{ dj_db_host }}{% if dj_db_port != '-' %}:{{ dj_db_port }}{% endif %}</span>
+                    {% endif %}
+                    {% if dj_db_user %}
+                    <span class="infra-info-label">{% trans "用户名" %}</span>
+                    <span class="infra-info-value">{{ dj_db_user }}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="infra-section">
+                <h3>{% trans "配置文件" %} [database]</h3>
+                <div class="infra-info-grid">
+                    <span class="infra-info-label">{% trans "引擎" %}</span>
+                    <span class="infra-info-value">{{ engine_label }} ({{ engine }})</span>
+                    {% for key, value in db_config.items %}
+                    {% if key != 'engine' %}
+                    <span class="infra-info-label">{{ key }}</span>
+                    <span class="infra-info-value">
+                        {% if 'password' in key or 'pwd' in key or 'secret' in key %}***{% trans "已加密" %}***{% else %}{{ value }}{% endif %}
+                    </span>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <p class="infra-note">{% trans "提示：修改数据库配置请编辑 config/conf/config.ini 文件中的 [database] 段，修改后需重启服务生效。" %}</p>
+        </div>
+
+        <!-- Edit mode for Database -->
+        <div class="infra-edit-wrap" id="db-edit">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--ispace-space-4);">
+                <span style="font-size:var(--ispace-font-sm);font-weight:600;color:var(--ispace-color-brand-500);">{% trans "编辑数据库配置" %}</span>
+            </div>
+
+            <div class="infra-section">
+                <h3>{% trans "数据库引擎" %}</h3>
+                <div class="infra-form-group">
+                    <select id="de-engine" onchange="renderDbFields()">
+                        <option value="sqlite">SQLite</option>
+                        <option value="mysql">MySQL</option>
+                        <option value="postgresql">PostgreSQL</option>
+                    </select>
+                    <p class="hint">{% trans "切换引擎后将显示对应的配置字段" %}</p>
+                </div>
+            </div>
+
+            <div class="infra-section">
+                <h3>{% trans "连接参数" %}</h3>
+                <div id="de-fields"></div>
+            </div>
+
+            <div class="infra-edit-actions">
+                <button class="ispace-btn ispace-btn-primary ispace-btn-sm" onclick="saveDbConfig()">{% trans "保存配置" %}</button>
+                <button class="ispace-btn ispace-btn-outline ispace-btn-sm" onclick="cancelDbEdit()">{% trans "取消" %}</button>
+                <span id="de-result"></span>
+            </div>
+            <div class="infra-save-hint">{% trans "提示：修改数据库配置后需重启服务才能生效，且需确保目标数据库已存在且可连接。" %}</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function switchInfraTab(tab, btn) {
+    document.querySelectorAll('.infra-tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.infra-tab-panel').forEach(function(p) { p.classList.remove('active'); });
+    btn.classList.add('active');
+    document.getElementById('tab-' + tab).classList.add('active');
+}
+
+// ===== Storage edit =====
+var _storageConfig = null; // cached from API
+
+var STORAGE_FIELDS = {
+    local: [],
+    s3: [
+        {key: 'endpoint_url', label: 'endpoint_url', hint: 'S3 服务端点地址，MinIO/R2 需填写'},
+        {key: 'access_key', label: 'access_key', hint: 'Access Key ID'},
+        {key: 'secret_key', label: 'secret_key', hint: 'Secret Access Key', type: 'password'},
+        {key: 'bucket', label: 'bucket', hint: '存储桶名称'},
+        {key: 'region', label: 'region', hint: '区域，如 us-east-1'},
+        {key: 'use_path_style', label: 'use_path_style', hint: 'MinIO 等需设为 true', placeholder: 'true / false'},
+        {key: 'signature_version', label: 'signature_version', hint: '签名版本，默认 s3v4', placeholder: 's3v4'}
+    ],
+    oss: [
+        {key: 'endpoint', label: 'endpoint', hint: 'OSS Endpoint，如 https://oss-cn-hangzhou.aliyuncs.com'},
+        {key: 'access_key_id', label: 'access_key_id', hint: 'AccessKey ID'},
+        {key: 'access_key_secret', label: 'access_key_secret', hint: 'AccessKey Secret', type: 'password'},
+        {key: 'bucket', label: 'bucket', hint: 'Bucket 名称'}
+    ],
+    cos: [
+        {key: 'region', label: 'region', hint: '园区，如 ap-guangzhou'},
+        {key: 'secret_id', label: 'secret_id', hint: 'SecretId'},
+        {key: 'secret_key', label: 'secret_key', hint: 'SecretKey', type: 'password'},
+        {key: 'bucket', label: 'bucket', hint: 'Bucket 名称（含 APPID），如 ispace-doc-1250000000'},
+        {key: 'scheme', label: 'scheme', hint: '协议，默认 https', placeholder: 'https'}
+    ],
+    kodo: [
+        {key: 'access_key', label: 'access_key', hint: 'AccessKey'},
+        {key: 'secret_key', label: 'secret_key', hint: 'SecretKey', type: 'password'},
+        {key: 'bucket', label: 'bucket', hint: 'Bucket 名称'}
+    ]
+};
+
+function enterStorageEdit() {
+    document.getElementById('storage-view').classList.remove('active');
+    document.getElementById('storage-edit').classList.add('active');
+
+    fetch('{% url "api_admin_infra_config" %}')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            _storageConfig = data;
+            document.getElementById('se-backend').value = data.storage.backend || 'local';
+            var pubUrl = data.storage.public_base_url || '';
+            document.getElementById('se-public-url').value = pubUrl;
+            if (data.storage.backends) {
+                // Store backend configs for use in renderStorageFields
+                _backendConfigs = data.storage.backends;
+            }
+            renderStorageFields();
+        })
+        .catch(function(e) {
+            document.getElementById('se-result').innerHTML = '<span class="infra-result error">加载配置失败: ' + e.message + '</span>';
+        });
+}
+
+var _backendConfigs = {};
+
+function renderStorageFields() {
+    var backend = document.getElementById('se-backend').value;
+    var fields = STORAGE_FIELDS[backend] || [];
+    var cfg = _backendConfigs[backend] || {};
+    var html = '';
+
+    if (fields.length === 0) {
+        html = '<p class="infra-empty">本地存储无需额外配置，文件将存储在服务器的 media/ 目录下。</p>';
+    } else {
+        fields.forEach(function(f) {
+            var val = cfg[f.key] || '';
+            html += '<div class="infra-form-group">';
+            html += '<label>' + f.label + ' <span class="hint">— ' + f.hint + '</span></label>';
+            html += '<input type="' + (f.type || 'text') + '" id="se-' + f.key + '" value="' + escapeHTML(val) + '" placeholder="' + (f.placeholder || '') + '">';
+            html += '</div>';
+        });
+    }
+
+    document.getElementById('se-fields').innerHTML = html;
+}
+
+function cancelStorageEdit() {
+    document.getElementById('storage-view').classList.add('active');
+    document.getElementById('storage-edit').classList.remove('active');
+    document.getElementById('se-result').innerHTML = '';
+}
+
+function saveStorageConfig() {
+    var backend = document.getElementById('se-backend').value;
+    var publicUrl = document.getElementById('se-public-url').value.trim();
+    var fields = STORAGE_FIELDS[backend] || [];
+
+    var backendCfg = {};
+    fields.forEach(function(f) {
+        var el = document.getElementById('se-' + f.key);
+        if (el) {
+            var v = el.value.trim();
+            backendCfg[f.key] = v;
+        }
+    });
+
+    var payload = {
+        storage: {
+            backend: backend,
+            public_base_url: publicUrl,
+            backends: {}
+        }
+    };
+    payload.storage.backends[backend] = backendCfg;
+
+    fetch('{% url "api_admin_infra_config" %}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+        body: JSON.stringify(payload)
+    })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var el = document.getElementById('se-result');
+            if (data.status) {
+                el.innerHTML = '<span class="infra-result success">' + data.message + '</span>';
+                // 更新 backend configs 缓存
+                _backendConfigs[backend] = backendCfg;
+            } else {
+                el.innerHTML = '<span class="infra-result error">保存失败: ' + escapeHTML(data.message) + '</span>';
+            }
+        })
+        .catch(function(e) {
+            document.getElementById('se-result').innerHTML = '<span class="infra-result error">保存失败: ' + e.message + '</span>';
+        });
+}
+
+// ===== Database edit =====
+var DB_ENGINE_FIELDS = {
+    sqlite: [
+        {key: 'name', label: 'name', hint: '数据库文件路径，如 db.sqlite3 或 /data/ispace.db'}
+    ],
+    mysql: [
+        {key: 'name', label: 'name', hint: '数据库名称'},
+        {key: 'host', label: 'host', hint: '主机地址，如 127.0.0.1'},
+        {key: 'port', label: 'port', hint: '端口号，默认 3306', placeholder: '3306'},
+        {key: 'user', label: 'user', hint: '数据库用户名'},
+        {key: 'password', label: 'password', hint: '数据库密码', type: 'password'}
+    ],
+    postgresql: [
+        {key: 'name', label: 'name', hint: '数据库名称'},
+        {key: 'host', label: 'host', hint: '主机地址，如 127.0.0.1'},
+        {key: 'port', label: 'port', hint: '端口号，默认 5432', placeholder: '5432'},
+        {key: 'user', label: 'user', hint: '数据库用户名'},
+        {key: 'password', label: 'password', hint: '数据库密码', type: 'password'}
+    ]
+};
+
+var _dbConfig = null;
+
+function enterDbEdit() {
+    document.getElementById('db-view').classList.remove('active');
+    document.getElementById('db-edit').classList.add('active');
+
+    fetch('{% url "api_admin_infra_config" %}')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            _dbConfig = data.database;
+            document.getElementById('de-engine').value = data.database.engine || 'sqlite';
+            renderDbFields();
+        })
+        .catch(function(e) {
+            document.getElementById('de-result').innerHTML = '<span class="infra-result error">加载配置失败: ' + e.message + '</span>';
+        });
+}
+
+function renderDbFields() {
+    var engine = document.getElementById('de-engine').value;
+    var fields = DB_ENGINE_FIELDS[engine] || [];
+    var html = '';
+
+    fields.forEach(function(f) {
+        var val = (_dbConfig && _dbConfig[f.key]) ? _dbConfig[f.key] : '';
+        html += '<div class="infra-form-group">';
+        html += '<label>' + f.label + ' <span class="hint">— ' + f.hint + '</span></label>';
+        html += '<input type="' + (f.type || 'text') + '" id="de-' + f.key + '" value="' + escapeHTML(val) + '" placeholder="' + (f.placeholder || '') + '">';
+        html += '</div>';
+    });
+
+    document.getElementById('de-fields').innerHTML = html;
+}
+
+function cancelDbEdit() {
+    document.getElementById('db-view').classList.add('active');
+    document.getElementById('db-edit').classList.remove('active');
+    document.getElementById('de-result').innerHTML = '';
+}
+
+function saveDbConfig() {
+    var engine = document.getElementById('de-engine').value;
+    var fields = DB_ENGINE_FIELDS[engine] || [];
+
+    var payload = { database: { engine: engine } };
+    fields.forEach(function(f) {
+        var el = document.getElementById('de-' + f.key);
+        if (el) payload.database[f.key] = el.value.trim();
+    });
+
+    fetch('{% url "api_admin_infra_config" %}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+        body: JSON.stringify(payload)
+    })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var el = document.getElementById('de-result');
+            if (data.status) {
+                el.innerHTML = '<span class="infra-result success">' + data.message + '</span>';
+                _dbConfig = payload.database;
+            } else {
+                el.innerHTML = '<span class="infra-result error">保存失败: ' + escapeHTML(data.message) + '</span>';
+            }
+        })
+        .catch(function(e) {
+            document.getElementById('de-result').innerHTML = '<span class="infra-result error">保存失败: ' + e.message + '</span>';
+        });
+}
+
+// ===== Common =====
+function testStorage() {
+    var btn = document.getElementById('storageTestBtn');
+    var result = document.getElementById('storageTestResult');
+    btn.disabled = true; btn.textContent = '测试中...'; result.innerHTML = '';
+    fetch('{% url "admin_health" %}')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> 测试连接';
+            if (data && data.disk) { result.innerHTML = '<span style="color:#166534;">连接正常 — 磁盘可用: ' + data.disk.free + '</span>'; }
+            else { result.innerHTML = '<span style="color:#166534;">存储后端可访问</span>'; }
+        })
+        .catch(function(e) {
+            btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> 测试连接';
+            result.innerHTML = '<span style="color:#991b1b;">测试失败: ' + (e.message || '网络错误') + '</span>';
+        });
+}
+
+function escapeHTML(str) {
+    var div = document.createElement('div');
+    div.textContent = str || '';
+    return div.innerHTML;
+}
+</script>
+{% endblock %}

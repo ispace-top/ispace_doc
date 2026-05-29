@@ -1,0 +1,182 @@
+{% load static %}{% load i18n %}<!DOCTYPE html>
+<html lang="zh-cn" data-ispace-theme="{{ active_theme|default:'light' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{% block meta_description %}{% if site_sub_name %}{{ site_sub_name }}{% else %}{% trans "爱要春风化雨，思必汇流成渊" %}{% endif %}{% endblock %}">
+    <meta name="theme-color" content="#3b82f6">
+
+    {% if not is_spa_request %}
+    {# --- FOUC prevention: apply theme before any CSS loads --- #}
+    <script>
+    (function(){
+        var t = localStorage.getItem('ispace-theme');
+        if (t === 'dark') {
+            document.documentElement.setAttribute('data-ispace-theme', 'dark');
+        } else if (t === 'auto') {
+            var isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            document.documentElement.setAttribute('data-ispace-theme', isDark ? 'dark' : 'light');
+        }
+    })();
+    </script>
+    {% endif %}
+
+    <title>{% block title %}爱思wiki{% endblock %}</title>
+
+    {% if not is_spa_request %}
+    {% block preconnects %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    {% endblock %}
+
+    {# Google Fonts loaded async to avoid blocking render #}
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" media="print" onload="this.media='all'">
+
+    {% block favicon %}
+    <link rel="icon" href="{% static 'favicon_16.png' %}" type="image/png" sizes="16x16">
+    <link rel="icon" href="{% static 'logo.svg' %}" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="{% static 'logo.png' %}">
+    {% endblock %}
+
+    {# --- Core Stylesheets --- #}
+    {% block core_styles %}
+    <link rel="stylesheet" href="{% static 'css/theme/reset.css' %}?v={{ isdoc_version }}">
+    <link rel="stylesheet" href="{% static 'css/theme/tokens.css' %}?v={{ isdoc_version }}">
+    <link rel="stylesheet" href="{% static 'css/theme/themes/light.css' %}?v={{ isdoc_version }}">
+    <link rel="stylesheet" href="{% static 'css/theme/themes/dark.css' %}?v={{ isdoc_version }}">
+    <link rel="stylesheet" href="{% static 'css/theme/layout.css' %}?v={{ isdoc_version }}">
+    <link rel="stylesheet" href="{% static 'css/theme/components.css' %}?v={{ isdoc_version }}">
+    <link rel="stylesheet" href="{% static 'css/theme/utilities.css' %}?v={{ isdoc_version }}">
+    {% endblock %}
+    {% endif %}
+
+    {% block styles %}
+    {% endblock %}
+    {% block head_extra %}{% endblock %}
+</head>
+
+<body class="{% block body_class %}{% endblock %}">
+
+    {% if not is_spa_request %}
+    {% csrf_token %}
+
+    {% block skip_link %}
+    <a href="#main-content" class="ispace-skip-link">跳到主要内容</a>
+    {% endblock %}
+    {% endif %}
+
+    {% block layout %}
+    <div class="ispace-app-layout has-sidebar {% block layout_class %}{% endblock %}">
+        {% if not is_spa_request %}
+        {% if request.GET.embed != '1' %}
+        {% block header %}
+        <header class="ispace-header">
+            <div class="ispace-header-container">
+                <div class="ispace-header-left">
+                    {% block header_logo %}
+                    <a href="/" class="ispace-logo">
+                        <img src="{% if site_logo %}{{ site_logo }}{% else %}{% static 'logo.png' %}{% endif %}" width="28" height="28" alt="logo">
+                        {{ site_name|default:"爱思文档" }}
+                    </a>
+                    {% endblock %}
+
+                    {% block header_debug %}{% endblock %}
+
+                    {% block breadcrumb %}{% endblock %}
+
+                    {% if page_title %}
+                    <span class="ispace-text-quaternary ispace-d-none-mobile">/</span>
+                    <span class="ispace-text-secondary ispace-font-medium ispace-d-none-mobile">{{ page_title }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="ispace-header-center">
+                    {% block header_center %}{% endblock %}
+                </div>
+
+                <div class="ispace-header-right">
+                    {% block header_actions %}
+                        {% include "includes/theme_toggle.html" %}
+
+                        {% block header_actions_extra %}{% endblock %}
+
+                        {% if user.is_authenticated %}
+                            {% include "includes/notification_dropdown.html" %}
+                            {% include "includes/user_dropdown.html" %}
+                        {% else %}
+                            <a href="{% url 'login' %}" class="ispace-btn ispace-btn-ghost ispace-btn-sm">登录</a>
+                            {% if close_register != 'on' %}
+                            <a href="{% url 'register' %}" class="ispace-btn ispace-btn-primary ispace-btn-sm">注册</a>
+                            {% endif %}
+                        {% endif %}
+                    {% endblock %}
+                </div>
+            </div>
+        </header>
+        {% endblock %}
+
+        {% block sidebar %}{% include "includes/sidebar_tree.html" %}{% endblock %}
+        {% endif %}
+        {% endif %}
+
+        <main id="main-content" class="ispace-main-content">
+            {% block content %}{% endblock %}
+        </main>
+
+        {% if not is_spa_request %}
+        {% if request.GET.embed != '1' %}
+        {% block footer %}{% include "includes/footer.html" %}{% endblock %}
+        {% endif %}
+        {% endif %}
+    </div>
+    {% endblock %}
+
+    {% if not is_spa_request %}
+    {# --- Global containers --- #}
+    {% include "includes/toast_container.html" %}
+    {% include "includes/modal_container.html" %}
+
+    {# --- Core Scripts --- #}
+    {% block core_scripts %}
+    <script src="{% static 'js/theme/theme-manager.js' %}?v={{ isdoc_version }}"></script>
+    <script src="{% static 'js/theme/core.js' %}?v={{ isdoc_version }}"></script>
+    <script src="{% static 'js/theme/components.js' %}?v={{ isdoc_version }}"></script>
+    <script src="{% static 'js/theme/spa-nav.js' %}?v={{ isdoc_version }}"></script>
+    <script src="{% static 'js/theme/notification.js' %}?v={{ isdoc_version }}"></script>
+    <script src="{% static 'js/theme/author-card.js' %}?v={{ isdoc_version }}"></script>
+    <script src="{% static 'js/theme/doc-settings.js' %}?v={{ isdoc_version }}"></script>
+    {% endblock %}
+
+    {% block inline_bootstrap %}
+    <script>
+    window.__ISPACEDOC__ = {
+        csrfToken: '{{ csrf_token }}',
+        isAuthenticated: {{ user.is_authenticated|yesno:"true,false" }},
+        userId: {{ user.id|default:"null" }},
+        username: '{{ user.username|default:""|escapejs }}',
+        version: '{{ isdoc_version }}'
+    };
+    </script>
+    {% endblock %}
+
+    {% block scripts %}{% endblock %}
+
+    {% block scripts_bottom %}
+    {# 单标签页模式：移除所有 target="_blank" 使链接在同一标签页打开 #}
+    {% if single_tab_link == 'on' %}
+    <script>
+    (function() {
+        document.addEventListener('click', function(e) {
+            var a = e.target.closest('a[target="_blank"]');
+            if (a) {
+                e.preventDefault();
+                window.location.href = a.href;
+            }
+        });
+    })();
+    </script>
+    {% endif %}
+    {% endblock %}
+    {% endif %}
+</body>
+</html>

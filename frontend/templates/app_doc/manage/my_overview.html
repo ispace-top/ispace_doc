@@ -1,0 +1,202 @@
+﻿{% extends "base.html" %}
+{% load static %}{% load i18n %}
+{% block title %}{% trans "仪表盘" %}{% endblock %}
+{% block breadcrumb %}{% include "includes/breadcrumb.html" with breadcrumbs=breadcrumb_items %}{% endblock %}
+
+{% block body_class %}ispace-page-body{% endblock %}
+
+{% block styles %}
+<style>
+.ispace-dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--ispace-space-4);
+}
+@media (max-width: 768px) {
+    .ispace-dashboard-grid { grid-template-columns: 1fr; }
+}
+.ispace-activity-list { list-style: none; padding: 0; margin: 0; }
+.ispace-activity-item {
+    display: flex; align-items: flex-start; gap: var(--ispace-space-3);
+    padding: var(--ispace-space-3) 0;
+    border-bottom: 1px solid var(--ispace-color-border-light);
+}
+.ispace-activity-item:last-child { border-bottom: none; }
+.ispace-activity-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--ispace-color-brand-100);
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+.ispace-activity-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.ispace-activity-content { flex: 1; min-width: 0; }
+.ispace-activity-content p { margin: 0; font-size: var(--ispace-font-sm); color: var(--ispace-color-text-primary); line-height: 1.5; }
+.ispace-activity-content p a { color: var(--ispace-color-brand-500); text-decoration: none; }
+.ispace-activity-content p a:hover { text-decoration: underline; }
+.ispace-activity-time { font-size: var(--ispace-font-xs); color: var(--ispace-color-text-tertiary); margin-top: var(--ispace-space-1); }
+.ispace-link-list { display: flex; flex-direction: column; gap: var(--ispace-space-3); }
+.ispace-link-list .ispace-btn { width: 100%; justify-content: center; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ispace-page">
+    <div class="ispace-page-card">
+        <div class="ispace-content-card">
+            <div class="ispace-card-body">
+                <h2 class="ispace-content-title ispace-mb-6">{% trans "仪表盘" %}</h2>
+
+                <!-- Stat Cards -->
+                <div class="ispace-stat-grid ispace-mb-6">
+                    <div class="ispace-stat-card">
+                        <div class="ispace-stat-icon ispace-stat-icon--success">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+                        </div>
+                        <div class="ispace-stat-content">
+                            <div class="ispace-stat-value" id="doc_cnt">{{ doc_cnt }}</div>
+                            <div class="ispace-stat-label">{% trans "文档数量" %}</div>
+                        </div>
+                    </div>
+                    <div class="ispace-stat-card">
+                        <div class="ispace-stat-icon ispace-stat-icon--info">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        </div>
+                        <div class="ispace-stat-content">
+                            <div class="ispace-stat-value" id="img_cnt">{{ img_cnt }}</div>
+                            <div class="ispace-stat-label">{% trans "图片数量" %}</div>
+                        </div>
+                    </div>
+                    <div class="ispace-stat-card">
+                        <div class="ispace-stat-icon ispace-stat-icon--error">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                        </div>
+                        <div class="ispace-stat-content">
+                            <div class="ispace-stat-value" id="attachment_cnt">{{ attachment_cnt }}</div>
+                            <div class="ispace-stat-label">{% trans "附件数量" %}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ispace-dashboard-grid">
+                    <!-- Activity Feed -->
+                    <div class="ispace-content-card">
+                        <div class="ispace-card-header">
+                            <h3 class="ispace-card-title">{% trans "动态" %}</h3>
+                        </div>
+                        <div class="ispace-card-body" style="padding-top:var(--ispace-space-2);padding-bottom:var(--ispace-space-2);">
+                            {% if doc_active_list %}
+                            <ul class="ispace-activity-list">
+                                {% for doc in doc_active_list %}
+                                <li class="ispace-activity-item">
+                                    <div class="ispace-activity-avatar">
+                                        <img src="{% static 'isdoc/icons/avatar-default.svg' %}" alt="">
+                                    </div>
+                                    <div class="ispace-activity-content">
+                                        <p>
+                                            {% if doc.status == 1 %}
+                                            {{ doc.create_user.first_name }} {% trans "修改了文档" %} <a href="{% url 'doc_by_id' doc_id=doc.id %}" target="_blank">{{ doc.name }}</a>
+                                            {% elif doc.status == 0 %}
+                                            {{ doc.create_user.first_name }} {% trans "保存了文档" %} <a href="{% url 'modify_doc' doc.id %}" target="_blank">{{ doc.name }}</a>
+                                            {% else %}
+                                            {{ doc.create_user.first_name }} {% trans "删除了文档" %} <a>{{ doc.name }}</a>
+                                            {% endif %}
+                                        </p>
+                                        <div class="ispace-activity-time">{{ doc.modify_time }}</div>
+                                    </div>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <div style="padding:var(--ispace-space-6) 0;text-align:center;color:var(--ispace-color-text-tertiary);">
+                                {% trans "暂无动态" %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Quick Draft + Links -->
+                    <div>
+                        <div class="ispace-content-card ispace-mb-4">
+                            <div class="ispace-card-header">
+                                <h3 class="ispace-card-title">{% trans "快速草稿" %}</h3>
+                            </div>
+                            <div class="ispace-card-body">
+                                <div class="ispace-form-group">
+                                    <label class="ispace-form-label" for="doc_name">{% trans "标题" %}</label>
+                                    <input type="text" id="doc_name" name="doc_name" class="ispace-form-input" placeholder="{% trans '请输入文档标题' %}" required>
+                                </div>
+                                
+                                <div class="ispace-form-group">
+                                    <label class="ispace-form-label" for="pre_content">{% trans "内容" %}</label>
+                                    <textarea id="pre_content" name="pre_content" class="ispace-form-textarea" placeholder="{% trans '在想些什么呢？' %}" rows="4"></textarea>
+                                </div>
+                                <div style="display:flex;gap:var(--ispace-space-3);">
+                                    <button type="button" class="ispace-btn ispace-btn-primary ispace-btn-sm" id="save_doc">{% trans "保存草稿" %}</button>
+                                    <button type="button" class="ispace-btn ispace-btn-ghost" id="reset_draft">{% trans "重置" %}</button>
+                                </div>
+                            </div>
+                        </div>
+
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    var csrfToken = window.__ISPACEDOC__ && window.__ISPACEDOC__.csrfToken;
+    var saveBtn = document.getElementById('save_doc');
+    var resetBtn = document.getElementById('reset_draft');
+
+    if (resetBtn) {
+        resetBtn.addEventListener('click', function() {
+            document.getElementById('doc_name').value = '';
+            
+            document.getElementById('pre_content').value = '';
+        });
+    }
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', function() {
+            var docName = document.getElementById('doc_name').value.trim();
+            var project = '0';
+            var preContent = document.getElementById('pre_content').value;
+
+            if (!docName) { showWarning('{% trans "请输入文档标题！" %}'); return; }
+            
+
+            saveBtn.disabled = true;
+            var formData = new URLSearchParams();
+            
+            formData.append('doc_name', docName);
+            formData.append('pre_content', preContent);
+            formData.append('status', '0');
+
+            fetch('{% url "create_doc" %}', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData.toString()
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                if (r.status) {
+                    showSuccess('{% trans "保存草稿成功" %}');
+                    setTimeout(function() { window.location.reload(); }, 1500);
+                } else {
+                    showError('{% trans "保存草稿失败：" %}' + (r.data || ''));
+                    saveBtn.disabled = false;
+                }
+            })
+            .catch(function() {
+                showError('{% trans "保存草稿异常" %}');
+                saveBtn.disabled = false;
+            });
+        });
+    }
+})();
+</script>
+{% endblock %}

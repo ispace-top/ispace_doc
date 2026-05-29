@@ -1,0 +1,68 @@
+{% load i18n %}
+<nav class="ispace-breadcrumb" aria-label="breadcrumb" id="breadcrumbNav">
+    <a href="/">{% trans "首页" %}</a>
+    <span class="ispace-breadcrumb-separator ispace-breadcrumb-ellipsis" id="breadcrumbEllipsis" style="display:none;">...</span>
+    {% for item in breadcrumbs %}
+    <span class="ispace-breadcrumb-separator ispace-bcrumb-sep">/</span>
+    {% if item.url %}
+    <a href="{{ item.url }}" class="ispace-bcrumb-item">{{ item.name }}</a>
+    {% else %}
+    <span class="ispace-bcrumb-item">{{ item.name }}</span>
+    {% endif %}
+    {% endfor %}
+</nav>
+<script>
+(function() {
+    var nav = document.getElementById('breadcrumbNav');
+    if (!nav) return;
+    var ellipsis = document.getElementById('breadcrumbEllipsis');
+    var items = nav.querySelectorAll('.ispace-bcrumb-item');
+    var seps = nav.querySelectorAll('.ispace-bcrumb-sep');
+    if (!items.length) return;
+
+    function handleOverflow() {
+        // Reset all
+        ellipsis.style.display = 'none';
+        items.forEach(function(item) {
+            item.style.display = '';
+            item.style.overflow = '';
+            item.style.textOverflow = '';
+            item.style.minWidth = '';
+        });
+        seps.forEach(function(sep) { sep.style.display = ''; });
+
+        // No overflow — all good
+        if (nav.scrollWidth <= nav.clientWidth + 1) return;
+
+        // Hide items from the front, keeping at least 2 trailing items visible
+        var minVisible = Math.min(2, items.length);
+        for (var i = 0; i < items.length - minVisible; i++) {
+            items[i].style.display = 'none';
+            if (seps[i]) seps[i].style.display = 'none';
+            ellipsis.style.display = '';
+            if (nav.scrollWidth <= nav.clientWidth + 1) break;
+        }
+
+        // If still overflowing at minVisible, allow items to truncate with ellipsis
+        if (nav.scrollWidth > nav.clientWidth + 1) {
+            items.forEach(function(item) {
+                if (item.style.display !== 'none') {
+                    item.style.overflow = 'hidden';
+                    item.style.textOverflow = 'ellipsis';
+                    item.style.minWidth = '3em';
+                }
+            });
+        }
+    }
+
+    // Delay initial run to ensure CSS layout is complete
+    if (document.readyState === 'complete') {
+        requestAnimationFrame(function() { requestAnimationFrame(handleOverflow); });
+    } else {
+        window.addEventListener('load', function() { requestAnimationFrame(handleOverflow); });
+    }
+    window.addEventListener('resize', handleOverflow);
+    // Handle SPA navigation
+    window.addEventListener('popstate', function() { setTimeout(handleOverflow, 100); });
+})();
+</script>

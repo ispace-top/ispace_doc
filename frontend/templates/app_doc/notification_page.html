@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+{% load static %}{% load i18n %}
+
+{% block title %}{% trans "系统通知" %} - {{ site_name|default:"爱思文档" }}{% endblock %}
+
+{% block head_extra %}
+{# 通知页面样式 —— 在 <head> 中加载，防止 FOUC #}
+<style>
+.ispace-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--ispace-space-4);
+}
+.ispace-notification-tabs {
+    display: flex;
+    gap: var(--ispace-space-1);
+    margin-bottom: var(--ispace-space-4);
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--ispace-color-border-light);
+    padding-bottom: var(--ispace-space-3);
+}
+.ispace-notification-tab {
+    padding: var(--ispace-space-1) var(--ispace-space-3);
+    font-size: var(--ispace-font-sm);
+    color: var(--ispace-color-text-tertiary);
+    background: transparent;
+    border: 1px solid var(--ispace-color-border-light);
+    border-radius: var(--ispace-radius-full);
+    cursor: pointer;
+    transition: all var(--ispace-duration-fast);
+}
+.ispace-notification-tab:hover { color: var(--ispace-color-text-primary); background: var(--ispace-color-surface-100); }
+.ispace-notification-tab.ispace-active {
+    background: var(--ispace-color-brand-500);
+    color: var(--ispace-color-text-inverse);
+    border-color: var(--ispace-color-brand-500);
+}
+.ispace-form-check-sm { font-size: var(--ispace-font-xs); }
+.ispace-notification-page-item {
+    display: flex;
+    gap: var(--ispace-space-3);
+    padding: var(--ispace-space-4);
+    border-bottom: 1px solid var(--ispace-color-surface-100);
+    cursor: pointer;
+    transition: background var(--ispace-duration-fast);
+}
+.ispace-notification-page-item:hover { background: var(--ispace-color-surface-hover); }
+.ispace-notification-page-item.ispace-unread { background: var(--ispace-color-brand-50, #eff6ff); }
+.ispace-notification-page-avatar {
+    width: 40px; height: 40px;
+    border-radius: var(--ispace-radius-full);
+    background: var(--ispace-color-surface-200);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: var(--ispace-font-bold); color: #fff;
+    flex-shrink: 0; overflow: hidden;
+}
+.ispace-notification-page-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.ispace-notification-page-body { flex: 1; min-width: 0; }
+.ispace-notification-page-title { font-size: var(--ispace-font-base); font-weight: var(--ispace-font-medium); color: var(--ispace-color-text-primary); margin-bottom: 2px; }
+.ispace-notification-page-text { font-size: var(--ispace-font-sm); color: var(--ispace-color-text-tertiary); margin-bottom: 4px; }
+.ispace-notification-page-time { font-size: var(--ispace-font-xs); color: var(--ispace-color-text-quaternary); }
+.ispace-notification-page-unread-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--ispace-color-brand-600, #2563eb);
+    flex-shrink: 0; align-self: center;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="notification-page">
+    <div class="ispace-page-header">
+        <h1 class="ispace-page-title">{% trans "系统通知" %}</h1>
+        <div class="ispace-flex-center ispace-gap-2">
+            <label class="ispace-form-check ispace-form-check-sm">
+                <input type="checkbox" id="toggle-unread-only">
+                <span>{% trans "仅未读" %}</span>
+            </label>
+            <button class="ispace-btn ispace-btn-ghost ispace-btn-sm" id="btn-mark-all-page" style="display:none;">
+                {% trans "全部已读" %}
+            </button>
+        </div>
+    </div>
+
+    {# Filter Tabs #}
+    <div class="ispace-notification-tabs">
+        <button class="ispace-notification-tab ispace-active" data-type="">{% trans "全部" %}</button>
+        <button class="ispace-notification-tab" data-type="system">{% trans "系统" %}</button>
+        <button class="ispace-notification-tab" data-type="comment">{% trans "评论" %}</button>
+        <button class="ispace-notification-tab" data-type="reply">{% trans "回复" %}</button>
+        <button class="ispace-notification-tab" data-type="mention">{% trans "@提及" %}</button>
+        <button class="ispace-notification-tab" data-type="doc_like">{% trans "点赞" %}</button>
+        <button class="ispace-notification-tab" data-type="perm_apply,perm_change">{% trans "权限" %}</button>
+    </div>
+
+    <div id="notification-page-list"></div>
+
+    <div id="notification-page-loading" style="text-align:center;padding:32px;color:var(--ispace-color-text-tertiary);">加载中...</div>
+    <div id="notification-page-end" style="text-align:center;padding:16px;color:var(--ispace-color-text-quaternary);font-size:12px;display:none;">已加载全部通知</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function(){
+    var page = 1;
+    var loading = false;
+    var hasMore = true;
+    var currentType = '';
+    var unreadOnly = false;
+    var listEl = document.getElementById('notification-page-list');
+    var loadingEl = document.getElementById('notification-page-loading');
+    var endEl = document.getElementById('notification-page-end');
+    var markAllBtn = document.getElementById('btn-mark-all-page');
+    var unreadToggle = document.getElementById('toggle-unread-only');
+    var csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    function esc(s) {
+        var d = document.createElement('div');
+        d.textContent = s || '';
+        return d.innerHTML;
+    }
+
+    function resetAndLoad() {
+        page = 1;
+        hasMore = true;
+        listEl.innerHTML = '';
+        loadingEl.style.display = '';
+        endEl.style.display = 'none';
+        load();
+    }
+
+    function buildUrl() {
+        var url = '/api/notifications/?page=' + page + '&page_size=20';
+        if (currentType) url += '&notification_type=' + encodeURIComponent(currentType);
+        if (unreadOnly) url += '&unread_only=true';
+        return url;
+    }
+
+    function load() {
+        if (loading || !hasMore) return;
+        loading = true;
+        fetch(buildUrl())
+            .then(function(r) { return r.json(); })
+            .then(function(resp) {
+                var data = resp.data;
+                loadingEl.style.display = 'none';
+                if (resp.code !== 0 || !data || !data.items.length) {
+                    hasMore = false; endEl.style.display = ''; return;
+                }
+                if (markAllBtn) markAllBtn.style.display = (data.unread_count > 0) ? '' : 'none';
+
+                data.items.forEach(function(n) {
+                    var avatarHtml = n.sender_avatar_url
+                        ? '<img src="' + esc(n.sender_avatar_url) + '" alt="">'
+                        : (n.sender_initial || '?');
+                    var item = document.createElement('div');
+                    item.className = 'ispace-notification-page-item' + (n.is_read ? '' : ' ispace-unread');
+                    item.innerHTML =
+                        '<div class="ispace-notification-page-avatar" style="background:' + (n.sender_color || '#4A90D9') + '">' + avatarHtml + '</div>'
+                        + '<div class="ispace-notification-page-body">'
+                        + '<div class="ispace-notification-page-title">' + esc(n.title) + '</div>'
+                        + '<div class="ispace-notification-page-text">' + esc(n.body) + '</div>'
+                        + '<div class="ispace-notification-page-time">' + esc(n.relative_time) + '</div>'
+                        + '</div>'
+                        + (n.is_read ? '' : '<span class="ispace-notification-page-unread-dot"></span>');
+                    item.addEventListener('click', function() {
+                        if (n.link) window.location.href = n.link;
+                        fetch('/api/notifications/read/', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                            body: JSON.stringify({ id: n.id })
+                        });
+                    });
+                    listEl.appendChild(item);
+                });
+                page++;
+                hasMore = data.has_next;
+                if (!hasMore) endEl.style.display = '';
+            })
+            .catch(function() {
+                loadingEl.textContent = '加载失败，请刷新重试';
+            })
+            .finally(function() { loading = false; });
+    }
+
+    // Infinite scroll
+    window.addEventListener('scroll', function() {
+        if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 300) {
+            load();
+        }
+    });
+
+    // Type filter tabs
+    document.querySelectorAll('.ispace-notification-tab').forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            document.querySelectorAll('.ispace-notification-tab').forEach(function(t) { t.classList.remove('ispace-active'); });
+            tab.classList.add('ispace-active');
+            currentType = tab.getAttribute('data-type');
+            resetAndLoad();
+        });
+    });
+
+    // Unread-only toggle
+    if (unreadToggle) {
+        unreadToggle.addEventListener('change', function() {
+            unreadOnly = unreadToggle.checked;
+            resetAndLoad();
+        });
+    }
+
+    // Mark all read
+    if (markAllBtn) {
+        markAllBtn.addEventListener('click', function() {
+            fetch('/api/notifications/read/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                body: JSON.stringify({ mark_all: true })
+            }).then(function(r) { return r.json(); })
+            .then(function() {
+                document.querySelectorAll('.ispace-notification-page-item.ispace-unread').forEach(function(el) {
+                    el.classList.remove('ispace-unread');
+                    var dot = el.querySelector('.ispace-notification-page-unread-dot');
+                    if (dot) dot.remove();
+                });
+                markAllBtn.style.display = 'none';
+            });
+        });
+    }
+
+    load();
+})();
+</script>
+{% endblock %}

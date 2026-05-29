@@ -1,0 +1,8 @@
+{% extends "email/base.html" %}
+{% block content %}
+<p><strong>{{ sender_name }}</strong> 在文档 <strong>{{ doc_name }}</strong> 中提到了你：</p>
+<div class="highlight">{{ comment_content }}</div>
+{% if link %}
+<p style="margin-top:16px"><a href="{{ link }}" class="btn">查看详情</a></p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,337 @@
+<!-- 思维导图编辑器 (editor_mode=5) -->
+{% load static %}{% load i18n %}
+<div class="ispace-drawing-editor" id="mindmap-editor-container">
+    <div class="ispace-drawing-toolbar" id="mindmap-toolbar">
+        <button class="ispace-btn ispace-btn-sm ispace-btn-secondary" onclick="mindmapAddNode()" title="{% trans '添加子节点' %}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            子节点
+        </button>
+        <button class="ispace-btn ispace-btn-sm ispace-btn-secondary" onclick="mindmapAddSibling()" title="{% trans '添加兄弟节点' %}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="12" x2="16" y2="12"/><polyline points="12 8 16 12 12 16"/></svg>
+            兄弟节点
+        </button>
+        <button class="ispace-btn ispace-btn-sm ispace-btn-secondary" onclick="mindmapDeleteNode()" title="{% trans '删除节点' %}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            删除
+        </button>
+        <span class="ispace-toolbar-sep">|</span>
+        <button class="ispace-btn ispace-btn-sm ispace-btn-secondary" onclick="mindmapZoomIn()" title="{% trans '放大' %}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        </button>
+        <button class="ispace-btn ispace-btn-sm ispace-btn-secondary" onclick="mindmapZoomOut()" title="{% trans '缩小' %}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        </button>
+        <button class="ispace-btn ispace-btn-sm ispace-btn-secondary" onclick="mindmapResetZoom()" title="{% trans '重置缩放' %}">100%</button>
+        <span class="ispace-toolbar-sep">|</span>
+        <button class="ispace-btn ispace-btn-sm ispace-btn-primary" onclick="saveMindmap()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            {% trans '保存' %}
+        </button>
+    </div>
+    <div class="ispace-drawing-canvas" id="mindmap-canvas">
+        <svg id="mindmap-svg" width="100%" height="100%"></svg>
+    </div>
+</div>
+
+<style>
+.ispace-drawing-editor {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 120px);
+    border: 1px solid var(--ispace-color-border-light);
+    border-radius: var(--ispace-radius-lg);
+    overflow: hidden;
+    background: #fff;
+}
+.ispace-drawing-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--ispace-color-border-light);
+    background: #f8fafc;
+    flex-wrap: wrap;
+}
+.ispace-toolbar-sep {
+    color: var(--ispace-color-border);
+    margin: 0 4px;
+    user-select: none;
+}
+.ispace-drawing-canvas {
+    flex: 1;
+    overflow: auto;
+    position: relative;
+    background: #fafbfc;
+    cursor: grab;
+}
+.ispace-drawing-canvas:active {
+    cursor: grabbing;
+}
+.ispace-drawing-canvas svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+/* 思维导图节点样式 */
+.mm-node {
+    cursor: pointer;
+    user-select: none;
+}
+.mm-node rect {
+    fill: #fff;
+    stroke: #6366f1;
+    stroke-width: 2;
+    rx: 8;
+    ry: 8;
+    transition: all 0.15s;
+}
+.mm-node.selected rect {
+    stroke: #4f46e5;
+    stroke-width: 3;
+    fill: #eef2ff;
+}
+.mm-node:hover rect {
+    fill: #f5f3ff;
+}
+.mm-node.root rect {
+    fill: #6366f1;
+    stroke: #4f46e5;
+}
+.mm-node text {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 13px;
+    fill: #1e293b;
+    text-anchor: middle;
+    dominant-baseline: central;
+}
+.mm-node.root text {
+    fill: #fff;
+    font-weight: 600;
+    font-size: 15px;
+}
+.mm-line {
+    stroke: #c7d2fe;
+    stroke-width: 1.5;
+    fill: none;
+}
+</style>
+
+<script>
+(function() {
+    var MINDMAP_API = '/api/drawing/mindmap/' + window._docId + '/';
+    var CSRF_TOKEN = window.__ISPACEDOC__ && window.__ISPACEDOC__.csrfToken;
+
+    var canvasEl = document.getElementById('mindmap-canvas');
+    var svgEl = document.getElementById('mindmap-svg');
+
+    var offsetX = 400, offsetY = 300, scale = 1;
+    var selectedNode = null;
+    var isDragging = false, dragStartX = 0, dragStartY = 0;
+
+    // 默认根节点数据
+    var mindData = {
+        id: 'root',
+        text: window._docName || '思维导图',
+        children: []
+    };
+
+    var nodeIdCounter = 1;
+
+    function genId() { return 'n' + (nodeIdCounter++); }
+
+    // 加载数据
+    fetch(MINDMAP_API)
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+            if (resp.data && resp.data.root) {
+                mindData = resp.data.root;
+                // 重建计数器
+                rebuildIds(mindData);
+            }
+            render();
+        })
+        .catch(function() { render(); });
+
+    function rebuildIds(node) {
+        if (!node.id || node.id === 'root') node.id = genId();
+        nodeIdCounter = Math.max(nodeIdCounter, parseInt(node.id.replace('n','')) + 1);
+        if (node.children) node.children.forEach(rebuildIds);
+    }
+
+    // 渲染
+    function render() {
+        selectedNode = null;
+        var svg = svgEl;
+        svg.innerHTML = '';
+        var g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('transform', 'translate(' + offsetX + ',' + offsetY + ') scale(' + scale + ')');
+        g.id = 'mm-root-group';
+        renderNode(g, mindData, 0, 0, 0, true);
+        svg.appendChild(g);
+    }
+
+    var H_GAP = 160, V_GAP = 40, NODE_W = 120, NODE_H = 36;
+
+    function getSubtreeHeight(node) {
+        if (!node.children || node.children.length === 0) return NODE_H;
+        var total = 0;
+        node.children.forEach(function(c) { total += getSubtreeHeight(c) + V_GAP; });
+        return Math.max(total - V_GAP, NODE_H);
+    }
+
+    function renderNode(g, node, x, y, depth, isRoot) {
+        var el = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        el.setAttribute('class', 'mm-node' + (isRoot ? ' root' : ''));
+        el.setAttribute('data-id', node.id);
+        el.setAttribute('transform', 'translate(' + x + ',' + y + ')');
+
+        var rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('x', -NODE_W/2);
+        rect.setAttribute('y', -NODE_H/2);
+        rect.setAttribute('width', NODE_W);
+        rect.setAttribute('height', NODE_H);
+        el.appendChild(rect);
+
+        var text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        var displayText = node.text.length > 10 ? node.text.substring(0,10)+'...' : node.text;
+        text.textContent = displayText;
+        el.appendChild(text);
+
+        el.addEventListener('click', function(ev) { ev.stopPropagation(); selectNode(node, el); });
+        el.addEventListener('dblclick', function(ev) { ev.stopPropagation(); editNodeText(node); });
+
+        g.appendChild(el);
+
+        if (node.children && node.children.length > 0) {
+            var childY = y - getSubtreeHeight(node) / 2;
+            node.children.forEach(function(child) {
+                var childH = getSubtreeHeight(child);
+                var childCenterY = childY + childH / 2;
+                var childX = x + H_GAP + NODE_W / 2;
+
+                // 连线
+                var line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                var sx = x + NODE_W / 2, sy = y;
+                var mx = x + H_GAP / 2;
+                line.setAttribute('d', 'M ' + sx + ' ' + sy + ' C ' + mx + ' ' + sy + ', ' + mx + ' ' + childCenterY + ', ' + childX + ' ' + childCenterY);
+                line.setAttribute('class', 'mm-line');
+                g.insertBefore(line, el.nextSibling);
+
+                renderNode(g, child, childX, childCenterY, depth+1, false);
+                childY += childH + V_GAP;
+            });
+        }
+    }
+
+    function selectNode(node, el) {
+        if (selectedNode) {
+            var prevEl = svgEl.querySelector('.mm-node.selected');
+            if (prevEl) prevEl.classList.remove('selected');
+        }
+        selectedNode = { node: node, el: el };
+        el.classList.add('selected');
+    }
+
+    function getSelectedDataNode() {
+        return selectedNode ? selectedNode.node : null;
+    }
+
+    function editNodeText(node) {
+        var newText = prompt('编辑节点文字', node.text);
+        if (newText !== null && newText.trim() !== '') {
+            node.text = newText.trim();
+            render();
+        }
+    }
+
+    // 工具栏操作
+    window.mindmapAddNode = function() {
+        var parent = getSelectedDataNode() || mindData;
+        var child = { id: genId(), text: '新节点', children: [] };
+        if (!parent.children) parent.children = [];
+        parent.children.push(child);
+        render();
+    };
+
+    window.mindmapAddSibling = function() {
+        var sn = getSelectedDataNode();
+        if (!sn || sn === mindData) { mindmapAddNode(); return; }
+        // 找到父节点
+        var parent = findParent(mindData, sn.id);
+        if (parent && parent.children) {
+            var idx = parent.children.indexOf(sn);
+            var sibling = { id: genId(), text: '新节点', children: [] };
+            parent.children.splice(idx + 1, 0, sibling);
+            render();
+        }
+    };
+
+    window.mindmapDeleteNode = function() {
+        var sn = getSelectedDataNode();
+        if (!sn || sn === mindData) { layer.msg('不能删除根节点'); return; }
+        var parent = findParent(mindData, sn.id);
+        if (parent && parent.children) {
+            parent.children = parent.children.filter(function(c) { return c !== sn; });
+            render();
+        }
+    };
+
+    function findParent(root, targetId) {
+        if (!root.children) return null;
+        for (var i = 0; i < root.children.length; i++) {
+            if (root.children[i].id === targetId) return root;
+            var found = findParent(root.children[i], targetId);
+            if (found) return found;
+        }
+        return null;
+    }
+
+    window.mindmapZoomIn = function() { scale = Math.min(scale * 1.2, 3); render(); };
+    window.mindmapZoomOut = function() { scale = Math.max(scale / 1.2, 0.2); render(); };
+    window.mindmapResetZoom = function() { scale = 1; offsetX = 400; offsetY = 300; render(); };
+
+    // 画布拖拽
+    canvasEl.addEventListener('mousedown', function(e) {
+        if (e.target === canvasEl || e.target === svgEl) {
+            isDragging = true;
+            dragStartX = e.clientX - offsetX;
+            dragStartY = e.clientY - offsetY;
+        }
+    });
+    window.addEventListener('mousemove', function(e) {
+        if (isDragging) {
+            offsetX = e.clientX - dragStartX;
+            offsetY = e.clientY - dragStartY;
+            render();
+        }
+    });
+    window.addEventListener('mouseup', function() { isDragging = false; });
+    canvasEl.addEventListener('wheel', function(e) {
+        e.preventDefault();
+        var delta = e.deltaY > 0 ? 0.9 : 1.1;
+        scale = Math.max(0.2, Math.min(3, scale * delta));
+        render();
+    });
+
+    // 保存
+    window.saveMindmap = function() {
+        var payload = { root: mindData, theme: {}, layout: 'mindmap' };
+        fetch(MINDMAP_API, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+            body: JSON.stringify(payload)
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+            if (resp.success) {
+                layer.msg('保存成功', {icon: 1});
+            } else {
+                layer.msg('保存失败: ' + (resp.error || '未知错误'), {icon: 2});
+            }
+        })
+        .catch(function(err) {
+            layer.msg('保存失败: ' + err.message, {icon: 2});
+        });
+    };
+})();
+</script>

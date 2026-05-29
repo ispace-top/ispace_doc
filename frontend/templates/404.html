@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}404 - {{ site_name|default:"爱思文档" }}{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:center;min-height:60vh;text-align:center;">
+    <div>
+        <h1 style="font-size:6rem;font-weight:var(--ispace-font-bold);color:var(--ispace-color-brand-500);line-height:1;">404</h1>
+        <h2 style="font-size:var(--ispace-font-2xl);margin:var(--ispace-space-4) 0;color:var(--ispace-color-text-primary);">{% trans "页面未找到" %}</h2>
+        <p style="color:var(--ispace-color-text-tertiary);margin-bottom:var(--ispace-space-8);">{% trans "抱歉，您访问的页面不存在或已被删除" %}</p>
+        <a href="/" class="ispace-btn ispace-btn-primary">{% trans "返回首页" %}</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% load static %}{% load i18n %}
+
+{% block title %}{% trans "审计日志" %} - {% trans "后台管理" %}{% endblock %}
+
+{% block styles %}
+<style>
+.ispace-badge-outline { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; border: 1px solid var(--ispace-color-border); }
+
+.admin-auditlog-page-size { display: flex; align-items: center; gap: var(--ispace-space-2); font-size: var(--ispace-font-sm); color: var(--ispace-color-text-tertiary); }
+.admin-auditlog-page-size select { height: 30px; padding: 0 6px; font-size: var(--ispace-font-sm); border: 1px solid var(--ispace-color-border-medium); border-radius: var(--ispace-radius-sm); background: var(--ispace-color-surface-0); color: var(--ispace-color-text-primary); }
+.log-table-col-user { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.log-table-col-detail { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ispace-card">
+    <div class="ispace-card-header">
+        <h3 class="ispace-card-title">{% trans "操作审计日志" %}</h3>
+        <div style="display:flex;align-items:center;gap:var(--ispace-space-3);flex-wrap:wrap;flex:1;justify-content:flex-end;">
+            <select class="ispace-form-select" id="filterType" style="max-width:120px;">
+                <option value="">{% trans "全部类型" %}</option>
+                <option value="login">{% trans "登录" %}</option>
+                <option value="create">{% trans "创建" %}</option>
+                <option value="update">{% trans "修改" %}</option>
+                <option value="delete">{% trans "删除" %}</option>
+                <option value="permission">{% trans "权限" %}</option>
+                <option value="system">{% trans "系统" %}</option>
+                <option value="other">{% trans "其他" %}</option>
+            </select>
+            <input type="text" class="ispace-form-input" id="filterUser" placeholder="{% trans '操作人' %}" style="max-width:120px;">
+            <input type="date" class="ispace-form-input" id="filterDateStart" placeholder="{% trans '开始日期' %}" style="max-width:140px;">
+            <input type="date" class="ispace-form-input" id="filterDateEnd" placeholder="{% trans '结束日期' %}" style="max-width:140px;">
+            <button class="ispace-btn ispace-btn-secondary ispace-btn-sm" id="searchBtn">{% trans "筛选" %}</button>
+            <button class="ispace-btn ispace-btn-secondary ispace-btn-sm" id="resetBtn">{% trans "重置" %}</button>
+        </div>
+    </div>
+    <div class="ispace-card-body">
+        <div style="overflow-x:auto;">
+            <table class="ispace-table" id="logTable">
+                <thead>
+                    <tr>
+                        <th>{% trans "时间" %}</th>
+                        <th>{% trans "操作人" %}</th>
+                        <th>{% trans "操作类型" %}</th>
+                        <th>{% trans "对象类型" %}</th>
+                        <th>{% trans "对象ID" %}</th>
+                        <th>{% trans "详情" %}</th>
+                        <th>{% trans "IP" %}</th>
+                    </tr>
+                </thead>
+                <tbody id="logTbody"></tbody>
+            </table>
+        </div>
+        <div class="ispace-flex-between" style="margin-top:var(--ispace-space-4)">
+            <div id="logPagination"></div>
+            <div class="admin-auditlog-page-size">
+                <span>每页</span>
+                <select id="page-size-select">
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="30" selected>30</option>
+                    <option value="50">50</option>
+                </select>
+                <span>条</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    var currentPage = 1, currentFilters = {};
+
+    function getPageSize() {
+        var sel = document.getElementById('page-size-select');
+        return sel ? parseInt(sel.value) : 30;
+    }
+
+    function getCSRF() { var t = document.querySelector('[name=csrfmiddlewaretoken]'); return t ? t.value : ''; }
+
+    function loadLogs() {
+        var params = new URLSearchParams({ page: currentPage, size: getPageSize() });
+        Object.keys(currentFilters).forEach(function(k) { if (currentFilters[k]) params.set(k, currentFilters[k]); });
+        fetch('/api/audit-logs/?' + params.toString(), { headers: { 'X-CSRFToken': getCSRF() } })
+        .then(function(r) { return r.json(); }).then(function(d) {
+            var tbody = document.getElementById('logTbody');
+            if (!d.logs || !d.logs.length) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:var(--ispace-space-8);color:var(--ispace-color-text-tertiary)">{% trans "暂无日志记录" %}</td></tr>';
+                document.getElementById('logPagination').innerHTML = ''; return;
+            }
+            tbody.innerHTML = d.logs.map(function(l) {
+                return '<tr><td style="white-space:nowrap">' + l.created_at + '</td><td class="log-table-col-user" title="' + escapeHTML(l.user_name) + '">' + escapeHTML(l.user_name) + '</td><td><span class="ispace-badge-outline">' + escapeHTML(l.action_type) + '</span></td><td>' + escapeHTML(l.target_type || '-') + '</td><td>' + (l.target_id || '-') + '</td><td class="log-table-col-detail" title="' + escapeHTML(l.detail || '') + '">' + escapeHTML(l.detail || '-') + '</td><td>' + escapeHTML(l.ip) + '</td></tr>';
+            }).join('');
+            var totalPages = Math.ceil(d.total / getPageSize());
+            renderPagination(d.total, currentPage, totalPages, 'logPagination', function(p) { currentPage = p; loadLogs(); });
+        });
+    }
+
+    function renderPagination(count, page, totalPages, containerId, callback) {
+        var container = document.getElementById(containerId);
+        if (totalPages <= 1) { container.innerHTML = '<span class=\"ispace-pagination-info\">共 ' + count + ' 条</span>'; return; }
+        var html = '';
+        html += '<button class=\"ispace-pagination-btn\" data-page=\"' + (page - 1) + '\" ' + (page <= 1 ? 'disabled' : '') + '>上一页</button>';
+        var startPage = Math.max(1, page - 2);
+        var endPage = Math.min(totalPages, page + 2);
+        if (startPage > 1) { html += '<button class=\"ispace-pagination-btn\" data-page=\"1\">1</button>'; if (startPage > 2) html += '<span class=\"ispace-pagination-info\">...</span>'; }
+        for (var i = startPage; i <= endPage; i++) { html += '<button class=\"ispace-pagination-btn ' + (i === page ? 'ispace-active' : '') + '\" data-page=\"' + i + '\">' + i + '</button>'; }
+        if (endPage < totalPages) { if (endPage < totalPages - 1) html += '<span class=\"ispace-pagination-info\">...</span>'; html += '<button class=\"ispace-pagination-btn\" data-page=\"' + totalPages + '\">' + totalPages + '</button>'; }
+        html += '<button class=\"ispace-pagination-btn\" data-page=\"' + (page + 1) + '\" ' + (page >= totalPages ? 'disabled' : '') + '>下一页</button>';
+        html += '<span class=\"ispace-pagination-info\">共 ' + count + ' 条</span>';
+        container.innerHTML = html;
+        container.querySelectorAll('.ispace-pagination-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() { var p = parseInt(this.dataset.page); if (p >= 1 && p <= totalPages && p !== page) callback(p); });
+        });
+    }
+
+    document.getElementById('searchBtn').addEventListener('click', function() {
+        currentFilters = {
+            type: document.getElementById('filterType').value,
+            user: document.getElementById('filterUser').value.trim(),
+            date_start: document.getElementById('filterDateStart').value,
+            date_end: document.getElementById('filterDateEnd').value,
+        };
+        currentPage = 1; loadLogs();
+    });
+    document.getElementById('resetBtn').addEventListener('click', function() {
+        document.getElementById('filterType').value = '';
+        document.getElementById('filterUser').value = '';
+        document.getElementById('filterDateStart').value = '';
+        document.getElementById('filterDateEnd').value = '';
+        currentFilters = {}; currentPage = 1; loadLogs();
+    });
+
+    function escapeHTML(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+    document.getElementById('page-size-select').addEventListener('change', function() {
+        currentPage = 1; loadLogs();
+    });
+
+    loadLogs();
+})();
+</script>
+{% endblock %}

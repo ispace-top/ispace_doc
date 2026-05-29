@@ -1,0 +1,367 @@
+/* ============================================================
+   iSpaceDoc Layout System
+   Grid, header, sidebar, main content, footer
+   ============================================================ */
+/* ---- App Shell ---- */
+.ispace-app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  font-size: var(--ispace-font-base);
+}
+
+.ispace-main-content {
+  flex: 1;
+  max-width: var(--ispace-content-max-width);
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--ispace-space-6) var(--ispace-space-4);
+  transition: max-width var(--ispace-duration-normal) var(--ispace-ease-out);
+}
+
+/* With sidebar */
+.ispace-app-layout.has-sidebar {
+  display: grid;
+  grid-template-columns: var(--ispace-sidebar-width) 1fr;
+  grid-template-rows: 1fr auto;
+  grid-template-areas:
+    "sidebar main"
+    "sidebar footer";
+  padding-top: var(--ispace-header-height);
+  transition: grid-template-columns var(--ispace-duration-normal) var(--ispace-ease-out);
+}
+
+.ispace-app-layout.has-sidebar.ispace-layout--sidebar-collapsed {
+  grid-template-columns: var(--ispace-sidebar-collapsed-width) 1fr;
+}
+
+.ispace-app-layout.has-sidebar .ispace-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  grid-area: auto;
+}
+
+.ispace-app-layout.has-sidebar .ispace-sidebar {
+  grid-area: sidebar;
+}
+
+.ispace-app-layout.has-sidebar .ispace-main-content {
+  grid-area: main;
+}
+
+.ispace-app-layout.has-sidebar .ispace-footer {
+  grid-area: footer;
+}
+
+/* ---- Header ---- */
+.ispace-header {
+  position: sticky;
+  top: 0;
+  z-index: var(--ispace-z-sticky);
+  height: var(--ispace-header-height);
+  background: var(--ispace-color-surface-0);
+  border-bottom: 1px solid var(--ispace-color-border-light);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--ispace-space-6);
+}
+
+.ispace-header-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: none;
+}
+
+.ispace-header-left,
+.ispace-header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--ispace-space-3);
+}
+
+.ispace-header-center {
+  flex: 1;
+}
+
+/* ---- Logo ---- */
+.ispace-logo {
+  font-family: 'Ma Shan Zheng', 'STXingkai', 'KaiTi', cursive, sans-serif;
+  font-size: var(--ispace-font-2xl);
+  color: var(--ispace-color-text-primary);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: var(--ispace-space-2);
+}
+
+.ispace-logo:hover {
+  text-decoration: none;
+  color: var(--ispace-color-brand-500);
+}
+
+
+/* ---- Sidebar ---- */
+.ispace-sidebar {
+  position: sticky;
+  top: var(--ispace-header-height);
+  height: calc(100vh - var(--ispace-header-height));
+  overflow-y: auto;
+  overflow-x: auto;
+  background: var(--ispace-color-surface-0);
+  border-right: 1px solid var(--ispace-color-border-light);
+  padding: var(--ispace-space-4);
+  z-index: var(--ispace-z-sidebar);
+}
+
+.ispace-sidebar-nav {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ispace-space-1);
+  min-height: 100%;
+}
+
+.ispace-sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: var(--ispace-space-2);
+  padding: var(--ispace-space-2) var(--ispace-space-3);
+  font-size: var(--ispace-font-base);
+  color: var(--ispace-color-text-secondary);
+  border-radius: var(--ispace-radius-md);
+  transition: all var(--ispace-duration-fast);
+  text-decoration: none;
+}
+
+.ispace-sidebar-link:hover {
+  background: var(--ispace-color-surface-100);
+  color: var(--ispace-color-text-primary);
+  text-decoration: none;
+}
+
+.ispace-sidebar-link.ispace-active {
+  background: var(--ispace-color-brand-50);
+  color: var(--ispace-color-brand-500);
+  font-weight: var(--ispace-font-medium);
+}
+
+.ispace-sidebar-doc-icon {
+  flex-shrink: 0;
+  color: var(--ispace-color-text-quaternary);
+}
+
+.ispace-sidebar-item {
+  margin-bottom: 1px;
+}
+
+.ispace-sidebar-toggle {
+  position: absolute;
+  right: -8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--ispace-color-text-quaternary, #9ca3af);
+  border-radius: var(--ispace-radius-md);
+  opacity: 0.35;
+  transition: opacity var(--ispace-duration-fast), color var(--ispace-duration-fast);
+  z-index: 1;
+}
+.ispace-sidebar-toggle:hover {
+  opacity: 1;
+  color: var(--ispace-color-text-secondary, #374151);
+  background: var(--ispace-color-surface-100, #f1f5f9);
+}
+.ispace-sidebar-toggle svg {
+  transition: transform var(--ispace-duration-normal) var(--ispace-ease-out);
+}
+
+.ispace-sidebar-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ispace-space-6);
+  min-height: 80px;
+}
+
+/* ---- Footer ---- */
+.ispace-footer {
+  background: var(--ispace-color-surface-0);
+  border-top: 1px solid var(--ispace-color-border-light);
+  padding: 0 var(--ispace-space-6);
+}
+
+.ispace-footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: var(--ispace-content-max-width);
+  margin: 0 auto;
+  height: 44px;
+  font-size: var(--ispace-font-sm);
+}
+
+/* Left group */
+.ispace-footer-start {
+  display: flex;
+  align-items: center;
+  gap: var(--ispace-space-2);
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+/* Right group */
+.ispace-footer-end {
+  display: flex;
+  align-items: center;
+  gap: var(--ispace-space-4);
+  flex-shrink: 0;
+}
+
+/* Brand name */
+.ispace-footer-brand {
+  font-weight: var(--ispace-font-semibold);
+  color: var(--ispace-color-text-primary);
+  white-space: nowrap;
+}
+
+/* Divider between brand and tagline */
+.ispace-footer-divider {
+  color: var(--ispace-color-border-medium);
+  user-select: none;
+}
+
+/* Tagline */
+.ispace-footer-tagline {
+  color: var(--ispace-color-text-quaternary);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Base text item */
+.ispace-footer-text {
+  color: var(--ispace-color-text-quaternary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Clickable links — keep inline-flex so SVG icons align vertically */
+.ispace-footer-link {
+  color: var(--ispace-color-text-quaternary);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+.ispace-footer-link:hover {
+  color: var(--ispace-color-brand-500);
+}
+
+/* ---- Page layout helpers ---- */
+.ispace-page-header {
+  margin-bottom: var(--ispace-space-6);
+}
+
+.ispace-page-title {
+  font-size: var(--ispace-font-2xl);
+  font-weight: var(--ispace-font-bold);
+}
+
+.ispace-page-description {
+  color: var(--ispace-color-text-tertiary);
+  margin-top: var(--ispace-space-1);
+}
+
+.ispace-content-card {
+  background: var(--ispace-color-surface-0);
+  border: 1px solid var(--ispace-color-border-light);
+  border-radius: var(--ispace-radius-lg);
+  padding: var(--ispace-space-6);
+  box-shadow: var(--ispace-shadow-sm);
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .ispace-sidebar-toggle {
+    display: flex;
+  }
+}
+
+@media (max-width: 768px) {
+  .ispace-app-layout.has-sidebar {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "main";
+  }
+
+  .ispace-app-layout.has-sidebar .ispace-sidebar {
+    display: none;
+  }
+
+  .ispace-footer-inner {
+    flex-direction: column;
+    gap: var(--ispace-space-2);
+    height: auto;
+    padding: var(--ispace-space-3) 0;
+  }
+  .ispace-footer-start,
+  .ispace-footer-end {
+    justify-content: center;
+  }
+  .ispace-footer-tagline {
+    display: none;
+  }
+
+  .ispace-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 0 var(--ispace-space-3);
+  }
+
+  .ispace-header-container {
+    gap: var(--ispace-space-2);
+  }
+
+  .ispace-header-center {
+    display: none;
+  }
+
+  .ispace-main-content {
+    padding: var(--ispace-space-4) var(--ispace-space-3);
+  }
+
+  .ispace-logo {
+    font-size: var(--ispace-font-base);
+    gap: var(--ispace-space-1);
+  }
+
+  .ispace-logo svg {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+@media (max-width: 480px) {
+  .ispace-header-right .ispace-btn-sm {
+    padding: 4px 8px;
+    font-size: var(--ispace-font-xs);
+  }
+}

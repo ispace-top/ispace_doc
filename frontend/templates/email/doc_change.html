@@ -1,0 +1,11 @@
+{% extends "email/base.html" %}
+{% block content %}
+<p>你关注的文档 <strong>{{ doc_name }}</strong> 有新的变更：</p>
+<div class="highlight">
+    <p style="margin:0">操作人：<strong>{{ sender_name }}</strong></p>
+    <p style="margin:4px 0 0 0">变更类型：{{ change_type }}</p>
+</div>
+{% if link %}
+<p style="margin-top:16px"><a href="{{ link }}" class="btn">查看文档</a></p>
+{% endif %}
+{% endblock %}
