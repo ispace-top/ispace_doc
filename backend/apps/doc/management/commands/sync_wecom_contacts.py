@@ -11,7 +11,8 @@ import time
 
 from django.core.management.base import BaseCommand
 
-CONFIG_PATH = os.environ.get("ISDOC_CONFIG", "config/conf/config.ini")
+CONFIG_DIR = os.path.join(os.getcwd(), 'config', 'conf')
+CONFIG_PATH = os.path.join(CONFIG_DIR, os.environ.get('ISDOC_CONFIG', 'config.ini'))
 
 
 class Command(BaseCommand):
