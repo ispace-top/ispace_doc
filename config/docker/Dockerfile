@@ -10,17 +10,16 @@ ENV PYTHONUNBUFFERED=0 \
 
 # 替换 alpine 软件仓库的源并安装编译依赖
 RUN set -x \
-    && apk add --no-cache --virtual .build-deps build-base g++ gcc libxslt-dev py3-lxml openldap-dev python3-dev linux-headers \
-    && apk add --no-cache git tzdata zlib-dev freetype-dev jpeg-dev mariadb-dev postgresql-dev
+    && apk add --no-cache --virtual .build-deps build-base g++ gcc libxslt-dev libxml2-dev openldap-dev python3-dev linux-headers \
+    && apk add --no-cache git tzdata zlib-dev freetype-dev jpeg-dev mariadb-dev postgresql-dev uwsgi-python3
 
 # 设置工作目录并复制依赖文件
 WORKDIR /app/iSpaceDoc
 COPY requirements.txt /app/iSpaceDoc/
 
-# 升级 pip 并安装 Python 依赖
-RUN python -m pip install --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt \
-    && pip install --no-cache-dir uwsgi
+# 升级 pip 并安装 Python 依赖（uwsgi 通过 apk 安装，不需要 pip）
+RUN python -m pip install --upgrade pip -v \
+    && pip install --no-cache-dir -r requirements.txt -v
 
 # Stage 2: Final stage
 FROM python:3.11-alpine
@@ -35,7 +34,7 @@ ENV PYTHONUNBUFFERED=0 \
 
 # 替换 alpine 软件仓库的源并安装运行时依赖
 RUN set -x \
-    && apk add --no-cache tzdata ttf-dejavu fontconfig libmagic libffi-dev libxml2 \
+    && apk add --no-cache tzdata ttf-dejavu fontconfig libmagic libffi-dev libxml2 uwsgi-python3 \
     && ln -snf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && echo "Asia/Shanghai" > /etc/timezone
 
 # 复制字体文件
