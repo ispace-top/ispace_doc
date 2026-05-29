@@ -528,11 +528,12 @@ function testStorage() {
     var btn = document.getElementById('storageTestBtn');
     var result = document.getElementById('storageTestResult');
     btn.disabled = true; btn.textContent = '测试中...'; result.innerHTML = '';
-    fetch('{% url "admin_health" %}')
+    fetch('{% url "api_admin_health" %}')
         .then(function(r) { return r.json(); })
         .then(function(data) {
             btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> 测试连接';
-            if (data && data.disk) { result.innerHTML = '<span style="color:#166534;">连接正常 — 磁盘可用: ' + data.disk.free + '</span>'; }
+            var disk = data && data.health && data.health.disk;
+            if (disk && disk.free) { result.innerHTML = '<span style="color:#166534;">连接正常 — 磁盘可用: ' + disk.free + '</span>'; }
             else { result.innerHTML = '<span style="color:#166534;">存储后端可访问</span>'; }
         })
         .catch(function(e) {
