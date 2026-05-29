@@ -96,7 +96,7 @@ class EmailChannel(BaseNotificationChannel):
     def send(self, notification: Notification, recipient: User) -> bool:
         """发送邮件通知。"""
         from .email_service import EmailService
-        from backend.apps.admin.models import UserProfile
+        from backend.apps.doc.models import UserProfile
 
         if not recipient.email or not EmailService.is_enabled():
             return False
@@ -149,7 +149,7 @@ class EmailChannel(BaseNotificationChannel):
 
     def is_available_for(self, user: User) -> bool:
         try:
-            from backend.apps.admin.models import UserProfile
+            from backend.apps.doc.models import UserProfile
             profile = UserProfile.objects.only('notify_settings').get(user=user)
             settings = _json.loads(profile.notify_settings or '{}')
             return settings.get('email_enabled', True)
@@ -206,7 +206,7 @@ class WeComChannel(BaseNotificationChannel):
     def send(self, notification: Notification, recipient: User) -> bool:
         """通过企业微信应用消息发送通知。"""
         try:
-            from backend.apps.admin.models import UserProfile
+            from backend.apps.doc.models import UserProfile
             profile = UserProfile.objects.only('wecom_userid', 'notify_settings').get(user=recipient)
         except UserProfile.DoesNotExist:
             logger.info(f'[WeComChannel] 用户无 UserProfile: recipient={recipient.pk}')
@@ -275,7 +275,7 @@ class WeComChannel(BaseNotificationChannel):
 
     def is_available_for(self, user: User) -> bool:
         try:
-            from backend.apps.admin.models import UserProfile
+            from backend.apps.doc.models import UserProfile
             profile = UserProfile.objects.only('wecom_userid').get(user=user)
             return bool(profile.wecom_userid)
         except Exception:
@@ -302,7 +302,7 @@ class DingTalkChannel(BaseNotificationChannel):
 
     def is_available_for(self, user: User) -> bool:
         try:
-            from backend.apps.admin.models import UserProfile
+            from backend.apps.doc.models import UserProfile
             profile = UserProfile.objects.only('notify_settings').get(user=user)
             settings = _json.loads(profile.notify_settings or '{}')
             return bool(settings.get('dingtalk_userid'))
@@ -330,7 +330,7 @@ class OAChannel(BaseNotificationChannel):
 
     def is_available_for(self, user: User) -> bool:
         try:
-            from backend.apps.admin.models import UserProfile
+            from backend.apps.doc.models import UserProfile
             profile = UserProfile.objects.only('notify_settings').get(user=user)
             settings = _json.loads(profile.notify_settings or '{}')
             return bool(settings.get('oa_userid'))
