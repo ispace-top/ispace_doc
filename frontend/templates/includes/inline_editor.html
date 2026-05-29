@@ -317,7 +317,7 @@
 <script>
 // ---- Inline Editor Engine ----
 window._inlineEditor = null;
-window._inlineEditorMode = {{ editor_mode|default:2 }};
+window._inlineEditorMode = {{ editor_mode|default:0 }};
 window._inlineMdChanged = false;
 window._inlineIsCreate = false;
 window._inlineDocId = {{ doc.id|default:0 }};
@@ -366,7 +366,7 @@ function _loadCSS(href) {
 }
 
 function initInlineEditor(editorMode, isCreate) {
-    window._inlineEditorMode = editorMode || 2;
+    window._inlineEditorMode = editorMode || 0;
     window._inlineIsCreate = isCreate || false;
     window._inlineMdChanged = false;
 
