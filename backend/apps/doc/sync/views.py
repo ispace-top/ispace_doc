@@ -61,6 +61,7 @@ def wecom_sync_trigger(request):
             "finished_at": result.finished_at,
         }
 
+    logger.info(f'[同步] 用户={request.user.username} 手动触发企业微信同步')
     t = threading.Thread(target=_run, daemon=True)
     t.start()
 
