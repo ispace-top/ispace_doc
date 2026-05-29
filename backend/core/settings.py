@@ -54,7 +54,7 @@ if not SECRET_KEY:
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = CONFIG.getboolean('site','debug',fallback=False)
 
-VERSIONS = '0.9.0'
+VERSIONS = '0.9.1_dev'
 
 ALLOWED_HOSTS = ['*']
 
