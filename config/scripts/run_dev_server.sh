@@ -26,4 +26,4 @@ else
 fi
 
 echo "Starting Django development server..."
-python /app/iSpaceDoc/manage.py runserver 0.0.0.0:10086
+python /app/iSpaceDoc/manage.py runserver 0.0.0.0:8000

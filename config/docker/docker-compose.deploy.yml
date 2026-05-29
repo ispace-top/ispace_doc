@@ -80,7 +80,7 @@ services:
       - media:/app/iSpaceDoc/media
       - log:/app/iSpaceDoc/log
     ports:
-      - "${APP_PORT:-10086}:10086"
+      - "${APP_PORT:-8000}:8000"
 
   # ============================================================
   # FastAPI 独立服务 (Uvicorn)
@@ -102,7 +102,7 @@ services:
     volumes:
       - media:/app/iSpaceDoc/media
     ports:
-      - "${API_PORT:-8000}:8000"
+      - "${API_PORT:-8001}:8000"
     command: >
       sh -c "python manage.py migrate &&
              uvicorn backend.fastapi_app.main:app --host 0.0.0.0 --port 8000"

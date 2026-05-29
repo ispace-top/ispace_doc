@@ -28,7 +28,7 @@ FROM python:3.11-alpine
 # 设置时区和基本环境变量
 ENV PYTHONUNBUFFERED=0 \
     TZ=Asia/Shanghai \
-    LISTEN_PORT=10086 \
+    LISTEN_PORT=8000 \
     USER=admin \
     PIP_NO_PROXY='*' \
     ISDOC_CONFIG=config-docker.ini
@@ -53,7 +53,7 @@ WORKDIR /app/iSpaceDoc
 RUN chmod +x config/docker/entrypoint.sh config/tests/test_django.py
 
 # 暴露端口
-EXPOSE 10086
+EXPOSE 8000
 
 # 容器启动命令
 ENTRYPOINT ["./config/docker/entrypoint.sh"]

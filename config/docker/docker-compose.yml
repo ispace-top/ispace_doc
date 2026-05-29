@@ -82,7 +82,7 @@ services:
       - media:/app/iSpaceDoc/media
       - log:/app/iSpaceDoc/log
     ports:
-      - "10086:10086"
+      - "8000:8000"
 
   # ============================================================
   # FastAPI 独立服务 (Uvicorn)

@@ -199,7 +199,7 @@ iSpaceDoc 提供两种 Docker 部署模式，按需选择：
 │     Docker Container       │
 │                           │
 │  Django App (uWSGI)        │
-│  Port 10086               │
+│  Port 8000               │
 │                           │
 │  SQLite + Whoosh           │
 │                           │
@@ -223,7 +223,7 @@ docker exec -it ispacedoc-app-1 python manage.py createsuperuser
 docker compose -f config/docker/docker-compose.lite.yml logs -f app
 ```
 
-访问 **http://localhost:10086**。
+访问 **http://localhost:8000**。
 
 > 轻量模式使用 SQLite 数据库 + Whoosh 搜索引擎，自动与配置文件 `config-lite.ini` 关联。首次启动自动执行数据库迁移。
 
@@ -245,7 +245,7 @@ docker compose -f config/docker/docker-compose.lite.yml logs -f app
 │  └────┬─────┘  └────┬─────┘  └────────┬─────────┘           │
 │       │              │                │                      │
 │  ┌────┴──────────────┴────────────────┴─────────┐           │
-│  │            Django App (uWSGI :10086)           │           │
+│  │            Django App (uWSGI :8000)           │           │
 │  └──────────────────────┬────────────────────────┘           │
 │                         │                                    │
 │  ┌──────────────────────┼────────────────────────┐           │
@@ -267,7 +267,7 @@ docker compose -f config/docker/docker-compose.yml ps
 docker compose -f config/docker/docker-compose.yml logs -f app
 ```
 
-> 默认监听 **http://localhost:10086**。首次启动自动执行数据库迁移和索引初始化。
+> 默认监听 **http://localhost:8000**。首次启动自动执行数据库迁移和索引初始化。
 
 ### 两种模式对比
 
