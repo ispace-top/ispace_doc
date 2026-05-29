@@ -15,7 +15,7 @@ class Doc(models.Model):
     create_time = models.DateTimeField(auto_now_add=True)
     modify_time = models.DateTimeField(auto_now=True)
     status = models.IntegerField(choices=((0,0),(1,1)),default=1,verbose_name='发布状态')
-    editor_mode = models.IntegerField(default=2,verbose_name='编辑器类型')
+    editor_mode = models.IntegerField(default=0,verbose_name='编辑器类型')  # 0=Markdown(Vditor) 1=电子表格(Luckysheet)
     open_children = models.BooleanField(default=False,verbose_name="侧栏默认展开")
     show_children = models.BooleanField(verbose_name="显示所有后代",default=False)
     # v1.0 软删除字段

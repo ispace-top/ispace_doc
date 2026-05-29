@@ -19,8 +19,8 @@ class SysSetting(models.Model):
 # 用户选项配置
 class UserOptions(models.Model):
     user = models.ForeignKey(User,on_delete=models.CASCADE)
-    # 用户配置的编辑器选项，1已废弃(原Editormd)，2表示Vditor编辑器，默认为2
-    editor_mode = models.IntegerField(default=2,verbose_name="编辑器选项")
+    # 编辑器选项：0=Markdown(Vditor)，1=电子表格(Luckysheet)
+    editor_mode = models.IntegerField(default=0,verbose_name="编辑器选项")
 
     def __str__(self):
         return self.user

@@ -202,7 +202,7 @@
             statusHtml = `<span class="ispace-badge ispace-badge-warning doc-status-draft" data-action="publish" data-id="${row.id}" title="{% trans '点击一键发布' %}">{% trans "草稿" %}</span>`;
         }
 
-        const editorModeMap = { 1: 'Editor.MD', 2: 'Vditor', 3: '{% trans "富文本" %}', 4: '{% trans "在线表格" %}' };
+        const editorModeMap = { 0: "Markdown", 1: "% trans "电子表格" %" };
         const editorMode = editorModeMap[row.editor_mode] || '-';
         const openChildren = row.open_children ? '{% trans "展开" %}' : '{% trans "收起" %}';
 
