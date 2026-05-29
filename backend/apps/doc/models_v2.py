@@ -29,7 +29,7 @@ class IspDocument(models.Model):
                                related_name="children", verbose_name="父文档")
     sort_order = models.IntegerField(default=9999, verbose_name="排序")
     status = models.IntegerField(choices=Status.choices, default=Status.PUBLISHED, verbose_name="状态")
-    editor_mode = models.IntegerField(choices=EditorMode.choices, default=EditorMode.VDITOR,
+    editor_mode = models.IntegerField(choices=EditorMode.choices, default=EditorMode.MARKDOWN,
                                       verbose_name="编辑器模式")
     is_public = models.BooleanField(default=True, verbose_name="公开可见")
     is_deleted = models.BooleanField(default=False, verbose_name="软删除", db_index=True)

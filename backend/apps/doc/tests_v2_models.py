@@ -31,7 +31,7 @@ class IspDocumentTest(TestCase):
         )
         self.assertIsInstance(doc.id, uuid.UUID)
         self.assertEqual(doc.status, IspDocument.Status.PUBLISHED)
-        self.assertEqual(doc.editor_mode, IspDocument.EditorMode.VDITOR)
+        self.assertEqual(doc.editor_mode, IspDocument.EditorMode.MARKDOWN)
         self.assertTrue(doc.is_public)
         self.assertFalse(doc.is_deleted)
         self.assertIsNotNone(doc.created_at)
