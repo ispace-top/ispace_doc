@@ -281,8 +281,8 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
             <div class="ispace-editor-switch-menu" id="editor-switch-menu">
-                <button class="ispace-editor-switch-item" data-mode="0" onclick="_switchEditor(2)">Vditor (Markdown) <span class="check">&#10003;</span></button>
-                <button class="ispace-editor-switch-item" data-mode="4" onclick="_switchEditor(4)">&#22312;&#32447;&#34920;&#26684; (Luckysheet) <span class="check">&#10003;</span></button>
+                <button class="ispace-editor-switch-item" data-mode="0" onclick="_switchEditor(0)">Markdown <span class="check">&#10003;</span></button>
+                <button class="ispace-editor-switch-item" data-mode="1" onclick="_switchEditor(1)">&#30005;&#23376;&#34920;&#26684; <span class="check">&#10003;</span></button>
             </div>
         </div>
     </div>
@@ -410,9 +410,8 @@ function initInlineEditor(editorMode, isCreate) {
 
     // Load and init the right editor
     var mode = window._inlineEditorMode;
-    if (mode === 2) initVditor(container);
-    else if (mode === 4) initLuckysheet(container);
-    else initVditor(container); // fallback to Vditor for unknown modes
+    if (mode === 1) initLuckysheet(container);
+    else initVditor(container); // 默认 Markdown
     _updateEditorSwitchLabel(mode);
 }
 
@@ -1193,25 +1192,18 @@ function _getUploadImgUrl() {
 // ---- Content getters ----
 function getInlineEditorContent() {
     var m = window._inlineEditorMode;
-    if (m === 4) return ''; // Luckysheet has no HTML content
+    if (m === 1) return ''; // 电子表格无 HTML 内容
     var ed = window._inlineEditor;
     if (!ed) return '';
-    if (m === 2) return ed.getHTML ? ed.getHTML() : '';
     return ed.getHTML ? ed.getHTML() : '';
 }
 
 function getInlineEditorPreContent() {
     var m = window._inlineEditorMode;
-    if (m === 4) return JSON.stringify(_getOptimizedSheets());
+    if (m === 1) return JSON.stringify(_getOptimizedSheets());
     var ed = window._inlineEditor;
     if (!ed) return '';
-    var md = '';
-    if (m === 2) {
-        md = ed.getMarkdown ? ed.getMarkdown() : (ed.getValue ? ed.getValue() : '');
-    } else {
-        md = ed.getMarkdown ? ed.getMarkdown() : '';
-    }
-    return _fixCodeFences(md);
+    return _fixCodeFences(ed.getMarkdown ? ed.getMarkdown() : '');
 }
 
 // Fix code blocks whose ``` fences were stripped by Vditor's custom handlers
@@ -1429,11 +1421,11 @@ function destroyInlineEditor() {
     var ed = window._inlineEditor;
     if (ed) {
         try {
-            if ((window._inlineEditorMode === 2 || window._inlineEditorMode === 3) && ed.destroy) ed.destroy();
+            if (window._inlineEditorMode === 0 && ed.destroy) ed.destroy();
         } catch(e) { /* ignore */ }
     }
     // Luckysheet cleanup (global singleton, not instance-bound)
-    if (window._inlineEditorMode === 4) {
+    if (window._inlineEditorMode === 1) {
         try {
             if (typeof luckysheet !== 'undefined' && luckysheet.destroy) luckysheet.destroy();
         } catch(e) { /* ignore */ }
@@ -1576,7 +1568,7 @@ function _switchEditor(newMode) {
     if (oldMode === newMode) return;
 
     // Confirm switching between table and doc types (data loss warning)
-    var fromTable = oldMode === 4, toTable = newMode === 4;
+    var fromTable = oldMode === 1, toTable = newMode === 1;
     if ((fromTable && !toTable) || (!fromTable && toTable)) {
         confirm('切换编辑器类型后，当前编辑器的内容可能无法完全保留。确定要切换吗？').then(function(ok) {
             if (!ok) return;
@@ -1588,7 +1580,7 @@ function _switchEditor(newMode) {
 }
 
 function _doSwitchEditor(newMode, oldMode) {
-    if (oldMode === 4) {
+    if (oldMode === 1) {
         try { if (typeof luckysheet !== 'undefined' && luckysheet.destroy) luckysheet.destroy(); } catch(e) {}
     } else if (window._inlineEditor) {
         try {
@@ -1614,16 +1606,15 @@ function _doSwitchEditor(newMode, oldMode) {
 }
 
 function _initEditorInternal(mode, container) {
-    if (mode === 2) initVditor(container);
-    else if (mode === 4) initLuckysheet(container);
-    else initVditor(container); // fallback to Vditor
+    if (mode === 1) initLuckysheet(container);
+    else initVditor(container);
     _updateEditorSwitchLabel(mode);
 }
 
 function _updateEditorSwitchLabel(mode) {
     var label = document.getElementById('editor-switch-label');
-    var labels = { 2: 'Vditor', 4: 'Luckysheet' };
-    if (label) label.textContent = labels[mode] || 'Vditor';
+    var labels = { 0: 'Markdown', 1: '电子表格' };
+    if (label) label.textContent = labels[mode] || 'Markdown';
     // Update active state in menu
     var items = document.querySelectorAll('.ispace-editor-switch-item');
     items.forEach(function(item) {
