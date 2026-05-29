@@ -21,7 +21,7 @@ def create_builtin_guide(user):
             sort=sort,
             create_user=user,
             status=1,
-            editor_mode=2,
+            editor_mode=0,  # Markdown
         )
         DocPermission.objects.create(
             doc=doc, target_type='user', target_id=user.id,
@@ -81,11 +81,10 @@ _QUICK_START = """# 快速入门
 
 ## 编辑器切换
 
-iSpaceDoc 提供三种编辑模式：
+iSpaceDoc 提供两种编辑模式：
 
-- **Markdown IR**（默认）：所见即所得的 Markdown 编辑器，支持实时预览
-- **富文本编辑器**：类 Word 的排版体验
-- **在线表格**：内嵌 Luckysheet 电子表格
+- **Markdown**（默认）：所见即所得的 Markdown IR 编辑器，支持实时预览
+- **电子表格**：内嵌 Luckysheet 电子表格，适合数据记录和统计
 
 在创建文档时可以选择编辑器类型，也可以在文档设置中切换。
 

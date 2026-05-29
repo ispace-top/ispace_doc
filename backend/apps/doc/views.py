@@ -118,7 +118,7 @@ def _sanitize_title(title):
 def _strip_markdown_preview(docs):
     for doc in docs:
         try:
-            if doc.editor_mode == 4:
+            if doc.editor_mode == 1:
                 doc.pre_content = "此为表格文档，进入文档查看详细内容"
             else: # 其他文档
                 doc.pre_content = strip_tags(markdown.markdown(doc.pre_content))[:201]
@@ -614,11 +614,11 @@ def create_new_document(request):
         user_opt = UserOptions.objects.get(user=request.user)
         editor_mode = user_opt.editor_mode
     except ObjectDoesNotExist:
-        editor_mode = 2
+        editor_mode = 0  # Markdown
     if request.method == 'GET':
         # 获取url切换的编辑器模式，重定向到内联编辑器页面
         eid = request.GET.get('eid',editor_mode)
-        if eid in [2,4,'2','4']:
+        if eid in [0, 1, '0', '1']:
             editor_mode = int(eid)
         # 兼容旧链接：转发文集ID和父文档ID参数
         pid = request.GET.get('pid', '')
@@ -760,7 +760,7 @@ def edit_existing_document(request,doc_id):
             doc_content = request.POST.get('content', '') # 文档内容
             pre_content = request.POST.get('pre_content', '') # 文档Markdown格式内容
             sort = request.POST.get('sort', '') # 文档排序
-            editor_mode = request.POST.get('editor_mode',2)    #获取文档编辑器
+            editor_mode = request.POST.get('editor_mode',0)    #获取文档编辑器
             status = request.POST.get('status',1) # 文档状态
             is_auto_save = request.POST.get('is_auto_save','0') # 自动保存标记，为1时不写DocHistory
             open_children = request.POST.get('open_children',False) # 展示下级目录
@@ -2729,7 +2729,7 @@ def manage_self(request):
     elif request.method == 'POST':
         first_name = request.POST.get('first_name','') # 昵称
         email = request.POST.get('email',None) # 电子邮箱
-        editor_mode = request.POST.get('editor_mode',2) # 编辑器
+        editor_mode = request.POST.get('editor_mode',0) # 编辑器
         user = User.objects.get_by_natural_key(request.user)
         if len(first_name) < 2 or len(first_name) > 10:
             return JsonResponse({'status': False, 'data': _('昵称长度不得小于2位大于10位')})

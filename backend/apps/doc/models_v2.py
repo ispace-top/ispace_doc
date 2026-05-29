@@ -17,12 +17,8 @@ class IspDocument(models.Model):
         ARCHIVED = 2, "已归档"
 
     class EditorMode(models.IntegerChoices):
-        VDITOR = 2, "Vditor"
-        ICEEDITOR = 3, "iceEditor"
-        LUCKY_SHEET = 4, "Luckysheet"
-        MINDMAP = 5, "思维导图"
-        DRAWIO = 6, "Draw.io"
-        EXCALIDRAW = 7, "Excalidraw"
+        MARKDOWN = 0, "Markdown"
+        SPREADSHEET = 1, "电子表格"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=500, verbose_name="标题")

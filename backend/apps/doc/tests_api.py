@@ -230,7 +230,7 @@ class DocumentAPITests(TestCase):
         resp = self.client.post(reverse('create_doc'), {
             'doc_name': 'NewDoc',
             'content': '# New Content',
-            'editor_mode': 2,
+            'editor_mode': 0,
             'project': self.project.pk,
             'parent_doc': self.doc.pk,
             'status': 1,
@@ -247,7 +247,7 @@ class DocumentAPITests(TestCase):
             'doc_id': self.doc.pk,
             'doc_name': 'ModifiedDoc',
             'content': '# Modified Content',
-            'editor_mode': 2,
+            'editor_mode': 0,
             'project': self.project.pk,
             'parent_doc': 0,
             'status': 1,
@@ -668,7 +668,7 @@ class SecurityAPITests(TestCase):
         self.client.login(username='attacker', password='pass')
         resp = self.client.post(f'/modify_doc/{self.doc.pk}/', {
             'name': 'Hacked', 'content': '# Hacked',
-            'editor_mode': 2, 'top_doc': self.project.pk,
+            'editor_mode': 0, 'top_doc': self.project.pk,
             'parent_doc': 0, 'status': 1,
         })
         # 应被拒绝
