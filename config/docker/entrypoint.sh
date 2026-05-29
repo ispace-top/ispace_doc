@@ -3,6 +3,9 @@ set -e
 
 echo "Starting iSpaceDoc container..."
 
+# 确保持久化目录存在（必须在 migrate 之前，SQLite 需要）
+mkdir -p /app/iSpaceDoc/data /app/iSpaceDoc/media /app/iSpaceDoc/log /app/iSpaceDoc/whoosh_index
+
 # 检查是否已经初始化过
 if [ ! -f "/app/iSpaceDoc/.initialized" ]; then
     echo "First time running — running database migrations..."
@@ -16,9 +19,6 @@ if [ ! -f "/app/iSpaceDoc/.initialized" ]; then
 else
     echo "Already initialized, skipping migrations."
 fi
-
-# 确保持久化目录存在
-mkdir -p /app/iSpaceDoc/data /app/iSpaceDoc/media /app/iSpaceDoc/log /app/iSpaceDoc/whoosh_index
 
 # 初始化持久化配置文件（首次部署时从镜像默认配置复制）
 for _cfg in config-lite.ini config-docker.ini; do
