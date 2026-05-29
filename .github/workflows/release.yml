@@ -11,7 +11,7 @@ on:
         default: ''
 
 env:
-  DOCKERHUB_REPO: ispacedoc/app
+  DOCKERHUB_REPO: wapedkj/ispace-doc
 
 jobs:
   build-push:
