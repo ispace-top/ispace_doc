@@ -3255,6 +3255,9 @@ def api_admin_auth_configs(request):
                         parser.set(section, k, str(v).strip())
         with open(_cfg_path, 'w', encoding='utf-8') as fh:
             parser.write(fh)
+        # 记录敏感字段变更（脱敏）
+        log_fields = {k: ('***' if k in _AUTH_SENSITIVE else str(v).strip()) for k, v in config.items()}
+        logger.info(f'[认证配置] 用户={request.user.username} 修改 {provider} 配置: {log_fields}')
         return JsonResponse({'status': True, 'message': '保存成功，部分配置需重启服务后生效'})
 
     configs = {}
@@ -3559,8 +3562,10 @@ def api_admin_notification_channel_action(request, channel_id):
                 key=f'channel.{channel_id}.enabled',
                 defaults={'value': str(enabled).lower()}
             )
+            logger.info(f'[通知渠道] 用户={request.user.username} 切换通道 {channel_id} enabled={enabled}')
             return JsonResponse({'status': True, 'message': f'已{"启用" if enabled else "禁用"}通道'})
         except Exception as e:
+            logger.exception(f'[通知渠道] 切换通道失败: channel_id={channel_id}')
             return JsonResponse({'status': False, 'message': str(e)})
 
     if request.method == 'POST':

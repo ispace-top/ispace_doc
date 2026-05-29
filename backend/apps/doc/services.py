@@ -7,6 +7,7 @@ NotificationService — 通知发送（站内 + 邮件）
 """
 
 import json as _json
+from loguru import logger
 
 from django.core.cache import cache
 from django.db import models, transaction
@@ -429,12 +430,20 @@ class NotificationService:
             body=body,
             link=link,
         )
+        sender_name = (sender.first_name or sender.username) if sender else '系统'
+        logger.info(f'[通知] 类型={notification_type} 发送者={sender_name} 接收者={recipient.username} 标题={title[:50]}')
 
         # 通过通道管理器分发
         try:
             from .notification_channels import get_channel_manager
             manager = get_channel_manager()
-            manager.send(notif)
+            results = manager.send(notif)
+            succeeded = [ch for ch, ok in results.items() if ok]
+            failed = [ch for ch, ok in results.items() if not ok]
+            if succeeded:
+                logger.info(f'[通知] 通道发送成功: {succeeded} notif_id={notif.id}')
+            if failed:
+                logger.warning(f'[通知] 通道发送失败: {failed} notif_id={notif.id}')
         except Exception:
             logger.exception('NotificationService: 通道分发异常')
 
