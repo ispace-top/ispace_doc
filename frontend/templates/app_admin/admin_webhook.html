@@ -228,12 +228,13 @@ function openConfigForm(id) {
             });
         }
     }
-    if (!_formLayerIndex) {
-        _formLayerIndex = layer.open({
-            type: 1, title: id ? '编辑 WebHook' : '新建 WebHook', content: document.getElementById('webhook-form-dialog'),
-            area: ['520px', '500px'], btn: [], closeBtn: 1
-        });
-    }
+    // 关闭已有弹窗再打开新的，避免残留遮罩
+    if (_formLayerIndex !== null) { layer.close(_formLayerIndex); _formLayerIndex = null; }
+    _formLayerIndex = layer.open({
+        type: 1, title: id ? '编辑 WebHook' : '新建 WebHook', content: document.getElementById('webhook-form-dialog'),
+        area: ['520px', '500px'], btn: [], closeBtn: 1,
+        cancel: function() { _formLayerIndex = null; }
+    });
 }
 
 function closeConfigForm() {
