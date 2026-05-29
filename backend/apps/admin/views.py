@@ -1090,7 +1090,7 @@ def admin_setting(request):
             ad_code_2 = request.POST.get('ad_code_2',None) # 广告位2
             ad_code_3 = request.POST.get('ad_code_3', None)  # 广告位3
             ad_code_4 = request.POST.get('ad_code_4', None)  # 广告位4
-            enbale_email = request.POST.get("enable_email",None) # 启用邮箱
+            enable_email_value = request.POST.get("enable_email",None) # 启用邮箱
             img_scale = request.POST.get('img_scale',None) # 图片缩略
             enable_register_code = request.POST.get('enable_register_code',None) # 注册邀请码
             enable_login_check_code = request.POST.get('enable_login_check_code',None) # 登录验证码
@@ -1176,7 +1176,7 @@ def admin_setting(request):
             # 更新邮箱启用状态
             SysSetting.objects.update_or_create(
                 name='enable_email',
-                defaults={'value': enbale_email, 'types': 'basic'}
+                defaults={'value': enable_email_value, 'types': 'basic'}
             )
             # 更新注册码启停状态
             SysSetting.objects.update_or_create(
@@ -1203,8 +1203,8 @@ def admin_setting(request):
             emailer = request.POST.get("send_emailer",None)
             host = request.POST.get("smtp_host",None)
             port = request.POST.get("smtp_port",None)
-            username = request.POST.get("smtp_username",None)
-            pwd = request.POST.get("smtp_pwd",None)
+            username = request.POST.get("username",None)
+            pwd = request.POST.get("pwd",None)
             ssl = request.POST.get("smtp_ssl",None)
             # 对密码进行加密
             pwd = enctry(pwd)
