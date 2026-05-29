@@ -1055,14 +1055,14 @@ def change_pwd(request):
 @logger.catch()
 def admin_setting(request):
     email_settings = SysSetting.objects.filter(types="email")
-    if email_settings.count() == 6:
-        emailer = email_settings.get(name='send_emailer')
-        email_host = email_settings.get(name='smtp_host')
-        email_port = email_settings.get(name='smtp_port')
-        email_username = email_settings.get(name="username")
-        email_ssl = email_settings.get(name="smtp_ssl")
-        email_pwd = email_settings.get(name="pwd")
-        email_dec_pwd = dectry(email_settings.get(name="pwd").value)
+    emailer = email_settings.filter(name='send_emailer').first()
+    email_host = email_settings.filter(name='smtp_host').first()
+    email_port = email_settings.filter(name='smtp_port').first()
+    email_username = email_settings.filter(name="username").first()
+    email_ssl = email_settings.filter(name="smtp_ssl").first()
+    email_pwd = email_settings.filter(name="pwd").first()
+    email_dec_pwd = dectry(email_pwd.value) if email_pwd and email_pwd.value else ''
+    enable_email = SysSetting.objects.filter(types='basic', name='enable_email').first()
     if request.method == 'GET':
         return render(request,'app_admin/admin_setting.html',locals())
     elif request.method == 'POST':

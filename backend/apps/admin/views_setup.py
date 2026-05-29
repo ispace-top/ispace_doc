@@ -201,41 +201,38 @@ def api_setup_install(request):
             )
 
         # 保存邮件配置到 SysSetting（与后台站点设置共用）
-        if step4 and step4.get('smtp_host'):
+        if step4:
             smtp_host = step4.get('smtp_host', '').strip()
-            smtp_port = step4.get('smtp_port', '').strip()
+            smtp_port = step4.get('smtp_port', '').strip() or '587'
             smtp_user = step4.get('smtp_user', '').strip()
             smtp_from = step4.get('smtp_from', '').strip()
             smtp_pwd = step4.get('smtp_password', '').strip()
             if smtp_host:
+                # 完整保存 6 项邮件设置，确保管理后台回显
                 SysSetting.objects.update_or_create(
                     name='smtp_host', defaults={'value': smtp_host, 'types': 'email'}
                 )
-            if smtp_port:
                 SysSetting.objects.update_or_create(
                     name='smtp_port', defaults={'value': smtp_port, 'types': 'email'}
                 )
-            if smtp_user:
                 SysSetting.objects.update_or_create(
                     name='username', defaults={'value': smtp_user, 'types': 'email'}
                 )
-            if smtp_from:
                 SysSetting.objects.update_or_create(
                     name='send_emailer', defaults={'value': smtp_from, 'types': 'email'}
                 )
-            if smtp_pwd:
                 SysSetting.objects.update_or_create(
                     name='pwd', defaults={'value': enctry(smtp_pwd), 'types': 'email'}
                 )
-            # 端口为465时默认启用SSL
-            is_ssl = 'on' if smtp_port == '465' else 'off'
-            SysSetting.objects.update_or_create(
-                name='smtp_ssl', defaults={'value': is_ssl, 'types': 'email'}
-            )
-            # 启用邮件功能
-            SysSetting.objects.update_or_create(
-                name='enable_email', defaults={'value': 'on', 'types': 'basic'}
-            )
+                # 端口为465时默认启用SSL
+                is_ssl = 'on' if smtp_port == '465' else 'off'
+                SysSetting.objects.update_or_create(
+                    name='smtp_ssl', defaults={'value': is_ssl, 'types': 'email'}
+                )
+                # 启用邮件功能
+                SysSetting.objects.update_or_create(
+                    name='enable_email', defaults={'value': 'on', 'types': 'basic'}
+                )
 
         # 标记安装完成
         try:
