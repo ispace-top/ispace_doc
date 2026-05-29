@@ -209,11 +209,11 @@ class WeComChannel(BaseNotificationChannel):
             from backend.apps.doc.models import UserProfile
             profile = UserProfile.objects.only('wecom_userid', 'notify_settings').get(user=recipient)
         except UserProfile.DoesNotExist:
-            logger.info(f'[WeComChannel] 用户无 UserProfile: recipient={recipient.pk}')
+            logger.warning(f'[WeComChannel] 用户无 UserProfile: recipient={recipient.pk} username={recipient.username}')
             return False
 
         if not profile.wecom_userid:
-            logger.info(f'[WeComChannel] 用户未绑定企业微信: recipient={recipient.pk}')
+            logger.warning(f'[WeComChannel] 用户未绑定企业微信: recipient={recipient.pk} username={recipient.username}，请先执行企业微信同步')
             return False
 
         # 检查用户通知偏好
@@ -390,16 +390,21 @@ class NotificationChannelManager:
         for channel_id in routes:
             channel = self._channels.get(channel_id)
             if channel is None:
+                logger.warning(f'NotificationChannelManager: 通道 {channel_id} 未注册')
                 results[channel_id] = False
                 continue
             if not channel.validate_config():
+                logger.info(f'NotificationChannelManager: 通道 {channel_id} 配置无效，跳过')
                 results[channel_id] = False
                 continue
             if not channel.is_available_for(notification.recipient):
+                logger.info(f'NotificationChannelManager: 通道 {channel_id} 对用户 {notification.recipient.username} 不可用，跳过')
                 results[channel_id] = False
                 continue
             try:
                 results[channel_id] = channel.send(notification, notification.recipient)
+                if not results[channel_id]:
+                    logger.warning(f'NotificationChannelManager: 通道 {channel_id} 发送失败')
             except Exception:
                 logger.exception(f'NotificationChannelManager: 通道 {channel_id} 发送异常')
                 results[channel_id] = False
