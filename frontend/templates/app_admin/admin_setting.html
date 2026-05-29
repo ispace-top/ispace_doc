@@ -958,6 +958,7 @@
                     <label class="settings-form-label">文档导出</label>
                     <div class="settings-form-control">
                         <label class="ispace-switch">
+                            <input type="checkbox" name="enable_project_report" {% if enable_project_report %}checked{% endif %}>
                             <span class="ispace-switch-slider"></span>
                         </label>
                         <span class="settings-form-hint">允许文档导出为 EPUB、DOCX 等格式文件以供下载</span>
@@ -1450,7 +1451,7 @@
     document.getElementById('updateDocBtn').addEventListener('click', function() {
         const fb = document.getElementById('feedbackDoc');
         const form = document.getElementById('formDocConfig');
-        var data = buildSwitchData(form, ['img_scale', 'long_code', 'enable_text_indent']);
+        var data = buildSwitchData(form, ['enable_project_report', 'img_scale', 'long_code', 'enable_text_indent']);
         // Add select value for md_render_theme
         var themeSelect = form.querySelector('[name="md_render_theme"]');
         if (themeSelect) {

@@ -1207,7 +1207,8 @@ a.ispace-card:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--ispace-color-surface-0);
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
   transition: opacity var(--ispace-duration-slow);
 }
 
