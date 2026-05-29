@@ -381,7 +381,10 @@ def send_email_test(request):
         return JsonResponse({'status': True, 'data': _('发送成功')})
     except smtplib.SMTPException as e:
         logger.error("邮件发送异常:{}".format(repr(e)))
-        return JsonResponse({'status': False, 'data': repr(e)})
+        return JsonResponse({'status': False, 'data': str(e)[:200]})
+    except UnicodeError as e:
+        logger.error("邮件密码编码异常（密钥变更？请重新设置邮箱密码）:{}".format(repr(e)))
+        return JsonResponse({'status': False, 'data': '邮箱密码解码失败，请在邮箱设置中重新输入密码后保存'})
     except Exception as e:
         logger.error("邮件发送异常:{}".format(repr(e)))
         return JsonResponse({'status': False, 'data': repr(e)})
@@ -1061,7 +1064,10 @@ def admin_setting(request):
     email_username = email_settings.filter(name="username").first()
     email_ssl = email_settings.filter(name="smtp_ssl").first()
     email_pwd = email_settings.filter(name="pwd").first()
-    email_dec_pwd = dectry(email_pwd.value) if email_pwd and email_pwd.value else ''
+    try:
+        email_dec_pwd = dectry(email_pwd.value) if email_pwd and email_pwd.value else ''
+    except Exception:
+        email_dec_pwd = ''  # 解密失败（密钥变更），需重新设置密码
     enable_email = SysSetting.objects.filter(types='basic', name='enable_email').first()
     if request.method == 'GET':
         return render(request,'app_admin/admin_setting.html',locals())
