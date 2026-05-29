@@ -12,8 +12,9 @@ from django.conf import settings
 from .base import StorageBackend
 from .local import LocalStorageBackend
 
-# 配置文件路径
-CONFIG_PATH = os.environ.get("ISDOC_CONFIG", os.path.join(settings.BASE_DIR, "config", "conf", "config.ini"))
+# 配置文件路径（与 settings.py 使用相同的路径解析逻辑）
+CONFIG_DIR = os.path.join(settings.BASE_DIR, 'config', 'conf')
+CONFIG_PATH = os.path.join(CONFIG_DIR, os.environ.get('ISDOC_CONFIG', 'config.ini'))
 
 
 def _read_config() -> configparser.ConfigParser:
