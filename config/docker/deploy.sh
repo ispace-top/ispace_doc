@@ -44,11 +44,11 @@ gen_env() {
     read -r -p "数据库密码 [自动生成]: " DB_PASSWORD
     DB_PASSWORD="${DB_PASSWORD:-$(LC_ALL=C tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 16)}"
 
-    read -r -p "应用端口 [10086]: " APP_PORT
-    APP_PORT="${APP_PORT:-10086}"
+    read -r -p "应用端口 [8000]: " APP_PORT
+    APP_PORT="${APP_PORT:-8000}"
 
     read -r -p "API 端口 [8000]: " API_PORT
-    API_PORT="${API_PORT:-8000}"
+    API_PORT="${API_PORT:-8001}"
 
     read -r -p "调试模式 (true/false) [false]: " DEBUG
     DEBUG="${DEBUG:-false}"
@@ -149,8 +149,8 @@ status() {
     dc ps
     echo ""
     echo "访问地址:"
-    echo "  主应用:  http://localhost:${APP_PORT:-10086}"
-    echo "  API:     http://localhost:${API_PORT:-8000}"
+    echo "  主应用:  http://localhost:${APP_PORT:-8000}"
+    echo "  API:     http://localhost:${API_PORT:-8001}"
     echo ""
 }
 

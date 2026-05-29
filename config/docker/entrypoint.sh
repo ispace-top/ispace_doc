@@ -18,7 +18,7 @@ else
 fi
 
 # 确保持久化目录存在
-mkdir -p /app/iSpaceDoc/data /app/iSpaceDoc/media /app/iSpaceDoc/log
+mkdir -p /app/iSpaceDoc/data /app/iSpaceDoc/media /app/iSpaceDoc/log /app/iSpaceDoc/whoosh_index
 
 # 执行传入的命令，如果 uwsgi ini 文件缺失则回退到命令行参数
 if [ "$1" = "uwsgi" ] && [ "$2" = "--ini" ]; then
@@ -32,7 +32,7 @@ if [ "$1" = "uwsgi" ] && [ "$2" = "--ini" ]; then
             --processes 5 \
             --chdir /app/iSpaceDoc \
             --wsgi-file /app/iSpaceDoc/backend/core/wsgi.py \
-            --http-socket "0.0.0.0:${LISTEN_PORT:-10086}" \
+            --http-socket "0.0.0.0:${LISTEN_PORT:-8000}" \
             --logto /app/iSpaceDoc/log/uwsgi.log \
             --log-maxsize 3000000 \
             --chmod-socket 664 \
