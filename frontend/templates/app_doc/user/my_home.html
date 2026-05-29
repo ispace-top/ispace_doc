@@ -2043,7 +2043,7 @@
 
         // 并行加载：组织树 + 我的组织
         Promise.all([
-            fetch('/api/my/organization/', { headers: { 'X-CSRFToken': csrf } }).then(function(r) { return r.json(); }),
+            fetch('/api/org/tree/', { headers: { 'X-CSRFToken': csrf } }).then(function(r) { return r.json(); }),
             fetch('/api/user/my-orgs/', { headers: { 'X-CSRFToken': csrf } }).then(function(r) { return r.json(); })
         ]).then(function(results) {
             var treeData = results[0];
