@@ -1,0 +1,27 @@
+{% comment %}
+Document sidebar with TOC tree. Expects `toc` context variable (list of dicts).
+{% endcomment %}
+<aside class="ispace-sidebar" id="doc-sidebar">
+    <div class="ispace-flex-between ispace-mb-4">
+        <h3 class="ispace-font-semibold ispace-text-sm ispace-text-secondary">文档目录</h3>
+        <button class="ispace-btn ispace-btn-ghost ispace-btn-icon ispace-btn-sm"
+                onclick="document.getElementById('doc-sidebar').classList.toggle('ispace-sidebar-collapsed')"
+                title="收起侧栏">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"/>
+            </svg>
+        </button>
+    </div>
+
+    {% if toc %}
+    <nav class="ispace-sidebar-nav">
+        {% for item in toc %}
+            {% include "includes/sidebar_doc_item.html" with item=item %}
+        {% endfor %}
+    </nav>
+    {% else %}
+    <div class="ispace-empty-state" style="padding: var(--ispace-space-4);">
+        <p class="ispace-text-sm ispace-text-quaternary">暂无文档</p>
+    </div>
+    {% endif %}
+</aside>

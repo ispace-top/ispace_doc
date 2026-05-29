@@ -1,0 +1,64 @@
+﻿{% extends "base.html" %}
+{% load static %}{% load i18n %}
+
+{% block title %}{{ doc.name }} - {% trans "分享文档" %} - {{ site_name|default:"爱思文档" }}{% endblock %}
+
+{% block content %}
+<div class="ispace-page-header ispace-flex-between">
+    <div>
+        <h1 class="ispace-page-title">{{ doc.name }}</h1>
+        <p class="ispace-page-description">
+            {% trans "由" %} <strong data-user-id="{{ doc.create_user.id }}">{{ doc.create_user.username }}</strong> {% trans "分享" %}
+            · {{ share_doc.create_time|date:"Y-m-d H:i" }}
+        </p>
+    </div>
+    <div class="ispace-flex-center ispace-gap-2">
+        <button class="ispace-btn ispace-btn-sm ispace-btn-secondary" onclick="copyShareLink()" title="{% trans '复制分享链接' %}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            {% trans "复制链接" %}
+        </button>
+        <a href="/" class="ispace-btn ispace-btn-sm ispace-btn-ghost">{% trans "爱思文档 首页" %}</a>
+    </div>
+</div>
+
+<div class="ispace-content-card">
+    {{ doc.pre_content|safe }}
+</div>
+
+<div class="ispace-mt-6 ispace-p-4" style="background:var(--ispace-color-surface-50);border-radius:var(--ispace-radius-md);text-align:center;">
+    <p class="ispace-text-sm ispace-text-tertiary">
+        {% trans "此文档通过分享链接查看" %} · {% trans "由 爱思文档 提供支持" %}
+        · <a href="/" class="ispace-link ispace-text-xs">爱思文档</a>
+    </p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copyShareLink() {
+    var url = window.location.href;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(function() {
+            showSuccess('{% trans "已复制到剪贴板" %}');
+        }).catch(function() {
+            fallbackCopy(url);
+        });
+    } else {
+        fallbackCopy(url);
+    }
+}
+function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    ta.style.top = '-9999px';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try { document.execCommand('copy'); showSuccess('{% trans "已复制到剪贴板" %}'); }
+    catch(e) { showError('{% trans "复制失败" %}'); }
+    document.body.removeChild(ta);
+}
+</script>
+{% endblock %}

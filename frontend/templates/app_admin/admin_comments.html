@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% load static %}{% load i18n %}
+
+{% block title %}{% trans "评论管理" %} - {% trans "后台管理" %}{% endblock %}
+
+{% block styles %}
+<style>
+.ispace-badge-sm { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+.ispace-badge-success { background: #d1fae5; color: #065f46; }
+.ispace-badge-danger { background: #fee2e2; color: #991b1b; }
+
+.admin-comments-page-size { display: flex; align-items: center; gap: var(--ispace-space-2); font-size: var(--ispace-font-sm); color: var(--ispace-color-text-tertiary); }
+.admin-comments-page-size select { height: 30px; padding: 0 6px; font-size: var(--ispace-font-sm); border: 1px solid var(--ispace-color-border-medium); border-radius: var(--ispace-radius-sm); background: var(--ispace-color-surface-0); color: var(--ispace-color-text-primary); }
+.comments-table-col-doc { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.comments-table-col-user { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ispace-card">
+    <div class="ispace-card-header">
+        <h3 class="ispace-card-title">{% trans "评论管理" %}</h3>
+        <div style="display:flex;align-items:center;gap:var(--ispace-space-3);flex-wrap:wrap;flex:1;justify-content:flex-end;">
+            <input type="text" class="ispace-form-input" id="filterDoc" placeholder="{% trans '文档名称' %}" style="max-width:140px;">
+            <input type="text" class="ispace-form-input" id="filterUser" placeholder="{% trans '评论者' %}" style="max-width:120px;">
+            <select class="ispace-form-select" id="filterStatus" style="max-width:100px;">
+                <option value="">{% trans "全部状态" %}</option>
+                <option value="active">{% trans "有效" %}</option>
+                <option value="deleted">{% trans "已删除" %}</option>
+            </select>
+            <button class="ispace-btn ispace-btn-secondary ispace-btn-sm" id="searchBtn">{% trans "筛选" %}</button>
+            <button class="ispace-btn ispace-btn-secondary ispace-btn-sm" id="resetBtn">{% trans "重置" %}</button>
+        </div>
+    </div>
+    <div class="ispace-card-body">
+        <div style="overflow-x:auto;">
+            <table class="ispace-table" id="commentTable">
+                <thead>
+                    <tr>
+                        <th>{% trans "文档" %}</th>
+                        <th>{% trans "评论者" %}</th>
+                        <th>{% trans "内容" %}</th>
+                        <th>{% trans "回复数" %}</th>
+                        <th>{% trans "时间" %}</th>
+                        <th>{% trans "状态" %}</th>
+                        <th>{% trans "操作" %}</th>
+                    </tr>
+                </thead>
+                <tbody id="commentTbody"></tbody>
+            </table>
+        </div>
+        <div class="ispace-flex-between" style="margin-top:var(--ispace-space-4)">
+            <div id="commentPagination"></div>
+            <div class="admin-comments-page-size">
+                <span>每页</span>
+                <select id="page-size-select">
+                    <option value="10">10</option>
+                    <option value="20" selected>20</option>
+                    <option value="50">50</option>
+                </select>
+                <span>条</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    var currentPage = 1, currentFilters = {};
+
+    function getPageSize() {
+        var sel = document.getElementById('page-size-select');
+        return sel ? parseInt(sel.value) : 20;
+    }
+
+    function getCSRF() { var t = document.querySelector('[name=csrfmiddlewaretoken]'); return t ? t.value : ''; }
+
+    function loadComments() {
+        var params = new URLSearchParams({ page: currentPage, size: getPageSize() });
+        Object.keys(currentFilters).forEach(function(k) { if (currentFilters[k]) params.set(k, currentFilters[k]); });
+        fetch('/admin/api/comments/?' + params.toString(), { headers: { 'X-CSRFToken': getCSRF() } })
+        .then(function(r) { return r.json(); }).then(function(d) {
+            var tbody = document.getElementById('commentTbody');
+            if (!d.comments || !d.comments.length) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:var(--ispace-space-8);color:var(--ispace-color-text-tertiary)">{% trans "暂无评论" %}</td></tr>';
+                document.getElementById('commentPagination').innerHTML = ''; return;
+            }
+            tbody.innerHTML = d.comments.map(function(c) {
+                return '<tr>'
+                    + '<td class="comments-table-col-doc" title="' + escapeHTML(c.doc_name) + '"><a class="admin-user-action-link" href="/doc/' + c.doc_id + '/" target="_blank">' + escapeHTML(c.doc_name) + '</a></td>'
+                    + '<td class="comments-table-col-user" title="' + escapeHTML(c.user_name) + '">' + escapeHTML(c.user_name) + '</td>'
+                    + '<td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + escapeHTML(c.content) + '">' + escapeHTML(c.content_short) + '</td>'
+                    + '<td>' + c.reply_count + '</td>'
+                    + '<td style="white-space:nowrap">' + c.create_time + '</td>'
+                    + '<td><span class="ispace-badge-sm ' + (c.is_active ? 'ispace-badge-success' : 'ispace-badge-danger') + '">' + (c.is_active ? '{% trans "有效" %}' : '{% trans "已删除" %}') + '</span></td>'
+                    + '<td>' + (c.is_active
+                        ? '<a class="admin-user-action-link danger" onclick="toggleComment(' + c.id + ', \'delete\')">{% trans "删除" %}</a>'
+                        : '<a class="admin-user-action-link" onclick="toggleComment(' + c.id + ', \'restore\')">{% trans "恢复" %}</a>') + '</td></tr>';
+            }).join('');
+            var totalPages = Math.ceil(d.total / getPageSize());
+            renderPagination(d.total, currentPage, totalPages, 'commentPagination', function(p) { currentPage = p; loadComments(); });
+        });
+    }
+
+    window.toggleComment = function(id, action) {
+        var msg = action === 'delete' ? '{% trans "确认删除这条评论吗？" %}' : '{% trans "确认恢复这条评论吗？" %}';
+        iSpaceDoc.confirm(msg).then(function(ok) {
+            if (!ok) return;
+            fetch('/admin/api/comments/', {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
+                body: JSON.stringify({ id: id, action: action })
+            }).then(function(r) { return r.json(); }).then(function(d) {
+                if (d.status) loadComments(); else alert(d.message);
+            });
+        });
+    };
+
+    function renderPagination(count, page, totalPages, containerId, callback) {
+        var container = document.getElementById(containerId);
+        if (totalPages <= 1) { container.innerHTML = '<span class="ispace-pagination-info">共 ' + count + ' 条</span>'; return; }
+        var html = '';
+        html += '<button class="ispace-pagination-btn" data-page="' + (page - 1) + '" ' + (page <= 1 ? 'disabled' : '') + '>上一页</button>';
+        var startPage = Math.max(1, page - 2);
+        var endPage = Math.min(totalPages, page + 2);
+        if (startPage > 1) { html += '<button class="ispace-pagination-btn" data-page="1">1</button>'; if (startPage > 2) html += '<span class="ispace-pagination-info">...</span>'; }
+        for (var i = startPage; i <= endPage; i++) { html += '<button class="ispace-pagination-btn ' + (i === page ? 'ispace-active' : '') + '" data-page="' + i + '">' + i + '</button>'; }
+        if (endPage < totalPages) { if (endPage < totalPages - 1) html += '<span class="ispace-pagination-info">...</span>'; html += '<button class="ispace-pagination-btn" data-page="' + totalPages + '">' + totalPages + '</button>'; }
+        html += '<button class="ispace-pagination-btn" data-page="' + (page + 1) + '" ' + (page >= totalPages ? 'disabled' : '') + '>下一页</button>';
+        html += '<span class="ispace-pagination-info">共 ' + count + ' 条</span>';
+        container.innerHTML = html;
+        container.querySelectorAll('.ispace-pagination-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() { var p = parseInt(this.dataset.page); if (p >= 1 && p <= totalPages && p !== page) callback(p); });
+        });
+    }
+
+    document.getElementById('searchBtn').addEventListener('click', function() {
+        currentFilters = {
+            doc: document.getElementById('filterDoc').value.trim(),
+            user: document.getElementById('filterUser').value.trim(),
+            status: document.getElementById('filterStatus').value
+        };
+        currentPage = 1; loadComments();
+    });
+    document.getElementById('resetBtn').addEventListener('click', function() {
+        document.getElementById('filterDoc').value = '';
+        document.getElementById('filterUser').value = '';
+        document.getElementById('filterStatus').value = '';
+        currentFilters = {}; currentPage = 1; loadComments();
+    });
+
+    function escapeHTML(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+    document.getElementById('page-size-select').addEventListener('change', function() {
+        currentPage = 1; loadComments();
+    });
+
+    loadComments();
+})();
+</script>
+{% endblock %}

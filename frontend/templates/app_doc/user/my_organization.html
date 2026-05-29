@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% load static %}{% load i18n %}
+
+{% block title %}{% trans "组织架构" %} - {{ site_name|default:"爱思文档" }}{% endblock %}
+
+{% block breadcrumb %}{% endblock %}
+{% block body_class %}ispace-page-body{% endblock %}
+
+{% block styles %}
+<style>
+/* 组织树容器 */
+.ispace-org-tree { padding: var(--ispace-space-2) 0; }
+.ispace-org-tree-node { user-select: none; }
+.ispace-org-tree-row { display: flex; align-items: center; padding: var(--ispace-space-2) var(--ispace-space-2); border-radius: var(--ispace-radius-md); cursor: pointer; transition: background 0.15s; margin: 1px 0; }
+.ispace-org-tree-row:hover { background: var(--ispace-color-bg-secondary); }
+.ispace-org-tree-row.active { background: var(--ispace-color-brand-100, #e8f0fe); }
+
+/* 展开/折叠图标 */
+.ispace-org-toggle { width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 4px; color: var(--ispace-color-text-tertiary); transition: transform 0.2s; }
+.ispace-org-toggle.expanded { transform: rotate(90deg); }
+.ispace-org-toggle.leaf { visibility: hidden; }
+.ispace-org-toggle svg { width: 14px; height: 14px; }
+
+/* 节点图标 */
+.ispace-org-node-icon { width: 28px; height: 28px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: var(--ispace-space-2); font-size: 14px; }
+.ispace-org-node-icon.root { background: #4A90D9; color: #fff; }
+.ispace-org-node-icon.branch { background: #E67E22; color: #fff; }
+.ispace-org-node-icon.leaf-node { background: #95A5A6; color: #fff; }
+
+/* 节点信息 */
+.ispace-org-node-name { font-size: var(--ispace-font-sm); font-weight: var(--ispace-font-medium); color: var(--ispace-color-text-primary); }
+.ispace-org-node-meta { font-size: var(--ispace-font-xs); color: var(--ispace-color-text-tertiary); margin-left: var(--ispace-space-2); }
+
+/* 子节点容器 */
+.ispace-org-children { padding-left: 24px; }
+.ispace-org-children.collapsed { display: none; }
+
+/* 详情面板 */
+.ispace-org-layout { display: grid; grid-template-columns: 1fr 360px; gap: var(--ispace-space-6); }
+@media (max-width: 900px) { .ispace-org-layout { grid-template-columns: 1fr; } }
+.ispace-org-detail { background: var(--ispace-color-bg-secondary); border-radius: var(--ispace-radius-lg); padding: var(--ispace-space-4); position: sticky; top: var(--ispace-space-4); max-height: 80vh; overflow-y: auto; }
+.ispace-org-detail-title { font-size: var(--ispace-font-lg); font-weight: var(--ispace-font-semibold); margin-bottom: var(--ispace-space-1); }
+.ispace-org-detail-path { font-size: var(--ispace-font-xs); color: var(--ispace-color-text-tertiary); margin-bottom: var(--ispace-space-4); }
+.ispace-org-detail-empty { text-align: center; padding: var(--ispace-space-8) 0; color: var(--ispace-color-text-tertiary); }
+.ispace-org-detail-empty svg { width: 48px; height: 48px; opacity: 0.3; margin-bottom: var(--ispace-space-3); }
+
+.ispace-member-mini { display: flex; align-items: center; gap: var(--ispace-space-2); padding: var(--ispace-space-2) 0; font-size: var(--ispace-font-sm); border-bottom: 1px solid var(--ispace-color-border); }
+.ispace-member-mini:last-child { border-bottom: none; }
+.ispace-member-mini-avatar { width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: var(--ispace-font-bold); color: #fff; flex-shrink: 0; }
+.ispace-badge-primary-sm { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 10px; background: #e6f7ee; color: #27ae60; margin-left: 4px; }
+
+.ispace-spinner-sm { display: inline-block; width: 14px; height: 14px; border: 2px solid #ccc; border-top-color: var(--ispace-color-brand-500); border-radius: 50%; animation: ispace-spin 0.6s linear infinite; }
+@keyframes ispace-spin { to { transform: rotate(360deg); } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ispace-page">
+    <h1 class="ispace-content-title">{% trans "组织架构" %}</h1>
+    <p class="ispace-content-subtitle">{% trans "查看公司的组织架构和部门成员" %}</p>
+
+    <div class="ispace-org-layout" style="margin-top:var(--ispace-space-6)">
+        <!-- 左侧：树 -->
+        <div>
+            <div class="ispace-org-tree" id="orgTree">
+                <p style="color:var(--ispace-color-text-tertiary);font-size:var(--ispace-font-sm)">
+                    <span class="ispace-spinner-sm"></span> {% trans "加载组织架构..." %}
+                </p>
+            </div>
+        </div>
+
+        <!-- 右侧：详情面板 -->
+        <div class="ispace-org-detail" id="orgDetail">
+            <div class="ispace-org-detail-empty">
+                <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm3 1h2v2H7V5zm0 4h2v2H7V9zm4-4h2v2h-2V5zm0 4h2v2h-2V9z" clip-rule="evenodd"/></svg>
+                <p>{% trans "点击左侧节点查看详情" %}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    function getCSRF() {
+        var t = document.querySelector('[name=csrfmiddlewaretoken]');
+        return t ? t.value : '';
+    }
+
+    // 加载组织树
+    fetch('/api/my/organization/', { headers: { 'X-CSRFToken': getCSRF() } })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (!d.status || !d.tree.length) {
+            document.getElementById('orgTree').innerHTML = '<div class="ispace-empty-state"><svg class="ispace-empty-state-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm3 1h2v2H7V5zm0 4h2v2H7V9zm4-4h2v2h-2V5zm0 4h2v2h-2V9z" clip-rule="evenodd"/></svg><h3 class="ispace-empty-state-title">{% trans "暂无组织数据" %}</h3><p class="ispace-empty-state-description">{% trans "管理员尚未创建组织架构" %}</p></div>';
+            return;
+        }
+        document.getElementById('orgTree').innerHTML = d.tree.map(function(n) { return buildNodeHTML(n, true); }).join('');
+    })
+    .catch(function() {
+        document.getElementById('orgTree').innerHTML = '<p style="color:var(--ispace-color-danger)">{% trans "加载失败" %}</p>';
+    });
+
+    function isRoot(level) { return level === 0; }
+    function isLeaf(children) { return !children || children.length === 0; }
+
+    function buildNodeHTML(node, isRoot) {
+        var hasChildren = node.children && node.children.length > 0;
+        var iconType = isRoot ? 'root' : (hasChildren ? 'branch' : 'leaf-node');
+        var icon = '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4l2 2h6a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd"/></svg>';
+        if (!hasChildren) {
+            icon = '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/></svg>';
+        }
+
+        var html = '<div class="ispace-org-tree-node" data-id="' + node.id + '">';
+        html += '<div class="ispace-org-tree-row" onclick="selectNode(' + node.id + ', this)" data-node-id="' + node.id + '">';
+        html += '<span class="ispace-org-toggle' + (hasChildren ? ' expanded' : ' leaf') + '" onclick="toggleNode(event, ' + node.id + ', this)">';
+        html += '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>';
+        html += '</span>';
+        html += '<span class="ispace-org-node-icon ' + iconType + '">' + icon + '</span>';
+        html += '<span class="ispace-org-node-name">' + escapeHTML(node.name) + '</span>';
+        html += '<span class="ispace-org-node-meta">' + node.member_count + ' 人</span>';
+        html += '</div>';
+
+        if (hasChildren) {
+            html += '<div class="ispace-org-children" id="children-' + node.id + '">';
+            node.children.forEach(function(child) {
+                html += buildNodeHTML(child, false);
+            });
+            html += '</div>';
+        }
+        html += '</div>';
+        return html;
+    }
+
+    window.toggleNode = function(e, nodeId, toggleEl) {
+        e.stopPropagation();
+        var children = document.getElementById('children-' + nodeId);
+        if (!children) return;
+        var collapsed = !children.classList.contains('collapsed');
+        children.classList.toggle('collapsed', collapsed);
+        toggleEl.classList.toggle('expanded', !collapsed);
+    };
+
+    window.selectNode = function(nodeId, rowEl) {
+        // 高亮
+        document.querySelectorAll('.ispace-org-tree-row').forEach(function(r) { r.classList.remove('active'); });
+        rowEl.classList.add('active');
+        // 加载详情
+        var detail = document.getElementById('orgDetail');
+        detail.innerHTML = '<p style="text-align:center;padding:var(--ispace-space-8) 0"><span class="ispace-spinner-sm"></span></p>';
+        fetch('/api/org/nodes/' + nodeId + '/', { headers: { 'X-CSRFToken': getCSRF() } })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (!d.status) { detail.innerHTML = '<p style="color:var(--ispace-color-danger)">加载失败</p>'; return; }
+            var node = d.node;
+            var pathDisplay = (node.path || '').replace(/^\/|\/$/g, '').replace(/\//g, ' / ');
+            var html = '<h2 class="ispace-org-detail-title">' + escapeHTML(node.name) + '</h2>';
+            html += '<p class="ispace-org-detail-path">' + escapeHTML(pathDisplay || node.name) + '</p>';
+            html += '<div style="font-size:var(--ispace-font-sm);margin-bottom:var(--ispace-space-3)"><strong>成员</strong> (' + d.members.length + ')</div>';
+            if (!d.members.length) {
+                html += '<p style="color:var(--ispace-color-text-tertiary);font-size:var(--ispace-font-sm)">暂无成员</p>';
+            } else {
+                d.members.forEach(function(m) {
+                    var init = (m.display_name || m.username)[0].toUpperCase();
+                    var color = avatarColor(m.username, m.id);
+                    html += '<div class="ispace-member-mini">';
+                    html += '<span class="ispace-member-mini-avatar" style="background:' + color + '">' + init + '</span>';
+                    html += '<span>' + escapeHTML(m.display_name || m.username) + '</span>';
+                    if (m.is_primary) html += '<span class="ispace-badge-primary-sm">主属</span>';
+                    html += '</div>';
+                });
+            }
+            detail.innerHTML = html;
+        });
+    };
+
+    function avatarColor(username, uid) {
+        var colors = ['#4A90D9','#E67E22','#27AE60','#E74C3C','#8E44AD','#2C3E50','#16A085','#D35400','#2980B9'];
+        return colors[(uid || 0) % colors.length];
+    }
+
+    function escapeHTML(str) {
+        var d = document.createElement('div');
+        d.textContent = str;
+        return d.innerHTML;
+    }
+})();
+</script>
+{% endblock %}

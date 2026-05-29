@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+{% load static %}{% load i18n %}
+
+{% block title %}{% trans "分组管理" %} - {% trans "后台管理" %}{% endblock %}
+
+{% block styles %}
+<style>
+.admin-table-wrap { overflow-x: auto; }
+
+.modal-overlay { display: none; position: fixed; top:0;left:0;right:0;bottom:0; background:rgba(0,0,0,0.4); z-index:1050; align-items:center; justify-content:center; }
+.modal-overlay.active { display: flex; }
+.modal { background: var(--ispace-color-bg-primary); border-radius: var(--ispace-radius-xl); width: 500px; max-width: 95vw; max-height: 85vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.15); }
+.modal-header { padding: var(--ispace-space-4) var(--ispace-space-5); border-bottom: 1px solid var(--ispace-color-border); display: flex; align-items: center; justify-content: space-between; }
+.modal-title { font-size: var(--ispace-font-lg); font-weight: var(--ispace-font-semibold); }
+.modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--ispace-color-text-tertiary); }
+.modal-body { padding: var(--ispace-space-5); }
+.modal-footer { padding: var(--ispace-space-4) var(--ispace-space-5); border-top: 1px solid var(--ispace-color-border); display: flex; justify-content: flex-end; gap: var(--ispace-space-2); }
+.member-item { display: flex; align-items: center; justify-content: space-between; padding: var(--ispace-space-2) 0; font-size: var(--ispace-font-sm); border-bottom: 1px solid var(--ispace-color-border); }
+.member-item:last-child { border-bottom: none; }
+.member-avatar { width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; color: #fff; margin-right: 8px; }
+    .admin-group-page-size { display: flex; align-items: center; gap: var(--ispace-space-2); font-size: var(--ispace-font-sm); color: var(--ispace-color-text-tertiary); }
+    .admin-group-page-size select { height: 30px; padding: 0 6px; font-size: var(--ispace-font-sm); border: 1px solid var(--ispace-color-border-medium); border-radius: var(--ispace-radius-sm); background: var(--ispace-color-surface-0); color: var(--ispace-color-text-primary); }
+    .group-table-col-name { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .group-table-col-desc { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .group-table-col-owner { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ispace-card">
+    <div class="ispace-card-header" style="display:flex;align-items:center;">
+        <div style="display:flex;align-items:center;gap:var(--ispace-space-3);">
+            <input type="text" id="groupSearch" class="ispace-form-input" placeholder="{% trans '搜索分组名称...' %}" style="max-width:200px;">
+            <button class="ispace-btn ispace-btn-secondary ispace-btn-sm" id="searchBtn">{% trans "搜索" %}</button>
+        </div>
+        <button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="createBtn" style="margin-left:auto;">{% trans "新增分组" %}</button>
+    </div>
+    <div class="ispace-card-body">
+        <div class="admin-table-wrap">
+            <table class="ispace-table" id="groupTable">
+                <thead>
+                    <tr>
+                        <th>{% trans "分组名称" %}</th>
+                        <th>{% trans "描述" %}</th>
+                        <th>{% trans "管理员" %}</th>
+                        <th>{% trans "成员数" %}</th>
+                        <th>{% trans "创建时间" %}</th>
+                        <th>{% trans "操作" %}</th>
+                    </tr>
+                </thead>
+                <tbody id="groupTbody"></tbody>
+            </table>
+        </div>
+        <div class="ispace-flex-between" style="margin-top:var(--ispace-space-4)">
+            <div id="groupPagination"></div>
+            <div class="admin-group-page-size">
+                <span>每页</span>
+                <select id="page-size-select">
+                    <option value="10">10</option>
+                    <option value="20" selected>20</option>
+                    <option value="50">50</option>
+                </select>
+                <span>条</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑弹窗 -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="modal-title" id="editModalTitle">{% trans "编辑分组" %}</span>
+            <button class="modal-close" onclick="closeEditModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="ispace-form-group">
+                <label class="ispace-form-label">{% trans "名称" %}</label>
+                <input type="text" class="ispace-form-input" id="editName" maxlength="64">
+            </div>
+            <div class="ispace-form-group">
+                <label class="ispace-form-label">{% trans "描述" %}</label>
+                <textarea class="ispace-form-input" id="editDesc" rows="3" maxlength="256" style="resize:vertical"></textarea>
+            </div>
+            <p id="editMsg" style="font-size:var(--ispace-font-sm)"></p>
+        </div>
+        <div class="modal-footer">
+            <button class="ispace-btn ispace-btn-secondary" onclick="closeEditModal()">{% trans "取消" %}</button>
+            <button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="editSaveBtn">{% trans "保存" %}</button>
+        </div>
+    </div>
+</div>
+
+<!-- 成员弹窗 -->
+<div class="modal-overlay" id="memberModal">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="modal-title" id="memberModalTitle">{% trans "成员列表" %}</span>
+            <button class="modal-close" onclick="closeMemberModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div style="margin-bottom:var(--ispace-space-3)">
+                <input type="text" class="ispace-form-input" id="addMemberSearch" placeholder="{% trans '搜索用户添加...' %}">
+                <div id="memberSearchResults" style="max-height:160px;overflow-y:auto;margin-top:4px"></div>
+            </div>
+            <div id="memberList" style="max-height:300px;overflow-y:auto"></div>
+            <p id="memberMsg" style="font-size:var(--ispace-font-sm)"></p>
+        </div>
+        <div class="modal-footer">
+            <button class="ispace-btn ispace-btn-secondary" onclick="closeMemberModal()">{% trans "关闭" %}</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    var currentPage = 1, currentQuery = '', currentEditId = null, currentMemberGroupId = null;
+
+    function getPageSize() {
+        var sel = document.getElementById('page-size-select');
+        return sel ? parseInt(sel.value) : 10;
+    }
+
+    function getCSRF() { var t = document.querySelector('[name=csrfmiddlewaretoken]'); return t ? t.value : ''; }
+
+    function loadGroups() {
+        var url = '/admin/admin/api/groups/manage/?page=' + currentPage + '&size=' + getPageSize();
+        if (currentQuery) url += '&q=' + encodeURIComponent(currentQuery);
+        fetch(url, { headers: { 'X-CSRFToken': getCSRF() } })
+        .then(function(r) { return r.json(); }).then(function(d) {
+            var tbody = document.getElementById('groupTbody');
+            if (!d.groups || !d.groups.length) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:var(--ispace-space-8);color:var(--ispace-color-text-tertiary)">{% trans "暂未创建任何分组" %}</td></tr>';
+                document.getElementById('groupPagination').innerHTML = ''; return;
+            }
+            tbody.innerHTML = d.groups.map(function(g) {
+                return '<tr><td class="group-table-col-name" title="' + escapeHTML(g.name) + '"><strong>' + escapeHTML(g.name) + '</strong></td><td class="group-table-col-desc" title="' + escapeHTML(g.description || '-') + '">' + escapeHTML(g.description || '-') + '</td><td class="group-table-col-owner" title="' + escapeHTML(g.owner_name) + '">' + escapeHTML(g.owner_name) + '</td><td>' + g.member_count + '</td><td>' + g.created_at + '</td>' +
+                    '<td><a class="admin-user-action-link" onclick="openMemberModal(' + g.id + ',\'' + escapeHTML(g.name) + '\')">{% trans "成员" %}</a>' +
+                    '<a class="admin-user-action-link" onclick="openEdit(' + g.id + ',\'' + escapeHTML(g.name) + '\',\'' + escapeHTML(g.description || '') + '\')">{% trans "编辑" %}</a>' +
+                    '<a class="admin-user-action-link danger" onclick="deleteGroup(' + g.id + ',\'' + escapeHTML(g.name) + '\')">{% trans "删除" %}</a></td></tr>';
+            }).join('');
+            var totalPages = Math.ceil(d.total / getPageSize());
+            renderPagination(d.total, currentPage, totalPages, 'groupPagination', function(p) { currentPage = p; loadGroups(); });
+        });
+    }
+    function renderPagination(count, page, totalPages, containerId, callback) {
+        var container = document.getElementById(containerId);
+        if (totalPages <= 1) { container.innerHTML = '<span class=\"ispace-pagination-info\">共 ' + count + ' 条</span>'; return; }
+        var html = '';
+        html += '<button class=\"ispace-pagination-btn\" data-page=\"' + (page - 1) + '\" ' + (page <= 1 ? 'disabled' : '') + '>上一页</button>';
+        var startPage = Math.max(1, page - 2);
+        var endPage = Math.min(totalPages, page + 2);
+        if (startPage > 1) { html += '<button class=\"ispace-pagination-btn\" data-page=\"1\">1</button>'; if (startPage > 2) html += '<span class=\"ispace-pagination-info\">...</span>'; }
+        for (var i = startPage; i <= endPage; i++) { html += '<button class=\"ispace-pagination-btn ' + (i === page ? 'ispace-active' : '') + '\" data-page=\"' + i + '\">' + i + '</button>'; }
+        if (endPage < totalPages) { if (endPage < totalPages - 1) html += '<span class=\"ispace-pagination-info\">...</span>'; html += '<button class=\"ispace-pagination-btn\" data-page=\"' + totalPages + '\">' + totalPages + '</button>'; }
+        html += '<button class=\"ispace-pagination-btn\" data-page=\"' + (page + 1) + '\" ' + (page >= totalPages ? 'disabled' : '') + '>下一页</button>';
+        html += '<span class=\"ispace-pagination-info\">共 ' + count + ' 条</span>';
+        container.innerHTML = html;
+        container.querySelectorAll('.ispace-pagination-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() { var p = parseInt(this.dataset.page); if (p >= 1 && p <= totalPages && p !== page) callback(p); });
+        });
+    }
+    document.getElementById('searchBtn').addEventListener('click', function() { currentQuery = document.getElementById('groupSearch').value.trim(); currentPage = 1; loadGroups(); });
+    document.getElementById('groupSearch').addEventListener('keydown', function(e) { if (e.key === 'Enter') { document.getElementById('searchBtn').click(); } });
+
+    // Create
+    document.getElementById('createBtn').addEventListener('click', function() {
+        iSpaceDoc.prompt('{% trans "请输入分组名称" %}').then(function(name) {
+            if (!name || !name.trim()) return;
+            fetch('/admin/api/groups/manage/', {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
+                body: JSON.stringify({ name: name.trim() })
+            }).then(function(r) { return r.json(); }).then(function(d) { if (d.status) loadGroups(); else alert(d.message); });
+        });
+    });
+
+    // Edit
+    window.openEdit = function(id, name, desc) { currentEditId = id; document.getElementById('editName').value = name; document.getElementById('editDesc').value = desc; document.getElementById('editMsg').textContent = ''; document.getElementById('editModal').classList.add('active'); };
+    window.closeEditModal = function() { document.getElementById('editModal').classList.remove('active'); currentEditId = null; };
+    document.getElementById('editSaveBtn').addEventListener('click', function() {
+        if (!currentEditId) return;
+        fetch('/admin/api/groups/manage/', {
+            method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
+            body: JSON.stringify({ id: currentEditId, name: document.getElementById('editName').value.trim(), description: document.getElementById('editDesc').value.trim() })
+        }).then(function(r) { return r.json(); }).then(function(d) {
+            document.getElementById('editMsg').textContent = d.message || '';
+            if (d.status) { closeEditModal(); loadGroups(); }
+        });
+    });
+
+    // Delete
+    window.deleteGroup = function(id, name) {
+        iSpaceDoc.confirm('{% trans "确认删除分组「" %}' + name + '{% trans "」吗？" %}').then(function(ok) {
+            if (!ok) return;
+            fetch('/admin/api/groups/manage/', {
+                method: 'DELETE', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
+                body: JSON.stringify({ id: id })
+            }).then(function(r) { return r.json(); }).then(function(d) { if (d.status) loadGroups(); else alert(d.message); });
+        });
+    };
+
+    // Member modal
+    window.openMemberModal = function(gid, gname) {
+        currentMemberGroupId = gid;
+        document.getElementById('memberModalTitle').textContent = gname + ' - {% trans "成员" %}';
+        document.getElementById('memberList').innerHTML = '';
+        document.getElementById('memberModal').classList.add('active');
+        loadMembers(gid);
+    };
+    window.closeMemberModal = function() { document.getElementById('memberModal').classList.remove('active'); currentMemberGroupId = null; };
+
+    function loadMembers(gid) {
+        fetch('/api/groups/' + gid + '/members/', { headers: { 'X-CSRFToken': getCSRF() } }).then(function(r) { return r.json(); }).then(function(d) {
+            var list = document.getElementById('memberList');
+            if (!d.members || !d.members.length) { list.innerHTML = '<p style="color:var(--ispace-color-text-tertiary);font-size:var(--ispace-font-sm)">{% trans "暂无成员" %}</p>'; return; }
+            list.innerHTML = d.members.map(function(m) {
+                var init = (m.display_name || m.username)[0].toUpperCase();
+                var isOwner = m.id === d.owner_id;
+                return '<div class="member-item"><span><span class="member-avatar" style="background:#4A90D9">' + init + '</span>' + escapeHTML(m.display_name || m.username) + (isOwner ? ' <span style="font-size:11px;color:var(--ispace-color-brand-500)">({% trans "管理员" %})</span>' : '') + '</span>' +
+                    (!isOwner ? '<button class="ispace-btn ispace-btn-secondary ispace-btn-sm" onclick="removeMember(' + gid + ',' + m.id + ')">{% trans "移除" %}</button>' : '') + '</div>';
+            }).join('');
+        });
+    }
+
+    window.removeMember = function(gid, uid) {
+        fetch('/api/groups/' + gid + '/members/remove/', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
+            body: JSON.stringify({ user_id: uid })
+        }).then(function(r) { return r.json(); }).then(function(d) {
+            document.getElementById('memberMsg').textContent = d.message || '';
+            if (d.status) loadMembers(gid);
+        });
+    };
+
+    // Member search
+    document.getElementById('addMemberSearch').addEventListener('input', function() {
+        var q = this.value.trim();
+        var dd = document.getElementById('memberSearchResults');
+        if (q.length < 1) { dd.innerHTML = ''; return; }
+        fetch('/api/users/search/?q=' + encodeURIComponent(q), { headers: { 'X-CSRFToken': getCSRF() } }).then(function(r) { return r.json(); }).then(function(d) {
+            if (!d.results || !d.results.length) { dd.innerHTML = '<p style="color:var(--ispace-color-text-tertiary);font-size:var(--ispace-font-sm);padding:8px">{% trans "无匹配用户" %}</p>'; return; }
+            dd.innerHTML = d.results.map(function(u) {
+                return '<div style="padding:6px 8px;cursor:pointer;font-size:var(--ispace-font-sm)" onmouseover="this.style.background=\'var(--ispace-color-bg-secondary)\'" onmouseout="this.style.background=\'\'" onclick="addMemberToGroup(' + u.id + ',\'' + escapeHTML(u.display_name) + '\')">' + escapeHTML(u.display_name) + '</div>';
+            }).join('');
+        });
+    });
+
+    window.addMemberToGroup = function(uid, uname) {
+        if (!currentMemberGroupId) return;
+        document.getElementById('addMemberSearch').value = '';
+        document.getElementById('memberSearchResults').innerHTML = '';
+        fetch('/api/groups/' + currentMemberGroupId + '/members/add/', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
+            body: JSON.stringify({ user_ids: [uid] })
+        }).then(function(r) { return r.json(); }).then(function(d) {
+            document.getElementById('memberMsg').textContent = d.message || '';
+            if (d.status) { loadMembers(currentMemberGroupId); loadGroups(); }
+        });
+    };
+
+    // Modal backdrop click to close
+    document.querySelectorAll('.modal-overlay').forEach(function(ov) {
+        ov.addEventListener('click', function(e) { if (e.target === ov) ov.classList.remove('active'); });
+    });
+
+    function escapeHTML(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+    document.getElementById('page-size-select').addEventListener('change', function() {
+        currentPage = 1;
+        loadGroups();
+    });
+
+    loadGroups();
+})();
+</script>
+{% endblock %}

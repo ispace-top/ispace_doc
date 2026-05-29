@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+{% block title %}模板管理{% endblock %}
+{% block styles %}
+<style>
+    .doctemp-search { width: 240px; }
+    .admin-doctemp-page-size { display: flex; align-items: center; gap: var(--ispace-space-2); font-size: var(--ispace-font-sm); color: var(--ispace-color-text-tertiary); }
+    .admin-doctemp-page-size select { height: 30px; padding: 0 6px; font-size: var(--ispace-font-sm); border: 1px solid var(--ispace-color-border-medium); border-radius: var(--ispace-radius-sm); background: var(--ispace-color-surface-0); color: var(--ispace-color-text-primary); }
+    .doctemp-table-col-name { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .doctemp-table-col-creator { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="ispace-card">
+    <div class="ispace-card-header" style="display:flex;align-items:center;">
+        <form action="{% url 'doctemp_manage' %}" method="get" style="display:flex;align-items:center;gap:var(--ispace-space-2);">
+            <input type="text" name="kw" id="kw" placeholder="输入文档模板内容" autocomplete="off" class="ispace-form-input doctemp-search">
+            <button class="ispace-btn ispace-btn-primary ispace-btn-sm" type="submit">搜索</button>
+        </form>
+        <a href="{% url 'create_doctemp' %}" target="_blank" class="ispace-btn ispace-btn-primary ispace-btn-sm" style="margin-left:auto;">新建文档模板</a>
+    </div>
+    <div class="ispace-card-body">
+        <table class="ispace-table" id="doctemp-list">
+            <colgroup>
+                <col width="200">
+                <col width="200">
+                <col>
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>模板名称</th>
+                    <th>创建人</th>
+                    <th>创建时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for temp in doctemps %}
+                <tr>
+                    <td class="doctemp-table-col-name" title="{{ temp.name }}">{{ temp.name }}</td>
+                    <td class="doctemp-table-col-creator" title="{{ temp.create_user }}">{{ temp.create_user }}</td>
+                    <td>{{ temp.create_time }}</td>
+                    <td>
+                        <a href="{% url 'manage_doctemp' %}" target="_blank" class="ispace-btn ispace-btn-primary ispace-btn-sm">修改</a>
+                        <a href="javascript:void(0);" onclick="delTemp('{{temp.id}}');" class="ispace-btn ispace-btn-danger ispace-btn-sm">删除</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="doctemp-empty">暂无文档模板</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="ispace-flex-between ispace-mt-3">
+            <div>{% include "includes/pagination.html" with page_obj=doctemps %}</div>
+            <div class="admin-doctemp-page-size">
+                <span>每页</span>
+                <select id="page-size-select">
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                </select>
+                <span>条</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% csrf_token %}
+{% endblock %}
+{% block scripts %}
+<script>
+    (function() {
+        var params = new URLSearchParams(window.location.search);
+        var currentPageSize = params.get('page_size') || '10';
+        var sel = document.getElementById('page-size-select');
+        if (sel) sel.value = currentPageSize;
+        sel.addEventListener('change', function() {
+            params.set('page_size', this.value);
+            params.set('page', '1');
+            window.location.search = params.toString();
+        });
+    })();
+
+    function delTemp(doctemp_id) {
+        iSpaceDoc.confirm('警告：此操作将删除此文档模板！', {
+            title: '删除文档',
+            confirmText: '确定',
+            cancelText: '取消'
+        }).then(function(confirmed) {
+            if (!confirmed) return;
+            var body = new URLSearchParams();
+            body.append('doctemp_id', doctemp_id);
+            fetch("{% url 'del_doctemp' %}", {
+                method: 'POST',
+                body: body,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                if (r.status) {
+                    window.location.reload();
+                } else {
+                    console.log(r);
+                    showError(r.data);
+                }
+            })
+            .catch(function(err) {
+                showError('请求失败');
+            });
+        });
+    }
+</script>
+{% endblock %}

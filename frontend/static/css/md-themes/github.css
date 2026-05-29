@@ -1,0 +1,86 @@
+/*
+ * md-themes/github.css — GitHub 风格 Markdown 渲染主题
+ * 接近 GitHub 的 Markdown 渲染风格：更大字体，边框清晰，无背景色块
+ */
+
+.markdown-body {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #1f2328;
+}
+
+/* 标题 */
+.markdown-body h1 { font-size: 2em; border-bottom: 1px solid #d0d7de; padding-bottom: .3em; }
+.markdown-body h2 { font-size: 1.5em; border-bottom: 1px solid #d0d7de; padding-bottom: .3em; }
+.markdown-body h3 { font-size: 1.25em; }
+.markdown-body h4 { font-size: 1em; }
+.markdown-body h5 { font-size: .875em; }
+.markdown-body h6 { font-size: .85em; color: #656d76; }
+
+/* 引用块 — 仅左边框无背景 */
+.markdown-body blockquote {
+  border-left: 4px solid #d0d7de;
+  background: none;
+  color: #656d76;
+  padding: 0 16px;
+  margin: 0 0 16px;
+}
+
+/* Callout — 仅彩色左边框，淡色文字 */
+.markdown-body blockquote.info {
+  border-left: 4px solid #0969da;
+  background: none;
+  color: #0969da;
+}
+.markdown-body blockquote.warning {
+  border-left: 4px solid #bf8700;
+  background: none;
+  color: #bf8700;
+}
+.markdown-body blockquote.danger {
+  border-left: 4px solid #cf222e;
+  background: none;
+  color: #cf222e;
+}
+.markdown-body blockquote.success {
+  border-left: 4px solid #1a7f37;
+  background: none;
+  color: #1a7f37;
+}
+.markdown-body blockquote.tip {
+  border-left: 4px solid #8250df;
+  background: none;
+  color: #8250df;
+}
+
+/* 代码块 */
+.markdown-body pre {
+  background: #f6f8fa;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  padding: 16px;
+}
+.markdown-body code:not(.hljs) {
+  background: rgba(175, 184, 193, 0.2);
+  border-radius: 6px;
+  padding: .2em .4em;
+  font-size: 85%;
+}
+
+/* 表格 — 全边框 */
+.markdown-body table { border: 1px solid #d0d7de; border-collapse: collapse; }
+.markdown-body table th,
+.markdown-body table td { border: 1px solid #d0d7de; padding: 8px 13px; }
+.markdown-body table thead tr { background: #f6f8fa; }
+.markdown-body table tr:nth-child(2n) { background: #f6f8fa; }
+
+/* 链接 */
+.markdown-body a { color: #0969da; }
+
+/* Callout 图标颜色 */
+.markdown-body .callout-icon { font-family: layui-icon; margin-right: 6px; -webkit-text-stroke: 0.4px currentColor; }
+.markdown-body blockquote.info .callout-icon { color: #0969da; }
+.markdown-body blockquote.warning .callout-icon { color: #bf8700; }
+.markdown-body blockquote.danger .callout-icon { color: #cf222e; }
+.markdown-body blockquote.success .callout-icon { color: #1a7f37; }
+.markdown-body blockquote.tip .callout-icon { color: #8250df; }

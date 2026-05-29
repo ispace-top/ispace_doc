@@ -1,0 +1,12 @@
+{% extends "email/base.html" %}
+{% block content %}
+<p style="margin-bottom:16px">您好，以下是 {{ site_name }} 的每日通知汇总，共 <strong>{{ unread_count }}</strong> 条未读通知：</p>
+{% for n in notifications %}
+<div style="padding:12px 16px;margin-bottom:8px;background:#f9fafb;border-radius:6px;border:1px solid #eee">
+    <p style="margin:0;font-weight:500">{{ n.title }}</p>
+    {% if n.body %}<p style="margin:4px 0 0 0;color:#666;font-size:13px">{{ n.body }}</p>{% endif %}
+    <p style="margin:4px 0 0 0;font-size:12px;color:#999">{{ n.created_at }}</p>
+</div>
+{% endfor %}
+<p style="margin-top:20px"><a href="{{ site_url }}" class="btn">查看所有通知</a></p>
+{% endblock %}

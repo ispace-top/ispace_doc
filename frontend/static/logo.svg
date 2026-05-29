@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="300" height="80" viewBox="0 0 300 80" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#4f46e5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#06b6d4;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- 背景圆角矩形 -->
+  <rect x="5" y="5" width="290" height="70" rx="15" ry="15" fill="url(#gradient)" opacity="0.1"/>
+  
+  <!-- 图标部分 -->
+  <g transform="translate(20, 20)">
+    <!-- 文档图标 -->
+    <rect x="0" y="5" width="25" height="32" rx="3" fill="url(#gradient)" opacity="0.8"/>
+    <rect x="5" y="0" width="25" height="32" rx="3" fill="url(#gradient)"/>
+    <!-- 文档内容线条 -->
+    <line x1="8" y1="8" x2="22" y2="8" stroke="white" stroke-width="1.5" opacity="0.8"/>
+    <line x1="8" y1="12" x2="22" y2="12" stroke="white" stroke-width="1.5" opacity="0.8"/>
+    <line x1="8" y1="16" x2="18" y2="16" stroke="white" stroke-width="1.5" opacity="0.8"/>
+    <!-- 爱心图标 -->
+    <path d="M35 8 C35 4, 38 2, 42 6 C46 2, 49 4, 49 8 C49 12, 42 18, 42 18 C42 18, 35 12, 35 8 Z" fill="#e11d48"/>
+  </g>
+  
+  <!-- 文字部分 -->
+  <g transform="translate(80, 25)">
+    <!-- 爱思文档 -->
+    <text x="0" y="20" font-family="Arial, Microsoft YaHei, sans-serif" font-size="24" font-weight="bold" fill="url(#gradient)">
+      爱思文档
+    </text>
+    <!-- 英文标识 -->
+    <text x="0" y="40" font-family="Arial, sans-serif" font-size="12" font-weight="normal" fill="#64748b">
+      iSpaceDoc
+    </text>
+  </g>
+</svg>

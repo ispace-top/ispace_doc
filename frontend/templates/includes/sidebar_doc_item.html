@@ -1,0 +1,18 @@
+{% comment %}
+Recursive sidebar doc item. Expects `item` dict with: id, name, children (list), level
+{% endcomment %}
+<div class="ispace-sidebar-item" style="padding-left: calc(var(--ispace-space-3) * {{ item.level|default:0 }})">
+    <a href="{% url 'doc_by_id' doc_id=item.id %}"
+       class="ispace-sidebar-link {% if item.id == current_doc_id %}ispace-active{% endif %}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="ispace-sidebar-doc-icon">
+            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+            <polyline points="13 2 13 9 20 9"/>
+        </svg>
+        <span class="ispace-truncate">{{ item.name }}</span>
+    </a>
+    {% if item.children %}
+        {% for child in item.children %}
+            {% include "includes/sidebar_doc_item.html" with item=child %}
+        {% endfor %}
+    {% endif %}
+</div>

@@ -1,0 +1,460 @@
+﻿{% extends "base.html" %}
+{% load static %}{% load i18n %}{% load project_filter %}
+
+{% block title %}{% trans "图片素材管理" %}{% endblock %}
+
+{% block styles %}
+<link href="{% static 'viewerjs/viewer.css' %}?version={{ isdoc_version }}" rel="stylesheet">
+{% endblock %}
+{% block breadcrumb %}{% include "includes/breadcrumb.html" with breadcrumbs=breadcrumb_items %}{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+
+{# --- Action Bar --- #}
+<div class="ispace-content-card ispace-mb-4">
+    <div class="ispace-card-body">
+        <div class="ispace-flex-center ispace-gap-2" style="flex-wrap:wrap;">
+            <button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="upload_img_btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                {% trans "上传图片" %}
+            </button>
+            <input type="file" id="upload_img_input" accept="image/*" style="display:none;" multiple>
+            <button class="ispace-btn ispace-btn-primary ispace-btn-sm" onclick="createImgGroup()">+ {% trans "新建分组" %}</button>
+            <a class="ispace-btn ispace-btn-primary ispace-btn-sm" href="{% url 'manage_img_group' %}">{% trans "分组管理" %}</a>
+            <button class="ispace-btn ispace-btn-sm ispace-btn-secondary" id="select-all-img">{% trans "全选" %}</button>
+            <button class="ispace-btn ispace-btn-sm ispace-btn-danger" id="batch-del-img">{% trans "批量删除" %}</button>
+            <button class="ispace-btn ispace-btn-sm ispace-btn-secondary" id="batch-move-img">{% trans "批量移动" %}</button>
+        </div>
+        <div class="ispace-flex-between ispace-mt-3" style="flex-wrap:wrap;gap:8px;">
+            <div class="ispace-flex-center ispace-gap-2" style="flex-wrap:wrap;">
+                <a href="{% url 'manage_image' %}?group=0{% if kw %}&kw={{ kw|urlencode }}{% endif %}" class="ispace-btn ispace-btn-sm {% if g_id == 0 or not g_id %}ispace-btn-primary{% else %}ispace-btn-ghost{% endif %}">{% trans "全部图片" %}({{ all_img_cnt }})</a>
+                <a href="{% url 'manage_image' %}?group=-1{% if kw %}&kw={{ kw|urlencode }}{% endif %}" class="ispace-btn ispace-btn-sm {% if g_id == -1 %}ispace-btn-primary{% else %}ispace-btn-ghost{% endif %}">{% trans "未分组" %}({{ no_group_cnt }})</a>
+                {% for group in groups %}
+                <a href="{% url 'manage_image' %}?group={{ group.id }}{% if kw %}&kw={{ kw|urlencode }}{% endif %}" class="ispace-btn ispace-btn-sm {% if g_id == group.id %}ispace-btn-primary{% else %}ispace-btn-ghost{% endif %}">{{ group.group_name|safe }}({{ group.id|img_group_cnt }})</a>
+                {% endfor %}
+            </div>
+            <div class="ispace-flex-center ispace-gap-2">
+                <span class="ispace-text-sm ispace-text-quaternary">{% trans "共" %} {{ all_img_cnt }} {% trans "张图片" %}</span>
+                <div class="ispace-search-input-wrap" style="max-width:200px;width:100%;">
+                    <svg class="ispace-search-input-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" class="ispace-form-input" id="imgSearchKw" placeholder="{% trans '搜索图片名称...' %}" value="{{ kw|default:'' }}" style="padding-left:32px;" onkeyup="if(event.key==='Enter')doImgSearch()">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# --- Image Grid --- #}
+<div class="ispace-content-card">
+    <div class="ispace-card-body">
+        {% if images %}
+        <div id="images" style="display:flex;flex-wrap:wrap;gap:16px;padding:20px;">
+            {% for img in images %}
+            <div class="image-list" style="position:relative;width:160px;border:1px solid var(--ispace-color-border-light);border-radius:8px;overflow:hidden;">
+                <img class="image-list-i" src="{{ img.file_path }}" data-original="{{ img.file_path }}" alt="{{ img.file_name }}" title="{{ img.file_name }}" style="width:100%;height:120px;object-fit:cover;cursor:pointer;">
+                <div class="opera-img-btn" style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:var(--ispace-color-surface-1);">
+                    <input type="checkbox" class="batch-image-checkbox" name="batch-image" value="{{ img.id }}">
+                    <a href="javascript:void(0);" class="copy-md-link" title="{% trans '复制Markdown链接' %}" data-url="{{ img.file_path }}" data-name="{{ img.file_name }}" style="color:var(--ispace-color-text-secondary);text-decoration:none;font-size:14px;">MD</a>
+                    <a href="javascript:void(0);" class="copy-url-link" title="{% trans '复制图片链接' %}" data-url="{{ img.file_path }}" style="color:var(--ispace-color-text-secondary);text-decoration:none;font-size:14px;">🔗</a>
+                    <a href="javascript:void(0);" class="move-img" title="{% trans '移动分组' %}" data-id="{{ img.id }}" style="color:var(--ispace-color-text-secondary);text-decoration:none;font-size:14px;">&#8644;</a>
+                    <a href="javascript:void(0);" class="del-img" title="{% trans '删除图片' %}" data-src="{{ img.file_path }}" data-id="{{ img.id }}" style="color:#ef4444;text-decoration:none;font-size:14px;">&#10005;</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        {% include "includes/empty_state.html" with title="暂无图片" description="上传图片或选择其他分组" %}
+        {% endif %}
+
+        {# --- Pagination --- #}
+        {% if images and images.paginator.num_pages > 1 %}
+        <hr style="margin:16px 0;">
+        <div class="ispace-flex-center" style="justify-content:center;gap:8px;">
+            {% if images.has_previous %}
+            <a href="?page={{ images.previous_page_number }}&group={{ g_id|default:0 }}{% if kw %}&kw={{ kw|urlencode }}{% endif %}" class="ispace-btn ispace-btn-sm ispace-btn-secondary">{% trans "上一页" %}</a>
+            {% else %}
+            <span class="ispace-btn ispace-btn-sm" style="opacity:0.5;pointer-events:none;">{% trans "上一页" %}</span>
+            {% endif %}
+            <span class="ispace-text-sm">{{ images.number }} / {{ images.paginator.num_pages }}</span>
+            {% if images.has_next %}
+            <a href="?page={{ images.next_page_number }}&group={{ g_id|default:0 }}{% if kw %}&kw={{ kw|urlencode }}{% endif %}" class="ispace-btn ispace-btn-sm ispace-btn-secondary">{% trans "下一页" %}</a>
+            {% else %}
+            <span class="ispace-btn ispace-btn-sm" style="opacity:0.5;pointer-events:none;">{% trans "下一页" %}</span>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{# --- Move Group Modal --- #}
+<div class="ispace-modal-backdrop" id="moveGroupModal">
+    <div class="ispace-modal ispace-modal-sm">
+        <div class="ispace-modal-header">
+            <h3 class="ispace-modal-title">{% trans "移动图片分组" %}</h3>
+            <button class="ispace-modal-close" onclick="iSpaceDoc.Modal.close('moveGroupModal')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="ispace-modal-body">
+            <select id="modal_group_id" class="ispace-form-input">
+                {% for group in groups %}
+                <option value="{{ group.id }}">{{ group.group_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="ispace-modal-footer">
+            <button class="ispace-btn ispace-btn-secondary" onclick="iSpaceDoc.Modal.close('moveGroupModal')">{% trans "取消" %}</button>
+            <button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="confirm-move-img">{% trans "确定" %}</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'viewerjs/viewer.min.js' %}"></script>
+<script>
+function getCSRF() { return document.querySelector('[name=csrfmiddlewaretoken]').value; }
+
+// --- Image Search ---
+function doImgSearch() {
+    var kw = document.getElementById('imgSearchKw').value.trim();
+    var params = new URLSearchParams(window.location.search);
+    if (kw) { params.set('kw', kw); } else { params.delete('kw'); }
+    params.set('page', '1');
+    window.location.href = '?' + params.toString();
+}
+
+// --- Viewer.js for image preview ---
+(function() {
+    var container = document.getElementById('images');
+    if (container) {
+        var viewer = new Viewer(container, {
+            url: 'data-original',
+            navbar: false,
+            toolbar: {
+                zoomIn: true,
+                zoomOut: true,
+                oneToOne: true,
+                reset: true,
+                prev: true,
+                play: false,
+                next: true,
+                rotateLeft: true,
+                rotateRight: true,
+                flipHorizontal: true,
+                flipVertical: true
+            }
+        });
+    }
+})();
+
+// --- Copy Link ---
+(function() {
+    var imgContainer = document.getElementById('images');
+    if (!imgContainer) return;
+    imgContainer.addEventListener('click', function(e) {
+        var mdBtn = e.target.closest('.copy-md-link');
+        var urlBtn = e.target.closest('.copy-url-link');
+        if (!mdBtn && !urlBtn) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        var url = (mdBtn || urlBtn).getAttribute('data-url');
+        var absUrl = window.location.origin + url;
+        var text;
+        if (mdBtn) {
+            var name = mdBtn.getAttribute('data-name') || 'image';
+            text = '![' + name + '](' + absUrl + ')';
+        } else {
+            text = absUrl;
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function() {
+                showSuccess('{% trans "已复制到剪贴板" %}');
+            }).catch(function() {
+                fallbackCopy(text);
+            });
+        } else {
+            fallbackCopy(text);
+        }
+    });
+})();
+
+function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    ta.style.top = '-9999px';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try {
+        document.execCommand('copy');
+        showSuccess('{% trans "已复制到剪贴板" %}');
+    } catch(e) {
+        showError('{% trans "复制失败，请手动复制" %}');
+    }
+    document.body.removeChild(ta);
+}
+
+// --- Upload ---
+document.getElementById('upload_img_btn').addEventListener('click', function() {
+    document.getElementById('upload_img_input').click();
+});
+
+document.getElementById('upload_img_input').addEventListener('change', function() {
+    var files = this.files;
+    if (files.length === 0) return;
+    var loadingEl = document.getElementById('loadingIndicator');
+    if (loadingEl) loadingEl.style.display = 'flex';
+
+    var uploads = [];
+    for (var i = 0; i < files.length; i++) {
+        var formData = new FormData();
+        formData.append('manage_upload', files[i]);
+        formData.append('group_id', '{{ g_id|default:0 }}');
+        uploads.push(fetch('{% url "upload_doc_img" %}', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCSRF() },
+            body: formData
+        }).then(function(r) { return r.json(); }));
+    }
+
+    Promise.all(uploads).then(function(results) {
+        if (loadingEl) loadingEl.style.display = 'none';
+        var allSuccess = results.every(function(r) { return r.success == 1; });
+        if (allSuccess) {
+            showSuccess('{% trans "上传成功" %}');
+            setTimeout(function() { window.location.reload(); }, 600);
+        } else {
+            var msgs = results.filter(function(r) { return r.success != 1; }).map(function(r) { return r.message; });
+            showError(msgs.join('; ') || '{% trans "上传失败" %}');
+        }
+    }).catch(function(e) {
+        if (loadingEl) loadingEl.style.display = 'none';
+        showError('{% trans "系统异常，请稍后再试！" %}');
+    });
+});
+
+// --- Single Delete ---
+(function() {
+    var imgContainer = document.getElementById('images');
+    if (!imgContainer) return;
+    imgContainer.addEventListener('click', function(e) {
+        var delBtn = e.target.closest('.del-img');
+        if (!delBtn) return;
+    var imgId = delBtn.getAttribute('data-id');
+    var imgSrc = delBtn.getAttribute('data-src');
+
+    var backdrop = document.createElement('div');
+    backdrop.className = 'ispace-modal-backdrop';
+    backdrop.id = 'delImgModal';
+    backdrop.innerHTML = '<div class="ispace-modal ispace-modal-sm">' +
+        '<div class="ispace-modal-header"><h3 class="ispace-modal-title">{% trans "删除图片" %}</h3>' +
+        '<button class="ispace-modal-close" data-ispace-modal-close><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>' +
+        '<div class="ispace-modal-body" style="text-align:center;">' +
+        '<img src="' + imgSrc + '" style="width:50px;height:50px;object-fit:cover;margin-bottom:10px;border-radius:4px;"><br>' +
+        '<span>{% trans "删除此图片后，文档中添加的该图片将不再显示！" %}</span>' +
+        '</div>' +
+        '<div class="ispace-modal-footer">' +
+        '<button class="ispace-btn ispace-btn-secondary" data-action="cancel">{% trans "取消" %}</button>' +
+        '<button class="ispace-btn ispace-btn-danger" data-action="confirm">{% trans "确定" %}</button>' +
+        '</div></div>';
+    document.body.appendChild(backdrop);
+
+    function cleanup() { backdrop.classList.remove('ispace-active'); setTimeout(function() { backdrop.remove(); }, 300); }
+    requestAnimationFrame(function() { backdrop.classList.add('ispace-active'); });
+    backdrop.querySelector('[data-action="cancel"]').addEventListener('click', cleanup);
+    backdrop.addEventListener('click', function(ev) { if (ev.target === backdrop) cleanup(); });
+    backdrop.querySelector('[data-action="confirm"]').addEventListener('click', function() {
+        var loadingEl = document.getElementById('loadingIndicator');
+        if (loadingEl) loadingEl.style.display = 'flex';
+        fetch('{% url "manage_image" %}', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCSRF(), 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ img_id: imgId, types: 0 })
+        }).then(function(r) { return r.json(); }).then(function(r) {
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (r.status) {
+                cleanup();
+                showSuccess('{% trans "删除成功" %}');
+                setTimeout(function() { window.location.reload(); }, 600);
+            } else {
+                showError(r.data || '{% trans "删除失败" %}');
+            }
+        }).catch(function(err) {
+            if (loadingEl) loadingEl.style.display = 'none';
+            showError('{% trans "网络异常" %}');
+        });
+    });
+    });  // close outer addEventListener
+})();    // close IIFE
+
+// --- Single Move ---
+var _currentMoveImgId = null;
+(function() {
+    var imgContainer = document.getElementById('images');
+    if (!imgContainer) return;
+    imgContainer.addEventListener('click', function(e) {
+        var moveBtn = e.target.closest('.move-img');
+        if (!moveBtn) return;
+        _currentMoveImgId = moveBtn.getAttribute('data-id');
+        iSpaceDoc.Modal.open('moveGroupModal');
+    });
+})();
+
+document.getElementById('confirm-move-img').addEventListener('click', function() {
+    var groupId = document.getElementById('modal_group_id').value;
+    var loadingEl = document.getElementById('loadingIndicator');
+    if (loadingEl) loadingEl.style.display = 'flex';
+    fetch('{% url "manage_image" %}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRF(), 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ types: 1, img_id: _currentMoveImgId, group_id: groupId })
+    }).then(function(r) { return r.json(); }).then(function(r) {
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (r.status) {
+            iSpaceDoc.Modal.close('moveGroupModal');
+            showSuccess('{% trans "移动成功" %}');
+            setTimeout(function() { window.location.reload(); }, 600);
+        } else {
+            showError(r.data || '{% trans "移动失败" %}');
+        }
+    }).catch(function(err) {
+        if (loadingEl) loadingEl.style.display = 'none';
+        showError('{% trans "网络异常" %}');
+    });
+});
+
+// --- Select All ---
+document.getElementById('select-all-img').addEventListener('click', function() {
+    var checks = document.querySelectorAll('input[name="batch-image"]');
+    var allChecked = this.textContent.trim() === '{% trans "全选" %}';
+    checks.forEach(function(cb) { cb.checked = allChecked; });
+    this.textContent = allChecked ? '{% trans "取消全选" %}' : '{% trans "全选" %}';
+});
+
+// --- Batch Delete ---
+document.getElementById('batch-del-img').addEventListener('click', function() {
+    var checks = document.querySelectorAll('input[name="batch-image"]:checked');
+    if (checks.length === 0) { showError('{% trans "未选中任何图片" %}'); return; }
+    var ids = [];
+    checks.forEach(function(cb) { ids.push(cb.value); });
+
+    var contentHtml = '<div style="margin:10px;line-height:1.8;">' +
+        '{% trans "你正在批量删除图片！" %}<br><br>' +
+        '{% trans "警告！此操作将" %}<span style="font-weight:700;color:#ef4444;">{% trans "删除所选图片，文档中所引用的图片将不再显示" %}</span>' +
+        '{% trans "并且" %}<span style="font-weight:700;color:#ef4444;">{% trans "不可恢复！" %}</span><br><br>' +
+        '{% trans "请输入 \"DELETE\" 以再次确认删除。" %}<br>' +
+        '<input class="ispace-form-input" style="width:100%;margin-top:8px;" id="confirm-batch-delete-image" placeholder="DELETE">' +
+        '</div>';
+
+    var backdrop = document.createElement('div');
+    backdrop.className = 'ispace-modal-backdrop';
+    backdrop.id = 'batchDelImgModal';
+    backdrop.innerHTML = '<div class="ispace-modal ispace-modal-sm">' +
+        '<div class="ispace-modal-header"><h3 class="ispace-modal-title">{% trans "批量删除图片" %}</h3>' +
+        '<button class="ispace-modal-close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>' +
+        '<div class="ispace-modal-body">' + contentHtml + '</div>' +
+        '<div class="ispace-modal-footer">' +
+        '<button class="ispace-btn ispace-btn-secondary" data-action="cancel">{% trans "取消" %}</button>' +
+        '<button class="ispace-btn ispace-btn-danger" data-action="confirm">{% trans "确定删除" %}</button>' +
+        '</div></div>';
+    document.body.appendChild(backdrop);
+
+    function cleanup() { backdrop.classList.remove('ispace-active'); setTimeout(function() { backdrop.remove(); }, 300); }
+    requestAnimationFrame(function() { backdrop.classList.add('ispace-active'); });
+    backdrop.querySelector('[data-action="cancel"]').addEventListener('click', cleanup);
+    backdrop.querySelector('.ispace-modal-close').addEventListener('click', cleanup);
+    backdrop.addEventListener('click', function(ev) { if (ev.target === backdrop) cleanup(); });
+    backdrop.querySelector('[data-action="confirm"]').addEventListener('click', function() {
+        var confirmInput = document.getElementById('confirm-batch-delete-image');
+        if (confirmInput && confirmInput.value !== 'DELETE') { showError('{% trans "输入错误！" %}'); return; }
+        var loadingEl = document.getElementById('loadingIndicator');
+        if (loadingEl) loadingEl.style.display = 'flex';
+        fetch('{% url "manage_image" %}', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCSRF(), 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ img_id: ids.join(','), types: 0, range: 'multi' })
+        }).then(function(r) { return r.json(); }).then(function(r) {
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (r.status) { cleanup(); showSuccess('{% trans "批量删除成功" %}'); setTimeout(function() { window.location.reload(); }, 600); }
+            else { showError(r.data || '{% trans "删除失败" %}'); }
+        }).catch(function(err) { if (loadingEl) loadingEl.style.display = 'none'; showError('{% trans "网络异常" %}'); });
+    });
+});
+
+// --- Batch Move ---
+var _batchMoveImgIds = [];
+document.getElementById('batch-move-img').addEventListener('click', function() {
+    var checks = document.querySelectorAll('input[name="batch-image"]:checked');
+    if (checks.length === 0) { showError('{% trans "未选中任何图片" %}'); return; }
+    _batchMoveImgIds = [];
+    checks.forEach(function(cb) { _batchMoveImgIds.push(cb.value); });
+    iSpaceDoc.Modal.open('moveGroupModal');
+});
+
+// Override confirm-move for batch move
+document.getElementById('confirm-move-img').addEventListener('click', function batchMoveHandler() {
+    if (_batchMoveImgIds.length > 0) {
+        var groupId = document.getElementById('modal_group_id').value;
+        var loadingEl = document.getElementById('loadingIndicator');
+        if (loadingEl) loadingEl.style.display = 'flex';
+        fetch('{% url "manage_image" %}', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCSRF(), 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ types: 1, img_id: _batchMoveImgIds.join(','), group_id: groupId, range: 'multi' })
+        }).then(function(r) { return r.json(); }).then(function(r) {
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (r.status) {
+                iSpaceDoc.Modal.close('moveGroupModal');
+                _batchMoveImgIds = [];
+                showSuccess('{% trans "批量移动成功" %}');
+                setTimeout(function() { window.location.reload(); }, 600);
+            } else {
+                showError(r.data || '{% trans "移动失败" %}');
+            }
+        }).catch(function(err) { if (loadingEl) loadingEl.style.display = 'none'; showError('{% trans "网络异常" %}'); });
+    }
+});
+
+// --- Create Image Group ---
+function createImgGroup() {
+    var backdrop = document.createElement('div');
+    backdrop.className = 'ispace-modal-backdrop';
+    backdrop.id = 'createImgGroupModal';
+    backdrop.innerHTML = '<div class="ispace-modal ispace-modal-sm">' +
+        '<div class="ispace-modal-header"><h3 class="ispace-modal-title">{% trans "新建图片分组" %}</h3>' +
+        '<button class="ispace-modal-close" data-ispace-modal-close><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>' +
+        '<div class="ispace-modal-body"><input type="text" id="img_group_name" class="ispace-form-input" placeholder="{% trans '分组名称' %}"></div>' +
+        '<div class="ispace-modal-footer">' +
+        '<button class="ispace-btn ispace-btn-secondary" data-action="cancel">{% trans "取消" %}</button>' +
+        '<button class="ispace-btn ispace-btn-primary ispace-btn-sm" data-action="confirm">{% trans "确定" %}</button>' +
+        '</div></div>';
+    document.body.appendChild(backdrop);
+
+    function cleanup() { backdrop.classList.remove('ispace-active'); setTimeout(function() { backdrop.remove(); }, 300); }
+    requestAnimationFrame(function() { backdrop.classList.add('ispace-active'); });
+    backdrop.querySelector('[data-action="cancel"]').addEventListener('click', cleanup);
+    backdrop.addEventListener('click', function(ev) { if (ev.target === backdrop) cleanup(); });
+    backdrop.querySelector('[data-action="confirm"]').addEventListener('click', function() {
+        var groupName = document.getElementById('img_group_name').value.trim();
+        if (!groupName) { showError('{% trans "请输入分组名称" %}'); return; }
+        var loadingEl = document.getElementById('loadingIndicator');
+        if (loadingEl) loadingEl.style.display = 'flex';
+        fetch('{% url "manage_img_group" %}', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCSRF(), 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ types: 0, group_name: groupName })
+        }).then(function(r) { return r.json(); }).then(function(r) {
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (r.status) { cleanup(); showSuccess('{% trans "新建成功" %}'); setTimeout(function() { window.location.reload(); }, 600); }
+            else { showError(r.data || '{% trans "新建失败" %}'); }
+        }).catch(function(err) { if (loadingEl) loadingEl.style.display = 'none'; showError('{% trans "网络异常" %}'); });
+    });
+}
+</script>
+{% endblock %}

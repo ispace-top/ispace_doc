@@ -1,0 +1,179 @@
+﻿{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+{% block title %}{% trans "用户Token管理" %}{% endblock %}
+
+{% block styles %}
+<style>
+.ispace-token-page {
+    max-width: 700px;
+}
+.ispace-token-help {
+    font-size: var(--ispace-font-size-sm);
+    color: var(--ispace-color-text-secondary);
+    line-height: 1.6;
+    padding: var(--ispace-spacing-4);
+    background: var(--ispace-color-bg-secondary, var(--ispace-color-surface-secondary));
+    border-radius: var(--ispace-radius-md);
+    margin-bottom: var(--ispace-spacing-4);
+}
+.ispace-token-field {
+    display: flex;
+    align-items: center;
+    gap: var(--ispace-spacing-2);
+}
+.ispace-token-field input {
+    flex: 1;
+    font-family: monospace;
+}
+.ispace-token-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ispace-spacing-2);
+    margin-top: var(--ispace-spacing-4);
+}
+.ispace-qrcode-container {
+    margin-top: var(--ispace-spacing-4);
+    padding: var(--ispace-spacing-4);
+    border: 1px solid var(--ispace-color-border);
+    border-radius: var(--ispace-radius-md);
+    background: #ffffff;
+    text-align: center;
+}
+.ispace-qrcode-container .ispace-qrcode-label {
+    font-size: var(--ispace-font-size-sm);
+    color: var(--ispace-color-text-secondary);
+    margin-bottom: var(--ispace-spacing-3);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ispace-page ispace-token-page">
+    <div class="ispace-page-header">
+        <h2 class="ispace-page-title">{% trans "用户Token管理" %}</h2>
+    </div>
+
+    <div class="ispace-token-help">
+        {% trans "借助Token，你可以无需打开网站，即可通过更加自动化的方式进行文档编写；桌面客户端、手机APP和浏览器扩展均需使用此 Token 实现用户认证。" %}
+    </div>
+
+    <div class="ispace-content-card">
+        <div style="padding:var(--ispace-spacing-5);">
+            <div class="ispace-form-group">
+                <label class="ispace-form-label">{% trans "Token值" %}</label>
+                <div class="ispace-token-field">
+                    <input type="text" id="token" class="ispace-form-input" value="{{ token }}" readonly>
+                    <button type="button" class="ispace-btn ispace-btn-secondary ispace-btn-sm" id="copy-token" onclick="copyToken()">{% trans "复制" %}</button>
+                </div>
+            </div>
+
+            <div class="ispace-token-actions">
+                <button type="button" class="ispace-btn ispace-btn-primary ispace-btn-sm" id="qrcode-token">
+                    {% trans "二维码" %}
+                </button>
+                <button type="button" class="ispace-btn ispace-btn-ghost ispace-btn-sm" onclick="generaToken()">
+                    {% trans "重新生成Token" %}
+                </button>
+            </div>
+
+            <div id="token_qrcode" class="ispace-qrcode-container" style="display:none;">
+                <div class="ispace-qrcode-label">{% trans "扫描二维码获取Token" %}</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'qrcodejs/qrcode.min.js' %}?version={{ isdoc_version }}"></script>
+<script>
+(function() {
+    var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    // Copy token to clipboard
+    window.copyToken = function() {
+        var tokenInput = document.getElementById('token');
+        navigator.clipboard.writeText(tokenInput.value).then(function() {
+            showSuccess('{% trans "已复制！" %}');
+        }).catch(function() {
+            // Fallback for older browsers
+            tokenInput.select();
+            tokenInput.setSelectionRange(0, 99999);
+            document.execCommand('copy');
+            showSuccess('{% trans "已复制！" %}');
+        });
+    };
+
+    // Generate QR code
+    function doc_qrcode() {
+        var container = document.getElementById('token_qrcode');
+        // Clear existing QR code
+        if (container.querySelector('canvas') || container.querySelector('img')) {
+            container.innerHTML = '<div class="ispace-qrcode-label">{% trans "扫描二维码获取Token" %}</div>';
+        }
+        new QRCode(document.getElementById('token_qrcode'), {
+            text: JSON.stringify({'url': window.location.origin, 'token': document.getElementById('token').value}),
+            width: 150,
+            height: 150,
+            colorDark: '#000000',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.H
+        });
+    }
+
+    // Initialize QR code
+    doc_qrcode();
+
+    // Show/hide QR code on hover
+    var qrcodeBtn = document.getElementById('qrcode-token');
+    var qrcodeContainer = document.getElementById('token_qrcode');
+
+    if (qrcodeBtn && qrcodeContainer) {
+        qrcodeBtn.addEventListener('mouseenter', function() {
+            qrcodeContainer.style.display = 'block';
+        });
+        qrcodeBtn.addEventListener('mouseleave', function() {
+            qrcodeContainer.style.display = 'none';
+        });
+    }
+
+    // Generate new token
+    window.generaToken = function() {
+        iSpaceDoc.confirm({
+            title: '{% trans "重置Token" %}',
+            message: '{% trans "警告：此操作将重新为你的账户生成Token，旧Token将失效！" %}'
+        }).then(function(confirmed) {
+            if (!confirmed) return;
+            var loadingEl = document.createElement('div');
+            loadingEl.className = 'ispace-loading-overlay';
+            loadingEl.innerHTML = '<div class="ispace-spinner"></div>';
+            document.body.appendChild(loadingEl);
+
+            fetch('{% url "manage_token" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                loadingEl.remove();
+                if (r.status) {
+                    document.getElementById('token').value = r.data;
+                    doc_qrcode();
+                    showSuccess('{% trans "生成成功！" %}');
+                } else {
+                    showError(r.data || '{% trans "生成失败" %}');
+                }
+            })
+            .catch(function() {
+                loadingEl.remove();
+                showError('{% trans "生成异常" %}');
+            });
+        });
+    };
+})();
+</script>
+{% endblock %}

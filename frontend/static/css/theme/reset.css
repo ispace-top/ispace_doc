@@ -1,0 +1,125 @@
+/* ============================================================
+   iSpaceDoc CSS Reset
+   Minimal reset: box-sizing, margin, typography baseline
+   ============================================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--ispace-font-sans);
+  font-size: 0;
+  line-height: var(--ispace-leading-normal);
+  color: var(--ispace-color-text-primary);
+  background-color: var(--ispace-color-surface-50);
+  min-height: 100vh;
+  overscroll-behavior: none;
+}
+
+/* 恢复所有 body 直接子元素的字号（body { font-size:0 } 用于消除空白文本节点间距） */
+body > * {
+  font-size: var(--ispace-font-base);
+}
+
+img, svg, video, canvas {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: var(--ispace-color-text-link);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: none;
+}
+
+ul, ol {
+  list-style: none;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+input, button, textarea, select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: var(--ispace-font-semibold);
+  line-height: var(--ispace-leading-tight);
+  color: var(--ispace-color-text-primary);
+}
+
+h1 { font-size: var(--ispace-heading-h1); }
+h2 { font-size: var(--ispace-heading-h2); }
+h3 { font-size: var(--ispace-heading-h3); }
+h4 { font-size: var(--ispace-heading-h4); }
+h5 { font-size: var(--ispace-heading-h5); }
+h6 { font-size: var(--ispace-heading-h6); }
+
+/* Focus ring */
+:focus-visible {
+  outline: 2px solid var(--ispace-color-brand-500);
+  outline-offset: 2px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ispace-color-border-strong);
+  border-radius: var(--ispace-radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ispace-color-text-quaternary);
+}
+
+/* Skip link (a11y) */
+.ispace-skip-link {
+  position: absolute;
+  top: -100%;
+  left: var(--ispace-space-4);
+  z-index: var(--ispace-z-tooltip);
+  padding: var(--ispace-space-2) var(--ispace-space-4);
+  background: var(--ispace-color-brand-500);
+  color: var(--ispace-color-text-inverse);
+  border-radius: var(--ispace-radius-md);
+  font-size: var(--ispace-font-sm);
+}
+
+.ispace-skip-link:focus {
+  top: var(--ispace-space-2);
+}

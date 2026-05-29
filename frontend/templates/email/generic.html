@@ -1,0 +1,7 @@
+{% extends "email/base.html" %}
+{% block content %}
+<p>{{ body }}</p>
+{% if link %}
+<p style="margin-top:16px"><a href="{{ link }}" class="btn">查看详情</a></p>
+{% endif %}
+{% endblock %}

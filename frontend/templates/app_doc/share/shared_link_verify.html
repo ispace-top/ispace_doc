@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load static %}{% load i18n %}
+
+{% block title %}{% trans "分享验证" %} - {{ site_name|default:"爱思文档" }}{% endblock %}
+{% block body_class %}ispace-auth-page{% endblock %}
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="ispace-auth-page">
+    <div class="ispace-auth-card">
+        <div class="ispace-auth-header">
+            <h1 class="ispace-auth-title">{% trans "分享验证" %}</h1>
+            <p class="ispace-auth-subtitle">{% trans "请输入分享码查看此私密文档" %}</p>
+        </div>
+        {% if errormsg %}
+        <div class="ispace-alert ispace-alert-error ispace-mb-6">{{ errormsg }}</div>
+        {% endif %}
+        <form method="post">
+            {% csrf_token %}
+            <div class="ispace-form-group">
+                <input type="text" name="share_value" id="share_value" class="ispace-form-input" placeholder="{% trans '请输入分享码' %}" required autofocus>
+            </div>
+            <button type="submit" class="ispace-btn ispace-btn-primary ispace-btn-lg" style="width:100%;">{% trans "验证分享码" %}</button>
+        </form>
+        <div class="ispace-auth-footer"><a href="/">&larr; {% trans "返回首页" %}</a></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function(){var p=new URLSearchParams(window.location.search);var v=p.get('pwd');if(v){document.getElementById('share_value').value=v;document.querySelector('form').submit();}})();
+</script>
+{% endblock %}

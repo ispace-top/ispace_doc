@@ -1,0 +1,44 @@
+/*
+ * md-themes/default.css — 默认渲染主题（当前 marked.css 风格）
+ * 此文件作为主题选择器的默认项，保留 marked.css 的原始样式。
+ */
+
+/* 默认主题无需额外覆盖 — marked.css 已提供完整默认样式 */
+
+/* LayUI 图标字体 — 仅引用所需图标 */
+@font-face {
+  font-family: layui-icon;
+  src: url(../../layui/font/iconfont.eot?v=256);
+  src: url(../../layui/font/iconfont.eot?v=256#iefix) format('embedded-opentype'),
+       url(../../layui/font/iconfont.woff2?v=256) format('woff2'),
+       url(../../layui/font/iconfont.woff?v=256) format('woff'),
+       url(../../layui/font/iconfont.ttf?v=256) format('truetype'),
+       url(../../layui/font/iconfont.svg?v=256#layui-icon) format('svg');
+}
+
+/* Callout 图标基础样式 */
+.markdown-body .callout-icon {
+  display: inline;
+  margin-right: 6px;
+  font-family: layui-icon !important;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 14px;
+  speak: none;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-stroke: 0.4px currentColor;
+}
+
+/* 5 个图标 unicode 定义 */
+.markdown-body .callout-icon-about::before { content: "\e60b"; }
+.markdown-body .callout-icon-star::before { content: "\e600"; }
+.markdown-body .callout-icon-light::before { content: "\e748"; }
+.markdown-body .callout-icon-notice::before { content: "\e667"; }
+.markdown-body .callout-icon-auz::before { content: "\e672"; }
+
+/* 图标颜色与各等级文字对应 */
+.markdown-body blockquote.info .callout-icon { color: #0969da; }
+.markdown-body blockquote.warning .callout-icon { color: #f0ad4e; }
+.markdown-body blockquote.danger .callout-icon { color: #d9534f; }
+.markdown-body blockquote.success .callout-icon { color: #50af51; }
+.markdown-body blockquote.tip .callout-icon { color: #6f42c1; }

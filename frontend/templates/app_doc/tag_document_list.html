@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% load static %}{% load i18n %}
+
+{% block title %}{{ tag.name }} - {% trans "标签文档" %} - {{ site_name|default:"爱思文档" }}{% endblock %}
+
+{% block head_extra %}
+<script src="{% static 'js/echarts/echarts.min.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+<div class="ispace-page-header">
+    <h1 class="ispace-page-title">{% trans "标签" %}：{{ tag.name }}</h1>
+    <p class="ispace-page-description">{% trans "包含此标签的文档列表" %}</p>
+</div>
+
+<div class="ispace-flex-wrap ispace-gap-2 ispace-mb-6">
+    {% for t in tag_cate %}
+    <a href="{% url 'tag_docs' tag_id=t.id %}" class="ispace-btn ispace-btn-sm {% if t.id == tag.id %}ispace-btn-primary{% else %}ispace-btn-secondary{% endif %}">{{ t.name }}</a>
+    {% endfor %}
+</div>
+
+{% if docs %}
+<div style="display:flex;flex-direction:column;gap:var(--ispace-space-3);">
+    {% for dt in docs %}
+    <div class="ispace-card">
+        <div class="ispace-card-body">
+            <h3><a href="{% url 'doc_id' doc_id=dt.doc.id %}" style="font-size:var(--ispace-font-base);font-weight:var(--ispace-font-semibold);color:var(--ispace-color-text-link);">{{ dt.doc.name }}</a></h3>
+            <p class="ispace-text-sm ispace-text-tertiary ispace-mt-2">{{ dt.doc.pre_content|striptags|truncatechars:200 }}</p>
+            <p class="ispace-text-xs ispace-text-quaternary ispace-mt-2">
+                <a href="{% url 'pro_list' %}"></a>
+                · {{ dt.doc.modify_time|date:"Y-m-d" }}
+            </p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+{% include "includes/empty_state.html" with title="暂无文档" %}
+{% endif %}
+
+{% if tag_nodes_list %}
+<div class="ispace-content-card ispace-mt-8">
+    <h3 class="ispace-font-semibold ispace-mb-4">{% trans "标签关系图" %}</h3>
+    <div id="tagChart" style="width:100%;height:400px;"></div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if tag_nodes_list %}
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+    var chart=echarts.init(document.getElementById('tagChart'));
+    chart.setOption({
+        tooltip:{},
+        series:[{
+            type:'graph',layout:'force',symbolSize:50,roam:true,
+            label:{show:true,fontSize:12},
+            force:{repulsion:200,edgeLength:100},
+            data:{{ tag_nodes_list|safe }},
+            links:{{ tag_links_list|safe }},
+            lineStyle:{color:'var(--ispace-color-border-medium)',curveness:0.3}
+        }]
+    });
+    window.addEventListener('resize',function(){chart.resize();});
+});
+</script>
+{% endif %}
+{% endblock %}

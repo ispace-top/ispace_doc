@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% load static %}{% load i18n %}
+
+{% block title %}{% trans "文档回收站" %} - {% trans "后台管理" %}{% endblock %}
+
+{% block styles %}
+<style>
+.admin-table-wrap { overflow-x: auto; }
+.ispace-btn-danger-outline { background: none; border: 1px solid var(--ispace-color-danger); color: var(--ispace-color-danger); cursor: pointer; border-radius: var(--ispace-radius-sm); }
+.ispace-btn-danger-outline:hover { background: var(--ispace-color-danger); color: #fff; }
+.ispace-badge-sm { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+.ispace-badge-warning { background: #fef3c7; color: #d97706; }
+    .admin-trash-page-size { display: flex; align-items: center; gap: var(--ispace-space-2); font-size: var(--ispace-font-sm); color: var(--ispace-color-text-tertiary); }
+    .admin-trash-page-size select { height: 30px; padding: 0 6px; font-size: var(--ispace-font-sm); border: 1px solid var(--ispace-color-border-medium); border-radius: var(--ispace-radius-sm); background: var(--ispace-color-surface-0); color: var(--ispace-color-text-primary); }
+    .trash-table-col-name { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .trash-table-col-creator { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .trash-table-col-deleter { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ispace-card">
+    <div class="ispace-card-header">
+        <h3 class="ispace-card-title">{% trans "文档回收站" %}</h3>
+        <div style="display:flex;align-items:center;gap:var(--ispace-space-3);">
+            <input type="text" id="trashSearch" class="ispace-form-input" placeholder="{% trans '搜索文档名称...' %}" style="max-width:200px;">
+            <button class="ispace-btn ispace-btn-secondary ispace-btn-sm" id="searchBtn">{% trans "搜索" %}</button>
+        </div>
+        <div style="display:flex;gap:var(--ispace-space-2);">
+            <button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="batchRestoreBtn" disabled>{% trans "批量恢复" %}</button>
+            <button class="ispace-btn ispace-btn-danger-outline ispace-btn-sm" id="batchDeleteBtn" disabled>{% trans "永久删除" %}</button>
+        </div>
+    </div>
+    <div class="ispace-card-body">
+        <div class="admin-table-wrap">
+            <table class="ispace-table" id="trashTable">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" id="selectAll"></th>
+                        <th>{% trans "文档名称" %}</th>
+                        <th>{% trans "创建者" %}</th>
+                        <th>{% trans "删除者" %}</th>
+                        <th>{% trans "删除时间" %}</th>
+                        <th>{% trans "操作" %}</th>
+                    </tr>
+                </thead>
+                <tbody id="trashTbody"></tbody>
+            </table>
+        </div>
+        <div class="ispace-flex-between" style="margin-top:var(--ispace-space-4)">
+            <div id="trashPagination"></div>
+            <div class="admin-trash-page-size">
+                <span>每页</span>
+                <select id="page-size-select">
+                    <option value="10">10</option>
+                    <option value="20" selected>20</option>
+                    <option value="50">50</option>
+                </select>
+                <span>条</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    var currentPage = 1;
+    var currentQuery = '';
+    var selectedIds = new Set();
+
+    function getPageSize() {
+        var sel = document.getElementById('page-size-select');
+        return sel ? parseInt(sel.value) : 10;
+    }
+
+    function getCSRF() {
+        var t = document.querySelector('[name=csrfmiddlewaretoken]');
+        return t ? t.value : '';
+    }
+
+    function loadData() {
+        var url = '/admin/api/trash/manage/?page=' + currentPage + '&size=' + getPageSize();
+        if (currentQuery) url += '&q=' + encodeURIComponent(currentQuery);
+        fetch(url, { headers: { 'X-CSRFToken': getCSRF() } })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            var tbody = document.getElementById('trashTbody');
+            if (!d.status || !d.docs.length) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:var(--ispace-space-8);color:var(--ispace-color-text-tertiary)">{% trans "回收站为空" %}</td></tr>';
+                document.getElementById('trashPagination').innerHTML = '';
+                return;
+            }
+            tbody.innerHTML = d.docs.map(function(doc) {
+                return '<tr><td><input type="checkbox" value="' + doc.id + '" class="trash-check" onchange="toggleSelect()"></td>' +
+                    '<td class="trash-table-col-name" title="' + escapeHTML(doc.name) + '"><strong>' + escapeHTML(doc.name) + '</strong>' + (doc.has_children ? ' <span class="ispace-badge-sm ispace-badge-warning">{% trans "含子文档" %}</span>' : '') + '</td>' +
+                    '<td class="trash-table-col-creator" title="' + escapeHTML(doc.creator_name) + '">' + escapeHTML(doc.creator_name) + '</td>' +
+                    '<td class="trash-table-col-deleter" title="' + escapeHTML(doc.deleter_name) + '">' + escapeHTML(doc.deleter_name) + '</td>' +
+                    '<td>' + doc.deleted_at + '</td>' +
+                    '<td><a class="admin-user-action-link" onclick="restoreOne(' + doc.id + ')">{% trans "恢复" %}</a>' +
+                    '<a class="admin-user-action-link danger" onclick="deleteOne(' + doc.id + ')">{% trans "删除" %}</a></td></tr>';
+            }).join('');
+            selectedIds.clear();
+            document.getElementById('selectAll').checked = false;
+            updateButtons();
+            var totalPages = Math.ceil(d.total / getPageSize());
+            renderPagination(d.total, currentPage, totalPages, 'trashPagination', function(p) { currentPage = p; loadData(); });
+        });
+    }
+
+    function renderPagination(count, page, totalPages, containerId, callback) {
+        var container = document.getElementById(containerId);
+        if (totalPages <= 1) { container.innerHTML = '<span class="ispace-pagination-info">共 ' + count + ' 条</span>'; return; }
+        var html = '';
+        html += '<button class="ispace-pagination-btn" data-page="' + (page - 1) + '" ' + (page <= 1 ? 'disabled' : '') + '>上一页</button>';
+        var startPage = Math.max(1, page - 2);
+        var endPage = Math.min(totalPages, page + 2);
+        if (startPage > 1) { html += '<button class="ispace-pagination-btn" data-page="1">1</button>'; if (startPage > 2) html += '<span class="ispace-pagination-info">...</span>'; }
+        for (var i = startPage; i <= endPage; i++) { html += '<button class="ispace-pagination-btn ' + (i === page ? 'ispace-active' : '') + '" data-page="' + i + '">' + i + '</button>'; }
+        if (endPage < totalPages) { if (endPage < totalPages - 1) html += '<span class="ispace-pagination-info">...</span>'; html += '<button class="ispace-pagination-btn" data-page="' + totalPages + '">' + totalPages + '</button>'; }
+        html += '<button class="ispace-pagination-btn" data-page="' + (page + 1) + '" ' + (page >= totalPages ? 'disabled' : '') + '>下一页</button>';
+        html += '<span class="ispace-pagination-info">共 ' + count + ' 条</span>';
+        container.innerHTML = html;
+        container.querySelectorAll('.ispace-pagination-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() { var p = parseInt(this.dataset.page); if (p >= 1 && p <= totalPages && p !== page) callback(p); });
+        });
+    }
+
+    document.getElementById('searchBtn').addEventListener('click', function() {
+        currentQuery = document.getElementById('trashSearch').value.trim();
+        currentPage = 1;
+        loadData();
+    });
+    document.getElementById('trashSearch').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') { currentQuery = this.value.trim(); currentPage = 1; loadData(); }
+    });
+
+    document.getElementById('selectAll').addEventListener('change', function() {
+        document.querySelectorAll('.trash-check').forEach(function(cb) {
+            cb.checked = this.checked;
+            if (this.checked) selectedIds.add(parseInt(cb.value));
+            else selectedIds.delete(parseInt(cb.value));
+        }.bind(this));
+        updateButtons();
+    });
+
+    window.toggleSelect = function() {
+        document.querySelectorAll('.trash-check').forEach(function(cb) {
+            if (cb.checked) selectedIds.add(parseInt(cb.value));
+            else selectedIds.delete(parseInt(cb.value));
+        });
+        updateButtons();
+    };
+
+    function updateButtons() {
+        var has = selectedIds.size > 0;
+        document.getElementById('batchRestoreBtn').disabled = !has;
+        document.getElementById('batchDeleteBtn').disabled = !has;
+    }
+
+    function batchAction(url, method) {
+        var ids = Array.from(selectedIds);
+        if (!ids.length) return;
+        fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
+            body: JSON.stringify({ doc_ids: ids })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(d) { alert(d.message || ''); loadData(); });
+    }
+
+    document.getElementById('batchRestoreBtn').addEventListener('click', function() {
+        iSpaceDoc.confirm('{% trans "确定恢复选中的文档吗？" %}').then(function(ok) {
+            if (!ok) return;
+            batchAction('/admin/api/trash/manage/', 'POST');
+        });
+    });
+    document.getElementById('batchDeleteBtn').addEventListener('click', function() {
+        iSpaceDoc.confirm('{% trans "确定永久删除选中的文档吗？此操作不可恢复！" %}').then(function(ok) {
+            if (!ok) return;
+            batchAction('/admin/api/trash/manage/', 'DELETE');
+        });
+    });
+
+    window.restoreOne = function(id) {
+        selectedIds.clear(); selectedIds.add(id); batchAction('/admin/api/trash/manage/', 'POST');
+    };
+    window.deleteOne = function(id) {
+        iSpaceDoc.confirm('{% trans "确定永久删除吗？" %}').then(function(ok) {
+            if (!ok) return;
+            selectedIds.clear(); selectedIds.add(id); batchAction('/admin/api/trash/manage/', 'DELETE');
+        });
+    };
+
+    function escapeHTML(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+    document.getElementById('page-size-select').addEventListener('change', function() {
+        currentPage = 1;
+        loadData();
+    });
+
+    loadData();
+})();
+</script>
+{% endblock %}

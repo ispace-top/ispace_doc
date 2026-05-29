@@ -1,0 +1,372 @@
+/* ============================================================
+   iSpaceDoc Theme: Dark (Warm)
+   Warm espresso/mocha palette — no cool blue-gray cast.
+   Only redefine --ispace-color-* tokens.
+   ============================================================ */
+
+[data-ispace-theme="dark"] {
+  /* Surface */
+  --ispace-color-surface-0: #1a1817;
+  --ispace-color-surface-50: #282421;
+  --ispace-color-surface-100: #3d3732;
+  --ispace-color-surface-200: #544c46;
+  --ispace-color-surface-hover: #282421;
+  --ispace-color-surface-active: #3d3732;
+
+  /* Text */
+  --ispace-color-text-primary: #f2efe9;
+  --ispace-color-text-secondary: #d4cec5;
+  --ispace-color-text-tertiary: #a9a094;
+  --ispace-color-text-quaternary: #7b7268;
+  --ispace-color-text-inverse: #1a1817;
+  --ispace-color-text-link: #f0a54a;
+
+  /* Border */
+  --ispace-color-border-light: #3d3732;
+  --ispace-color-border-medium: #544c46;
+  --ispace-color-border-strong: #7b7268;
+
+  /* Brand */
+  --ispace-color-brand-50: #78350f;
+  --ispace-color-brand-100: #92400e;
+  --ispace-color-brand-200: #b45309;
+
+  /* Status */
+  --ispace-color-success-bg: #064e3b;
+  --ispace-color-success-text: #6ee7b7;
+  --ispace-color-warning-bg: #78350f;
+  --ispace-color-warning-text: #fcd34d;
+  --ispace-color-error-bg: #7f1d1d;
+  --ispace-color-error-text: #f87171;
+  --ispace-color-info-bg: #164e63;
+  --ispace-color-info-text: #67e8f9;
+}
+
+/* ============================================================
+   Dark-mode overrides for Markdown / Vditor content
+   marked.css and Vditor use hardcoded light colors —
+   override them so text stays visible on dark backgrounds.
+   ============================================================ */
+
+[data-ispace-theme="dark"] {
+
+  /* ---- Vditor preview content ---- */
+  & .vditor-reset {
+    color: var(--ispace-color-text-primary);
+  }
+
+  /* ---- Markdown body text (override #333 in marked.css) ---- */
+  & .markdown-body {
+    color: var(--ispace-color-text-primary);
+  }
+
+  /* ---- Code blocks & inline code ---- */
+  & .markdown-body pre,
+  & .markdown-body pre code,
+  & .vditor-reset pre,
+  & .vditor-reset pre code {
+    background: var(--ispace-color-surface-100);
+    color: var(--ispace-color-text-primary);
+  }
+  & .markdown-body code:not(.hljs),
+  & .vditor-reset code:not(.hljs) {
+    background: var(--ispace-color-surface-100);
+    color: var(--ispace-color-text-primary);
+  }
+
+  /* ---- Code toolbar ---- */
+  & .markdown-code-toolbar {
+    background: var(--ispace-color-surface-100);
+    border-color: var(--ispace-color-border-medium);
+  }
+  & .markdown-code-toolbar button {
+    background: var(--ispace-color-surface-100);
+    color: var(--ispace-color-text-secondary);
+  }
+
+  /* ---- Tables ---- */
+  & .markdown-body table tr {
+    background: var(--ispace-color-surface-0);
+    border-top-color: var(--ispace-color-border-medium);
+  }
+  & .markdown-body table tr:nth-child(2n) {
+    background: var(--ispace-color-surface-50);
+  }
+  & .markdown-body table th,
+  & .markdown-body table td {
+    border-color: var(--ispace-color-border-medium);
+  }
+  & .markdown-body table thead tr {
+    background: var(--ispace-color-surface-100);
+  }
+
+  /* ---- Blockquote ---- */
+  & .markdown-body blockquote {
+    color: var(--ispace-color-text-secondary);
+    border-left-color: var(--ispace-color-border-strong);
+    background: var(--ispace-color-surface-50);
+  }
+  /* ---- Callout variants (dark mode overrides) ---- */
+  & .markdown-body blockquote.info {
+    color: #58a6ff;
+    border-left-color: #58a6ff;
+    background: rgba(88, 166, 255, 0.08);
+  }
+  & .markdown-body blockquote.warning {
+    color: #e3b341;
+    border-left-color: #e3b341;
+    background: rgba(227, 179, 65, 0.08);
+  }
+  & .markdown-body blockquote.danger {
+    color: #f85149;
+    border-left-color: #f85149;
+    background: rgba(248, 81, 73, 0.08);
+  }
+  & .markdown-body blockquote.success {
+    color: #56d364;
+    border-left-color: #56d364;
+    background: rgba(86, 211, 100, 0.08);
+  }
+  /* ---- Callout icon colors (dark mode) ---- */
+  & .markdown-body .callout-icon { margin-right: 6px; }
+  & .markdown-body blockquote.info .callout-icon { color: #58a6ff; }
+  & .markdown-body blockquote.warning .callout-icon { color: #e3b341; }
+  & .markdown-body blockquote.danger .callout-icon { color: #f85149; }
+  & .markdown-body blockquote.success .callout-icon { color: #56d364; }
+  & .markdown-body blockquote.tip .callout-icon { color: #bc8cff; }
+
+  & .markdown-body blockquote.tip {
+    color: #bc8cff;
+    border-left-color: #bc8cff;
+    background: rgba(188, 140, 255, 0.08);
+  }
+
+  /* ---- Editor Callout (dark mode) ---- */
+  & .vditor-reset blockquote.info,
+  & .vditor-ir blockquote.info {
+    border-left-color: #58a6ff;
+    background: rgba(88, 166, 255, 0.08);
+  }
+  & .vditor-reset blockquote.warning,
+  & .vditor-ir blockquote.warning {
+    border-left-color: #e3b341;
+    background: rgba(227, 179, 65, 0.08);
+  }
+  & .vditor-reset blockquote.danger,
+  & .vditor-ir blockquote.danger {
+    border-left-color: #f85149;
+    background: rgba(248, 81, 73, 0.08);
+  }
+  & .vditor-reset blockquote.success,
+  & .vditor-ir blockquote.success {
+    border-left-color: #56d364;
+    background: rgba(86, 211, 100, 0.08);
+  }
+  & .vditor-reset blockquote.tip,
+  & .vditor-ir blockquote.tip {
+    border-left-color: #bc8cff;
+    background: rgba(188, 140, 255, 0.08);
+  }
+  /* ---- Editor Callout 图标颜色（dark mode） ---- */
+  & .vditor-reset .callout-icon-about::before,
+  & .vditor-ir .callout-icon-about::before { color: #58a6ff; }
+  & .vditor-reset .callout-icon-star::before,
+  & .vditor-ir .callout-icon-star::before { color: #56d364; }
+  & .vditor-reset .callout-icon-light::before,
+  & .vditor-ir .callout-icon-light::before { color: #bc8cff; }
+  & .vditor-reset .callout-icon-notice::before,
+  & .vditor-ir .callout-icon-notice::before { color: #e3b341; }
+  & .vditor-reset .callout-icon-auz::before,
+  & .vditor-ir .callout-icon-auz::before { color: #f85149; }
+
+  /* ---- Horizontal rule ---- */
+  & .markdown-body hr {
+    border-top-color: var(--ispace-color-border-medium);
+  }
+
+  /* ---- Vditor copy button ---- */
+  & .vditor-copy {
+    background: var(--ispace-color-surface-100);
+    color: var(--ispace-color-text-secondary);
+  }
+
+  /* ---- Vditor editor textarea ---- */
+  & .vditor-textarea {
+    background: var(--ispace-color-surface-0);
+    color: var(--ispace-color-text-primary);
+  }
+
+  /* ---- Vditor toolbar ---- */
+  & .vditor-toolbar {
+    background: var(--ispace-color-surface-100);
+    border-bottom-color: var(--ispace-color-border-medium);
+  }
+
+  /* ---- Vditor panel ---- */
+  & .vditor-panel {
+    background: var(--ispace-color-surface-0);
+    color: var(--ispace-color-text-primary);
+    border-color: var(--ispace-color-border-medium);
+  }
+
+  /* ---- TOC menu ---- */
+  & .markdown-body .editormd-toc-menu > .markdown-toc > ul {
+    background: var(--ispace-color-surface-0);
+    border-color: var(--ispace-color-border-medium);
+  }
+  & .markdown-body .editormd-toc-menu > .markdown-toc > ul > li a {
+    color: var(--ispace-color-text-secondary);
+  }
+  & .markdown-body .editormd-toc-menu > .markdown-toc > ul > li a:hover {
+    background: var(--ispace-color-surface-100);
+  }
+  & .markdown-body .editormd-toc-menu h1 {
+    border-bottom-color: var(--ispace-color-border-light);
+  }
+
+  /* ---- Highlight.js / syntax highlighting in dark mode ---- */
+  & .markdown-body .highlight pre,
+  & .markdown-body .highlight,
+  & .vditor-reset .highlight {
+    background: var(--ispace-color-surface-100);
+  }
+
+  /* ---- kbd ---- */
+  & .markdown-body kbd {
+    background: var(--ispace-color-surface-100);
+    color: var(--ispace-color-text-secondary);
+    border-color: var(--ispace-color-border-strong);
+    box-shadow: inset 0 -1px 0 var(--ispace-color-border-strong);
+  }
+
+  /* ---- Editor: CodeMirror (editormd/vditor text area) ---- */
+  & .CodeMirror {
+    background: var(--ispace-color-surface-0);
+    color: var(--ispace-color-text-primary);
+  }
+  & .CodeMirror-gutters {
+    background: var(--ispace-color-surface-100);
+    border-right-color: var(--ispace-color-border-light);
+    color: var(--ispace-color-text-tertiary);
+  }
+  & .CodeMirror-cursor {
+    border-left-color: var(--ispace-color-text-primary);
+  }
+  & .CodeMirror-selected,
+  & .CodeMirror-focused .CodeMirror-selected {
+    background: var(--ispace-color-brand-100);
+  }
+  & .CodeMirror-linenumber {
+    color: var(--ispace-color-text-quaternary);
+  }
+  & .CodeMirror-activeline-background {
+    background: var(--ispace-color-surface-50);
+  }
+  & .CodeMirror-matchingbracket,
+  & .CodeMirror-matchingtag {
+    background: var(--ispace-color-brand-50);
+  }
+
+  /* ---- Editor: LayUI layer 弹出框 ---- */
+  & .layui-layer {
+    background: var(--ispace-color-surface-0);
+    border-color: var(--ispace-color-border-medium);
+    box-shadow: var(--ispace-shadow-lg);
+  }
+  & .layui-layer-title {
+    background: var(--ispace-color-surface-50);
+    border-bottom-color: var(--ispace-color-border-light);
+    color: var(--ispace-color-text-primary);
+  }
+  & .layui-layer-setwin .layui-layer-close {
+    color: var(--ispace-color-text-secondary);
+  }
+  & .layui-layer-setwin .layui-layer-close:hover {
+    color: var(--ispace-color-text-primary);
+  }
+
+  /* ---- Editor: LayUI form inputs in popups ---- */
+  & .layui-layer .layui-input,
+  & .layui-layer .layui-textarea {
+    background: var(--ispace-color-surface-50);
+    border-color: var(--ispace-color-border-medium);
+    color: var(--ispace-color-text-primary);
+  }
+  & .layui-layer .layui-form-select dl {
+    background: var(--ispace-color-surface-0);
+    border-color: var(--ispace-color-border-medium);
+  }
+  & .layui-layer .layui-form-label {
+    color: var(--ispace-color-text-secondary);
+  }
+
+  /* ---- Editor: LayUI nav in toolbar dropdowns ---- */
+  & .layui-nav .layui-nav-child {
+    background: var(--ispace-color-surface-0);
+    border-color: var(--ispace-color-border-medium);
+  }
+  & .layui-nav .layui-nav-child dd a {
+    color: var(--ispace-color-text-secondary);
+  }
+  & .layui-nav .layui-nav-child dd a:hover {
+    background: var(--ispace-color-surface-100);
+    color: var(--ispace-color-text-primary);
+  }
+  & .layui-nav .layui-nav-child hr {
+    border-top-color: var(--ispace-color-border-light);
+  }
+
+  /* ---- Editor: LayUI tab in markdown editor ---- */
+  & .editormd-tab {
+    background: var(--ispace-color-surface-100);
+    border-color: var(--ispace-color-border-medium);
+  }
+  & .editormd-tab .active {
+    background: var(--ispace-color-surface-0);
+    color: var(--ispace-color-text-primary);
+  }
+
+  /* ---- Editor: image select list ---- */
+  & .select-img-list:hover {
+    background-color: var(--ispace-color-brand-50);
+  }
+
+  /* ---- Editor: LayUI tree ---- */
+  & .layui-tree-main {
+    color: var(--ispace-color-text-secondary);
+  }
+  & .layui-tree-set .layui-tree-main:hover {
+    background: var(--ispace-color-surface-100);
+  }
+  & .layui-tree-entry:hover {
+    background: var(--ispace-color-surface-50);
+  }
+  & .layui-tree-txt {
+    color: var(--ispace-color-text-primary);
+  }
+
+  /* ---- Dashboard / Health gauge rings ---- */
+  & .dashboard-gauge-ring,
+  & .health-gauge-ring {
+    background: conic-gradient(
+        var(--gauge-color, #3b82f6) 0% var(--gauge-pct, 0%),
+        var(--ispace-color-surface-100) var(--gauge-pct, 0%) 100%
+    ) !important;
+  }
+
+  /* ---- Health page banner score background ---- */
+  & .health-banner-score {
+    background: var(--ispace-color-surface-100);
+  }
+
+  /* ---- Health page service item hover ---- */
+  & .health-service-item:hover {
+    background: var(--ispace-color-surface-50);
+  }
+
+  /* ---- Health page service icon disabled ---- */
+  & .health-service-icon.disabled {
+    background: var(--ispace-color-surface-100);
+    color: var(--ispace-color-text-quaternary);
+  }
+}

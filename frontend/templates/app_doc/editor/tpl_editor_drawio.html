@@ -1,0 +1,174 @@
+<!-- Draw.io 流程图编辑器 (editor_mode=6) -->
+{% load static %}{% load i18n %}
+<div class="ispace-drawing-editor" id="drawio-editor-container">
+    <div class="ispace-drawing-toolbar" id="drawio-toolbar">
+        <button class="ispace-btn ispace-btn-sm ispace-btn-primary" onclick="saveDrawio()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            {% trans '保存' %}
+        </button>
+        <span class="ispace-toolbar-sep">|</span>
+        <button class="ispace-btn ispace-btn-sm ispace-btn-secondary" onclick="drawioFullscreen()" title="{% trans '全屏' %}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+        </button>
+    </div>
+    <div class="ispace-drawing-canvas" id="drawio-canvas">
+        <iframe id="drawio-iframe" frameborder="0" width="100%" height="100%"
+            style="border:none;min-height:600px;"
+            src="https://embed.diagrams.net/?embed=1&ui=kennedy&spin=1&modified=unsavedChanges&proto=json&noExitBtn=1">
+        </iframe>
+    </div>
+</div>
+
+<style>
+.ispace-drawing-editor {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 120px);
+    border: 1px solid var(--ispace-color-border-light);
+    border-radius: var(--ispace-radius-lg);
+    overflow: hidden;
+    background: #fff;
+}
+.ispace-drawing-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--ispace-color-border-light);
+    background: #f8fafc;
+    flex-wrap: wrap;
+}
+.ispace-toolbar-sep {
+    color: var(--ispace-color-border);
+    margin: 0 4px;
+    user-select: none;
+}
+.ispace-drawing-canvas {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    background: #f0f0f0;
+}
+</style>
+
+<script>
+(function() {
+    var DRAWIO_API = '/api/drawing/drawio/' + window._docId + '/';
+    var CSRF_TOKEN = window.__ISPACEDOC__ && window.__ISPACEDOC__.csrfToken;
+    var iframe = document.getElementById('drawio-iframe');
+    var loadedXML = null;
+
+    // 加载已有数据
+    fetch(DRAWIO_API)
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+            if (resp.data && resp.data.xml) {
+                loadedXML = resp.data.xml;
+                sendToDrawio({ action: 'load', xml: resp.data.xml, autosave: 0 });
+            }
+        })
+        .catch(function() {});
+
+    function sendToDrawio(msg) {
+        if (iframe.contentWindow) {
+            iframe.contentWindow.postMessage(JSON.stringify(msg), '*');
+        }
+    }
+
+    // 接收 Draw.io 的消息
+    window.addEventListener('message', function(evt) {
+        if (evt.origin.indexOf('diagrams.net') === -1 && evt.origin.indexOf('draw.io') === -1) return;
+        try {
+            var data = JSON.parse(evt.data);
+            if (data.event === 'init') {
+                // Draw.io 初始化完成，如果有已保存的数据则加载
+                if (loadedXML) {
+                    sendToDrawio({ action: 'load', xml: loadedXML, autosave: 0 });
+                }
+            } else if (data.event === 'export') {
+                // 自动导出事件
+                loadedXML = data.data;
+            } else if (data.event === 'save') {
+                loadedXML = data.xml;
+            }
+        } catch(e) {}
+    });
+
+    // 延迟加载已有数据（等 iframe 初始化完成）
+    setTimeout(function() {
+        if (loadedXML) {
+            sendToDrawio({ action: 'load', xml: loadedXML, autosave: 0 });
+        }
+    }, 1500);
+
+    // 保存
+    window.saveDrawio = function() {
+        sendToDrawio({ action: 'export', format: 'xmlpng' });
+
+        // 等待导出结果
+        var waitExport = function(evt) {
+            try {
+                var data = JSON.parse(evt.data);
+                if (data.event === 'export' && data.data) {
+                    window.removeEventListener('message', waitExport);
+                    loadedXML = data.data;
+
+                    fetch(DRAWIO_API, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+                        body: JSON.stringify({ xml: data.data })
+                    })
+                    .then(function(r) { return r.json(); })
+                    .then(function(resp) {
+                        if (resp.success) {
+                            layer.msg('保存成功', {icon: 1});
+                        } else {
+                            layer.msg('保存失败: ' + (resp.error || '未知错误'), {icon: 2});
+                        }
+                    })
+                    .catch(function(err) {
+                        layer.msg('保存失败: ' + err.message, {icon: 2});
+                    });
+                } else if (data.event === 'save') {
+                    // 如果直接收到 save 事件
+                    loadedXML = data.xml;
+                    doSaveXML(data.xml);
+                }
+            } catch(e) {}
+        };
+        window.addEventListener('message', waitExport);
+
+        // 如果3秒后没有收到导出结果，先发送 export 请求
+        setTimeout(function() {
+            sendToDrawio({ action: 'export', format: 'xmlpng' });
+        }, 800);
+    };
+
+    function doSaveXML(xml) {
+        fetch(DRAWIO_API, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+            body: JSON.stringify({ xml: xml })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+            if (resp.success) {
+
+                if (typeof layer !== 'undefined') layer.msg('保存成功', {icon: 1});
+            }
+
+        });
+    }
+
+    window.drawioFullscreen = function() {
+        var container = document.getElementById('drawio-editor-container');
+        if (container) {
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            } else {
+                container.requestFullscreen();
+            }
+        }
+    };
+})();
+</script>

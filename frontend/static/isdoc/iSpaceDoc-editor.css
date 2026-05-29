@@ -1,0 +1,517 @@
+/**
+ * @deprecated 此 CSS 文件原为独立编辑器页面（unified_editor.html/create_base.html）服务，
+ * 这些页面已被内联编辑器体系替代。新的编辑器样式位于：
+ * - frontend/templates/includes/inline_editor.html（内联 <style> 块）
+ * 此文件目前仍被 manage_project_options.html 引用，后续可迁移其样式后删除。
+ */
+
+/* ============================================================
+   iSpaceDoc Editor Layout
+   Standalone editor pages — ispace Design Token system
+   ============================================================ */
+
+/* ---- Editor App Shell ---- */
+.ispace-editor-layout {
+  display: grid;
+  grid-template-columns: var(--ispace-sidebar-width) 1fr;
+  grid-template-rows: 1fr;
+  min-height: 100vh;
+  background: var(--ispace-color-surface-50);
+}
+
+/* ---- Editor Sidebar ---- */
+.ispace-editor-sidebar {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--ispace-color-surface-0);
+  border-right: 1px solid var(--ispace-color-border-light);
+  overflow: hidden;
+}
+
+.ispace-editor-sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: var(--ispace-space-3);
+  padding: var(--ispace-space-4) var(--ispace-space-3);
+  border-bottom: 1px solid var(--ispace-color-border-light);
+}
+
+.ispace-editor-logo-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+}
+
+.ispace-editor-sidebar-title {
+  font-size: var(--ispace-font-base);
+  font-weight: var(--ispace-font-semibold);
+  color: var(--ispace-color-text-primary);
+}
+
+.ispace-editor-sidebar-subtitle {
+  font-size: var(--ispace-font-xs);
+  color: var(--ispace-color-text-tertiary);
+  margin-top: 2px;
+}
+
+.ispace-editor-sidebar-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--ispace-space-3);
+}
+
+.ispace-editor-tree-section {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.ispace-editor-tree-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--ispace-space-2) var(--ispace-space-3);
+  border-bottom: 1px solid var(--ispace-color-border-light);
+  flex-shrink: 0;
+}
+
+.ispace-editor-tree-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--ispace-space-2) var(--ispace-space-1);
+}
+
+/* Selected parent doc in editor tree */
+.ispace-editor-tree-body .ispace-tree-row.ispace-selected {
+  background: var(--ispace-color-brand-50);
+  border-radius: var(--ispace-radius-sm);
+}
+
+.ispace-editor-tree-body .ispace-tree-row.ispace-selected .ispace-truncate {
+  color: var(--ispace-color-brand-600);
+  font-weight: var(--ispace-font-semibold);
+}
+
+/* Drag ghost / target */
+.ispace-editor-tree-body .ispace-sortable-ghost {
+  opacity: 0.4;
+}
+
+.ispace-editor-tree-body .ispace-sortable-drag {
+  box-shadow: var(--ispace-shadow-lg);
+}
+
+/* ---- Editor Main Area ---- */
+.ispace-editor-main {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* ---- Editor Toolbar ---- */
+.ispace-editor-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--ispace-z-sticky);
+  background: var(--ispace-color-surface-0);
+  border-bottom: 1px solid var(--ispace-color-border-light);
+  min-height: 48px;
+}
+
+.ispace-editor-toolbar-inner {
+  display: flex;
+  align-items: center;
+  gap: var(--ispace-space-2);
+  padding: 0 var(--ispace-space-4);
+  height: 48px;
+}
+
+.ispace-editor-toolbar-inner .layui-nav {
+  display: flex;
+  align-items: center;
+  background: transparent;
+  padding: 0;
+}
+
+.ispace-editor-toolbar-inner .layui-nav .layui-nav-item {
+  line-height: 48px;
+}
+
+.ispace-editor-toolbar-inner .layui-nav .layui-nav-item a {
+  color: var(--ispace-color-text-secondary);
+  font-size: var(--ispace-font-sm);
+  padding: 0 var(--ispace-space-3);
+}
+
+.ispace-editor-toolbar-inner .layui-nav .layui-nav-item a:hover {
+  color: var(--ispace-color-text-primary);
+}
+
+.ispace-editor-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ispace-space-2);
+  margin-left: auto;
+}
+
+/* ---- Editor Content ---- */
+.ispace-editor-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--ispace-space-6);
+}
+
+.ispace-editor-title-bar {
+  margin-bottom: var(--ispace-space-4);
+}
+
+.ispace-editor-title-input {
+  font-size: var(--ispace-font-2xl) !important;
+  font-weight: var(--ispace-font-bold) !important;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  padding: var(--ispace-space-2) 0 !important;
+  height: auto !important;
+  width: 100%;
+  border-radius: var(--ispace-radius-md);
+  transition: border-color var(--ispace-duration-fast), background var(--ispace-duration-fast);
+}
+
+.ispace-editor-title-input:hover {
+  border-color: var(--ispace-color-border-light) !important;
+  background: var(--ispace-color-surface-0) !important;
+}
+
+.ispace-editor-title-input:focus {
+  border-color: var(--ispace-color-brand-300) !important;
+  background: var(--ispace-color-surface-0) !important;
+  box-shadow: 0 0 0 3px var(--ispace-color-brand-100);
+}
+
+/* ---- Editor Form in Sidebar ---- */
+.ispace-editor-sidebar-body .ispace-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ispace-space-3);
+}
+
+.ispace-editor-sidebar-body .ispace-form-group {
+  margin-bottom: 0;
+}
+
+/* ---- Editor Specific: Doc status badge ---- */
+.ispace-doc-status {
+  display: flex;
+  align-items: center;
+  gap: var(--ispace-space-2);
+}
+
+.ispace-badge-draft {
+  background: var(--ispace-color-warning-bg, #fef3c7);
+  color: var(--ispace-color-warning-text, #92400e);
+  font-size: var(--ispace-font-xs);
+  padding: 2px 8px;
+  border-radius: var(--ispace-radius-full);
+}
+
+.ispace-badge-published {
+  background: var(--ispace-color-success-bg, #d1fae5);
+  color: var(--ispace-color-success-text, #065f46);
+  font-size: var(--ispace-font-xs);
+  padding: 2px 8px;
+  border-radius: var(--ispace-radius-full);
+}
+
+/* ---- LayUI Overrides for Editor (keep JS, fix visuals) ---- */
+/* LayUI nav dropdown in toolbar */
+.ispace-editor-toolbar-inner .layui-nav-child {
+  background: var(--ispace-color-surface-0);
+  border: 1px solid var(--ispace-color-border-light);
+  border-radius: var(--ispace-radius-md);
+  box-shadow: var(--ispace-shadow-lg);
+  padding: var(--ispace-space-1) 0;
+  min-width: 180px;
+}
+
+.ispace-editor-toolbar-inner .layui-nav-child dd {
+  margin: 0;
+}
+
+.ispace-editor-toolbar-inner .layui-nav-child dd a {
+  display: block;
+  padding: var(--ispace-space-2) var(--ispace-space-4);
+  color: var(--ispace-color-text-secondary);
+  font-size: var(--ispace-font-sm);
+  line-height: 1.5;
+}
+
+.ispace-editor-toolbar-inner .layui-nav-child dd a:hover {
+  background: var(--ispace-color-surface-100);
+  color: var(--ispace-color-text-primary);
+}
+
+.ispace-editor-toolbar-inner .layui-nav-child hr {
+  margin: var(--ispace-space-1) 0;
+  border: none;
+  border-top: 1px solid var(--ispace-color-border-light);
+}
+
+/* LayUI form selects in sidebar */
+.ispace-editor-sidebar-body .layui-form-select dl {
+  background: var(--ispace-color-surface-0);
+  border: 1px solid var(--ispace-color-border-light);
+  border-radius: var(--ispace-radius-md);
+  box-shadow: var(--ispace-shadow-lg);
+}
+
+.ispace-editor-sidebar-body .layui-form-select dl dd {
+  padding: var(--ispace-space-2) var(--ispace-space-3);
+  color: var(--ispace-color-text-secondary);
+}
+
+.ispace-editor-sidebar-body .layui-form-select dl dd:hover {
+  background: var(--ispace-color-surface-100);
+}
+
+.ispace-editor-sidebar-body .layui-form-select dl dd.layui-this {
+  background: var(--ispace-color-brand-50) !important;
+  color: var(--ispace-color-brand-600);
+}
+
+/* LayUI tree in sidebar */
+.ispace-editor-sidebar-body .layui-tree {
+  background: transparent;
+}
+
+.ispace-editor-sidebar-body .layui-tree-main {
+  color: var(--ispace-color-text-secondary);
+}
+
+.ispace-editor-sidebar-body .layui-tree-set .layui-tree-main:hover {
+  background: var(--ispace-color-surface-100);
+}
+
+/* Selected parent doc */
+.ispace-editor-sidebar-body .selected-parent-doc {
+  text-decoration-line: underline;
+  font-weight: var(--ispace-font-semibold);
+  color: var(--ispace-color-brand-600) !important;
+}
+
+/* LayUI checkboxes in dropdown */
+.ispace-editor-toolbar-inner .layui-nav-child input[type="checkbox"] {
+  margin-right: var(--ispace-space-2);
+}
+
+/* ---- Modal Content: Tabs ---- */
+.ispace-tab-nav {
+  display: flex;
+  border-bottom: 2px solid var(--ispace-color-border-light);
+  margin-bottom: var(--ispace-space-4);
+}
+
+.ispace-tab {
+  padding: var(--ispace-space-2) var(--ispace-space-4);
+  font-size: var(--ispace-font-sm);
+  color: var(--ispace-color-text-tertiary);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  transition: all var(--ispace-duration-fast);
+}
+
+.ispace-tab:hover {
+  color: var(--ispace-color-text-primary);
+}
+
+.ispace-tab.ispace-active {
+  color: var(--ispace-color-brand-500);
+  border-bottom-color: var(--ispace-color-brand-500);
+  font-weight: var(--ispace-font-medium);
+}
+
+.ispace-tab-content {
+  min-height: 100px;
+}
+
+.ispace-tab-panel {
+  display: none;
+}
+
+.ispace-tab-panel.ispace-active {
+  display: block;
+}
+
+/* ---- Modal Content: Card ---- */
+.ispace-card {
+  background: var(--ispace-color-surface-0);
+  border: 1px solid var(--ispace-color-border-light);
+  border-radius: var(--ispace-radius-md);
+}
+
+.ispace-card-header {
+  font-size: var(--ispace-font-sm);
+  font-weight: var(--ispace-font-semibold);
+  color: var(--ispace-color-text-primary);
+  padding: var(--ispace-space-3) var(--ispace-space-4);
+  border-bottom: 1px solid var(--ispace-color-border-light);
+}
+
+.ispace-card-body {
+  padding: var(--ispace-space-4);
+}
+
+/* ---- Modal Content: Divider ---- */
+.ispace-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: var(--ispace-color-text-quaternary);
+  font-size: var(--ispace-font-xs);
+}
+
+.ispace-divider::before,
+.ispace-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--ispace-color-border-light);
+}
+
+.ispace-divider-text {
+  padding: 0 var(--ispace-space-3);
+}
+
+/* ---- Sidebar toggle button ---- */
+.ispace-btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: var(--ispace-radius-md);
+  color: var(--ispace-color-text-tertiary);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--ispace-duration-fast);
+}
+
+.ispace-btn-icon:hover {
+  background: var(--ispace-color-surface-100);
+  color: var(--ispace-color-text-primary);
+}
+
+.ispace-btn-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.ispace-btn-icon-sm {
+  width: 32px;
+  height: 32px;
+}
+
+.ispace-btn-icon-sm svg {
+  width: 16px;
+  height: 16px;
+}
+
+.ispace-btn-block {
+  display: flex;
+  width: 100%;
+}
+
+/* ---- Select image list ---- */
+.select-img-list {
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  float: left;
+  align-items: center;
+  width: 120px;
+  height: 120px;
+  margin: 0 20px 30px 0;
+  text-align: center;
+  overflow: hidden;
+}
+
+.select-img-list:hover {
+  background-color: var(--ispace-color-brand-50);
+}
+
+.select-img-list-i {
+  display: block;
+  width: 100%;
+  height: auto;
+  -webkit-background-size: contain;
+  border: 1px solid transparent;
+  border-radius: var(--ispace-radius-sm);
+  overflow: hidden;
+}
+
+/* ---- Markdown body list styles ---- */
+.markdown-body ul li { list-style: disc; }
+.markdown-body ul > li > ul > li { list-style-type: circle; }
+.markdown-body ol li { list-style-type: decimal; }
+.markdown-body ol ol ul,
+.markdown-body ol ul ul,
+.markdown-body ul ol ul,
+.markdown-body ul ul ul li { list-style-type: square; }
+
+/* ---- Vditor outline ---- */
+.vditor-outline__content ul > li > ul > li { list-style: none; }
+
+/* ---- LayUI pagination override ---- */
+.layui-laypage .layui-laypage-curr .layui-laypage-em {
+  background-color: var(--ispace-color-brand-500) !important;
+}
+
+.layui-form-select dl dd.layui-this {
+  background-color: var(--ispace-color-brand-500) !important;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+  .ispace-editor-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .ispace-editor-sidebar {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: var(--ispace-z-modal);
+    width: var(--ispace-sidebar-width);
+    height: 100vh;
+  }
+
+  .ispace-editor-sidebar.ispace-open {
+    display: flex;
+  }
+
+  .ispace-editor-toolbar-inner {
+    padding: 0 var(--ispace-space-2);
+    gap: var(--ispace-space-1);
+  }
+
+  .ispace-editor-toolbar-inner .layui-hide-xs {
+    display: none;
+  }
+
+  .ispace-editor-content {
+    padding: var(--ispace-space-4) var(--ispace-space-3);
+  }
+
+  .ispace-editor-title-input {
+    font-size: var(--ispace-font-lg) !important;
+  }
+}

@@ -1,0 +1,275 @@
+{% load i18n %}
+{# --- Document Comments Section --- #}
+<div class="ispace-comments-section" id="comments-section">
+    <div class="ispace-comments-header">
+        <h3 class="ispace-comments-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            {% trans "评论" %} (<span id="comment-count">0</span>)
+        </h3>
+    </div>
+
+    {% if user.is_authenticated %}
+    <div class="ispace-comment-form-wrap" id="comment-form-wrap" style="display:none">
+        <textarea id="comment-input" class="ispace-form-textarea" rows="3" placeholder="{% trans '写下你的评论...' %}" maxlength="2000"></textarea>
+        <div class="ispace-comment-form-actions">
+            <span class="ispace-text-xs ispace-text-tertiary" id="comment-char-count">0/2000</span>
+            <button class="ispace-btn ispace-btn-ghost ispace-btn-sm" onclick="window.hideCommentForm()">{% trans "取消" %}</button>
+            <button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="comment-submit-btn" onclick="submitComment()">
+                {% trans "发表评论" %}
+            </button>
+        </div>
+    </div>
+    {% else %}
+    <div class="ispace-comment-login-nudge">
+        <p>{% trans "请" %}<a href="{% url 'login' %}?next={{ request.path }}">{% trans "登录" %}</a>{% trans "后发表评论" %}</p>
+    </div>
+    {% endif %}
+
+    <div class="ispace-comments-list" id="comments-list"></div>
+</div>
+
+<style>
+.ispace-comments-section { margin-top: var(--ispace-space-8); border-top: 1px solid var(--ispace-color-border-light); padding-top: var(--ispace-space-6); }
+.ispace-comments-header { margin-bottom: var(--ispace-space-4); }
+.ispace-comments-title { display: inline-flex; align-items: center; gap: 6px; font-size: var(--ispace-font-base); font-weight: var(--ispace-font-semibold); color: var(--ispace-color-text-primary); }
+.ispace-comment-form-wrap { margin-bottom: var(--ispace-space-5); }
+.ispace-comment-form-actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--ispace-space-3); margin-top: var(--ispace-space-2); }
+.ispace-form-textarea { width: 100%; padding: var(--ispace-space-3); font-size: var(--ispace-font-sm); line-height: var(--ispace-leading-normal); border: 1px solid var(--ispace-color-border-medium); border-radius: var(--ispace-radius-md); background: var(--ispace-color-surface-0); color: var(--ispace-color-text-primary); resize: vertical; min-height: 80px; transition: border-color var(--ispace-duration-fast); }
+.ispace-form-textarea:focus { outline: none; border-color: var(--ispace-color-brand-500); box-shadow: 0 0 0 3px var(--ispace-color-brand-100); }
+.ispace-comment-login-nudge { padding: var(--ispace-space-4); text-align: center; background: var(--ispace-color-surface-1); border-radius: var(--ispace-radius-md); font-size: var(--ispace-font-sm); color: var(--ispace-color-text-tertiary); margin-bottom: var(--ispace-space-5); }
+.ispace-comment-login-nudge a { color: var(--ispace-color-brand-500); }
+.ispace-comment-item { padding: var(--ispace-space-3) 0; border-bottom: 1px solid var(--ispace-color-border-light); }
+.ispace-comment-item:last-child { border-bottom: none; }
+.ispace-comment-item-header { display: flex; align-items: center; gap: var(--ispace-space-2); margin-bottom: var(--ispace-space-1); }
+.ispace-comment-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--ispace-color-brand-100); color: var(--ispace-color-brand-600); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: var(--ispace-font-semibold); flex-shrink: 0; }
+.ispace-comment-user { font-size: var(--ispace-font-sm); font-weight: var(--ispace-font-medium); color: var(--ispace-color-text-primary); }
+.ispace-comment-time { font-size: var(--ispace-font-xs); color: var(--ispace-color-text-tertiary); margin-left: var(--ispace-space-2); }
+.ispace-comment-body { font-size: var(--ispace-font-sm); color: var(--ispace-color-text-secondary); line-height: var(--ispace-leading-relaxed); margin-left: 36px; word-break: break-word; }
+.ispace-comment-actions { display: flex; gap: var(--ispace-space-3); margin-left: 36px; margin-top: var(--ispace-space-1); }
+.ispace-comment-action-btn { font-size: var(--ispace-font-xs); color: var(--ispace-color-text-tertiary); background: none; border: none; cursor: pointer; padding: 2px 4px; border-radius: var(--ispace-radius-sm); transition: color var(--ispace-duration-fast); }
+.ispace-comment-action-btn:hover { color: var(--ispace-color-brand-500); }
+.ispace-comment-action-btn.ispace-text-danger:hover { color: var(--ispace-color-danger-text); }
+.ispace-comment-replies { margin-left: 36px; border-left: 2px solid var(--ispace-color-border-light); padding-left: var(--ispace-space-3); margin-top: var(--ispace-space-1); }
+.ispace-comment-reply-form { margin-left: 36px; margin-top: var(--ispace-space-2); margin-bottom: var(--ispace-space-2); display: none; }
+.ispace-comment-reply-form textarea { width: 100%; padding: var(--ispace-space-2); font-size: var(--ispace-font-sm); border: 1px solid var(--ispace-color-border-medium); border-radius: var(--ispace-radius-md); resize: vertical; min-height: 60px; background: var(--ispace-color-surface-0); color: var(--ispace-color-text-primary); }
+.ispace-comment-reply-form textarea:focus { outline: none; border-color: var(--ispace-color-brand-500); }
+.ispace-comment-reply-actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--ispace-space-2); margin-top: var(--ispace-space-1); }
+.ispace-comment-reply-actions .ispace-btn { font-size: var(--ispace-font-xs); padding: 2px var(--ispace-space-3); }
+.ispace-comments-loading { text-align: center; padding: var(--ispace-space-4); color: var(--ispace-color-text-tertiary); font-size: var(--ispace-font-sm); }
+.ispace-comment-empty { text-align: center; padding: var(--ispace-space-6); color: var(--ispace-color-text-tertiary); font-size: var(--ispace-font-sm); }
+</style>
+
+<script>
+(function() {
+    var docId = {{ doc.id }};
+    var proId = 0;
+    var csrfToken = '{{ csrf_token }}';
+    var currentUserId = {{ request.user.id|default:0 }};
+
+    function getCookie(name) {
+        var v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+        return v ? v.pop() : '';
+    }
+
+    function escapeHTML(str) {
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    function timeAgo(dateStr) {
+        var now = new Date();
+        var date = new Date(dateStr.replace(/-/g, '/'));
+        var diff = Math.floor((now - date) / 1000);
+        if (diff < 60) return '刚刚';
+        if (diff < 3600) return Math.floor(diff / 60) + '分钟前';
+        if (diff < 86400) return Math.floor(diff / 3600) + '小时前';
+        if (diff < 2592000) return Math.floor(diff / 86400) + '天前';
+        return dateStr;
+    }
+
+    function avatarLetter(name) {
+        return name ? name.charAt(0).toUpperCase() : '?';
+    }
+
+    function renderCommentActions(comment) {
+        var html = '<div class="ispace-comment-actions">';
+        if (currentUserId) {
+            html += '<button class="ispace-comment-action-btn" onclick="toggleReplyForm(' + comment.id + ')">回复</button>';
+        }
+        if (comment.can_delete) {
+            html += '<button class="ispace-comment-action-btn ispace-text-danger" onclick="deleteComment(' + comment.id + ')">删除</button>';
+        }
+        html += '</div>';
+        return html;
+    }
+
+    function renderComment(comment) {
+        var html = '<div class="ispace-comment-item" id="comment-' + comment.id + '">';
+        html += '<div class="ispace-comment-item-header">';
+        html += '<span class="ispace-comment-avatar" data-user-id="' + (comment.user_id || '') + '">' + avatarLetter(comment.user_name) + '</span>';
+        html += '<span class="ispace-comment-user" data-user-id="' + (comment.user_id || '') + '">' + escapeHTML(comment.user_name) + '</span>';
+        html += '<span class="ispace-comment-time">' + timeAgo(comment.create_time) + '</span>';
+        html += '</div>';
+        html += '<div class="ispace-comment-body">' + (comment.content_html || escapeHTML(comment.content)) + '</div>';
+        html += renderCommentActions(comment);
+        // Reply form
+        if (currentUserId) {
+            html += '<div class="ispace-comment-reply-form" id="reply-form-' + comment.id + '">';
+            html += '<textarea rows="2" placeholder="写下回复..." maxlength="2000" id="reply-input-' + comment.id + '"></textarea>';
+            html += '<div class="ispace-comment-reply-actions">';
+            html += '<button class="ispace-btn ispace-btn-ghost ispace-btn-sm" onclick="cancelReply(' + comment.id + ')">取消</button>';
+            html += '<button class="ispace-btn ispace-btn-primary ispace-btn-sm" onclick="submitReply(' + comment.id + ')">回复</button>';
+            html += '</div></div>';
+        }
+        // Nested replies
+        if (comment.replies && comment.replies.length > 0) {
+            html += '<div class="ispace-comment-replies">';
+            for (var i = 0; i < comment.replies.length; i++) {
+                html += renderComment(comment.replies[i]);
+            }
+            html += '</div>';
+        }
+        html += '</div>';
+        return html;
+    }
+
+    function loadComments() {
+        var list = document.getElementById('comments-list');
+        list.innerHTML = '<div class="ispace-comments-loading">加载评论中...</div>';
+        fetch('/pages/' + proId + '/' + docId + '/comments/')
+        .then(function(r) { return r.json(); })
+        .then(function(r) {
+            if (!r.status) { list.innerHTML = ''; return; }
+            document.getElementById('comment-count').textContent = r.count;
+            if (r.data.length === 0) {
+                list.innerHTML = '<div class="ispace-comment-empty">暂无评论，来发表第一条评论吧</div>';
+                return;
+            }
+            var html = '';
+            for (var i = 0; i < r.data.length; i++) {
+                html += renderComment(r.data[i]);
+            }
+            list.innerHTML = html;
+        })
+        .catch(function() {
+            list.innerHTML = '<div class="ispace-comments-loading">加载失败，请刷新重试</div>';
+        });
+    }
+
+    window.submitComment = function() {
+        var input = document.getElementById('comment-input');
+        var content = input.value.trim();
+        if (!content) return;
+        if (content.length > 2000) { alert('评论内容不能超过2000字'); return; }
+        var btn = document.getElementById('comment-submit-btn');
+        btn.disabled = true; btn.textContent = '发表中...';
+        var fd = new FormData();
+        fd.append('content', content);
+        fd.append('csrfmiddlewaretoken', csrfToken);
+        fetch('/pages/' + proId + '/' + docId + '/comments/', { method: 'POST', body: fd })
+        .then(function(r) { return r.json(); })
+        .then(function(r) {
+            btn.disabled = false; btn.textContent = '发表评论';
+            if (r.status) {
+                input.value = '';
+                document.getElementById('comment-char-count').textContent = '0/2000';
+                loadComments();
+            } else {
+                alert(r.data);
+            }
+        })
+        .catch(function() {
+            btn.disabled = false; btn.textContent = '发表评论';
+        });
+    };
+
+    window.toggleReplyForm = function(commentId) {
+        var form = document.getElementById('reply-form-' + commentId);
+        if (!form) return;
+        if (form.style.display === 'block') {
+            form.style.display = 'none';
+        } else {
+            form.style.display = 'block';
+            // 初始化 @mention 选择器（首次展开时）
+            var textarea = document.getElementById('reply-input-' + commentId);
+            if (textarea && !textarea._mentionSelector && window.iSpaceDoc && window.iSpaceDoc.MentionSelector) {
+                textarea._mentionSelector = new window.iSpaceDoc.MentionSelector(textarea);
+                textarea.focus();
+            }
+        }
+    };
+
+    window.cancelReply = function(commentId) {
+        var form = document.getElementById('reply-form-' + commentId);
+        if (form) { form.style.display = 'none'; }
+    };
+
+    window.submitReply = function(commentId) {
+        var input = document.getElementById('reply-input-' + commentId);
+        var content = input.value.trim();
+        if (!content) return;
+        if (content.length > 2000) { alert('回复内容不能超过2000字'); return; }
+        var fd = new FormData();
+        fd.append('content', content);
+        fd.append('parent_id', commentId);
+        fd.append('csrfmiddlewaretoken', csrfToken);
+        fetch('/pages/' + proId + '/' + docId + '/comments/', { method: 'POST', body: fd })
+        .then(function(r) { return r.json(); })
+        .then(function(r) {
+            if (r.status) {
+                input.value = '';
+                loadComments();
+            } else {
+                alert(r.data);
+            }
+        })
+        .catch(function() {});
+    };
+
+    window.deleteComment = async function(commentId) {
+        if (!(await window.iSpaceDoc.confirm({ message: '确认删除此评论？', variant: 'danger' }))) return;
+        var fd = new FormData();
+        fd.append('csrfmiddlewaretoken', csrfToken);
+        fetch('/comments/' + commentId + '/delete/', { method: 'POST', body: fd })
+        .then(function(r) { return r.json(); })
+        .then(function(r) {
+            if (r.status) { loadComments(); }
+            else { alert(r.data); }
+        });
+    };
+
+    // Character count
+    var commentInput = document.getElementById('comment-input');
+    if (commentInput) {
+        commentInput.addEventListener('input', function() {
+            document.getElementById('comment-char-count').textContent = commentInput.value.length + '/2000';
+        });
+    }
+
+    // 展开/收起评论区输入框
+    var _commentMentionInit = false;
+    window.showCommentForm = function() {
+        var wrap = document.getElementById('comment-form-wrap');
+        var input = document.getElementById('comment-input');
+        if (!wrap || !input) return;
+        wrap.style.display = '';
+        setTimeout(function() { input.focus(); }, 150);
+        if (!_commentMentionInit && window.iSpaceDoc && window.iSpaceDoc.MentionSelector) {
+            _commentMentionInit = true;
+            new window.iSpaceDoc.MentionSelector(input);
+        }
+    };
+    window.hideCommentForm = function() {
+        var wrap = document.getElementById('comment-form-wrap');
+        var input = document.getElementById('comment-input');
+        if (wrap) { wrap.style.display = 'none'; }
+        if (input) { input.value = ''; }
+        var countEl = document.getElementById('comment-char-count');
+        if (countEl) { countEl.textContent = '0/2000'; }
+    };
+
+    // Load comments on page load
+    loadComments();
+})();
+</script>

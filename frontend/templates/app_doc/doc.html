@@ -1,0 +1,1607 @@
+{% extends "base.html" %}
+{% load static %}{% load i18n %}{% load doc_filter %}
+
+{% block title %}{{ doc.name }} - {{ doc.name }} - {{ site_name|default:"爱思文档" }}{% endblock %}
+{% block meta_description %}{{ doc.pre_content|striptags|slice:":100" }}{% endblock %}
+{% block header_logo %}
+{{ block.super }}
+<span class="ispace-header-subtitle">{% if site_sub_name %}{{ site_sub_name }}{% else %}{% trans "爱要春风化雨，思必汇流成渊" %}{% endif %}</span>
+{% endblock %}
+
+{% block header_center %}
+<div class="ispace-header-search-center">
+    <div class="ispace-search-input-wrap" style="max-width:420px;width:100%;">
+        <svg class="ispace-search-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="ispace-form-input" id="searchKw" placeholder="{% trans '搜索文档...' %}" value="" onkeyup="if(event.key==='Enter')doSearch()">
+    </div>
+</div>
+{% endblock %}
+
+{% block head_extra %}
+<meta property="og:title" content="{{ doc.name }} - {{ doc.name }}">
+<meta property="og:description" content="{{ doc.pre_content|striptags|slice:":100" }}">
+<meta property="og:url" content="{{ request.scheme }}://{{ request.META.HTTP_HOST }}{{ request.path_info }}">
+{# 大纲面板初始隐藏，防止页面加载时的闪现 #}
+<style>.ispace-outline-panel{transform:translateX(100%)}</style>
+{# 文档页面布局样式 —— 在 <head> 中加载，防止 FOUC #}
+<style>
+/* ---- Doc header: title center, meta centered below, actions right ---- */
+.ispace-doc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ispace-space-3);
+    padding-bottom: var(--ispace-space-2);
+    margin-bottom: var(--ispace-space-1);
+    border-bottom: 1px solid var(--ispace-color-border-light);
+}
+.ispace-doc-header-center {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+}
+.ispace-doc-header-right {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+}
+.ispace-doc-header-meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: var(--ispace-space-1);
+    margin-top: var(--ispace-space-1);
+}
+.ispace-doc-header-title {
+    font-size: var(--ispace-heading-h2);
+    font-weight: var(--ispace-font-semibold);
+    margin: 0;
+    line-height: 1.4;
+    text-align: center;
+    word-break: break-word;
+}
+.ispace-doc-header-sep {
+    color: var(--ispace-color-text-quaternary, #c0c4cc);
+    font-weight: var(--ispace-font-bold);
+    user-select: none;
+}
+.ispace-doc-header-author {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--ispace-color-text-secondary);
+    font-weight: var(--ispace-font-medium);
+    font-size: var(--ispace-font-sm);
+    white-space: nowrap;
+}
+.ispace-doc-header-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--ispace-color-text-tertiary);
+    font-size: var(--ispace-font-xs);
+    white-space: nowrap;
+}
+.ispace-doc-header-meta-item a {
+    color: var(--ispace-color-brand-500);
+}
+.ispace-doc-content-wrapper {
+    padding: var(--ispace-space-0) 0;
+}
+/* Center like & reply buttons */
+.ispace-doc-engagement {
+    justify-content: center;
+}
+/* Breadcrumb — ribbon flag style */
+#doc-view-wrap .ispace-breadcrumb {
+    margin-bottom: var(--ispace-space-6);
+    padding: var(--ispace-space-1) var(--ispace-space-3);
+    margin-left: calc(-1 * var(--ispace-space-2));
+    background: linear-gradient(135deg, var(--ispace-color-brand-50, #eff4ff) 0%, var(--ispace-color-bg-secondary, #f5f6f8) 100%);
+    border-left: 3px solid var(--ispace-color-brand-500, #3b82f6);
+    border-radius: 0 6px 6px 0;
+    font-size: var(--ispace-font-base);
+}
+/* Header subtitle (same as homepage) */
+.ispace-header-subtitle {
+    font-size: var(--ispace-font-sm);
+    color: var(--ispace-color-text-tertiary);
+    margin-left: var(--ispace-space-2);
+    white-space: nowrap;
+}
+.ispace-header-search-center {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 420px;
+    pointer-events: none;
+}
+.ispace-header-search-center .ispace-search-input-wrap {
+    pointer-events: auto;
+}
+@media (max-width: 1024px) {
+    .ispace-header-subtitle { display: none; }
+}
+@media (max-width: 768px) {
+    .ispace-main-content.doc-view-main {
+        padding-left: var(--ispace-space-3);
+        padding-right: var(--ispace-space-3);
+    }
+    .ispace-header-search-center { display: none; }
+    .ispace-outline-tab,
+    .ispace-outline-panel { display: none; }
+}
+
+/* ---- 右侧大纲导航面板 ---- */
+
+/* 收起态：右侧标签条 */
+.ispace-outline-tab {
+    position: fixed;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 400;
+    width: 36px;
+    height: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: var(--ispace-color-surface-0, #fff);
+    border: 1px solid var(--ispace-color-border-light, #e5e7eb);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+    user-select: none;
+}
+.ispace-outline-tab:hover {
+    opacity: 1;
+    transform: translateY(-50%) scale(1.05);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+.ispace-outline-tab svg {
+    color: var(--ispace-color-text-secondary, #64748b);
+    flex-shrink: 0;
+}
+.ispace-outline-tab-text {
+    font-size: 12px;
+    color: var(--ispace-color-text-secondary, #64748b);
+    line-height: 1.4;
+    text-align: center;
+    font-weight: 500;
+    letter-spacing: 2px;
+}
+/* 面板展开时隐藏标签条 */
+.ispace-outline-tab.panel-open {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* 展开态：大纲面板 */
+.ispace-outline-panel {
+    position: fixed;
+    right: 0;
+    top: 64px;
+    z-index: 450;
+    width: 260px;
+    height: calc(100vh - 64px);
+    background: var(--ispace-color-surface-0, #fff);
+    border-left: 1px solid var(--ispace-color-border-light, #e5e7eb);
+    box-shadow: -4px 0 16px rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: auto;
+}
+.ispace-outline-panel.open {
+    transform: translateX(0);
+}
+
+/* 面板头部 */
+.ispace-outline-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--ispace-color-border-light, #e5e7eb);
+    flex-shrink: 0;
+    min-height: 48px;
+}
+.ispace-outline-panel-header svg {
+    color: var(--ispace-color-text-secondary, #64748b);
+    flex-shrink: 0;
+}
+.ispace-outline-panel-title {
+    flex: 1;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ispace-color-text-primary, #0f172a);
+}
+.ispace-outline-panel-close {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ispace-color-text-tertiary, #94a3b8);
+    flex-shrink: 0;
+}
+.ispace-outline-panel-close:hover {
+    background: var(--ispace-color-surface-100, #f1f5f9);
+    color: var(--ispace-color-text-primary, #0f172a);
+}
+
+/* 面板内容区 */
+.ispace-outline-panel-body {
+    flex: 1;
+    overflow-y: auto;
+    position: relative;
+    scrollbar-width: none;
+}
+.ispace-outline-panel-body::-webkit-scrollbar { display: none; }
+
+/* 顶部/底部渐变遮罩 */
+.ispace-outline-panel-body::before,
+.ispace-outline-panel-body::after {
+    content: '';
+    position: sticky;
+    left: 0;
+    right: 0;
+    height: 24px;
+    pointer-events: none;
+    z-index: 1;
+    display: block;
+    transition: opacity 0.3s ease;
+}
+.ispace-outline-panel-body::before {
+    top: 0;
+    background: linear-gradient(to bottom, var(--ispace-color-surface-0, #fff), transparent);
+}
+.ispace-outline-panel-body::after {
+    bottom: 0;
+    background: linear-gradient(to top, var(--ispace-color-surface-0, #fff), transparent);
+}
+.ispace-outline-panel-body.no-overflow::before,
+.ispace-outline-panel-body.no-overflow::after {
+    opacity: 0;
+}
+
+/* 大纲列表 */
+.ispace-outline-panel-list {
+    padding: 8px 0;
+}
+
+/* 空状态 */
+.ispace-outline-empty {
+    padding: 32px 16px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--ispace-color-text-tertiary, #94a3b8);
+}
+
+/* 大纲条目 */
+.ispace-outline-item {
+    display: block;
+    width: 100%;
+    border: none;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+    padding: 5px 16px;
+    font-size: 13px;
+    color: var(--ispace-color-text-secondary, #64748b);
+    line-height: 1.5;
+    transition: background 0.12s ease, color 0.12s ease;
+    border-left: 3px solid transparent;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: inherit;
+}
+.ispace-outline-item:hover {
+    background: var(--ispace-color-surface-100, #f1f5f9);
+    color: var(--ispace-color-text-primary, #0f172a);
+}
+.ispace-outline-item.active {
+    color: var(--ispace-color-brand-500, #6366f1);
+    background: rgba(99, 102, 241, 0.06);
+    border-left-color: var(--ispace-color-brand-500, #6366f1);
+    font-weight: 500;
+}
+
+/* 层级缩进 */
+.ispace-outline-item[data-level="1"] { padding-left: 16px; font-weight: 600; font-size: 13px; }
+.ispace-outline-item[data-level="2"] { padding-left: 28px; }
+.ispace-outline-item[data-level="3"] { padding-left: 44px; }
+.ispace-outline-item[data-level="4"] { padding-left: 60px; }
+.ispace-outline-item[data-level="5"] { padding-left: 76px; font-size: 12px; }
+.ispace-outline-item[data-level="6"] { padding-left: 92px; font-size: 12px; }
+
+/* 移动端适配 */
+@media (max-width: 1024px) {
+    .ispace-outline-panel { width: 220px; }
+}
+</style>
+{% endblock %}
+
+{% block styles %}
+{% if doc.editor_mode == 2 %}
+<link rel="stylesheet" href="{% static 'vditor/dist/index.css' %}?version={{ isdoc_version }}">
+{% elif doc.editor_mode == 4 %}
+<link rel="stylesheet" href="{% static 'luckysheet/dist/css/luckysheet.css' %}?version={{ isdoc_version }}">
+<link rel="stylesheet" href="{% static 'luckysheet/dist/plugins/css/pluginsCss.css' %}?version={{ isdoc_version }}">
+<link rel="stylesheet" href="{% static 'luckysheet/dist/assets/iconfont/iconfont.css' %}?version={{ isdoc_version }}">
+{% elif doc.editor_mode == 5 or doc.editor_mode == 6 or doc.editor_mode == 7 %}
+{# Drawing editors: CSS is inline in their templates #}
+{% endif %}
+<link rel="stylesheet" href="{% static 'viewerjs/viewer.min.css' %}?version={{ isdoc_version }}">
+<link rel="stylesheet" href="{% static 'markdown-ext/marked.css' %}?version={{ isdoc_version }}">
+{% if md_render_theme and md_render_theme != 'default' %}
+<link rel="stylesheet" href="{% static '' %}css/md-themes/{{ md_render_theme }}.css?version={{ isdoc_version }}">
+{% endif %}
+<link rel="stylesheet" href="{% static 'css/md-themes/default.css' %}?version={{ isdoc_version }}">
+<link rel="stylesheet" href="{% static 'prismjs/prism.css' %}?version={{ isdoc_version }}">
+{% endblock %}
+
+{% block layout_class %}{% endblock %}
+
+{% block content %}
+<div id="doc-view-wrap">
+{% include "includes/breadcrumb.html" with breadcrumbs=breadcrumb_items %}
+
+{# --- Unified Doc Header: meta-left, title-center, actions-right, bottom-aligned --- #}
+<div class="ispace-doc-header">
+    <div class="ispace-doc-header-center">
+        <h1 class="ispace-doc-header-title" id="doc-view-title">{{ doc.name }}</h1>
+        <div class="ispace-doc-header-meta-row">
+            <span class="ispace-doc-header-author" data-user-id="{{ doc.create_user.id }}">
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+                {{ doc.create_user.first_name|default:doc.create_user.username }}
+            </span>
+            <span class="ispace-doc-header-sep">·</span>
+            <span class="ispace-doc-header-meta-item" id="doc-toolbar-time">
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+                {{ doc.modify_time|date:"Y-m-d H:i" }}
+            </span>
+            {% if doc_tags %}
+            <span class="ispace-doc-header-sep">·</span>
+            <span class="ispace-doc-header-meta-item">
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>
+                {% for tag in doc_tags %}
+                <a href="{% url 'tag_docs' tag_id=tag.tag.id %}">{{ tag.tag.name }}</a>{% if not forloop.last %}, {% endif %}
+                {% endfor %}
+            </span>
+            {% endif %}
+        </div>
+    </div>
+    <div class="ispace-doc-header-right">
+        <button class="ispace-btn-icon ispace-btn-icon-sm" id="history-btn" tooltip="编辑历史" placement="bottom">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </button>
+        <button class="ispace-btn-icon ispace-btn-icon-sm" id="collect-icon-btn" onclick="toggleCollect()" tooltip="{% if is_collect_doc %}已收藏{% else %}收藏{% endif %}" placement="bottom">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="{% if is_collect_doc %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+        </button>
+{% if request.user == doc.create_user or doc_effective_perm == 'edit' or doc_effective_perm == 'admin' %}
+        <button class="ispace-btn-icon ispace-btn-icon-sm" onclick="enterEditMode()" id="edit-icon-btn" tooltip="编辑" placement="bottom">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z"/><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd"/></svg>
+        </button>
+        {% endif %}
+        
+        {% if request.user == doc.create_user or doc_effective_perm == 'admin' or request.user.is_superuser %}
+        <button class="ispace-btn-icon ispace-btn-icon-sm" data-action="doc-settings" data-doc-id="{{ doc.id }}" data-doc-name="{{ doc.name|escapejs }}" data-can-delete="{% if request.user == doc.create_user %}1{% else %}0{% endif %}" data-can-manage-permissions="1" tooltip="文档设置" placement="bottom">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+        </button>
+        {% endif %}
+    </div>
+</div>
+
+{# --- Document Content (no card background) --- #}
+<div class="ispace-doc-content-wrapper" id="doc-content-area">
+
+    {# 广告位1: 文档正文上方 #}
+    {% if ad_code %}<div class="ispace-doc-ad ispace-doc-ad--top">{{ ad_code|safe }}</div>{% endif %}
+
+    <div class="markdown-body {% if img_scale == 'on' %}ispace-img-thumb{% endif %} {% if long_code != 'on' %}ispace-code-collapse{% endif %} {% if enable_text_indent %}text-indent{% endif %}" id="doc-content">
+        {% if doc.editor_mode == 4 %}
+            <div id="luckysheet-container" style="min-height:600px;"></div>
+        {% elif doc.editor_mode == 5 %}
+            {% include "app_doc/editor/tpl_editor_mindmap.html" %}
+        {% elif doc.editor_mode == 6 %}
+            {% include "app_doc/editor/tpl_editor_drawio.html" %}
+        {% elif doc.editor_mode == 7 %}
+            {% include "app_doc/editor/tpl_editor_excalidraw.html" %}
+        {% else %}
+            <div id="vditor-doc-content"></div>
+        {% endif %}
+    </div>
+
+    {# 广告位2: 文档下方 #}
+    {% if ad_code_2 %}<div class="ispace-doc-ad ispace-doc-ad--bottom">{{ ad_code_2|safe }}</div>{% endif %}
+</div>
+
+{# --- Watermark pattern --- #}
+<style>
+/* ---- Reset for Luckysheet view mode (library relies on content-box & 12px base) ---- */
+#luckysheet-container .luckysheet,
+#luckysheet-container .luckysheet *,
+#luckysheet-container .luckysheet *::before,
+#luckysheet-container .luckysheet *::after {
+  box-sizing: content-box;
+}
+#luckysheet-container .luckysheet {
+  font-size: 12px;
+}
+#luckysheet-container .luckysheet td,
+#luckysheet-container .luckysheet th {
+  padding: 0;
+  border: 0;
+}
+#luckysheet-container .luckysheet .luckysheet-wa-editor,
+#luckysheet-container .luckysheet .luckysheet-wa-calculate {
+  line-height: 26px;
+}
+#luckysheet-container .luckysheet .luckysheet-toolbar-zoom-combobox {
+  vertical-align: middle;
+}
+#luckysheet-container .luckysheet .luckysheet-toolbar-separator {
+  vertical-align: middle;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.ispace-doc-content-wrapper {
+    position: relative;
+    background: transparent;
+    padding: var(--ispace-space-6) 0;
+}
+/* 图片缩略：开启后文档图片最大宽度 350px */
+.markdown-body.ispace-img-thumb img {
+    max-width: 350px;
+    width: auto;
+    height: auto;
+}
+/* 长代码折叠：默认代码块最高 500px 超出滚动 */
+.markdown-body.ispace-code-collapse pre,
+.markdown-body.ispace-code-collapse pre code {
+    max-height: 500px;
+    overflow-y: auto;
+}
+/* 广告位通用样式 */
+.ispace-doc-ad {
+    margin: var(--ispace-space-3) 0;
+    padding: var(--ispace-space-2);
+    text-align: center;
+    overflow: hidden;
+}
+.ispace-doc-ad--sidebar-top {
+    margin: 0 0 var(--ispace-space-3) 0;
+    padding: 0;
+}
+.ispace-doc-ad--sidebar-bottom {
+    margin: var(--ispace-space-3) 0 0 0;
+    padding: 0;
+}
+.ispace-watermark-layer {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    user-select: none;
+    z-index: 0;
+    overflow: hidden;
+}
+.ispace-watermark-layer span {
+    display: inline-block;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--ispace-color-text-quaternary);
+    opacity: 0.08;
+    transform: rotate(-20deg);
+    margin: 24px 48px;
+}
+</style>
+<div class="ispace-watermark-layer" id="watermark-layer"></div>
+<script>
+(function(){
+    var layer = document.getElementById("watermark-layer");
+    if (!layer) return;
+    var name = "{{ request.user.first_name|default:request.user.username|default:''|escapejs }}";
+    if (!name) return;
+    var html = "";
+    for (var i = 0; i < 200; i++) {
+        html += "<span>" + name + "</span>";
+    }
+    layer.innerHTML = html;
+})();
+</script>
+
+
+{# --- Like + Reply at end of doc --- #}
+<div class="ispace-doc-engagement" id="doc-engagement">
+    <button class="ispace-doc-like-btn" id="doc-like-btn" onclick="toggleDocLike()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="{% if user_liked %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2" id="doc-like-icon">
+            <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
+        </svg>
+        <span id="doc-like-count"{% if like_count == 0 %} style="display:none;"{% endif %}>{{ like_count }}</span>
+    </button>
+    <button class="ispace-doc-reply-btn" id="doc-reply-btn" onclick="openReplyToComment()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span>回复</span>
+    </button>
+</div>
+
+
+{# --- Previous / Next Navigation --- #}
+<div class="ispace-flex-between ispace-mt-4" style="gap:var(--ispace-space-3);">
+    <div>
+        {% if prev_doc %}
+        <a href="{% url 'doc_by_id' doc_id=prev_doc.id %}" class="ispace-btn ispace-btn-ghost ispace-btn-sm" style="gap:6px;" data-spa>
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd"/></svg>
+            {{ prev_doc.name }}
+        </a>
+        {% endif %}
+    </div>
+    <div>
+        {% if next_doc %}
+        <a href="{% url 'doc_by_id' doc_id=next_doc.id %}" class="ispace-btn ispace-btn-ghost ispace-btn-sm" style="gap:6px;" data-spa>
+            {{ next_doc.name }}
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+
+{# --- History data (hidden) --- #}
+{% if doc_history %}
+<script id="doc-history-data" type="application/json">[
+    {% for h in doc_history %}
+    {"id":{{ h.id }},"user":"{{ h.create_user__first_name|default:h.create_user__username|escapejs }}","time":"{{ h.create_time|date:'Y-m-d H:i' }}"}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+]</script>
+{% else %}
+<script id="doc-history-data" type="application/json">[{"id":0,"user":"{{ doc.create_user.first_name|default:doc.create_user.username|escapejs }}","time":"{{ doc.create_time|date:'Y-m-d H:i' }}"}]</script>
+{% endif %}
+
+
+{# --- Share Modal --- #}
+<div class="ispace-modal-backdrop" id="shareModal" style="display:none;">
+    <div class="ispace-modal ispace-modal-sm">
+        <div class="ispace-modal-header">
+            <h3 class="ispace-modal-title">分享文档</h3>
+            <button class="ispace-modal-close" onclick="document.getElementById('shareModal').style.display='none'">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="ispace-modal-body">
+            <div id="share-content">
+                {% if is_share %}
+                <p style="font-size:var(--ispace-font-sm);color:var(--ispace-color-text-secondary);margin-bottom:var(--ispace-space-3);">当前分享状态：<strong>已分享</strong></p>
+                <div class="ispace-form-group">
+                    <label class="ispace-form-label">分享链接</label>
+                    <div style="display:flex;gap:8px;">
+                        <input type="text" id="share-url" class="ispace-form-input" readonly value="{{ request.scheme }}://{{ request.META.HTTP_HOST }}{% url 'share_doc' %}{{ doc_share.token }}/" style="flex:1;">
+                        <button class="ispace-btn ispace-btn-primary ispace-btn-sm" onclick="copyShareUrl()">复制</button>
+                    </div>
+                </div>
+                {% if doc_share.is_password %}
+                <p style="font-size:var(--ispace-font-xs);color:var(--ispace-color-warning-text);">此分享已设置密码保护</p>
+                {% endif %}
+                <button class="ispace-btn ispace-btn-danger ispace-btn-sm ispace-mt-3" onclick="cancelShare()">撤销分享</button>
+                {% else %}
+                <p style="font-size:var(--ispace-font-sm);color:var(--ispace-color-text-secondary);margin-bottom:var(--ispace-space-3);">生成公开分享链接，任何人可通过链接访问此文档。</p>
+                <div class="ispace-form-group">
+                    <label class="ispace-form-label">访问密码（可选）</label>
+                    <input type="text" id="share-pwd" class="ispace-form-input" placeholder="留空表示无需密码">
+                </div>
+                <div class="ispace-form-group">
+                    <label class="ispace-form-label">有效期（天，0=永久）</label>
+                    <input type="number" id="share-days" class="ispace-form-input" value="0" min="0">
+                </div>
+                <button class="ispace-btn ispace-btn-primary ispace-btn-sm" onclick="createShare()">生成分享链接</button>
+                {% endif %}
+            </div>
+        </div>
+        <div class="ispace-modal-footer">
+            <button class="ispace-btn ispace-btn-secondary" onclick="document.getElementById('shareModal').style.display='none'">关闭</button>
+        </div>
+    </div>
+</div>
+{% include "includes/doc_comments.html" %}
+</div>{# end doc-view-wrap #}
+
+{# --- Outline Navigation Panel --- #}
+<div class="ispace-outline-tab" id="outlineTab" title="展开大纲">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h10M4 18h16"/></svg>
+    <span class="ispace-outline-tab-text">目<br>录</span>
+</div>
+<div class="ispace-outline-panel" id="outlinePanel">
+    <div class="ispace-outline-panel-header">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h10M4 18h16"/></svg>
+        <span class="ispace-outline-panel-title">目录</span>
+        <button class="ispace-outline-panel-close" id="outlinePanelClose" aria-label="收起大纲">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+    </div>
+    <div class="ispace-outline-panel-body" id="outlinePanelBody">
+        {# 广告位4: 左侧目录栏上方 #}
+        {% if ad_code_4 %}<div class="ispace-doc-ad ispace-doc-ad--sidebar-top">{{ ad_code_4|safe }}</div>{% endif %}
+        <div class="ispace-outline-panel-list" id="outlinePanelList">
+            <div class="ispace-outline-empty">解析中...</div>
+        </div>
+        {# 广告位3: 左侧目录栏下方 #}
+        {% if ad_code_3 %}<div class="ispace-doc-ad ispace-doc-ad--sidebar-bottom">{{ ad_code_3|safe }}</div>{% endif %}
+    </div>
+</div>
+
+{% include "includes/inline_editor.html" %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'viewerjs/viewer.min.js' %}?version={{ isdoc_version }}"></script>
+<script src="{% static 'prismjs/prism.js' %}?version={{ isdoc_version }}"></script>
+<script src="{% static 'js/attachment-preview.js' %}?version={{ isdoc_version }}"></script>
+{% if doc.editor_mode != 4 %}
+<script src="{% static 'markdown-ext/marked/marked.min.js' %}?version={{ isdoc_version }}"></script>
+{% endif %}
+{% if doc.editor_mode == 2 %}
+<script src="{% static 'vditor/dist/index.min.js' %}?version={{ isdoc_version }}"></script>
+<script src="{% static 'js/icon-picker.js' %}?version={{ isdoc_version }}"></script>
+{% endif %}
+{% if doc.editor_mode == 4 %}
+<script src="{% static 'luckysheet/dist/plugins/js/plugin.js' %}?version={{ isdoc_version }}"></script>
+<script src="{% static 'luckysheet/dist/luckysheet.umd.js' %}?version={{ isdoc_version }}"></script>
+{% endif %}
+
+<script>
+function doSearch(){
+    var kw = document.getElementById('searchKw').value.trim();
+    window.location.href = '/search/?kw=' + encodeURIComponent(kw) + '&type=doc';
+}
+function toggleSidebar(){var s=document.getElementById('doc-sidebar');s.style.display='none';document.querySelector('.ispace-app-layout').classList.remove('has-sidebar');}
+
+function toggleCollect(){
+    var btn = document.getElementById('collect-icon-btn');
+    var formData = new FormData();
+    formData.append('csrfmiddlewaretoken','{{ csrf_token }}');
+    formData.append('collect_id',{{ doc.id }});
+    formData.append('collect_type',1);
+    fetch('{% url "my_collect" %}',{method:'POST',body:formData})
+    .then(function(r){return r.json();})
+    .then(function(r){
+        if(r.status){
+            var iconSvg = btn.querySelector('svg');
+            var tooltip = btn.getAttribute('tooltip');
+            if(r.data==='add'){
+                iconSvg.setAttribute('fill','currentColor');
+                btn.setAttribute('tooltip','已收藏');
+            }else{
+                iconSvg.setAttribute('fill','none');
+                btn.setAttribute('tooltip','收藏');
+            }
+        }
+    });
+}
+
+function toggleShare(){
+    document.getElementById('shareModal').style.display='flex';
+}
+
+function copyShareUrl(){
+    var input = document.getElementById('share-url');
+    input.select();document.execCommand('copy');
+    if(window.iSpaceDoc&&iSpaceDoc.Toast){iSpaceDoc.Toast.success('链接已复制');}
+}
+
+function createShare(){
+    var pwd = document.getElementById('share-pwd').value;
+    var days = document.getElementById('share-days').value;
+    var formData = new FormData();
+    formData.append('csrfmiddlewaretoken','{{ csrf_token }}');
+    formData.append('doc_id',{{ doc.id }});
+    if(pwd) formData.append('share_pwd',pwd);
+    if(days) formData.append('days',days);
+    fetch('{% url "share_doc" %}',{method:'POST',body:formData})
+    .then(function(r){return r.json();})
+    .then(function(r){
+        if(r.status){window.location.reload();}
+        else{alert('分享失败：'+r.data);}
+    });
+}
+
+async function cancelShare(){
+    if(!(await confirm('确认撤销分享？'))) return;
+    var formData = new FormData();
+    formData.append('csrfmiddlewaretoken','{{ csrf_token }}');
+    formData.append('doc_id',{{ doc.id }});
+    formData.append('action','cancel');
+    fetch('{% url "share_doc" %}',{method:'POST',body:formData})
+    .then(function(r){return r.json();})
+    .then(function(r){
+        if(r.status){window.location.reload();}
+        else{alert('撤销失败：'+r.data);}
+    });
+}
+
+async function delDoc(){
+    var docId = {{ doc.id }};
+    // 检查子文档
+    var checkResp = await fetch('/doc/' + docId + '/children/').then(function(r){return r.json();});
+    if (!checkResp.status) { alert('检查失败：' + (checkResp.data || '')); return; }
+
+    if (checkResp.has_children) {
+        // 高危：有子文档，显示 CAPTCHA 确认弹窗
+        var confirmed = await iSpaceDoc.confirmDeleteWithCaptcha({
+            docName: '{{ doc.name|escapejs }}',
+            totalChildren: checkResp.total_children,
+            directChildren: checkResp.direct_children || [],
+            csrfToken: '{{ csrf_token }}'
+        });
+        if (!confirmed) return;
+    } else {
+        // 普通确认
+        if (!(await confirm('确认删除《{{ doc.name|escapejs }}》？文档将被移入回收站。', { variant: 'danger' }))) return;
+    }
+
+    // 执行删除
+    var formData = new FormData();
+    formData.append('csrfmiddlewaretoken','{{ csrf_token }}');
+    formData.append('doc_id', docId);
+    fetch('{% url "del_doc" %}',{method:'POST',body:formData})
+    .then(function(r){return r.json();})
+    .then(function(r){
+        if(r.status){window.location.href='{% url "pro_list" %}';}
+        else{alert('删除失败：'+r.data);}
+    });
+}
+
+// ---- Doc Like ----
+function toggleDocLike(){
+    var icon = document.getElementById('doc-like-icon');
+    var countEl = document.getElementById('doc-like-count');
+    var fd = new FormData();
+    fd.append('csrfmiddlewaretoken','{{ csrf_token }}');
+    fetch('{% url "doc_like_toggle" doc_id=doc.id %}',{method:'POST',body:fd})
+    .then(function(r){return r.json();})
+    .then(function(r){
+        if(r.status){
+            icon.setAttribute('fill', r.liked ? 'currentColor' : 'none');
+            if(r.count > 0){
+                countEl.style.display = '';
+                countEl.textContent = r.count;
+            }else{
+                countEl.style.display = 'none';
+            }
+        }
+    });
+}
+
+function openReplyToComment(){
+    if (typeof window.showCommentForm === 'function') {
+        window.showCommentForm();
+        var commentsSection = document.getElementById('comments-section');
+        if (commentsSection) {
+            commentsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+    }
+}
+
+// ---- History Tooltip ----
+(function(){
+    var historyBtn = document.getElementById('history-btn');
+    if (!historyBtn) return;
+    var historyData = JSON.parse(document.getElementById('doc-history-data').textContent);
+    var tooltip = document.createElement('div');
+    tooltip.className = 'ispace-history-tooltip';
+    tooltip.style.display = 'none';
+    document.body.appendChild(tooltip);
+
+    var showCount = 5;
+    function renderHistory(items) {
+        var shown = items.slice(0, showCount);
+        var html = '<div class="ispace-history-tooltip-header">编辑历史 (' + items.length + ')</div>';
+        html += '<div class="ispace-history-tooltip-list">';
+        shown.forEach(function(h) {
+            html += '<div class="ispace-history-tooltip-item"><span class="ispace-history-tooltip-user">' + escapeHTML(h.user) + '</span><span class="ispace-history-tooltip-time">' + h.time + '</span></div>';
+        });
+        html += '</div>';
+        if (items.length > showCount) {
+            html += '<button class="ispace-history-tooltip-more" id="history-show-more">显示更多 (' + (items.length - showCount) + ')</button>';
+        }
+        return html;
+    }
+
+    function positionTooltip() {
+        var rect = historyBtn.getBoundingClientRect();
+        tooltip.style.left = Math.min(rect.left, window.innerWidth - 270) + 'px';
+        tooltip.style.top = (rect.bottom + 8) + 'px';
+    }
+
+    function showTooltip() {
+        tooltip.innerHTML = renderHistory(historyData);
+        tooltip.style.display = 'block';
+        positionTooltip();
+
+        var moreBtn = document.getElementById('history-show-more');
+        if (moreBtn) {
+            moreBtn.addEventListener('click', function() {
+                showCount = historyData.length;
+                tooltip.innerHTML = renderHistory(historyData);
+                tooltip.style.display = 'block';
+                positionTooltip();
+            });
+        }
+    }
+
+    historyBtn.addEventListener('mouseenter', showTooltip);
+    tooltip.addEventListener('mouseenter', function(){});
+
+    var hideTimer;
+    historyBtn.addEventListener('mouseleave', function() {
+        hideTimer = setTimeout(function() {
+            tooltip.style.display = 'none';
+            showCount = 5;
+        }, 200);
+    });
+    tooltip.addEventListener('mouseleave', function() {
+        tooltip.style.display = 'none';
+        showCount = 5;
+    });
+    tooltip.addEventListener('mouseenter', function() {
+        if (hideTimer) clearTimeout(hideTimer);
+    });
+
+    function escapeHTML(str) {
+        var d = document.createElement('div');
+        d.textContent = str;
+        return d.innerHTML;
+    }
+})();
+
+// ---- View/Edit Mode Toggle ----
+window._isdocVersion = '{{ isdoc_version }}';
+window._inlineUploadImgUrl = '{% url "upload_doc_img" %}';
+window._docId = {{ doc.id }};
+window._docEditorMode = {{ doc.editor_mode }};
+window._docPreContent = '{{ doc.pre_content|escapejs }}';
+window._docContent = '{{ doc.content|escapejs }}';
+window._docName = '{{ doc.name|escapejs }}';
+window._docTags = '{{ doc_tags_str|default:""|escapejs }}';
+window._docParentDoc = {{ doc.parent_doc }};
+window._inlineDocStatus = {{ doc.status }};
+window._docMentionUsers = {{ doc_mention_users_json|default:'{}'|safe }};
+
+window._inlineSubmitFn = inlineSaveDoc;
+window._inlineCancelFn = inlineCancelEdit;
+
+function processDocMentions(container) {
+    var userMap = window._docMentionUsers;
+    if (!userMap) return;
+    var keys = Object.keys(userMap);
+    if (keys.length === 0) return;
+
+    // 收集所有文本节点（避免遍历中修改 DOM）
+    var walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
+    var textNodes = [];
+    while (walker.nextNode()) { textNodes.push(walker.currentNode); }
+
+    var pattern = /@([\w.@+-]+)/g;
+    textNodes.forEach(function(textNode) {
+        // 跳过已在 ispace-mention-link 内的文本节点
+        if (textNode.parentNode && textNode.parentNode.classList && textNode.parentNode.classList.contains('ispace-mention-link')) return;
+
+        var text = textNode.textContent;
+        var match;
+        var lastIndex = 0;
+        var fragments = [];
+
+        pattern.lastIndex = 0;
+        while ((match = pattern.exec(text)) !== null) {
+            var username = match[1];
+            var userId = userMap[username];
+            if (!userId) continue;
+
+            if (match.index > lastIndex) {
+                fragments.push(document.createTextNode(text.substring(lastIndex, match.index)));
+            }
+            var link = document.createElement('a');
+            link.className = 'ispace-mention-link';
+            link.setAttribute('data-user-id', userId);
+            link.textContent = match[0];
+            fragments.push(link);
+            lastIndex = pattern.lastIndex;
+        }
+
+        if (fragments.length === 0) return;
+        if (lastIndex < text.length) {
+            fragments.push(document.createTextNode(text.substring(lastIndex)));
+        }
+
+        var parent = textNode.parentNode;
+        if (!parent) return;
+        for (var i = 0; i < fragments.length; i++) {
+            parent.insertBefore(fragments[i], textNode);
+        }
+        parent.removeChild(textNode);
+    });
+}
+
+// 编辑按钮点击 → 跳转到 ?edit=1 页面重新加载，与新建走完全相同的初始化路径
+function enterEditMode() {
+    var url = window.location.pathname + '?edit=1';
+    window.location.href = url;
+}
+
+// ?edit=1 页面加载时调用的实际初始化函数
+function _initEditMode() {
+    var viewWrap = document.getElementById('doc-view-wrap');
+    if (viewWrap) viewWrap.style.display = 'none';
+    var editBtn = document.getElementById('edit-icon-btn');
+    if (editBtn) editBtn.style.display = 'none';
+    var addBtn = document.getElementById('add-child-btn');
+    if (addBtn) addBtn.style.display = 'none';
+    window._inlineIsCreate = false;
+    window._inlineDocId = window._docId;
+    window._inlineParentDoc = window._docParentDoc;
+    window._inlineSubmitFn = inlineSaveDoc;
+    window._inlineCancelFn = inlineCancelEdit;
+    initInlineEditor(window._docEditorMode, false);
+}
+
+function inlineCancelEdit() {
+    if (window._inlineMdChanged) {
+        confirm('有未保存的更改，确定要取消吗？').then(function(ok) {
+            if (!ok) return;
+            exitEditMode();
+        });
+        return;
+    }
+    exitEditMode();
+}
+
+function exitEditMode() {
+    destroyInlineEditor();
+    var viewWrap = document.getElementById('doc-view-wrap');
+    if (viewWrap) viewWrap.style.display = '';
+    var editBtn = document.getElementById('edit-icon-btn');
+    if (editBtn) editBtn.style.display = '';
+    var addBtn = document.getElementById('add-child-btn');
+    if (addBtn) addBtn.style.display = '';
+}
+
+// ---- Child Doc Creation Mode ----
+function enterChildCreateMode() {
+    var params = new URLSearchParams(window.location.search);
+    var editorMode = parseInt(params.get('eid')) || window._docEditorMode;
+    if (editorMode === 3) editorMode = 2; // iceEditor removed, fallback to Vditor
+
+    var viewWrap = document.getElementById('doc-view-wrap');
+    if (viewWrap) viewWrap.style.display = 'none';
+    var editBtn = document.getElementById('edit-icon-btn');
+    if (editBtn) editBtn.style.display = 'none';
+    var addBtn = document.getElementById('add-child-btn');
+    if (addBtn) addBtn.style.display = 'none';
+
+    window._inlineIsCreate = true;
+    window._inlineDocId = 0;
+    document.getElementById('inline-parent-doc').value = '{{ doc.id }}';
+    window._inlineSubmitFn = inlineCreateSubmit;
+    window._inlineCancelFn = inlineCancelChildCreate;
+
+    initInlineEditor(editorMode, true);
+}
+
+function inlineCancelChildCreate() {
+    if (window._inlineMdChanged) {
+        confirm('有未保存的更改，确定要取消吗？').then(function(ok) {
+            if (!ok) return;
+            exitChildCreateMode();
+        });
+        return;
+    }
+    exitChildCreateMode();
+}
+
+function exitChildCreateMode() {
+    destroyInlineEditor();
+    var viewWrap = document.getElementById('doc-view-wrap');
+    if (viewWrap) viewWrap.style.display = '';
+    var editBtn = document.getElementById('edit-icon-btn');
+    if (editBtn) editBtn.style.display = '';
+    var addBtn = document.getElementById('add-child-btn');
+    if (addBtn) addBtn.style.display = '';
+}
+
+function inlineSaveDoc(status) {
+    var content = getInlineEditorContent();
+    var preContent = getInlineEditorPreContent();
+    var docName = document.getElementById('inline-doc-name');
+    var tagsEl = document.getElementById('inline-tagsinput');
+
+    var payload = {
+        doc_id: window._docId,
+        doc_name: docName ? docName.value : '',
+        content: content,
+        pre_content: preContent,
+        parent_doc: window._docParentDoc,
+        doc_tag: tagsEl ? tagsEl.value : '',
+        status: status,
+        editor_mode: window._docEditorMode
+    };
+
+    fetch('{% url "modify_doc" doc_id=doc.id %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: Object.keys(payload).map(function(k) {
+            return encodeURIComponent(k) + '=' + encodeURIComponent(payload[k] != null ? payload[k] : '');
+        }).join('&') + '&csrfmiddlewaretoken=' + (document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '{{ csrf_token }}')
+    }).then(function(r) { return r.json(); })
+    .then(function(r) {
+        if (r.status) {
+            window._inlineMdChanged = false;
+            window._docName = docName ? docName.value : window._docName;
+            window._docPreContent = preContent;
+            window._docContent = content;
+            window._inlineDocStatus = status;
+            if (typeof _updateDocStatusBadge === 'function') _updateDocStatusBadge(status);
+            refreshDocView();
+            if (window.InlineComments) { setTimeout(function() { window.InlineComments.refresh(); }, 100); }
+            if (status === 0) {
+                // Draft saved: stay in edit mode
+                if (typeof layer !== 'undefined') layer.msg('草稿已保存', {icon: 1});
+            } else {
+                exitEditMode();
+                if (typeof layer !== 'undefined') layer.msg('发布成功', {icon: 1});
+            }
+        } else {
+            if (typeof layer !== 'undefined') layer.msg('保存失败: ' + (r.data || ''), {icon: 2});
+            else alert('保存失败');
+        }
+    }).catch(function() {
+        if (typeof layer !== 'undefined') layer.msg('保存异常', {icon: 2});
+    });
+}
+
+function refreshDocView() {
+    var titleEl = document.getElementById('doc-view-title');
+    if (titleEl) titleEl.textContent = window._docName;
+    document.title = window._docName + ' - {{ doc.name }} - {{ site_name|default:"爱思文档" }}';
+
+    var contentContainer = document.getElementById('doc-content');
+    if (contentContainer) {
+        if (window._docEditorMode === 5 || window._docEditorMode === 6 || window._docEditorMode === 7) {
+            // Drawing editors: reload the page to refresh
+            location.reload();
+            return;
+        } else if (window._docEditorMode === 4) {
+            var luckyEl = document.getElementById('luckysheet-container');
+            if (luckyEl && typeof luckysheet !== 'undefined') {
+                try { luckysheet.destroy(); } catch(e) {}
+                luckyEl.innerHTML = '';
+                luckysheet.create({
+                    container: 'luckysheet-container',
+                    lang: 'zh',
+                    data: JSON.parse(window._docPreContent || 'null'),
+                    showinfobar: false,
+                    showsheetbar: false,
+                    allowEdit: false
+                });
+            }
+        } else {
+            var vdEl = document.getElementById('vditor-doc-content');
+            if (vdEl && typeof Vditor !== 'undefined') {
+                Vditor.preview(vdEl, window._docPreContent, {
+                    cdn: '{% static "vditor" %}',
+                    mode: 'light',
+                    hljs: { style: 'github' }
+                });
+                setTimeout(function() {
+                    processCallouts(vdEl);
+                    processDocMentions(vdEl);
+                    if (window.AttachmentPreview) window.AttachmentPreview.init(vdEl);
+                }, 200);
+            }
+        }
+    }
+
+    if (window.Prism) { Prism.highlightAll(); }
+    if (window.Viewer) {
+        try { new Viewer(document.getElementById('doc-content')); } catch(e) {}
+    }
+}
+
+window.addEventListener('beforeunload', function(e) {
+    if (window._inlineMdChanged) {
+        e.preventDefault();
+        e.returnValue = '您有未保存的更改，确定要离开吗？';
+    }
+});
+
+
+var _vditorReady = typeof Vditor !== 'undefined';
+
+// Auto-trigger inline editor if ?create=1, ?create_child=1, or ?edit=1 in URL
+// Runs immediately (not in DOMContentLoaded) so it also works during SPA navigation
+(function(){
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('edit') === '1') {
+        _initEditMode();
+    } else if (params.get('create') === '1') {
+        enterChildCreateMode();
+    } else if (params.get('create_child') === '1') {
+        enterChildCreateMode();
+    }
+})();
+
+document.addEventListener('DOMContentLoaded',function(){
+    // 权限申请确认弹窗：管理员点击通知后展示，需手动同意/拒绝
+    (function(){
+        var params = new URLSearchParams(window.location.search);
+        var grantUserId = params.get('grant_perm');
+        if (grantUserId) {
+            var requesterName = decodeURIComponent(params.get('requester_name') || '');
+            var applyReason = decodeURIComponent(params.get('apply_reason') || '');
+            var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
+            var csrfToken = csrf ? csrf.value : '{{ csrf_token }}';
+            // Clean URL immediately
+            params.delete('grant_perm');
+            params.delete('requester_name');
+            params.delete('apply_reason');
+            var cleanUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+            window.history.replaceState({}, '', cleanUrl);
+
+            // Build confirmation dialog
+            var overlay = document.createElement('div');
+            overlay.className = 'ispace-modal-overlay';
+            overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.45);z-index:9999;display:flex;align-items:center;justify-content:center;';
+            var reasonHtml = applyReason
+                ? '<div style="margin-top:12px;padding:10px 12px;background:var(--ispace-color-bg-secondary, #f5f5f5);border-radius:6px;font-size:13px;color:var(--ispace-color-text-secondary);max-height:100px;overflow-y:auto;"><span style="font-weight:500;color:var(--ispace-color-text-tertiary);">申请理由：</span>' + escHtml(applyReason) + '</div>'
+                : '';
+            overlay.innerHTML = '<div style="background:var(--ispace-color-bg-primary, #fff);border-radius:12px;padding:24px;max-width:440px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.15);">'
+                + '<h3 style="margin:0 0 16px;font-size:17px;font-weight:600;">权限申请确认</h3>'
+                + '<div style="font-size:14px;color:var(--ispace-color-text-primary);line-height:1.6;">'
+                + '<span style="color:var(--ispace-color-text-tertiary);">申请人：</span>'
+                + '<span data-user-id="' + escHtml(grantUserId) + '" style="color:var(--ispace-color-primary);font-weight:500;cursor:pointer;">' + escHtml(requesterName || '用户#' + grantUserId) + '</span>'
+                + '</div>'
+                + '<div style="font-size:14px;color:var(--ispace-color-text-tertiary);margin-top:8px;">'
+                + '文档：<span style="color:var(--ispace-color-text-primary);font-weight:500;">' + escHtml('{{ doc.name|escapejs }}') + '</span>'
+                + '</div>'
+                + reasonHtml
+                + '<div style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end;">'
+                + '<button class="ispace-btn ispace-btn-ghost ispace-btn-sm" id="btn-decline-perm">拒绝</button>'
+                + '<button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="btn-grant-perm">同意授权</button>'
+                + '</div>'
+                + '</div>';
+            document.body.appendChild(overlay);
+
+            function closeDialog() {
+                if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+            }
+
+            // Decline
+            document.getElementById('btn-decline-perm').addEventListener('click', function() {
+                closeDialog();
+                if (window.showError) window.showError('已拒绝权限申请');
+            });
+
+            // Grant view permission
+            document.getElementById('btn-grant-perm').addEventListener('click', function() {
+                var btn = this;
+                btn.disabled = true;
+                btn.textContent = '处理中...';
+                fetch('/api/docs/{{ doc.id }}/permissions/grant/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                    body: JSON.stringify({ target_type: 'user', target_id: parseInt(grantUserId), permission: 'view' })
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    closeDialog();
+                    if (data.status || data.code === 0) {
+                        if (window.showSuccess) window.showSuccess('已授予查看权限');
+                    } else {
+                        if (window.showError) window.showError(data.message || '授权失败');
+                    }
+                })
+                .catch(function() {
+                    closeDialog();
+                    if (window.showError) window.showError('授权失败，请重试');
+                });
+            });
+
+            // Close on overlay click
+            overlay.addEventListener('click', function(e) {
+                if (e.target === overlay) closeDialog();
+            });
+
+            // Escape key to close
+            document.addEventListener('keydown', function escClose(e) {
+                if (e.key === 'Escape') {
+                    closeDialog();
+                    document.removeEventListener('keydown', escClose);
+                }
+            });
+        }
+        function escHtml(s) {
+            if (!s) return '';
+            var d = document.createElement('div');
+            d.textContent = s;
+            return d.innerHTML;
+        }
+    })();
+
+    // Apply doc-view-main class to reduce horizontal padding
+    var main = document.querySelector('.ispace-main-content');
+    if (main) main.classList.add('doc-view-main');
+
+//
+
+    // Only render view mode when inline editor is not active
+    var inlineEditorEl = document.getElementById('inline-editor');
+    if (!inlineEditorEl || inlineEditorEl.style.display === 'none') {
+        {% if doc.editor_mode == 4 %}
+        luckysheet.create({container:'luckysheet-container',lang:'zh',data:JSON.parse('{{ doc.pre_content|default:"null"|escapejs }}'),showinfobar:false,showsheetbar:false,allowEdit:false});
+        {% elif doc.editor_mode == 5 or doc.editor_mode == 6 or doc.editor_mode == 7 %}
+        {# Drawing editors are self-initializing #}
+        {% else %}
+        Vditor.preview(document.getElementById('vditor-doc-content'),'{{ doc.pre_content|escapejs }}',{cdn:'{% static "vditor" %}',mode:'light',hljs:{style:'github'}});
+        setTimeout(function() {
+            var vc = document.getElementById('vditor-doc-content');
+            processCallouts(vc);
+            processDocMentions(vc);
+        }, 200);
+        {% endif %}
+    }
+
+    if(window.Viewer){var g=new Viewer(document.getElementById('doc-content'));}
+    if(window.Prism){Prism.highlightAll();}
+    // 附件预览初始化
+    if (window.AttachmentPreview) {
+        var docContentEl = document.getElementById('doc-content');
+        if (docContentEl) window.AttachmentPreview.init(docContentEl);
+    }
+
+    // ---- Outline Navigation Panel ----
+    // ---- Callout post-processing: convert `>i`, `>w` etc. prefixes to styled blockquotes ----
+    var CALLOUT_ICONS = {
+        'info': 'about',    // ℹ 信息
+        'warning': 'notice', // 🔔 提醒
+        'danger': 'auz',     // ⚠ 关键
+        'success': 'star',   // ⭐ 关注
+        'tip': 'light'       // 💡 技巧
+    };
+    var CALLOUT_PATTERNS = {
+        'i': 'info', 'info': 'info',
+        'w': 'warning', 'warning': 'warning',
+        'e': 'danger', 'error': 'danger',
+        's': 'success', 'success': 'success',
+        't': 'tip', 'tip': 'tip'
+    };
+    function processCallouts(container) {
+        if (!container) return;
+        var blockquotes = container.querySelectorAll('blockquote');
+        for (var i = 0; i < blockquotes.length; i++) {
+            var bq = blockquotes[i];
+            // Skip already-processed callouts
+            if (bq.classList.contains('info') || bq.classList.contains('warning') ||
+                bq.classList.contains('danger') || bq.classList.contains('success') ||
+                bq.classList.contains('tip')) continue;
+            // Get the first child (Vditor puts content in <p> inside blockquote)
+            var firstChild = bq.firstElementChild;
+            if (!firstChild) continue;
+            var text = firstChild.textContent || '';
+            var match = text.match(/^([iwets]|info|warning|error|success|tip)\s+/i);
+            if (!match) continue;
+            var type = CALLOUT_PATTERNS[match[0].trim().toLowerCase()];
+            if (type) {
+                // Strip the prefix from the first text node, preserving HTML formatting (bold, etc.)
+                var prefixLen = match[0].length;
+                for (var j = 0; j < firstChild.childNodes.length; j++) {
+                    var node = firstChild.childNodes[j];
+                    if (node.nodeType === 3) {
+                        var t = node.textContent;
+                        if (t.length >= prefixLen && t.substring(0, prefixLen) === match[0]) {
+                            node.textContent = t.substring(prefixLen);
+                            break;
+                        }
+                        if (t === match[0]) {
+                            node.textContent = '';
+                            break;
+                        }
+                    }
+                }
+                // 图标通过 CSS ::before 渲染 (components.css .vditor-reset blockquote.info > p:first-child::before)
+                // 不注入 DOM 元素，避免与 CSS ::before 伪元素重复渲染
+                bq.classList.add(type);
+            }
+        }
+    }
+    window.processCallouts = processCallouts;
+    // Process callouts after Vditor renders (both initial and refresh)
+    var _vc = document.getElementById('vditor-doc-content');
+    if (_vc && _vc.children.length > 0) { processCallouts(_vc); }
+
+    initOutlinePanel();
+
+    // 始终处理 @mention 渲染（无论哪种渲染路径）
+    var _mentionContainer = document.getElementById('vditor-doc-content');
+    if (_mentionContainer && _mentionContainer.children.length > 0) {
+        processDocMentions(_mentionContainer);
+    }
+});
+
+// 服务端预生成的大纲目录数据
+window.__docOutline = {{ doc.outline|default:'null'|safe }};
+
+// 确保 @mention 渲染（放在脚本末尾作为兜底，延迟执行以确保 Vditor 渲染完成）
+setTimeout(function() {
+    var c = document.getElementById('vditor-doc-content');
+    if (c && c.children.length > 0 && typeof processDocMentions === 'function') {
+        processDocMentions(c);
+    }
+}, 200);
+
+/**
+ * 初始化右侧大纲导航面板：优先使用服务端预生成的 outline JSON，
+ * 降级到 DOM 扫描（兼容未重新保存的旧文档）。
+ */
+function initOutlinePanel() {
+    // 防止重复初始化（refresh 调用前会先清空 _outlineInited 再递归）
+    if (window._outlineInited) return;
+
+    var tab = document.getElementById('outlineTab');
+    var panel = document.getElementById('outlinePanel');
+    var listEl = document.getElementById('outlinePanelList');
+    var bodyEl = document.getElementById('outlinePanelBody');
+    var closeBtn = document.getElementById('outlinePanelClose');
+    if (!tab || !panel || !listEl) return;
+
+    var headingList = [];
+
+    // 1. 优先使用服务端预生成的 outline 数据
+    var serverOutline = window.__docOutline;
+    if (serverOutline && Array.isArray(serverOutline) && serverOutline.length > 0) {
+        headingList = serverOutline.map(function(item) {
+            return { id: item.id, level: item.level, text: item.text.substring(0, 50), el: null };
+        });
+        // 将 outline ID 同步到 DOM 标题元素，确保点击跳转和滚动监听正常工作
+        var contentEl = document.getElementById('doc-content');
+        if (contentEl) {
+            var domHeadings = contentEl.querySelectorAll('h1, h2, h3, h4, h5, h6');
+            domHeadings.forEach(function(h, idx) {
+                if (idx < headingList.length) {
+                    h.setAttribute('id', headingList[idx].id);
+                    headingList[idx].el = h;
+                }
+            });
+        }
+    } else {
+        // 2. 降级：客户端 DOM 扫描（兼容旧文档）
+        var content = document.getElementById('doc-content');
+        if (!content) return;
+        var headings = content.querySelectorAll('h1, h2, h3, h4, h5, h6');
+        if (!headings.length) {
+            listEl.innerHTML = '<div class="ispace-outline-empty">暂无标题</div>';
+            window._outlineInited = true;
+            window._outlinePanel = {
+                refresh: function() { listEl.innerHTML = ''; window._outlineInited = false; initOutlinePanel(); },
+                open: function() { panel.classList.add('open'); tab.classList.add('panel-open'); },
+                close: function() { panel.classList.remove('open'); tab.classList.remove('panel-open'); }
+            };
+            tab.addEventListener('click', function(e) { e.stopPropagation(); panel.classList.add('open'); tab.classList.add('panel-open'); });
+            document.getElementById('outlinePanelClose').addEventListener('click', function(e) { e.stopPropagation(); panel.classList.remove('open'); tab.classList.remove('panel-open'); });
+            setTimeout(function() { document.getElementById('outlinePanelBody').classList.add('no-overflow'); }, 150);
+            return;
+        }
+        var usedIds = {};
+        headings.forEach(function(h, idx) {
+            var level = parseInt(h.tagName.charAt(1));
+            var id = h.getAttribute('id');
+            if (!id) {
+                var text = (h.textContent || '').trim().replace(/\s+/g, '-').replace(/[^a-zA-Z0-9一-龥\-_]/g, '').substring(0, 40);
+                id = text || ('heading-' + idx);
+                var baseId = id, suffix = 1;
+                while (usedIds[id]) { id = baseId + '-' + (suffix++); }
+                usedIds[id] = true;
+                h.setAttribute('id', id);
+            }
+            headingList.push({ el: h, id: id, level: level, text: (h.textContent || '').trim().substring(0, 50) });
+        });
+    }
+
+    // 构建列表 HTML
+    var html = '';
+    headingList.forEach(function(item) {
+        html += '<button class="ispace-outline-item" data-heading-id="' + item.id + '" data-level="' + item.level + '" title="' + item.text.replace(/"/g, '&quot;') + '">' + item.text + '</button>';
+    });
+    listEl.innerHTML = html;
+
+    // 溢出检测 → 渐变遮罩
+    function checkOverflow() {
+        if (bodyEl.scrollHeight > bodyEl.clientHeight + 4) {
+            bodyEl.classList.remove('no-overflow');
+        } else {
+            bodyEl.classList.add('no-overflow');
+        }
+    }
+
+    // ---- 展开/收起逻辑 ----
+    var isOpen = false;
+
+    function openPanel() {
+        isOpen = true;
+        panel.classList.add('open');
+        tab.classList.add('panel-open');
+        checkOverflow();
+    }
+
+    function closePanel() {
+        isOpen = false;
+        panel.classList.remove('open');
+        tab.classList.remove('panel-open');
+    }
+
+    tab.addEventListener('click', function(e) {
+        e.stopPropagation();
+        openPanel();
+    });
+
+    closeBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        closePanel();
+    });
+
+    // 点击面板外部 → 收起
+    document.addEventListener('click', function(e) {
+        if (isOpen && !panel.contains(e.target) && e.target !== tab && !tab.contains(e.target)) {
+            closePanel();
+        }
+    });
+
+    // 点击面板内部条目 → 跳转并收起
+    listEl.addEventListener('click', function(e) {
+        var item = e.target.closest('.ispace-outline-item');
+        if (!item) return;
+        var headingId = item.getAttribute('data-heading-id');
+        var target = document.getElementById(headingId);
+        // ID 查找失败时，降级到文本+层级匹配（兼容 DOM 渲染延迟）
+        if (!target) {
+            var level = parseInt(item.getAttribute('data-level'));
+            var text = (item.textContent || '').trim();
+            var allH = document.querySelectorAll('#doc-content h' + level);
+            for (var i = 0; i < allH.length; i++) {
+                if ((allH[i].textContent || '').trim() === text) {
+                    target = allH[i];
+                    break;
+                }
+            }
+        }
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        closePanel();
+    });
+
+    // ---- Scroll Spy (IntersectionObserver) ----
+    var observerOptions = { rootMargin: '-8% 0px -70% 0px', threshold: 0 };
+    var activeItem = null;
+    var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                if (activeItem) activeItem.classList.remove('active');
+                var headingId = entry.target.getAttribute('id');
+                var item = listEl.querySelector('[data-heading-id="' + headingId + '"]');
+                if (item) {
+                    item.classList.add('active');
+                    activeItem = item;
+                    if (isOpen) {
+                        item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                }
+            }
+        });
+    }, observerOptions);
+
+    // 观察 DOM 中的标题元素（需确保 id 匹配）
+    var content = document.getElementById('doc-content');
+    if (content) {
+        headingList.forEach(function(item) {
+            var el = item.el || document.getElementById(item.id);
+            if (el) observer.observe(el);
+        });
+    }
+
+    setTimeout(checkOverflow, 150);
+    window.addEventListener('resize', checkOverflow);
+
+    // 暴露 API 供外部刷新
+    window._outlineInited = true;
+    window._outlinePanel = {
+        refresh: function() {
+            observer.disconnect();
+            listEl.innerHTML = '';
+            headingList = [];
+            window._outlineInited = false;
+            initOutlinePanel();
+        },
+        open: openPanel,
+        close: closePanel
+    };
+}
+// 确保大纲面板初始化（即使 DOMContentLoaded 回调未到达此处也能执行）
+setTimeout(initOutlinePanel, 10);
+
+// ---- Export Document Dropdown ----
+(function() {
+    var exportBtn = document.getElementById('export-doc-btn');
+    if (!exportBtn) return;
+
+    var exportDropdown = document.createElement('div');
+    exportDropdown.className = 'ispace-settings-dropdown';
+    exportDropdown.id = 'exportDocDropdown';
+    exportDropdown.style.display = 'none';
+    exportDropdown.innerHTML =
+        '<a class="ispace-context-menu-item" href="{% url 'download_doc_pdf' doc_id=doc.id %}">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>' +
+        '<span>导出 PDF</span></a>' +
+        '<a class="ispace-context-menu-item" href="{% url 'download_doc_html' doc_id=doc.id %}">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>' +
+        '<span>导出 HTML</span></a>' +
+        '<a class="ispace-context-menu-item" href="{% url 'download_doc_md' doc_id=doc.id %}">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>' +
+        '<span>导出 Markdown</span></a>';
+    document.body.appendChild(exportDropdown);
+
+    function showExportDropdown() {
+        var rect = exportBtn.getBoundingClientRect();
+        exportDropdown.style.display = 'block';
+        exportDropdown.style.position = 'fixed';
+        exportDropdown.style.left = Math.min(rect.left, window.innerWidth - 180) + 'px';
+        exportDropdown.style.top = (rect.bottom + 4) + 'px';
+        exportDropdown.style.zIndex = '1100';
+    }
+
+    function hideExportDropdown() {
+        exportDropdown.style.display = 'none';
+    }
+
+    exportBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (exportDropdown.style.display === 'block') {
+            hideExportDropdown();
+        } else {
+            showExportDropdown();
+        }
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!exportDropdown.contains(e.target) && e.target !== exportBtn && !exportBtn.contains(e.target)) {
+            hideExportDropdown();
+        }
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') hideExportDropdown();
+    });
+})();
+</script>
+<script src="{% static 'js/inline-comments.js' %}?v={{ isdoc_version }}"></script>
+{% endblock %}

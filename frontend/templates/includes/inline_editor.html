@@ -1,0 +1,1737 @@
+{% load static %}{% load i18n %}
+{# Inline editor for doc.html — toggled by view/edit mode CSS #}
+<style>
+/* ---- Reset for Luckysheet (library relies on content-box & 12px base) ---- */
+#inline-editor-md .luckysheet,
+#inline-editor-md .luckysheet *,
+#inline-editor-md .luckysheet *::before,
+#inline-editor-md .luckysheet *::after {
+  box-sizing: content-box;
+}
+#inline-editor-md .luckysheet {
+  font-size: 12px;
+}
+#inline-editor-md .luckysheet td,
+#inline-editor-md .luckysheet th {
+  padding: 0;
+  border: 0;
+}
+#inline-editor-md .luckysheet .luckysheet-wa-editor,
+#inline-editor-md .luckysheet .luckysheet-wa-calculate {
+  line-height: 26px;
+}
+#inline-editor-md .luckysheet .luckysheet-toolbar-zoom-combobox {
+  vertical-align: middle;
+}
+#inline-editor-md .luckysheet .luckysheet-toolbar-separator {
+  vertical-align: middle;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+/* ---- Inline editor toolbar fixes ---- */
+#inline-editor .mreditor {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 400px;
+    overflow: hidden;
+}
+#inline-editor .mreditor-toolbar {
+    position: relative;
+    opacity: 1;
+    user-select: none;
+    padding: 0 6px;
+    border: 1px solid #bbb;
+    border-radius: 4px;
+    background: #fafbfc;
+    min-height: 36px;
+    overflow: hidden;
+}
+#inline-editor .mreditor-toolbar:after,
+#inline-editor .mreditor-toolbar:before {
+    display: block;
+    content: ' ';
+    height: 1px;
+}
+#inline-editor .mreditor-toolbar-left { float: left; }
+#inline-editor .mreditor-toolbar-right { float: right; }
+#inline-editor .mreditor-toolbar svg {
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+}
+#inline-editor .mreditor-toolbar-item {
+    float: left;
+}
+#inline-editor .mreditor-toolbar-item-btn {
+    width: 30px;
+    height: 28px;
+    text-align: center;
+    border: 0;
+    cursor: pointer;
+    background-color: transparent;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #586069;
+}
+#inline-editor .mreditor-toolbar-item-btn:hover {
+    background-color: #e1e4e8;
+    border-radius: 4px;
+    color: #4285f4;
+}
+#inline-editor .mreditor-toolbar-item-btn:focus { outline: 0; }
+#inline-editor .mreditor-toolbar div.separator {
+    float: left;
+    height: 20px;
+    border-left: 1px solid rgba(88,96,105,0.36);
+    margin: 8px 6px;
+}
+#inline-editor .mreditor-body {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+}
+#inline-editor .mreditor-editor {
+    flex: 1;
+    min-height: 300px;
+}
+#inline-editor .CodeMirror {
+    min-height: 300px;
+    height: auto;
+}
+/* ---- Vditor dropdown icon size fixes ---- */
+#inline-editor .vditor-emojis__item { width:28px !important; height:28px !important; padding:2px !important; }
+#inline-editor .vditor-emojis__item img,
+#inline-editor .vditor-emojis__item svg { width:18px !important; height:18px !important; max-width:18px !important; max-height:18px !important; }
+#inline-editor .vditor-panel__item svg { width:16px !important; height:16px !important; }
+#inline-editor .vditor-panel__item { padding:5px 10px !important; font-size:14px !important; line-height:1.6 !important; }
+#inline-editor .vditor-hint__item .vditor-icon { width:16px !important; height:16px !important; }
+/* Vditor toolbar compact styling */
+#inline-editor .vditor-toolbar__item svg { width:15px !important; height:15px !important; }
+#inline-editor .vditor-toolbar__item { padding:3px 5px !important; }
+#inline-editor .vditor-toolbar { min-height:32px !important; padding:2px 4px !important; background:#fafbfc !important; border-bottom:1px solid #e1e4e8 !important; }
+#inline-editor .vditor { background: transparent !important; border: none !important; }
+#inline-editor .vditor-reset { background: transparent !important; }
+#inline-editor .vditor-ir { background: transparent !important; }
+#inline-editor .vditor-sv { background: transparent !important; }
+.vditor-mode-label { font-size:12px; font-weight:500; line-height:1; white-space:nowrap; display:inline-block; }
+.vditor-toolbar__item[data-type="mode-toggle"] { min-width:32px; }
+/* ---- Editor switch dropdown ---- */
+.ispace-editor-switch { position: relative; display: inline-block; }
+.ispace-editor-switch-btn { display: inline-flex; align-items: center; gap: 4px; height: 36px; padding: 0 12px; font-size: 13px; border: 1px solid var(--ispace-color-border-light); border-radius: var(--ispace-radius-md); background: #fff; cursor: pointer; color: var(--ispace-color-text-secondary); }
+.ispace-editor-switch-btn:hover { background: var(--ispace-color-bg-hover); color: var(--ispace-color-text-primary); }
+.ispace-editor-switch-btn svg { width: 12px; height: 12px; }
+.ispace-editor-switch-menu { display: none; position: absolute; right: 0; top: 100%; margin-top: 4px; min-width: 180px; background: #fff; border: 1px solid var(--ispace-color-border-light); border-radius: var(--ispace-radius-md); box-shadow: 0 4px 16px rgba(0,0,0,0.12); z-index: 10001; padding: 4px 0; }
+.ispace-editor-switch-menu.show { display: block; }
+.ispace-editor-switch-item { display: block; width: 100%; padding: 8px 16px; font-size: 13px; text-align: left; border: none; background: none; cursor: pointer; color: var(--ispace-color-text-primary); }
+.ispace-editor-switch-item:hover { background: var(--ispace-color-bg-hover); }
+.ispace-editor-switch-item.active { background: var(--ispace-color-primary-light, #e8f0fe); color: var(--ispace-color-primary, #4285f4); font-weight: 600; }
+.ispace-editor-switch-item .check { float: right; }
+/* ---- Inline breadcrumb ribbon (matches view mode) ---- */
+#inline-breadcrumb {
+    margin-bottom: var(--ispace-space-3);
+    padding: var(--ispace-space-1) var(--ispace-space-3);
+    background: linear-gradient(135deg, var(--ispace-color-brand-50, #eff4ff) 0%, var(--ispace-color-bg-secondary, #f5f6f8) 100%);
+    border-left: 3px solid var(--ispace-color-brand-500, #3b82f6);
+    border-radius: 0 6px 6px 0;
+    font-size: var(--ispace-font-base);
+}
+
+/* ---- ECharts custom dropdown ---- */
+.echarts-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-size: 13px;
+    color: var(--ispace-color-text-primary, #333);
+}
+.echarts-dropdown-item:hover {
+    background: var(--ispace-color-surface-hover, #f0f0f0);
+}
+.echarts-dropdown-item:first-child {
+    border-radius: 6px 6px 0 0;
+}
+.echarts-dropdown-item:last-child {
+    border-radius: 0 0 6px 6px;
+}
+.echarts-dropdown-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    color: var(--ispace-color-text-secondary, #666);
+}
+.echarts-dropdown-label {
+    white-space: nowrap;
+}
+/* ---- Table insert dialog ---- */
+.table-insert-dialog-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 10002;
+    display: flex; align-items: center; justify-content: center;
+}
+.table-insert-dialog {
+    background: var(--ispace-color-surface-0, #fff);
+    border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    padding: 20px 24px; min-width: 280px; z-index: 10003;
+}
+.table-insert-dialog h3 {
+    margin: 0 0 16px 0; font-size: 15px; font-weight: 600;
+    color: var(--ispace-color-text-primary, #333);
+}
+.table-insert-dialog .row-field {
+    display: flex; align-items: center; margin-bottom: 12px;
+}
+.table-insert-dialog .row-field label {
+    width: 60px; font-size: 13px; flex-shrink: 0;
+    color: var(--ispace-color-text-secondary, #666);
+}
+.table-insert-dialog .row-field input {
+    flex: 1; height: 32px; padding: 0 8px; width: 80px;
+    border: 1px solid var(--ispace-color-border-light, #d9d9d9);
+    border-radius: 4px; font-size: 13px; outline: none;
+}
+.table-insert-dialog .row-field input:focus {
+    border-color: var(--ispace-color-primary, #4285f4);
+    box-shadow: 0 0 0 2px rgba(66,133,244,0.15);
+}
+.table-insert-dialog .btn-row {
+    display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px;
+}
+.table-insert-dialog .btn-row button {
+    padding: 6px 16px; border-radius: 4px; font-size: 13px;
+    cursor: pointer; border: none; outline: none;
+}
+.table-insert-dialog .btn-cancel {
+    background: var(--ispace-color-surface-hover, #f0f0f0);
+    color: var(--ispace-color-text-secondary, #666);
+}
+.table-insert-dialog .btn-cancel:hover { background: var(--ispace-color-border-light, #d9d9d9); }
+.table-insert-dialog .btn-ok {
+    background: var(--ispace-color-primary, #4285f4); color: #fff;
+}
+.table-insert-dialog .btn-ok:hover { background: var(--ispace-color-primary-hover, #357ae8); }
+/* ---- Table floating toolbar ---- */
+.table-floating-toolbar {
+    position: fixed; z-index: 10001; display: flex; gap: 2px;
+    background: var(--ispace-color-surface-0, #fff);
+    border: 1px solid var(--ispace-color-border-light, #d9d9d9);
+    border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 4px;
+}
+.table-floating-toolbar button {
+    display: flex; align-items: center; justify-content: center;
+    width: 34px; height: 30px; border: none; border-radius: 4px;
+    background: transparent; cursor: pointer; padding: 0; position: relative;
+    color: var(--ispace-color-text-secondary, #666);
+}
+.table-floating-toolbar button:hover {
+    background: var(--ispace-color-surface-hover, #f0f0f0);
+    color: var(--ispace-color-text-primary, #333);
+}
+.table-floating-toolbar button.danger:hover { background: #fff0f0; color: #d9534f; }
+.table-floating-toolbar .toolbar-divider {
+    width: 1px; background: var(--ispace-color-border-light, #d9d9d9); margin: 4px 3px;
+}
+.table-floating-toolbar button::after {
+    content: attr(data-tip); position: absolute; bottom: 100%; left: 50%;
+    transform: translateX(-50%); background: rgba(0,0,0,0.75); color: #fff;
+    padding: 3px 8px; border-radius: 4px; font-size: 12px;
+    white-space: nowrap; pointer-events: none; opacity: 0; margin-bottom: 4px;
+    transition: opacity 0.15s;
+}
+.table-floating-toolbar button:hover::after { opacity: 1; }
+</style>
+<div id="inline-editor" class="ispace-inline-editor" style="display:none;">
+    {# --- Breadcrumb (editing & creating) --- #}
+    <nav class="ispace-breadcrumb" id="inline-breadcrumb" style="display:none;">
+        <a href="/">{% trans "首页" %}</a>
+        <span class="ispace-breadcrumb-separator">/</span>
+        <span id="inline-breadcrumb-doc">{% trans "未命名文档" %}</span>
+    </nav>
+    {# --- Title row (matches view-mode header spacing) --- #}
+    <div style="display:flex;align-items:flex-end;gap:var(--ispace-space-2);padding-bottom:var(--ispace-space-2);margin-bottom:var(--ispace-space-1);border-bottom:1px solid var(--ispace-color-border-light);">
+        <input type="text" id="inline-doc-name" class="ispace-form-input"
+               style="flex:1;font-size:var(--ispace-heading-h2);font-weight:var(--ispace-font-semibold);padding:0;border:none;border-radius:0;background:transparent;line-height:var(--ispace-leading-tight);color:var(--ispace-color-text-primary);min-width:0;"
+               placeholder="{% trans '文档标题' %}" value="{{ doc.name|default:'' }}"
+               oninput="var bc=document.getElementById('inline-breadcrumb-doc');if(bc)bc.textContent=this.value||this.placeholder">
+        <span id="inline-doc-status-badge" style="display:none;font-size:var(--ispace-font-xs);padding:2px 8px;border-radius:10px;line-height:20px;white-space:nowrap;"></span>
+        <button class="ispace-btn ispace-btn-outline ispace-btn-sm" id="inline-draft-btn" onclick="(window._inlineSubmitFn||function(){})(0)" title="{% trans '保存草稿，不公开' %}" style="display:none">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            <span id="inline-draft-btn-text">{% trans '保存草稿' %}</span>
+        </button>
+        <button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="inline-publish-btn" onclick="(window._inlineSubmitFn||function(){})(1)" title="{% trans '发布文档' %}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            <span id="inline-publish-btn-text">{% trans '发布' %}</span>
+        </button>
+        <button class="ispace-btn ispace-btn-ghost ispace-btn-sm" id="inline-template-btn" style="display:none;" onclick="openTemplatePicker()" title="{% trans '从模板创建文档' %}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+            <span>{% trans '从模板创建' %}</span>
+        </button>
+        <div class="ispace-editor-switch" id="editor-switch-wrap">
+            <button class="ispace-editor-switch-btn" id="editor-switch-btn" onclick="_toggleEditorSwitchMenu()">
+                <span id="editor-switch-label">Vditor</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="ispace-editor-switch-menu" id="editor-switch-menu">
+                <button class="ispace-editor-switch-item" data-mode="2" onclick="_switchEditor(2)">Vditor (Markdown) <span class="check">&#10003;</span></button>
+                <button class="ispace-editor-switch-item" data-mode="4" onclick="_switchEditor(4)">&#22312;&#32447;&#34920;&#26684; (Luckysheet) <span class="check">&#10003;</span></button>
+            </div>
+        </div>
+    </div>
+
+    {# --- Parent context (auto-set by entry point) --- #}
+    <input type="hidden" id="inline-parent-doc" value="">
+    
+    {# --- Editor container --- #}
+    <div id="inline-editor-md" class="ispace-editor-container" style="min-height:400px;border:1px solid var(--ispace-color-border-light);border-radius:var(--ispace-radius-md);">
+        <textarea style="display:none;">{{ doc.pre_content|default:'' }}</textarea>
+    </div>
+
+    {# --- Auto-save indicator --- #}
+    <div style="display:flex;align-items:center;justify-content:flex-end;margin-top:var(--ispace-space-4);padding-top:var(--ispace-space-3);border-top:1px solid var(--ispace-color-border-light);min-height:24px;">
+        <span id="inline-auto-save-indicator" style="font-size:var(--ispace-font-xs);color:var(--ispace-color-text-tertiary);"></span>
+    </div>
+
+    {# --- Template Picker Modal --- #}
+    <div id="template-picker-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:10002;align-items:center;justify-content:center;" onclick="if(event.target===this)closeTemplatePicker()">
+        <div style="background:var(--ispace-color-surface-0,#fff);border-radius:var(--ispace-radius-xl);padding:var(--ispace-space-6);max-width:480px;width:90%;max-height:70vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--ispace-space-4);">
+                <h3 style="font-size:var(--ispace-font-lg);font-weight:var(--ispace-font-semibold);">{% trans '选择模板' %}</h3>
+                <button class="ispace-btn ispace-btn-ghost ispace-btn-sm" onclick="closeTemplatePicker()" style="font-size:18px;line-height:1;padding:4px 8px;">&times;</button>
+            </div>
+            <div id="template-picker-list" style="display:flex;flex-direction:column;gap:var(--ispace-space-2);">
+                <p style="color:var(--ispace-color-text-tertiary);font-size:var(--ispace-font-sm);text-align:center;padding:var(--ispace-space-4);"><span class="ispace-spinner"></span> {% trans '加载中...' %}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ---- Inline Editor Engine ----
+window._inlineEditor = null;
+window._inlineEditorMode = {{ editor_mode|default:2 }};
+window._inlineMdChanged = false;
+window._inlineIsCreate = false;
+window._inlineDocId = {{ doc.id|default:0 }};
+window._inlineParentDoc = {{ doc.parent_doc|default:0 }};
+window._inlineEditorAssetsLoaded = {};
+window._inlineSubmitFn = null;  // set by doc.html
+window._inlineCancelFn = null;  // set by doc.html
+
+function _updateDocStatusBadge(status) {
+    var badge = document.getElementById('inline-doc-status-badge');
+    if (!badge) return;
+    badge.style.display = 'inline-block';
+    if (status === 0) {
+        badge.textContent = '草稿';
+        badge.style.background = 'var(--ispace-color-warning-100, #fef9e7)';
+        badge.style.color = 'var(--ispace-color-warning-600, #e67e22)';
+    } else {
+        badge.textContent = '已发布';
+        badge.style.background = 'var(--ispace-color-success-100, #e6f7ee)';
+        badge.style.color = 'var(--ispace-color-success-600, #27ae60)';
+    }
+}
+
+function _loadScript(src) {
+    return new Promise(function(resolve, reject) {
+        if (window._inlineEditorAssetsLoaded[src]) { resolve(); return; }
+        var s = document.createElement('script');
+        s.src = src;
+        s.onload = function() { window._inlineEditorAssetsLoaded[src] = true; resolve(); };
+        s.onerror = reject;
+        document.head.appendChild(s);
+    });
+}
+
+function _loadCSS(href) {
+    return new Promise(function(resolve) {
+        if (window._inlineEditorAssetsLoaded[href]) { resolve(); return; }
+        if (document.querySelector('link[href="' + href + '"]')) { resolve(); return; }
+        var l = document.createElement('link');
+        l.rel = 'stylesheet';
+        l.href = href;
+        l.onload = function() { window._inlineEditorAssetsLoaded[href] = true; resolve(); };
+        l.onerror = resolve; // CSS fail shouldn't block
+        document.head.appendChild(l);
+    });
+}
+
+function initInlineEditor(editorMode, isCreate) {
+    window._inlineEditorMode = editorMode || 2;
+    window._inlineIsCreate = isCreate || false;
+    window._inlineMdChanged = false;
+
+    var container = document.getElementById('inline-editor-md');
+    if (!container) return;
+
+    // Clear title and content for new document creation
+    if (window._inlineIsCreate) {
+        document.getElementById('inline-doc-name').value = '';
+        var ta = container.querySelector('textarea');
+        if (ta) ta.value = '';
+        var tplBtn = document.getElementById('inline-template-btn');
+        if (tplBtn) tplBtn.style.display = '';
+    } else {
+        var tplBtn = document.getElementById('inline-template-btn');
+        if (tplBtn) tplBtn.style.display = 'none';
+    }
+
+    // Show the editor wrapper
+    document.getElementById('inline-editor').style.display = 'block';
+
+    // Setup breadcrumb for edit and create modes
+    var bc = document.getElementById('inline-breadcrumb');
+    if (bc) {
+        bc.style.display = 'flex';
+        var docEl = document.getElementById('inline-breadcrumb-doc');
+        if (docEl) {
+            var nameInput = document.getElementById('inline-doc-name');
+            var titleVal = nameInput ? nameInput.value.trim() : '';
+            docEl.textContent = titleVal || (nameInput ? nameInput.placeholder : '');
+        }
+    }
+
+    // Start auto-save for existing docs
+    if (!window._inlineIsCreate && window._inlineDocId) {
+        _startAutoSave();
+        if (window._inlineDocStatus !== undefined) {
+            _updateDocStatusBadge(window._inlineDocStatus);
+        }
+    }
+
+    // Load and init the right editor
+    var mode = window._inlineEditorMode;
+    if (mode === 2) initVditor(container);
+    else if (mode === 4) initLuckysheet(container);
+    else initVditor(container); // fallback to Vditor for unknown modes
+    _updateEditorSwitchLabel(mode);
+}
+
+function initVditor(container) {
+    _loadCSS('{% static "vditor/dist/index.css" %}?' + (window._isdocVersion || ''))
+    .then(function() { return _loadScript('{% static "vditor/dist/index.min.js" %}?' + (window._isdocVersion || '')); })
+    .then(function() {
+        if (typeof Vditor === 'undefined') { _editorFallback('Vditor'); return; }
+        var val = (window._inlineIsCreate) ? '' : (container.querySelector('textarea') ? container.querySelector('textarea').value : (window._docPreContent || ''));
+        var screenW = window.matchMedia('(max-width: 768px)');
+        var vdHeight = screenW.matches ? window.innerHeight / 2 : window.innerHeight - 200;
+        window._currentVditorMode = 'ir';
+        if (window._inlineIsCreate) { container.innerHTML = ''; }
+        _initVditorWithMode(container, 'ir', val, vdHeight);
+    });
+}
+
+function _initVditorWithMode(container, mode, val, vdHeight) {
+    if (!vdHeight) {
+        var screenW = window.matchMedia('(max-width: 768px)');
+        vdHeight = screenW.matches ? window.innerHeight / 2 : window.innerHeight - 200;
+    }
+    var modeToggleBtn = {
+        name: 'mode-toggle',
+        tipPosition: 's',
+        tip: mode === 'ir' ? '切换至源码模式' : '切换至即时渲染模式',
+        icon: '<span class="vditor-mode-label">' + (mode === 'ir' ? '源码' : '预览') + '</span>',
+        click: function() { _toggleVditorMode(); }
+    };
+    var isMobile = window.matchMedia('(max-width: 768px)').matches;
+    var uploadImgBtn = {
+        name: 'insert-img-inline',
+        tipPosition: 's',
+        tip: '图片',
+        icon: '<svg t="1599747832593" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="4027" width="16" height="16"><path d="M864.05 128.46H129.97c-17.68 0-32 14.33-32 32v639.61c0 17.67 14.32 32 32 32h734.08c17.68 0 32-14.33 32-32V160.46c0-17.67-14.32-32-32-32z m-32 639.61H161.97V192.46h670.08v575.61z" p-id="4028"></path><path d="M795.58 691.57a32.007 32.007 0 0 1-27.33 15.34H225.77c-12.01 0-23-6.72-28.48-17.4a31.988 31.988 0 0 1 2.5-33.28l125.3-174.17c10.17-14.13 29.78-17.54 44.12-7.67l101.77 70.03 129.73-165.51a31.995 31.995 0 0 1 28.21-12.11 31.99 31.99 0 0 1 25.42 17.2L796.7 660.26a32.018 32.018 0 0 1-1.12 31.31z" p-id="4029"></path><path d="M320.03 321.34a64.03 64.83 0 1 0 128.06 0 64.03 64.83 0 1 0-128.06 0Z" p-id="4030"></path></svg>',
+        click: function() {
+            var fi = document.createElement('input');
+            fi.type = 'file';
+            fi.accept = 'image/*';
+            fi.onchange = function() {
+                if (!fi.files || !fi.files.length) return;
+                var reader = new FileReader();
+                reader.onload = function(ev) {
+                    var base64 = ev.target.result;
+                    var fd = new FormData();
+                    fd.append('base', base64);
+                    fd.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '');
+                    fetch(_getUploadImgUrl(), {method:'POST', body:fd, headers:{'X-Requested-With':'XMLHttpRequest'}})
+                    .then(function(r){ return r.json(); })
+                    .then(function(ret) {
+                        if (ret.success === 1) {
+                            window._inlineEditor.insertValue('\n![](' + ret.url + ')');
+                            window._inlineEditor.focus();
+                        }
+                    });
+                };
+                reader.readAsDataURL(fi.files[0]);
+            };
+            fi.click();
+        }
+    };
+    var uploadAttachBtn = {
+        name: 'insert-attach-inline',
+        tipPosition: 's',
+        tip: '附件',
+        icon: '<svg t="1599964518089" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="4929" width="16" height="16"><path d="M633.553 251.102c15.993-12.795 38.385-12.795 55.978 1.6 15.993 15.993 15.993 38.384 0 54.378L347.264 647.747c-22.39 20.792-22.39 57.577 0 81.568 20.792 22.391 57.578 22.391 81.568 0l401.444-403.042c55.978-55.979 55.978-148.742 0-204.72s-148.742-55.979-204.72 0l-47.982 47.98-12.795 12.796-369.455 369.455c-91.165 91.165-91.165 236.708 0 327.872 91.164 91.165 236.707 91.165 327.872 0L894.25 511.8c6.397-3.199 9.596-7.997 12.795-12.795 15.993-15.994 38.385-15.994 54.378 0s15.994 38.385 0 54.379l-3.198 3.199c-3.2 1.599-6.398 6.397-9.597 9.596L577.574 934.035c-119.953 119.953-316.676 119.953-436.63 0s-119.952-316.676 0-436.63l430.233-431.83c86.366-86.367 227.111-86.367 315.077 0 86.366 86.366 86.366 227.11 0 315.076L483.21 783.694c-52.78 52.78-139.145 52.78-190.325 0-52.78-52.78-52.78-139.146 0-190.326l340.667-342.266z m0 0" fill="#333333" p-id="4930"></path></svg>',
+        click: function() {
+            var fi = document.createElement('input');
+            fi.type = 'file';
+            fi.onchange = function() {
+                if (!fi.files || !fi.files.length) return;
+                var f = fi.files[0];
+                var fd = new FormData();
+                fd.append('attachment_upload', f);
+                fd.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '');
+                fetch('/files/attachments/', {method:'POST', body:fd, headers:{'X-Requested-With':'XMLHttpRequest'}})
+                .then(function(r){ return r.json(); })
+                .then(function(ret) {
+                    if (ret.status) {
+                        window._inlineEditor.insertValue('\n[【附件】'+ ret.data.name + '](/media/' + encodeURI(ret.data.url) + ')');
+                        window._inlineEditor.focus();
+                    } else {
+                        alert('上传失败：' + (ret.data || ''));
+                    }
+                });
+            };
+            fi.click();
+        }
+    };
+    // ---- 绘图工具按钮 ----
+    var mindmapBtn = {
+        name: 'insert-mindmap',
+        tipPosition: 's',
+        tip: '思维导图',
+        icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="2.5"/><path d="M12 7.5v3"/><path d="M9 12l3 2 3-2"/><path d="M7 7l2.5 4"/><path d="M17 7l-2.5 4"/><circle cx="5" cy="17" r="2"/><circle cx="12" cy="17" r="2"/><circle cx="19" cy="17" r="2"/><path d="M7 9l-1.5 6.5"/><path d="M12 10.5v5"/><path d="M17 9l1.5 6.5"/></svg>',
+        click: function() {
+            var tpl = '\n```markmap\n# 中心主题\n## 分支一\n### 子节点 1\n### 子节点 2\n## 分支二\n### 子节点 3\n```\n';
+            window._inlineEditor.insertValue(tpl);
+            window._inlineEditor.focus();
+        }
+    };
+    var flowchartBtn = {
+        name: 'insert-flowchart',
+        tipPosition: 's',
+        tip: '流程图',
+        icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="8" height="6" rx="1"/><polygon points="16,5 20,10 16,15 12,10"/><rect x="14" y="16" width="8" height="6" rx="1"/><line x1="6" y1="8" x2="6" y2="10"/><line x1="16" y1="10" x2="10" y2="10"/><line x1="18" y1="16" x2="16" y2="15"/></svg>',
+        click: function() {
+            var tpl = '\n```flowchart\nst=>start: 开始\ne=>end: 结束\nop=>operation: 处理步骤\ncond=>condition: 条件判断\nst->op->cond\ncond(yes)->e\ncond(no)->op\n```\n';
+            window._inlineEditor.insertValue(tpl);
+            window._inlineEditor.focus();
+        }
+    };
+    var drawingBtn = {
+        name: 'insert-drawing',
+        tipPosition: 's',
+        tip: '手绘图',
+        icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>',
+        click: function() {
+            var tpl = '\n```mermaid\ngraph TD\n    A[开始] --> B{判断条件}\n    B -->|是| C[执行操作]\n    B -->|否| D[结束]\n    C --> D\n```\n';
+            window._inlineEditor.insertValue(tpl);
+            window._inlineEditor.focus();
+        }
+    };
+
+    // ---- ECharts 图表工具按钮 ----
+    function closeEchartsDropdown() {
+        var dd = document.querySelector('.echarts-dropdown');
+        if (dd) dd.remove();
+        document.removeEventListener('click', onEchartsDocClick);
+    }
+    function onEchartsDocClick(e) {
+        var dd = document.querySelector('.echarts-dropdown');
+        var btn = document.querySelector('.vditor-toolbar__item[data-name="echarts-chart"]');
+        if (dd && !dd.contains(e.target) && (!btn || !btn.contains(e.target))) {
+            closeEchartsDropdown();
+        }
+    }
+    var echartsBtnGroup = {
+        name: 'echarts-chart',
+        tipPosition: 's',
+        tip: '图表',
+        icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="14" width="4" height="6" rx="0.5"/><rect x="10" y="8" width="4" height="12" rx="0.5"/><rect x="17" y="4" width="4" height="16" rx="0.5"/></svg>',
+        click: function(event) {
+            var existing = document.querySelector('.echarts-dropdown');
+            if (existing) { closeEchartsDropdown(); return; }
+            var tips = document.querySelectorAll('.vditor-tooltip, .vditor-panel--arrow');
+            for (var ti = 0; ti < tips.length; ti++) { tips[ti].style.display = 'none'; }
+            var btn = event.currentTarget || event.target.closest('.vditor-toolbar__item');
+            var rect = btn.getBoundingClientRect();
+            var dd = document.createElement('div');
+            dd.className = 'echarts-dropdown';
+            var items = [
+                { type: 'bar', label: '柱状图', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="14" width="5" height="6" rx="0.5"/><rect x="10" y="9" width="5" height="11" rx="0.5"/><rect x="17" y="5" width="5" height="15" rx="0.5"/></svg>' },
+                { type: 'line', label: '折线图', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 18 7 9 11 13 16 6 21 12"/><circle cx="7" cy="9" r="1.5" fill="currentColor" stroke="none"/><circle cx="11" cy="13" r="1.5" fill="currentColor" stroke="none"/><circle cx="16" cy="6" r="1.5" fill="currentColor" stroke="none"/><circle cx="21" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg>' },
+                { type: 'pie', label: '饼图', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 6.5 15.5L12 12V3z" fill="currentColor" fill-opacity="0.3"/><line x1="12" y1="3" x2="12" y2="12"/><line x1="12" y1="12" x2="18.5" y2="18.5"/></svg>' },
+                { type: 'scatter', label: '散点图', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="5" r="2.5"/><circle cx="13" cy="15" r="2"/><circle cx="18" cy="8" r="2.5"/><circle cx="8" cy="17" r="1.5"/><circle cx="17" cy="18" r="1.5"/><circle cx="11" cy="7" r="1.5"/></svg>' },
+                { type: 'radar', label: '雷达图', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12,3 19,7 17,18 7,18 5,7"/><polygon points="12,7 15,9 14,15 10,15 9,9" fill="currentColor" fill-opacity="0.3"/></svg>' },
+                { type: 'gauge', label: '仪表盘', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18a9 9 0 0 1 14.5-5.5"/><path d="M19 18a9 9 0 0 0-13-6.5"/><circle cx="12" cy="14" r="10"/><line x1="12" y1="17" x2="12" y2="15"/></svg>' }
+            ];
+            var html = '';
+            for (var i = 0; i < items.length; i++) {
+                html += '<div class="echarts-dropdown-item" data-type="' + items[i].type + '">' +
+                    '<span class="echarts-dropdown-icon">' + items[i].icon + '</span>' +
+                    '<span class="echarts-dropdown-label">' + items[i].label + '</span></div>';
+            }
+            dd.innerHTML = html;
+            dd.style.cssText = 'position:fixed;z-index:10001;min-width:140px;background:var(--ispace-color-surface-0,#fff);border:1px solid var(--ispace-color-border-light,#d9d9d9);border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.12);padding:4px 0;';
+            document.body.appendChild(dd);
+            dd.style.top = (rect.bottom + 4) + 'px';
+            dd.style.left = rect.left + 'px';
+            dd.addEventListener('click', function(e) {
+                var item = e.target.closest('.echarts-dropdown-item');
+                if (item) {
+                    insertEChartsTemplate(item.getAttribute('data-type'));
+                    closeEchartsDropdown();
+                }
+            });
+            setTimeout(function() { document.addEventListener('click', onEchartsDocClick); }, 0);
+        }
+    };
+
+    function _insertValuePreserveScroll(editor, text) {
+        var scrollEl = document.scrollingElement || document.documentElement;
+        var sx = scrollEl.scrollLeft, sy = scrollEl.scrollTop;
+        editor.insertValue(text);
+        editor.focus();
+        // Vditor IR 模式 insertValue 后异步重渲染 DOM，需延迟恢复滚动位置
+        requestAnimationFrame(function() {
+            requestAnimationFrame(function() {
+                scrollEl.scrollLeft = sx;
+                scrollEl.scrollTop = sy;
+            });
+        });
+    }
+
+    function insertEChartsTemplate(type) {
+        var templates = {
+            bar: '{\n  "title": { "text": "柱状图", "left": "center" },\n  "tooltip": {},\n  "xAxis": { "type": "category", "data": ["一月", "二月", "三月", "四月", "五月", "六月"] },\n  "yAxis": { "type": "value" },\n  "series": [{ "type": "bar", "data": [120, 200, 150, 80, 70, 110] }]\n}',
+            line: '{\n  "title": { "text": "折线图", "left": "center" },\n  "tooltip": { "trigger": "axis" },\n  "xAxis": { "type": "category", "data": ["周一", "周二", "周三", "周四", "周五", "周六", "周日"] },\n  "yAxis": { "type": "value" },\n  "series": [{ "type": "line", "data": [150, 230, 224, 218, 135, 147, 260], "smooth": true }]\n}',
+            pie: '{\n  "title": { "text": "饼图", "left": "center" },\n  "tooltip": { "trigger": "item" },\n  "legend": { "orient": "vertical", "left": "left" },\n  "series": [{ "type": "pie", "radius": "60%", "data": [\n    { "value": 335, "name": "直接访问" },\n    { "value": 310, "name": "邮件营销" },\n    { "value": 234, "name": "联盟广告" },\n    { "value": 135, "name": "视频广告" },\n    { "value": 548, "name": "搜索引擎" }\n  ]}]\n}',
+            scatter: '{\n  "title": { "text": "散点图", "left": "center" },\n  "xAxis": { "type": "value" },\n  "yAxis": { "type": "value" },\n  "series": [{ "type": "scatter", "data": [[10, 8], [25, 15], [18, 22], [30, 28], [14, 12], [22, 19], [28, 25], [8, 6], [20, 17], [16, 13]] }]\n}',
+            radar: '{\n  "title": { "text": "雷达图", "left": "center" },\n  "radar": { "indicator": [\n    { "name": "速度", "max": 100 },\n    { "name": "力量", "max": 100 },\n    { "name": "技巧", "max": 100 },\n    { "name": "防守", "max": 100 },\n    { "name": "体能", "max": 100 }\n  ]},\n  "series": [{ "type": "radar", "data": [{ "value": [85, 70, 90, 65, 80], "name": "选手A" }] }]\n}',
+            gauge: '{\n  "title": { "text": "仪表盘", "left": "center" },\n  "series": [{ "type": "gauge", "detail": { "formatter": "{value}%" }, "data": [{ "value": 72, "name": "完成率" }] }]\n}'
+        };
+        var json = templates[type] || templates['bar'];
+        _insertValuePreserveScroll(window._inlineEditor, '\n```echarts\n' + json + '\n```\n');
+    }
+
+    // ---- 表格插入弹窗 ----
+    function _closeTableInsertDialog() {
+        var overlay = document.querySelector('.table-insert-dialog-overlay');
+        if (overlay) overlay.remove();
+        document.removeEventListener('click', _onTableDialogOutsideClick);
+    }
+    function _onTableDialogOutsideClick(e) {
+        var dialog = document.querySelector('.table-insert-dialog');
+        if (dialog && !dialog.contains(e.target)) { _closeTableInsertDialog(); }
+    }
+    var tableInsertBtn = {
+        name: 'table-insert',
+        tipPosition: 's',
+        tip: '表格',
+        icon: '<svg width="16" height="16" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>',
+        click: function(event) {
+            var existing = document.querySelector('.table-insert-dialog-overlay');
+            if (existing) { _closeTableInsertDialog(); return; }
+            var btn = event.currentTarget || event.target.closest('.vditor-toolbar__item');
+            var rect = btn.getBoundingClientRect();
+            var overlay = document.createElement('div');
+            overlay.className = 'table-insert-dialog-overlay';
+            overlay.innerHTML = '<div class="table-insert-dialog">' +
+                '<h3>插入表格</h3>' +
+                '<div class="row-field"><label>行数</label><input type="number" class="table-rows" value="3" min="2" max="20"></div>' +
+                '<div class="row-field"><label>列数</label><input type="number" class="table-cols" value="3" min="1" max="15"></div>' +
+                '<div class="btn-row"><button class="btn-cancel">取消</button><button class="btn-ok">确定</button></div></div>';
+            document.body.appendChild(overlay);
+            overlay.addEventListener('click', function(e) {
+                var okBtn = e.target.closest('.btn-ok');
+                var cancelBtn = e.target.closest('.btn-cancel');
+                if (okBtn) {
+                    var rows = parseInt(overlay.querySelector('.table-rows').value) || 3;
+                    var cols = parseInt(overlay.querySelector('.table-cols').value) || 3;
+                    _insertTable(Math.min(20, Math.max(2, rows)), Math.min(15, Math.max(1, cols)));
+                    _closeTableInsertDialog();
+                } else if (cancelBtn) {
+                    _closeTableInsertDialog();
+                }
+            });
+            overlay.querySelector('.table-rows').focus();
+            setTimeout(function() { document.addEventListener('click', _onTableDialogOutsideClick); }, 0);
+        }
+    };
+    function _insertTable(rows, cols) {
+        var header = '|'; var sep = '|';
+        for (var c = 0; c < cols; c++) { header += ' col' + (c + 1) + ' |'; sep += ' --- |'; }
+        var lines = [header, sep];
+        for (var r = 0; r < rows; r++) {
+            var line = '|';
+            for (var c = 0; c < cols; c++) { line += '     |'; }
+            lines.push(line);
+        }
+        _insertValuePreserveScroll(window._inlineEditor, '\n' + lines.join('\n') + '\n\n');
+    }
+
+    // ---- 表格 Markdown 操作工具函数 ----
+    function _findTableBlocksInMarkdown(md) {
+        var tables = [];
+        var lines = md.split('\n');
+        var inTable = false, start = 0, tableLines = [];
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            var isTableLine = /^\|.*\|$/.test(line.trim());
+            if (isTableLine && !inTable) { inTable = true; start = i; tableLines = [line]; }
+            else if (isTableLine && inTable) { tableLines.push(line); }
+            else if (!isTableLine && inTable) {
+                if (tableLines.length >= 2 && /^\|[-\s:|]+\|$/.test(tableLines[1].trim())) {
+                    var beforeLines = lines.slice(0, start);
+                    var startOffset = beforeLines.join('\n').length + (start > 0 ? 1 : 0);
+                    var endOffset = startOffset + tableLines.join('\n').length;
+                    var dataRows = [];
+                    for (var _di = 2; _di < tableLines.length; _di++) {
+                        var cleaned = tableLines[_di].replace(/^\|/, '').replace(/\|$/, '');
+                        dataRows.push(cleaned.split('|').map(function(c) { return c.trim(); }));
+                    }
+                    tables.push({ startOffset: startOffset, endOffset: endOffset, lines: tableLines.slice(), dataRows: dataRows, sepLine: tableLines[1] });
+                }
+                inTable = false; tableLines = [];
+            }
+        }
+        if (inTable && tableLines.length >= 2 && /^\|[-\s:|]+\|$/.test(tableLines[1].trim())) {
+            var beforeLines = lines.slice(0, start);
+            var startOffset = beforeLines.join('\n').length + (start > 0 ? 1 : 0);
+            var endOffset = startOffset + tableLines.join('\n').length;
+            var dataRows = [];
+            for (var _di = 2; _di < tableLines.length; _di++) {
+                var cleaned = tableLines[_di].replace(/^\|/, '').replace(/\|$/, '');
+                dataRows.push(cleaned.split('|').map(function(c) { return c.trim(); }));
+            }
+            tables.push({ startOffset: startOffset, endOffset: endOffset, lines: tableLines.slice(), dataRows: dataRows, sepLine: tableLines[1] });
+        }
+        return tables;
+    }
+    function _buildMarkdownTable(headerRow, dataRows, colAligns) {
+        var lines = [];
+        var hdr = '|';
+        for (var c = 0; c < headerRow.length; c++) { hdr += ' ' + (headerRow[c] || ' ') + ' |'; }
+        lines.push(hdr);
+        var sep = '|';
+        for (var c = 0; c < headerRow.length; c++) { sep += ' ' + (colAligns ? (colAligns[c] || '---') : '---') + ' |'; }
+        lines.push(sep);
+        for (var r = 0; r < dataRows.length; r++) {
+            var line = '|';
+            for (var c = 0; c < headerRow.length; c++) { line += ' ' + (dataRows[r][c] || '') + ' |'; }
+            lines.push(line);
+        }
+        return lines.join('\n');
+    }
+    function _detectCellInfo(cellEl) {
+        var td = cellEl;
+        while (td && td.tagName !== 'TD' && td.tagName !== 'TH') { td = td.parentElement; }
+        if (!td) return null;
+        var row = td.parentElement;
+        if (!row || row.tagName !== 'TR') return null;
+        var table = row.parentElement;
+        while (table && table.tagName !== 'TABLE') { table = table.parentElement; }
+        if (!table) return null;
+        var colIdx = 0;
+        var prev = td.previousElementSibling;
+        while (prev) { colIdx++; prev = prev.previousElementSibling; }
+        var rowIdx = 0;
+        var prevRow = row.previousElementSibling;
+        while (prevRow) { rowIdx++; prevRow = prevRow.previousElementSibling; }
+        // Vditor IR 将表头放在 <thead>、数据行放在 <tbody>，需加上 thead 行数
+        if (row.parentElement.tagName === 'TBODY') {
+            var thead = table.querySelector('thead');
+            if (thead) {
+                var theadRows = thead.querySelectorAll('tr');
+                rowIdx += theadRows.length;
+            }
+        }
+        return { tableElement: table, rowIdx: rowIdx, colIdx: colIdx };
+    }
+    function _manipulateTable(md, tableIdx, operation, rowIdx, colIdx) {
+        var tables = _findTableBlocksInMarkdown(md);
+        if (tableIdx >= tables.length) return null;
+        var table = tables[tableIdx];
+        var headerParts = table.lines[0].replace(/^\|/, '').replace(/\|$/, '').split('|').map(function(c) { return c.trim(); });
+        var dataRows = table.dataRows;
+        var colAlignParts = table.sepLine.replace(/^\|/, '').replace(/\|$/, '').split('|').map(function(c) { return c.trim(); });
+        var numCols = headerParts.length;
+        switch (operation) {
+            case 'insertRowAbove':
+                var newRow = []; for (var c = 0; c < numCols; c++) newRow.push('');
+                dataRows.splice(Math.max(0, rowIdx - 1), 0, newRow);
+                break;
+            case 'insertRowBelow':
+                var newRow = []; for (var c = 0; c < numCols; c++) newRow.push('');
+                dataRows.splice(rowIdx, 0, newRow);
+                break;
+            case 'deleteRow':
+                if (dataRows.length <= 0) return null;
+                dataRows.splice(rowIdx - 1, 1);
+                break;
+            case 'insertColLeft':
+                headerParts.splice(colIdx, 0, ' ');
+                colAlignParts.splice(colIdx, 0, '---');
+                for (var r = 0; r < dataRows.length; r++) { dataRows[r].splice(colIdx, 0, ''); }
+                break;
+            case 'insertColRight':
+                headerParts.splice(colIdx + 1, 0, ' ');
+                colAlignParts.splice(colIdx + 1, 0, '---');
+                for (var r = 0; r < dataRows.length; r++) { dataRows[r].splice(colIdx + 1, 0, ''); }
+                break;
+            case 'deleteCol':
+                if (numCols <= 1) return null;
+                headerParts.splice(colIdx, 1);
+                colAlignParts.splice(colIdx, 1);
+                for (var r = 0; r < dataRows.length; r++) { dataRows[r].splice(colIdx, 1); }
+                break;
+            case 'deleteTable':
+                return { startOffset: table.startOffset, endOffset: table.endOffset, newStr: '' };
+            default: return null;
+        }
+        var newMd = _buildMarkdownTable(headerParts, dataRows, colAlignParts);
+        return { startOffset: table.startOffset, endOffset: table.endOffset, newStr: newMd };
+    }
+    function _applyTableOperation(tableEl, operation, rowIdx, colIdx) {
+        var ed = window._inlineEditor;
+        if (!ed) return;
+        var md = ed.getValue ? ed.getValue() : (ed.getMarkdown ? ed.getMarkdown() : '');
+        var tablesInfo = _findTableBlocksInMarkdown(md);
+        var irContainer = document.getElementById('inline-editor-md');
+        var allTables = irContainer ? irContainer.querySelectorAll('table') : [];
+        var tableIdx = -1;
+        for (var i = 0; i < allTables.length; i++) { if (allTables[i] === tableEl) { tableIdx = i; break; } }
+        if (tableIdx < 0 || tableIdx >= tablesInfo.length) return;
+        var result = _manipulateTable(md, tableIdx, operation, rowIdx, colIdx);
+        if (!result) return;
+        var newMd = md.substring(0, result.startOffset) + result.newStr + md.substring(result.endOffset);
+        var scrollTop = irContainer ? irContainer.scrollTop : 0;
+        ed.setValue(newMd);
+        window._inlineMdChanged = true;
+        if (irContainer) { setTimeout(function() { irContainer.scrollTop = scrollTop; }, 50); }
+        _closeTableToolbar();
+    }
+
+    // ---- 表格浮动工具栏 ----
+    function _closeTableToolbar() {
+        var tb = document.querySelector('.table-floating-toolbar');
+        if (tb) tb.remove();
+        document.removeEventListener('click', _onTableToolbarOutsideClick);
+    }
+    function _onTableToolbarOutsideClick(e) {
+        var tb = document.querySelector('.table-floating-toolbar');
+        if (tb && !tb.contains(e.target)) { _closeTableToolbar(); }
+    }
+    function _showTableToolbar(info) {
+        _closeTableToolbar();
+        var tableEl = info.tableElement, rowIdx = info.rowIdx, colIdx = info.colIdx;
+        var tableRect = tableEl.getBoundingClientRect();
+        var tb = document.createElement('div');
+        tb.className = 'table-floating-toolbar';
+        var buttons = [
+            { html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="16 9 12 5 8 9"/><line x1="4" y1="15" x2="20" y2="15"/></svg>', tip: '上方插入行', op: 'insertRowAbove' },
+            { html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="16 15 12 19 8 15"/><line x1="4" y1="9" x2="20" y2="9"/></svg>', tip: '下方插入行', op: 'insertRowBelow' },
+            { divider: true },
+            { html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="9 8 5 12 9 16"/><line x1="14" y1="4" x2="14" y2="20"/></svg>', tip: '左侧插入列', op: 'insertColLeft' },
+            { html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="15 8 19 12 15 16"/><line x1="10" y1="4" x2="10" y2="20"/></svg>', tip: '右侧插入列', op: 'insertColRight' },
+            { divider: true },
+            { html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="8 16 4 12 8 8"/><line x1="12" y1="4" x2="12" y2="20" opacity="0.3"/></svg>', tip: '删除当前行', op: 'deleteRow', danger: true },
+            { html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="16 16 12 19 8 16"/><line x1="4" y1="12" x2="20" y2="12" opacity="0.3"/></svg>', tip: '删除当前列', op: 'deleteCol', danger: true },
+            { divider: true },
+            { html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>', tip: '删除表格', op: 'deleteTable', danger: true }
+        ];
+        var html = '';
+        for (var i = 0; i < buttons.length; i++) {
+            if (buttons[i].divider) { html += '<span class="toolbar-divider"></span>'; }
+            else {
+                var cls = buttons[i].danger ? ' class="danger"' : '';
+                html += '<button' + cls + ' data-op="' + buttons[i].op + '" data-tip="' + buttons[i].tip + '">' + buttons[i].html + '</button>';
+            }
+        }
+        tb.innerHTML = html;
+        document.body.appendChild(tb);
+        tb.style.left = Math.max(8, tableRect.left) + 'px';
+        var topPos = tableRect.top - tb.offsetHeight - 8;
+        if (topPos < 8) { topPos = tableRect.bottom + 8; }
+        tb.style.top = topPos + 'px';
+        tb.addEventListener('click', function(e) {
+            var btn = e.target.closest('button');
+            if (!btn) return;
+            e.stopPropagation();
+            var op = btn.getAttribute('data-op');
+            _applyTableOperation(tableEl, op, rowIdx, colIdx);
+        });
+        setTimeout(function() { document.addEventListener('click', _onTableToolbarOutsideClick); }, 0);
+    }
+
+    // ---- 表格点击检测 ----
+    function _onTableIRClick(e) {
+        var td = e.target.closest ? e.target.closest('td, th') : null;
+        if (!td) { _closeTableToolbar(); return; }
+        var info = _detectCellInfo(td);
+        if (info) { _showTableToolbar(info); }
+    }
+    function _initTableIRClickDetection() {
+        var irContainer = document.getElementById('inline-editor-md');
+        if (!irContainer) return;
+        irContainer.removeEventListener('click', _onTableIRClick);
+        irContainer.addEventListener('click', _onTableIRClick);
+    }
+
+    var vdToolbar = isMobile ? [
+        "emoji","headings","bold","|",
+        "quote","code","inline-code","link","|",
+        "list","ordered-list","check","|",
+        mindmapBtn,flowchartBtn,drawingBtn,echartsBtnGroup,"|",
+        uploadImgBtn,uploadAttachBtn,"|",
+        "undo","redo","|",
+        "fullscreen",modeToggleBtn
+    ] : [
+        "emoji","headings","bold","italic","strike","|",
+        "quote","code","inline-code","link","|",
+        "list","ordered-list","check",tableInsertBtn,"|",
+        mindmapBtn,flowchartBtn,drawingBtn,echartsBtnGroup,"|",
+        uploadImgBtn,uploadAttachBtn,"|",
+        "outline","|",
+        "undo","redo","|",
+        "fullscreen",modeToggleBtn,"|",
+        {name:"more",toolbar:["export","code-theme","content-theme","info","help"]}
+    ];
+    // ---- Callout 实时渲染 (inline editor) ----
+    var _CALLOUT_MAP_INLINE = {
+        'i': 'info', 'info': 'info',
+        'w': 'warning', 'warning': 'warning',
+        'e': 'danger', 'error': 'danger',
+        's': 'success', 'success': 'success',
+        't': 'tip', 'tip': 'tip'
+    };
+    function _processCalloutsInlineEditor() {
+        var container = document.getElementById('inline-editor-md');
+        if (!container) return;
+        // 使用 Selection API 检查光标是否在 blockquote 内，避免 DOM 修改导致光标丢失或跳动
+        var sel = window.getSelection();
+        var blockquotes = container.querySelectorAll('blockquote');
+        for (var ci = 0; ci < blockquotes.length; ci++) {
+            var bq = blockquotes[ci];
+            // 跳过光标所在的 blockquote
+            if (sel && sel.rangeCount > 0) {
+                var range = sel.getRangeAt(0);
+                if (bq.contains(range.startContainer) || bq === range.startContainer) continue;
+            }
+            var firstP = bq.firstElementChild;
+            if (!firstP || firstP.tagName !== 'P') continue;
+            var existingIcon = firstP.querySelector('.callout-icon');
+            var existingPrefix = firstP.querySelector('.callout-prefix');
+            // 获取纯文本（排除隐藏 prefix span 和 icon 元素）
+            var text = firstP.textContent || '';
+            var match = text.match(/^([iwets]|info|warning|error|success|tip)\s+/i);
+            bq.classList.remove('info', 'warning', 'danger', 'success', 'tip');
+            if (match) {
+                var rawPrefix = match[0]; // e.g. "i " or "warning "
+                var cls = _CALLOUT_MAP_INLINE[rawPrefix.trim().toLowerCase()];
+                if (cls) {
+                    // 相同类型且已有隐藏前缀 → 跳过，避免光标跳动
+                    if (existingPrefix && existingPrefix.textContent === rawPrefix) {
+                        bq.classList.add(cls);
+                        continue;
+                    }
+                    // 清理旧元素
+                    if (existingIcon) existingIcon.parentNode.removeChild(existingIcon);
+                    if (existingPrefix) existingPrefix.parentNode.removeChild(existingPrefix);
+                    // 插入隐藏前缀 span 到开头
+                    var prefixSpan = document.createElement('span');
+                    prefixSpan.className = 'callout-prefix';
+                    prefixSpan.textContent = rawPrefix;
+                    firstP.insertBefore(prefixSpan, firstP.firstChild);
+                    // 图标通过 CSS blockquote.xxx > p:first-child::before 渲染,不注入 DOM 元素
+                    // 从第一个文本节点中移除前缀文字，保留其余 HTML 格式（加粗等）
+                    var stripped = false;
+                    for (var _j = 0; _j < firstP.childNodes.length; _j++) {
+                        var node = firstP.childNodes[_j];
+                        if (node.nodeType === 3) { // 文本节点
+                            var t = node.textContent;
+                            if (!stripped && t.substring(0, rawPrefix.length) === rawPrefix) {
+                                node.textContent = t.substring(rawPrefix.length);
+                                stripped = true;
+                            }
+                            // 可能前缀被 Vditor 拆分为多个文本节点
+                            if (!stripped && t === rawPrefix) {
+                                node.textContent = '';
+                                stripped = true;
+                            }
+                            if (stripped) break;
+                        }
+                    }
+                    bq.classList.add(cls);
+                }
+            } else if (existingIcon || existingPrefix) {
+                // 前缀被删除了，清理所有 callout 相关元素
+                if (existingIcon) existingIcon.parentNode.removeChild(existingIcon);
+                if (existingPrefix) {
+                    // 把隐藏前缀的内容还原为可见文字
+                    var pfText = existingPrefix.textContent || '';
+                    existingPrefix.parentNode.replaceChild(document.createTextNode(pfText), existingPrefix);
+                }
+            }
+        }
+    }
+    var _calloutDebounceTimerInline = null;
+    function _scheduleCalloutProcessInline() {
+        clearTimeout(_calloutDebounceTimerInline);
+        _calloutDebounceTimerInline = setTimeout(_processCalloutsInlineEditor, 300);
+    }
+
+    window._inlineEditor = new Vditor('inline-editor-md', {
+        value: val,
+        cdn: '{% static "vditor" %}',
+        toolbar: vdToolbar,
+        height: vdHeight,
+        width: '100%',
+        mode: mode,
+        placeholder: '开始编写...',
+        outline: { enable: true },
+        counter: { enable: true },
+        cache: { enable: false },
+        preview: { markdown: { autoSpace: true, chinesePunct: true, mark: true }, hljs: { lineNumber: true } },
+        after: function() {
+            if (mode === 'ir' && window._initEditorMention) { window._initEditorMention(); }
+            if (mode === 'ir') { _processCalloutsInlineEditor(); }
+            if (mode === 'ir') { _initTableIRClickDetection(); }
+        },
+        input: function() {
+            window._inlineMdChanged = true;
+            if ((window._currentVditorMode || mode) === 'ir') { _scheduleCalloutProcessInline(); }
+        },
+        upload: {
+            fieldName: 'editormd-image-file[]',
+            url: _getUploadImgUrl(),
+            handler: function(files) {
+                var reader = new FileReader();
+                reader.onload = function(ev) {
+                    var base64 = ev.target.result;
+                    var fd = new FormData();
+                    fd.append('base', base64);
+                    fd.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '');
+                    fetch(_getUploadImgUrl(), {method:'POST', body:fd, headers:{'X-Requested-With':'XMLHttpRequest'}})
+                    .then(function(r){ return r.json(); })
+                    .then(function(ret) {
+                        if (ret.success === 1) {
+                            window._inlineEditor.insertValue('\n![](' + ret.url + ')');
+                            window._inlineEditor.focus();
+                        }
+                    });
+                };
+                reader.readAsDataURL(files[0]);
+            }
+        }
+    });
+}
+
+function _toggleVditorMode() {
+    var ed = window._inlineEditor;
+    if (!ed) return;
+    if (window._inlineMention) {
+        try { window._inlineMention.destroy(); } catch(e) {}
+        window._inlineMention = null;
+    }
+    var currentMode = window._currentVditorMode || 'ir';
+    var newMode = currentMode === 'ir' ? 'sv' : 'ir';
+    var content = ed.getMarkdown ? ed.getMarkdown() : (ed.getValue ? ed.getValue() : '');
+    var container = document.getElementById('inline-editor-md');
+    try { ed.destroy(); } catch(e) {}
+    window._inlineEditor = null;
+    container.innerHTML = '';
+    var ta = document.createElement('textarea');
+    ta.style.display = 'none';
+    ta.value = content;
+    container.appendChild(ta);
+    window._currentVditorMode = newMode;
+    _initVditorWithMode(container, newMode, content);
+    var btn = document.querySelector('.vditor-toolbar__item[data-type="mode-toggle"]');
+    if (btn) {
+        btn.setAttribute('aria-label', newMode === 'ir' ? '切换至源码模式' : '切换至即时渲染模式');
+        var label = btn.querySelector('.vditor-mode-label');
+        if (label) label.textContent = newMode === 'ir' ? '源码' : '预览';
+    }
+}
+
+function _initEditorMention() {
+    if (!window.iSpaceDoc || !window.iSpaceDoc.EditorMention) return;
+    if (window._inlineMention) {
+        try { window._inlineMention.destroy(); } catch(e) {}
+        window._inlineMention = null;
+    }
+    // Vditor IR DOM may need a tick to be fully rendered; 300ms for safety
+    var _tryInitMention = function(retries) {
+        retries = retries || 0;
+        var irEl = document.querySelector('#inline-editor-md .vditor-ir');
+        if (!irEl) {
+            if (retries < 5) { setTimeout(function() { _tryInitMention(retries + 1); }, 200); }
+            return;
+        }
+        window._inlineMention = new window.iSpaceDoc.EditorMention({
+            editableElement: irEl,
+            onInsert: function(text) {
+                // 使用 execCommand 替代 insertValue，因为 insertValue 不遵循 _insertMention 设置的原生 Selection
+                // _insertMention 已将选区扩展到覆盖 @query 文本，execCommand('insertText') 会正确替换
+                var sel = window.getSelection();
+                if (sel && sel.rangeCount && !sel.isCollapsed) {
+                    document.execCommand('insertText', false, text);
+                } else {
+                    window._inlineEditor.insertValue(text);
+                }
+            },
+            onInput: function(cb) {
+                irEl.addEventListener('input', cb);
+            },
+            onKeydown: function(cb) {
+                irEl.addEventListener('keydown', cb);
+            },
+            onBlur: function(cb) {
+                irEl.addEventListener('blur', cb);
+            },
+            container: document.getElementById('inline-editor-md')
+        });
+    };
+    setTimeout(_tryInitMention, 100);
+}
+
+function initLuckysheet(container) {
+    _loadCSS('{% static "luckysheet/dist/css/luckysheet.css" %}?' + (window._isdocVersion || ''))
+    .then(function() { return _loadCSS('{% static "luckysheet/dist/plugins/plugins.css" %}?' + (window._isdocVersion || '')); })
+    .then(function() { return _loadScript('{% static "luckysheet/dist/plugins/js/plugin.js" %}?' + (window._isdocVersion || '')); })
+    .then(function() { return _loadScript('{% static "luckysheet/dist/luckysheet.umd.js" %}?' + (window._isdocVersion || '')); })
+    .then(function() {
+        if (typeof luckysheet === 'undefined') { _editorFallback('Luckysheet'); return; }
+        // Destroy any existing Luckysheet instance to avoid conflicts
+        try {
+            var existingContainers = document.querySelectorAll('.luckysheet');
+            for (var ei = 0; ei < existingContainers.length; ei++) {
+                try { luckysheet.destroy(); } catch(e) {}
+                existingContainers[ei].innerHTML = '';
+                existingContainers[ei].parentElement && (existingContainers[ei].parentElement.innerHTML = '');
+            }
+        } catch(e) {}
+        var tableData = null;
+        if (!window._inlineIsCreate && window._docPreContent) {
+            try {
+                tableData = typeof window._docPreContent === 'string' ? JSON.parse(window._docPreContent) : window._docPreContent;
+            } catch(e) {}
+        }
+        if (window._inlineIsCreate) { container.innerHTML = ''; }
+        container.style.minHeight = '600px';
+        var options = {
+            container: 'inline-editor-md',
+            lang: 'zh',
+            showGridLines: true,
+            allowEdit: true,
+            showinfobar: false,
+            showsheetbar: true,
+            showstatisticBar: true,
+            sheetBottomConfig: true,
+            userInfo: false,
+            showstatisticBarConfig: { count: false, view: false, zoom: false },
+            hook: {
+                cellMousedown: function() { window._inlineMdChanged = true; }
+            },
+            row: 20,
+            column: 20,
+            data: tableData
+        };
+        window._inlineEditor = luckysheet.create(options);
+    });
+}
+
+function _getOptimizedSheets() {
+    if (typeof luckysheet === 'undefined' || !luckysheet.getAllSheets) return [];
+    var allSheets = luckysheet.getAllSheets();
+    return allSheets.map(function(sheet) {
+        var optimizedSheet = {};
+        for (var k in sheet) {
+            if (sheet.hasOwnProperty(k)) optimizedSheet[k] = sheet[k];
+        }
+        delete optimizedSheet.data;
+        delete optimizedSheet.visibledatacolumn;
+        delete optimizedSheet.visibledatarow;
+        if (!optimizedSheet.celldata || optimizedSheet.celldata.length === 0) {
+            optimizedSheet.celldata = [];
+            if (sheet.data) {
+                sheet.data.forEach(function(row, r) {
+                    if (row) {
+                        row.forEach(function(cell, c) {
+                            if (cell !== null) {
+                                optimizedSheet.celldata.push({ r: r, c: c, v: cell });
+                            }
+                        });
+                    }
+                });
+            }
+        }
+        return optimizedSheet;
+    });
+}
+
+function _editorFallback(name) {
+    var c = document.getElementById('inline-editor-md');
+    if (c) {
+        c.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ispace-color-text-tertiary);"><p><strong>' + name + ' 编辑器组件未安装</strong></p><p style="margin-top:8px;">请将编辑器库放入 static 目录，或切换到其他编辑器</p></div>';
+    }
+}
+
+function _getUploadImgUrl() {
+    // Try to resolve from a global or fall back
+    if (window._inlineUploadImgUrl) return window._inlineUploadImgUrl;
+    return '/files/upload/image/';
+}
+// ---- Content getters ----
+function getInlineEditorContent() {
+    var m = window._inlineEditorMode;
+    if (m === 4) return ''; // Luckysheet has no HTML content
+    var ed = window._inlineEditor;
+    if (!ed) return '';
+    if (m === 2) return ed.getHTML ? ed.getHTML() : '';
+    return ed.getHTML ? ed.getHTML() : '';
+}
+
+function getInlineEditorPreContent() {
+    var m = window._inlineEditorMode;
+    if (m === 4) return JSON.stringify(_getOptimizedSheets());
+    var ed = window._inlineEditor;
+    if (!ed) return '';
+    var md = '';
+    if (m === 2) {
+        md = ed.getMarkdown ? ed.getMarkdown() : (ed.getValue ? ed.getValue() : '');
+    } else {
+        md = ed.getMarkdown ? ed.getMarkdown() : '';
+    }
+    return _fixCodeFences(md);
+}
+
+// Fix code blocks whose ``` fences were stripped by Vditor's custom handlers
+// (echartHandle, mermaidHandle, etc.) during IR-mode rendering. These handlers
+// inject Canvas/SVG elements into code blocks, which causes Vditor's getMarkdown()
+// to lose the fence markers. The broken pattern uses ​ (zero-width space)
+// as a placeholder where the opening ``` fence should be.
+function _fixCodeFences(md) {
+    if (!md) return md;
+
+    // In Vditor IR-mode, broken code fences use ​<lang>\n<content>
+    // as placeholder. We rebuild the ``` fences around the content by
+    // scanning the Vditor DOM for surviving code-block elements.
+    var container = document.getElementById('inline-editor-md');
+    if (!container) return md;
+
+    // Collect all code blocks from the Vditor IR DOM that still have content
+    var customLangs = ['echarts', 'mermaid', 'flowchart', 'markmap', 'mindmap'];
+    var blocks = [];
+    var codeEls = container.querySelectorAll('.vditor-reset pre code');
+    for (var i = 0; i < codeEls.length; i++) {
+        var el = codeEls[i];
+        var cls = (el.className || '').toString();
+        var langMatch = cls.match(/language-(\w+)/);
+        if (!langMatch) continue;
+        var lang = langMatch[1];
+        // Only fix custom-language blocks; standard langs are handled fine by Vditor
+        if (customLangs.indexOf(lang) === -1) continue;
+        var raw = (el.textContent || '').replace(/​/g, '');
+        if (raw.trim()) {
+            blocks.push({ lang: lang, content: raw.trimEnd() });
+        }
+    }
+
+    // Replace each ​<lang>\n... broken pattern with a proper fenced block.
+    // Content boundaries: next ​ marker, next heading, next code fence, or end of string.
+    for (var b = 0; b < blocks.length; b++) {
+        var lang = blocks[b].lang;
+        var content = blocks[b].content;
+        var opener = '​' + lang + '\n';
+        var idx = md.indexOf(opener);
+        if (idx === -1) {
+            // Fallback: look for the language marker without ​
+            var altIdx = md.indexOf(lang + '\n');
+            if (altIdx !== -1) {
+                var before = md.substring(Math.max(0, altIdx - 10), altIdx);
+                if (!before.endsWith('```')) {
+                    idx = altIdx;
+                    opener = lang + '\n';
+                }
+            }
+        }
+        if (idx === -1) continue;
+
+        var contentStart = idx + opener.length;
+        // Find where this broken block ends
+        var endMarkers = [];
+        var nextZwsp = md.indexOf('​', contentStart);
+        if (nextZwsp !== -1) endMarkers.push(nextZwsp);
+        var nextHeading = md.indexOf('\n## ', contentStart);
+        if (nextHeading !== -1) endMarkers.push(nextHeading);
+        var nextFence = md.indexOf('\n```', contentStart);
+        if (nextFence !== -1) endMarkers.push(nextFence);
+
+        var contentEnd = md.length;
+        for (var e = 0; e < endMarkers.length; e++) {
+            if (endMarkers[e] < contentEnd) contentEnd = endMarkers[e];
+        }
+
+        var fixed = '```' + lang + '\n' + content + '\n```';
+        md = md.substring(0, idx) + fixed + md.substring(contentEnd);
+    }
+
+    // ---- Phase 2: Detect bare ECharts JSON that leaked out of fences ----
+    // When a ```echarts block's fences are entirely stripped by Vditor's
+    // getValue() (common when it's the last block), the JSON content appears
+    // as bare text. Scan for and re-wrap it.
+    md = _fixLeakedChartJSON(md);
+
+    // ---- Phase 3: Fix common JSON syntax errors in echarts blocks ----
+    md = _fixEchartsJSON(md);
+
+    return md;
+}
+
+// Detect bare JSON objects outside code fences that look like ECharts
+// configurations and re-wrap them in ```echarts fences.
+function _fixLeakedChartJSON(md) {
+    if (!md) return md;
+
+    var lines = md.split('\n');
+    var inFence = false;
+    var result = [];
+
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+        var trimmed = line.trim();
+
+        // Track code fence boundaries
+        if (/^```/.test(trimmed)) {
+            inFence = !inFence;
+            result.push(line);
+            continue;
+        }
+
+        // Outside fences: detect bare JSON that looks like an ECharts config
+        if (!inFence && (trimmed === '{' || /^\{"/.test(trimmed))) {
+            var jsonLines = [line];
+            var depth = 0;
+            for (var k = 0; k < line.length; k++) {
+                if (line[k] === '{' || line[k] === '[') depth++;
+                if (line[k] === '}' || line[k] === ']') depth--;
+            }
+
+            var j = i + 1;
+            while (j < lines.length && depth > 0) {
+                jsonLines.push(lines[j]);
+                for (var k = 0; k < lines[j].length; k++) {
+                    if (lines[j][k] === '{' || lines[j][k] === '[') depth++;
+                    if (lines[j][k] === '}' || lines[j][k] === ']') depth--;
+                }
+                j++;
+            }
+
+            var jsonStr = jsonLines.join('\n');
+            var isEcharts = /"(?:title|series|xAxis|yAxis|tooltip|legend|radar|grid|dataZoom|visualMap|gauge|graphic|angleAxis|radiusAxis|polar|geo|calendar|parallel|singleAxis|timeline)"/.test(jsonStr);
+
+            if (isEcharts) {
+                if (depth === 0) {
+                    try {
+                        JSON.parse(jsonStr);
+                        result.push('```echarts');
+                        result.push(jsonStr);
+                        result.push('```');
+                        i = j;
+                        continue;
+                    } catch(e) {}
+                }
+                // Try auto-closing truncated JSON (missing } or ])
+                var closed = _autoCloseJSON(jsonStr);
+                if (closed) {
+                    result.push('```echarts');
+                    result.push(closed);
+                    result.push('```');
+                    i = j;
+                    continue;
+                }
+            }
+        }
+
+        result.push(line);
+    }
+
+    return result.join('\n');
+}
+
+// Auto-close a truncated JSON string by appending missing closing brackets.
+function _autoCloseJSON(jsonStr) {
+    var openBraces = 0, openBrackets = 0;
+    var inString = false, escaped = false;
+    for (var i = 0; i < jsonStr.length; i++) {
+        var ch = jsonStr[i];
+        if (escaped) { escaped = false; continue; }
+        if (ch === '\\') { escaped = true; continue; }
+        if (ch === '"') { inString = !inString; continue; }
+        if (inString) continue;
+        if (ch === '{') openBraces++;
+        if (ch === '}') openBraces--;
+        if (ch === '[') openBrackets++;
+        if (ch === ']') openBrackets--;
+    }
+    if (openBraces <= 0 && openBrackets <= 0) return null;
+
+    var suffix = '';
+    while (openBrackets-- > 0) suffix += ']';
+    while (openBraces-- > 0) suffix += '\n}';
+
+    var fixed = jsonStr + suffix;
+    try {
+        JSON.parse(fixed);
+        return fixed;
+    } catch(e) {
+        return null;
+    }
+}
+
+// Fix common JSON syntax errors in ```echarts blocks (missing commas
+// between adjacent array elements, etc.) that cause render failures.
+function _fixEchartsJSON(md) {
+    if (!md) return md;
+
+    return md.replace(/```echarts\n([\s\S]*?)```/g, function(match, body) {
+        // Fix missing commas between adjacent } and { in arrays:
+        //   }   →   },
+        //   }\n  {  (where there should be a comma between them)
+        var fixed = body.replace(/\}(\s*)\{/g, function(m, ws) {
+            // Check if there's already a comma before the whitespace
+            if (ws.indexOf(',') === -1) {
+                return '},' + ws + '{';
+            }
+            return m;
+        });
+        try {
+            JSON.parse(fixed);
+            return '```echarts\n' + fixed + '```';
+        } catch(e) {
+            // If still invalid, keep original
+            return match;
+        }
+    });
+}
+
+function destroyInlineEditor() {
+    _stopAutoSave();
+    var ed = window._inlineEditor;
+    if (ed) {
+        try {
+            if ((window._inlineEditorMode === 2 || window._inlineEditorMode === 3) && ed.destroy) ed.destroy();
+        } catch(e) { /* ignore */ }
+    }
+    // Luckysheet cleanup (global singleton, not instance-bound)
+    if (window._inlineEditorMode === 4) {
+        try {
+            if (typeof luckysheet !== 'undefined' && luckysheet.destroy) luckysheet.destroy();
+        } catch(e) { /* ignore */ }
+    }
+    if (window._inlineMention) {
+        try { window._inlineMention.destroy(); } catch(e) {}
+        window._inlineMention = null;
+    }
+    window._inlineEditor = null;
+    var c = document.getElementById('inline-editor-md');
+    if (c) {
+        c.innerHTML = '<textarea style="display:none;"></textarea>';
+        c.style.minHeight = '400px';
+    }
+    document.getElementById('inline-editor').style.display = 'none';
+    window._inlineMdChanged = false;
+}
+
+// ---- Auto-save ----
+var _autoSaveTimer = null;
+var _autoSaveInterval = 10000; // 10 seconds
+
+function _startAutoSave() {
+    _stopAutoSave();
+    _autoSaveTimer = setInterval(function() {
+        if (window._inlineMdChanged) {
+            _doAutoSave();
+        }
+    }, _autoSaveInterval);
+}
+
+function _stopAutoSave() {
+    if (_autoSaveTimer) { clearInterval(_autoSaveTimer); _autoSaveTimer = null; }
+}
+
+function _doAutoSave() {
+    var indicator = document.getElementById('inline-auto-save-indicator');
+
+    // Existing doc: save with current status via modify endpoint
+    if (!window._inlineIsCreate && window._inlineDocId) {
+        if (indicator) { indicator.textContent = '自动保存中...'; indicator.style.color = 'var(--ispace-color-text-tertiary)'; }
+        var content = getInlineEditorContent();
+        var preContent = getInlineEditorPreContent();
+        var docName = document.getElementById('inline-doc-name');
+        var tagsEl = document.getElementById('inline-tagsinput');
+        var payload = {
+            doc_id: window._inlineDocId,
+            doc_name: docName ? docName.value : '',
+            content: content,
+            pre_content: preContent,
+            parent_doc: window._inlineParentDoc !== undefined ? window._inlineParentDoc : 0,
+            doc_tag: tagsEl ? tagsEl.value : '',
+            status: window._inlineDocStatus !== undefined ? window._inlineDocStatus : 1,
+            editor_mode: window._docEditorMode || window._inlineEditorMode || 2,
+            is_auto_save: '1'
+        };
+        fetch('/documents/' + window._inlineDocId + '/edit/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: Object.keys(payload).map(function(k) {
+                return encodeURIComponent(k) + '=' + encodeURIComponent(payload[k] != null ? payload[k] : '');
+            }).join('&') + '&csrfmiddlewaretoken=' + (document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '')
+        }).then(function(r) { return r.json(); })
+        .then(function(r) {
+            if (r.status) {
+                window._inlineMdChanged = false;
+                window._docPreContent = preContent;
+                if (indicator) { indicator.textContent = '已自动保存 ' + new Date().toLocaleTimeString(); indicator.style.color = 'var(--ispace-color-text-tertiary)'; }
+            } else {
+                if (indicator) { indicator.textContent = '自动保存失败'; indicator.style.color = 'var(--ispace-color-error)'; }
+            }
+        }).catch(function() {
+            if (indicator) { indicator.textContent = '自动保存失败'; indicator.style.color = 'var(--ispace-color-error)'; }
+        });
+    } else if (window._inlineIsCreate) {
+        // New doc: first auto-save creates a draft, subsequent auto-saves update it
+        if (indicator) { indicator.textContent = '自动保存中...'; indicator.style.color = 'var(--ispace-color-text-tertiary)'; }
+        var content2 = getInlineEditorContent();
+        var preContent2 = getInlineEditorPreContent();
+        var docName2 = document.getElementById('inline-doc-name');
+        var tagsEl2 = document.getElementById('inline-tagsinput');
+        var parentDoc = document.getElementById('inline-parent-doc');
+        var fd = new FormData();
+        fd.append('parent_doc', parentDoc ? parentDoc.value : '0');
+        fd.append('doc_name', docName2 ? docName2.value || '未命名文档' : '未命名文档');
+        fd.append('editor_mode', window._inlineEditorMode || 2);
+        fd.append('content', content2);
+        fd.append('pre_content', preContent2);
+        fd.append('status', '0');
+        fd.append('open_children', 'off');
+        fd.append('show_children', 'off');
+        fd.append('is_auto_save', '1');
+        fd.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '');
+        if (tagsEl2 && tagsEl2.value) fd.append('doc_tag', tagsEl2.value);
+        fetch('/documents/create/', {method:'POST', body:fd})
+        .then(function(r) { return r.json(); })
+        .then(function(r) {
+            if (r.status) {
+                window._inlineMdChanged = false;
+                window._inlineIsCreate = false;
+                window._inlineDocId = r.data.doc;
+                window._inlineDocStatus = 0;
+                window._docPreContent = preContent2;
+                if (typeof _updateDocStatusBadge === 'function') _updateDocStatusBadge(0);
+                // Update URL so page reload points to the right doc
+                var newUrl = '/pages/' + window._inlineDocId + '/?edit=1';
+                if (window.history && window.history.replaceState) {
+                    window.history.replaceState({}, '', newUrl);
+                }
+                // Subsequent saves use modify endpoint (inlineCreateSubmit handles this)
+                if (typeof inlineCreateSubmit === 'function') {
+                    window._inlineSubmitFn = inlineCreateSubmit;
+                }
+                if (indicator) { indicator.textContent = '已自动保存草稿 ' + new Date().toLocaleTimeString(); indicator.style.color = 'var(--ispace-color-text-tertiary)'; }
+            } else {
+                if (indicator) { indicator.textContent = '自动保存失败'; indicator.style.color = 'var(--ispace-color-error)'; }
+            }
+        }).catch(function() {
+            if (indicator) { indicator.textContent = '自动保存失败'; indicator.style.color = 'var(--ispace-color-error)'; }
+        });
+    } else {
+        if (indicator) { indicator.textContent = ''; }
+    }
+}
+
+// ---- Editor switching ----
+function _toggleEditorSwitchMenu() {
+    var menu = document.getElementById('editor-switch-menu');
+    if (menu) { menu.classList.toggle('show'); }
+}
+
+function _switchEditor(newMode) {
+    var menu = document.getElementById('editor-switch-menu');
+    if (menu) menu.classList.remove('show');
+
+    var oldMode = window._inlineEditorMode;
+    if (oldMode === newMode) return;
+
+    // Confirm switching between table and doc types (data loss warning)
+    var fromTable = oldMode === 4, toTable = newMode === 4;
+    if ((fromTable && !toTable) || (!fromTable && toTable)) {
+        confirm('切换编辑器类型后，当前编辑器的内容可能无法完全保留。确定要切换吗？').then(function(ok) {
+            if (!ok) return;
+            _doSwitchEditor(newMode, oldMode);
+        });
+        return;
+    }
+    _doSwitchEditor(newMode, oldMode);
+}
+
+function _doSwitchEditor(newMode, oldMode) {
+    if (oldMode === 4) {
+        try { if (typeof luckysheet !== 'undefined' && luckysheet.destroy) luckysheet.destroy(); } catch(e) {}
+    } else if (window._inlineEditor) {
+        try {
+            var ed = window._inlineEditor;
+            if (ed.destroy) ed.destroy();
+        } catch(e) {}
+    }
+    window._inlineEditor = null;
+
+    // Reset container
+    var container = document.getElementById('inline-editor-md');
+    if (container) {
+        container.innerHTML = '<textarea style="display:none;"></textarea>';
+        container.style.minHeight = '400px';
+    }
+
+    // Update modes
+    window._inlineEditorMode = newMode;
+    if (window._docEditorMode !== undefined) window._docEditorMode = newMode;
+
+    // Re-init editor without full destroy (keep wrapper visible)
+    _initEditorInternal(newMode, container);
+}
+
+function _initEditorInternal(mode, container) {
+    if (mode === 2) initVditor(container);
+    else if (mode === 4) initLuckysheet(container);
+    else initVditor(container); // fallback to Vditor
+    _updateEditorSwitchLabel(mode);
+}
+
+function _updateEditorSwitchLabel(mode) {
+    var label = document.getElementById('editor-switch-label');
+    var labels = { 2: 'Vditor', 4: 'Luckysheet' };
+    if (label) label.textContent = labels[mode] || 'Vditor';
+    // Update active state in menu
+    var items = document.querySelectorAll('.ispace-editor-switch-item');
+    items.forEach(function(item) {
+        var itemMode = parseInt(item.getAttribute('data-mode'));
+        if (itemMode === mode) item.classList.add('active');
+        else item.classList.remove('active');
+    });
+}
+
+// Close editor switch menu on outside click
+document.addEventListener('click', function(e) {
+    var wrap = document.getElementById('editor-switch-wrap');
+    if (wrap && !wrap.contains(e.target)) {
+        var menu = document.getElementById('editor-switch-menu');
+        if (menu) menu.classList.remove('show');
+    }
+});
+
+// ---- Default inline create submit ----
+function inlineCreateSubmit(status) {
+    // If draft was already created, publish/update via modify instead of re-creating
+    if (!window._inlineIsCreate && window._inlineDocId) {
+        var docName = document.getElementById('inline-doc-name');
+        var tagsEl = document.getElementById('inline-tagsinput');
+        var content = getInlineEditorContent();
+        var preContent = getInlineEditorPreContent();
+        var payload = 'doc_id=' + encodeURIComponent(window._inlineDocId) +
+            
+            '&doc_name=' + encodeURIComponent(docName ? docName.value : '') +
+            '&content=' + encodeURIComponent(content) +
+            '&pre_content=' + encodeURIComponent(preContent) +
+            '&parent_doc=0' +
+            '&doc_tag=' + encodeURIComponent(tagsEl ? tagsEl.value : '') +
+            '&status=' + status +
+            '&editor_mode=' + (window._docEditorMode || window._inlineEditorMode || 2);
+        fetch('/documents/' + window._inlineDocId + '/edit/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'X-Requested-With': 'XMLHttpRequest' },
+            body: payload + '&csrfmiddlewaretoken=' + (document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '')
+        }).then(function(r) { return r.json(); })
+        .then(function(r) {
+            if (r.status) {
+                window._inlineMdChanged = false;
+                window._inlineDocStatus = status;
+                _updateDocStatusBadge(status);
+                var indicator = document.getElementById('inline-auto-save-indicator');
+                if (status === 0) {
+                    if (indicator) { indicator.textContent = '已保存草稿 ' + new Date().toLocaleTimeString(); indicator.style.color = 'var(--ispace-color-text-tertiary)'; }
+                    if (typeof layer !== 'undefined') layer.msg('草稿已保存', {icon: 1});
+                } else {
+                    destroyInlineEditor();
+                    var newUrl = '/pages/' + window._inlineDocId + '/';
+                    if (window.iSpaceNav) { window.iSpaceNav.navigateTo(newUrl); }
+                    else { window.location.href = newUrl; }
+                }
+            } else {
+                alert('保存失败：' + (r.data || ''));
+            }
+        }).catch(function() {
+            if (typeof layer !== 'undefined') layer.msg('保存异常', {icon: 2});
+        });
+        return;
+    }
+
+    var docName = document.getElementById('inline-doc-name');
+    var tagsEl = document.getElementById('inline-tagsinput');
+    var content = getInlineEditorContent();
+    var preContent = getInlineEditorPreContent();
+    var parentDoc = document.getElementById('inline-parent-doc').value || '0';
+    var fd = new FormData();
+    fd.append('parent_doc', parentDoc);
+    fd.append('doc_name', docName ? docName.value : '');
+    fd.append('editor_mode', window._inlineEditorMode || 2);
+    fd.append('content', content);
+    fd.append('pre_content', preContent);
+    fd.append('status', String(status));
+    fd.append('open_children', 'off');
+    fd.append('show_children', 'off');
+    fd.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '');
+    if (tagsEl && tagsEl.value) fd.append('doc_tag', tagsEl.value);
+    fetch('/documents/create/', {method:'POST', body:fd})
+    .then(function(r) { return r.json(); })
+    .then(function(r) {
+        if (r.status) {
+            window._inlineMdChanged = false;
+            if (status === 0) {
+                var indicator = document.getElementById('inline-auto-save-indicator');
+                if (indicator) { indicator.textContent = '已保存草稿 ' + new Date().toLocaleTimeString(); indicator.style.color = 'var(--ispace-color-text-tertiary)'; }
+                if (typeof layer !== 'undefined') layer.msg('草稿已保存', {icon: 1});
+                // Update state so subsequent saves use modify
+                window._inlineIsCreate = false;
+                window._inlineDocId = r.data.doc;
+            } else {
+                destroyInlineEditor();
+                if (typeof window.iSpaceNav !== 'undefined' && window.iSpaceNav) {
+                    window.iSpaceNav.navigateTo('/pages/' + r.data.doc + '/');
+                } else {
+                    window.location.href = '/pages/' + r.data.doc + '/';
+                }
+            }
+        } else {
+            alert(r.data);
+        }
+    })
+    .catch(function(e) {
+        console.error(e);
+        alert('Network error');
+    });
+}
+
+</script>

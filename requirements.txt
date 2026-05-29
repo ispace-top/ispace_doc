@@ -1,0 +1,61 @@
+# iSpaceDoc — Python 依赖
+# ========================
+
+# ---- Django 核心 ----
+django==4.2.*  # LTS，Python 3.9+ 支持
+
+# ---- 基础通用库 ----
+beautifulsoup4>=4.12
+lxml
+pillow>=10.1
+loguru>=0.7
+importlib-metadata>=8.5
+requests>=2.32
+PyYAML>=6.0
+
+# ---- DRF & API ----
+djangorestframework>=3.15
+django-cors-headers>=4.4
+
+# ---- 全文搜索 ----
+whoosh==2.7.4  # 停止维护，v2.1 计划迁移 Elasticsearch
+django-haystack==3.3.0  # 与 Whoosh 绑定
+jieba==0.42.1  # 中文分词
+
+# ---- 文档处理 ----
+Markdown>=3.7
+mammoth>=1.8  # .docx 导入
+markdownify>=0.13  # HTML → Markdown 转换
+
+# ---- PDF/导出 ----
+selenium>=4.25
+webdriver_manager>=4.0
+
+# ---- 云存储 ----
+qiniu>=7.14
+mysqlclient
+
+# ---- v2.0 新增依赖 ----
+# FastAPI + 异步
+fastapi==0.115.*
+uvicorn[standard]==0.34.*
+python-multipart==0.0.20
+# 数据库
+sqlalchemy[asyncio]==2.0.*
+asyncpg==0.30.*
+aiosqlite==0.20.*
+psycopg2-binary==2.9.*
+# Redis
+redis[hiredis]==5.2.*
+# JWT + 密码
+python-jose[cryptography]==3.3.*
+passlib[bcrypt]==1.7.*
+# 配置
+pydantic-settings==2.7.*
+# 存储后端
+boto3==1.37.*
+oss2==2.19.*
+# 搜索
+elasticsearch-py==8.17.*
+# 任务队列
+celery==5.4.*

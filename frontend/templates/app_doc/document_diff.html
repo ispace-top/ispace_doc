@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% load static %}{% load i18n %}
+
+{% block title %}{% trans "文档历史版本对比" %} - {{ doc.name }} - {{ site_name|default:"爱思文档" }}{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{% static 'docdiff/codemirror.css' %}?version={{ isdoc_version }}">
+<link rel="stylesheet" href="{% static 'docdiff/merge.css' %}?version={{ isdoc_version }}">
+<style>
+.CodeMirror-merge,.CodeMirror-merge .CodeMirror{height:calc(100vh - 280px);min-height:360px;}
+.CodeMirror-merge-pane{height:100%;}
+.CodeMirror-merge-gap{background:var(--ispace-color-surface-100);border-color:var(--ispace-color-border-light);}
+.CodeMirror-merge-editor .CodeMirror{background:var(--ispace-color-surface-0);}
+.diff-version-label{font-size:var(--ispace-font-xs);color:var(--ispace-color-text-quaternary);}
+.diff-version-label strong{color:var(--ispace-color-text-secondary);}
+{% if history_list|length > 1 %}
+@media (max-width:768px){
+  .CodeMirror-merge,.CodeMirror-merge .CodeMirror{height:calc(100vh - 360px);min-height:280px;}
+}
+{% endif %}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ispace-page-header">
+    <div>
+        <h1 class="ispace-page-title">{% trans "文档历史版本对比" %}</h1>
+        <p class="ispace-page-description">{{ doc.name }}</p>
+    </div>
+    <a href="{% url 'doc_id' doc_id=doc.id %}" class="ispace-btn ispace-btn-ghost ispace-btn-sm">&larr; {% trans "返回文档" %}</a>
+</div>
+
+{% if history_list %}
+<div class="ispace-card ispace-mb-4">
+    <div class="ispace-card-body" style="padding:var(--ispace-space-3) var(--ispace-space-4);">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--ispace-space-3);">
+            <div style="display:flex;align-items:center;gap:var(--ispace-space-4);flex-wrap:wrap;">
+                <div class="diff-version-label">
+                    {% trans "当前版本" %}: <strong>{{ doc.modify_time|date:"Y-m-d H:i" }}</strong>
+                </div>
+                <span style="color:var(--ispace-color-text-quaternary);">&harr;</span>
+                <div class="diff-version-label">
+                    {% trans "历史版本" %}: <strong>{{ history.create_time|date:"Y-m-d H:i" }}</strong>
+                    {% if history.modify_user %}<span style="margin-left:var(--ispace-space-1);">— {{ history.modify_user.first_name|default:history.modify_user.username }}</span>{% endif %}
+                </div>
+            </div>
+            {% if history_list|length > 1 %}
+            <div class="ispace-form-group" style="margin:0;display:flex;align-items:center;gap:var(--ispace-space-2);">
+                <label class="ispace-form-label" style="margin:0;font-size:var(--ispace-font-xs);">{% trans "对比版本" %}:</label>
+                <select class="ispace-form-select ispace-form-select-sm" onchange="if(this.value)window.location.href=this.value" style="width:auto;">
+                    <option value="">{% trans "选择版本..." %}</option>
+                    {% for h in history_list %}
+                    <option value="{% url 'diff_doc' doc_id=doc.id his_id=h.id %}" {% if h.id == history.id %}selected{% endif %}>
+                        {{ h.create_time|date:"Y-m-d H:i" }}
+                        {% if h.modify_user %} — {{ h.modify_user.first_name|default:h.modify_user.username }}{% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="ispace-content-card" style="padding:0;overflow:hidden;">
+    <div id="diffView"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'docdiff/codemirror.js' %}?version={{ isdoc_version }}"></script>
+<script src="{% static 'docdiff/diff_match_patch.js' %}?version={{ isdoc_version }}"></script>
+<script src="{% static 'docdiff/merge.js' %}?version={{ isdoc_version }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+    var target=document.getElementById('diffView');
+    var mv=new CodeMirror.MergeView(target,{
+        value:'{{ doc.pre_content|escapejs }}',
+        origLeft:null,
+        orig:'{{ history.pre_content|escapejs }}',
+        lineNumbers:true,
+        mode:'markdown',
+        highlightDifferences:true,
+        connect:'align',
+        collapseIdentical:false,
+        readOnly:true,
+        revertButtons:false
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,540 @@
+{% extends "base.html" %}
+{% load static %}{% load i18n %}
+
+{% block title %}{% trans "认证配置" %}{% endblock %}
+
+{% block styles %}
+<style>
+.auth-page { padding: var(--ispace-space-6); max-width: 1100px; }
+.auth-page h2 { margin: 0 0 var(--ispace-space-5); font-size: var(--ispace-font-xl); color: var(--ispace-color-text-primary); }
+.auth-tabs { display: flex; gap: 0; border-bottom: 2px solid var(--ispace-color-border-light); margin-bottom: var(--ispace-space-5); }
+.auth-tab-btn { padding: var(--ispace-space-2) var(--ispace-space-4); font-size: var(--ispace-font-sm); font-weight: 500; color: var(--ispace-color-text-tertiary); border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all var(--ispace-duration-fast); }
+.auth-tab-btn:hover { color: var(--ispace-color-text-primary); }
+.auth-tab-btn.active { color: var(--ispace-color-brand-500); border-bottom-color: var(--ispace-color-brand-500); }
+.auth-tab-panel { display: none; }
+.auth-tab-panel.active { display: block; }
+
+/* Provider cards */
+.auth-provider-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(480px, 1fr)); gap: var(--ispace-space-4); }
+.auth-card { background: var(--ispace-color-surface-0); border: 1px solid var(--ispace-color-border-light); border-radius: var(--ispace-radius-lg); overflow: hidden; }
+.auth-card-header { display: flex; align-items: center; justify-content: space-between; padding: var(--ispace-space-3) var(--ispace-space-4); border-bottom: 1px solid var(--ispace-color-border-light); background: var(--ispace-color-surface-50, #fafafa); }
+.auth-card-title { font-size: var(--ispace-font-base); font-weight: 600; color: var(--ispace-color-text-primary); display: flex; align-items: center; gap: var(--ispace-space-2); }
+.auth-card-badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: var(--ispace-radius-full); font-size: var(--ispace-font-xs); font-weight: 500; }
+.auth-badge-on { background: #dcfce7; color: #166534; }
+.auth-badge-off { background: var(--ispace-color-surface-100); color: var(--ispace-color-text-tertiary); }
+.auth-card-body { padding: var(--ispace-space-4); }
+.auth-config-table { width: 100%; border-collapse: collapse; }
+.auth-config-table tr { border-bottom: 1px solid var(--ispace-color-border-light); }
+.auth-config-table td { padding: var(--ispace-space-1) var(--ispace-space-2); font-size: var(--ispace-font-sm); }
+.auth-config-table td:first-child { color: var(--ispace-color-text-tertiary); width: 160px; white-space: nowrap; font-family: "SF Mono","Fira Code","Cascadia Code",monospace; font-size: var(--ispace-font-xs); }
+.auth-config-table td:last-child { color: var(--ispace-color-text-primary); font-family: "SF Mono","Fira Code","Cascadia Code",monospace; font-size: var(--ispace-font-xs); word-break: break-all; }
+.auth-card-actions { padding: var(--ispace-space-2) var(--ispace-space-4); border-top: 1px solid var(--ispace-color-border-light); text-align: right; }
+.auth-test-result { margin-top: var(--ispace-space-2); padding: var(--ispace-space-2) var(--ispace-space-3); border-radius: var(--ispace-radius-md); font-size: var(--ispace-font-xs); display: none; }
+.auth-test-result.success { display: block; background: #dcfce7; color: #166534; }
+.auth-test-result.error { display: block; background: #fef2f2; color: #991b1b; }
+
+/* Bindings table */
+.bind-filter { display: flex; gap: var(--ispace-space-3); margin-bottom: var(--ispace-space-4); align-items: center; }
+.bind-filter select, .bind-filter input { padding: var(--ispace-space-1) var(--ispace-space-3); font-size: var(--ispace-font-sm); border: 1px solid var(--ispace-color-border-medium); border-radius: var(--ispace-radius-md); background: var(--ispace-color-surface-0); }
+.bind-table { width: 100%; border-collapse: collapse; }
+.bind-table th { text-align: left; padding: var(--ispace-space-2) var(--ispace-space-3); font-size: var(--ispace-font-xs); font-weight: 600; color: var(--ispace-color-text-tertiary); border-bottom: 1px solid var(--ispace-color-border-light); white-space: nowrap; }
+.bind-table td { padding: var(--ispace-space-2) var(--ispace-space-3); font-size: var(--ispace-font-sm); border-bottom: 1px solid var(--ispace-color-border-light); }
+.bind-empty { text-align: center; padding: var(--ispace-space-8); color: var(--ispace-color-text-tertiary); }
+.pagination-bar { display: flex; align-items: center; justify-content: center; gap: var(--ispace-space-2); margin-top: var(--ispace-space-4); }
+.pagination-bar button { padding: var(--ispace-space-1) var(--ispace-space-3); font-size: var(--ispace-font-sm); border: 1px solid var(--ispace-color-border-medium); border-radius: var(--ispace-radius-md); background: var(--ispace-color-surface-0); cursor: pointer; }
+.pagination-bar button:disabled { opacity: 0.4; cursor: not-allowed; }
+.pagination-bar button:hover:not(:disabled) { border-color: var(--ispace-color-brand-500); color: var(--ispace-color-brand-500); }
+
+/* Stats */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--ispace-space-4); margin-bottom: var(--ispace-space-5); }
+.stat-card { background: var(--ispace-color-surface-0); border: 1px solid var(--ispace-color-border-light); border-radius: var(--ispace-radius-lg); padding: var(--ispace-space-4); text-align: center; }
+.stat-card h4 { font-size: var(--ispace-font-xs); font-weight: 500; color: var(--ispace-color-text-tertiary); margin: 0 0 var(--ispace-space-2); }
+.stat-card .stat-num { font-size: var(--ispace-font-2xl); font-weight: 700; color: var(--ispace-color-brand-500); }
+.auth-note { font-size: var(--ispace-font-xs); color: var(--ispace-color-text-tertiary); margin-top: var(--ispace-space-5); padding-top: var(--ispace-space-3); border-top: 1px solid var(--ispace-color-border-light); }
+/* Edit mode styles */
+.auth-card.edit-mode .auth-config-table { display: none; }
+.auth-card.edit-mode .auth-card-actions { display: none; }
+.auth-edit-form { display: none; }
+.auth-card.edit-mode .auth-edit-form { display: block; }
+.auth-edit-form .form-group { margin-bottom: var(--ispace-space-2); }
+.auth-edit-form label { display: block; font-size: var(--ispace-font-xs); color: var(--ispace-color-text-secondary); margin-bottom: 2px; font-family: "SF Mono","Fira Code","Cascadia Code",monospace; }
+.auth-edit-form input { width: 100%; padding: 4px 8px; font-size: var(--ispace-font-sm); font-family: "SF Mono","Fira Code","Cascadia Code",monospace; border: 1px solid var(--ispace-color-border-medium); border-radius: var(--ispace-radius-md); background: var(--ispace-color-surface-0); }
+.auth-edit-form input:focus { outline: none; border-color: var(--ispace-color-brand-500); }
+.auth-edit-actions { display: flex; gap: var(--ispace-space-2); justify-content: flex-end; margin-top: var(--ispace-space-3); }
+.auth-edit-result { margin-top: var(--ispace-space-2); padding: var(--ispace-space-2) var(--ispace-space-3); border-radius: var(--ispace-radius-md); font-size: var(--ispace-font-xs); display: none; }
+.auth-edit-result.success { display: block; background: #dcfce7; color: #166534; }
+.auth-edit-result.error { display: block; background: #fef2f2; color: #991b1b; }
+/* Toggle switch */
+.auth-toggle-switch { position: relative; display: inline-block; width: 36px; height: 20px; cursor: pointer; }
+.auth-toggle-switch input { opacity: 0; width: 0; height: 0; }
+.auth-toggle-slider { position: absolute; inset: 0; background: var(--ispace-color-border-medium); border-radius: 20px; transition: background var(--ispace-duration-fast); }
+.auth-toggle-slider::before { content: ''; position: absolute; left: 2px; top: 2px; width: 16px; height: 16px; background: white; border-radius: 50%; transition: transform var(--ispace-duration-fast); box-shadow: 0 1px 2px rgba(0,0,0,0.15); }
+.auth-toggle-switch input:checked + .auth-toggle-slider { background: var(--ispace-color-brand-500); }
+.auth-toggle-switch input:checked + .auth-toggle-slider::before { transform: translateX(16px); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <h2>{% trans "认证配置" %}</h2>
+
+    <div class="auth-tabs">
+        <button class="auth-tab-btn active" onclick="switchAuthTab('providers', this)">{% trans "认证后端配置" %}</button>
+        <button class="auth-tab-btn" onclick="switchAuthTab('bindings', this)">{% trans "OAuth 绑定记录" %}</button>
+        <button class="auth-tab-btn" onclick="switchAuthTab('stats', this)">{% trans "认证统计" %}</button>
+    </div>
+
+    <!-- Tab 1: Provider Config -->
+    <div class="auth-tab-panel active" id="tab-providers">
+        <div class="auth-provider-cards" id="provider-cards">
+            <p style="color:var(--ispace-color-text-tertiary);">{% trans "加载中..." %}</p>
+        </div>
+        <p class="auth-note">{% trans "提示：配置保存后立即生效，部分修改需重启服务。" %}</p>
+    </div>
+
+    <!-- Tab 2: Bindings -->
+    <div class="auth-tab-panel" id="tab-bindings">
+        <div class="bind-filter">
+            <select id="bind-provider-filter" onchange="loadBindings()">
+                <option value="">{% trans "全部 Provider" %}</option>
+                <option value="oidc">OIDC</option>
+                <option value="dingtalk">{% trans "钉钉" %}</option>
+                <option value="wecom">{% trans "企业微信" %}</option>
+                <option value="ldap">LDAP</option>
+            </select>
+            <input type="text" id="bind-user-filter" placeholder="{% trans '搜索用户...' %}" oninput="debounceSearch()">
+        </div>
+        <table class="bind-table" id="bind-table">
+            <thead>
+                <tr>
+                    <th>{% trans "用户名" %}</th>
+                    <th>{% trans "Provider" %}</th>
+                    <th>{% trans "第三方用户 ID" %}</th>
+                    <th>{% trans "第三方用户名" %}</th>
+                    <th>{% trans "绑定时间" %}</th>
+                    <th>{% trans "操作" %}</th>
+                </tr>
+            </thead>
+            <tbody id="bind-tbody"></tbody>
+        </table>
+        <div class="pagination-bar" id="bind-pagination"></div>
+    </div>
+
+    <!-- Tab 3: Stats -->
+    <div class="auth-tab-panel" id="tab-stats">
+        <div class="stats-grid" id="stats-grid">
+            <p style="color:var(--ispace-color-text-tertiary);">{% trans "加载中..." %}</p>
+        </div>
+        <h3 style="font-size:var(--ispace-font-base);font-weight:600;margin-bottom:var(--ispace-space-3);">{% trans "最近绑定记录" %}</h3>
+        <table class="bind-table" id="recent-binds-table">
+            <thead>
+                <tr>
+                    <th>{% trans "用户名" %}</th>
+                    <th>{% trans "Provider" %}</th>
+                    <th>{% trans "绑定时间" %}</th>
+                </tr>
+            </thead>
+            <tbody id="recent-binds-tbody"></tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ---- Provider edit field definitions ----
+var AUTH_FIELDS = {
+    oidc: [
+        {key: 'provider_name', label: 'provider_name', hint: '显示名称，如 Keycloak / Auth0'},
+        {key: 'discovery_url', label: 'discovery_url', hint: 'OIDC Discovery 端点 URL (.well-known/openid-configuration)'},
+        {key: 'client_id', label: 'client_id', hint: 'OAuth 客户端 ID'},
+        {key: 'client_secret', label: 'client_secret', hint: 'OAuth 客户端密钥', type: 'password'},
+        {key: 'scope', label: 'scope', hint: '如 openid profile email'}
+    ],
+    dingtalk: [
+        {key: 'app_id', label: 'app_id', hint: '钉钉应用 AppID'},
+        {key: 'app_secret', label: 'app_secret', hint: '钉钉应用 AppSecret', type: 'password'},
+        {key: 'corp_id', label: 'corp_id', hint: '钉钉企业 CorpId'},
+        {key: 'agent_id', label: 'agent_id', hint: '自建应用 AgentId'}
+    ],
+    wecom: [
+        {key: 'corp_id', label: 'corp_id', hint: '企业微信 CorpId'},
+        {key: 'corp_secret', label: 'corp_secret', hint: '企业微信应用 Secret', type: 'password'},
+        {key: 'agent_id', label: 'agent_id', hint: '自建应用 AgentId'}
+    ],
+    ldap: [
+        {key: 'server_uri', label: 'server_uri', hint: 'LDAP 服务器地址，如 ldap://ldap.example.com:389'},
+        {key: 'bind_dn', label: 'bind_dn', hint: '管理员绑定 DN，如 cn=admin,dc=example,dc=com'},
+        {key: 'bind_password', label: 'bind_password', hint: '管理员绑定密码', type: 'password'},
+        {key: 'user_base_dn', label: 'user_base_dn', hint: '用户搜索基准 DN，如 ou=users,dc=example,dc=com'},
+        {key: 'user_filter', label: 'user_filter', hint: '用户过滤器，如 (uid=%(user)s)'},
+        {key: 'username_attr', label: 'username_attr', hint: '用户名属性，如 uid'},
+        {key: 'email_attr', label: 'email_attr', hint: '邮箱属性，如 mail'},
+        {key: 'use_tls', label: 'use_tls', hint: '是否启用 TLS (true/false)'}
+    ]
+};
+
+function switchAuthTab(tab, btn) {
+    document.querySelectorAll('.auth-tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.auth-tab-panel').forEach(function(p) { p.classList.remove('active'); });
+    btn.classList.add('active');
+    document.getElementById('tab-' + tab).classList.add('active');
+    if (tab === 'providers') loadProviderConfigs();
+    else if (tab === 'bindings') loadBindings();
+    else if (tab === 'stats') loadStats();
+}
+
+function loadProviderConfigs() {
+    fetch('{% url "api_admin_auth_configs" %}')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.status) { return; }
+            var configs = data.configs;
+            var html = '';
+            var order = ['oidc', 'dingtalk', 'wecom', 'ldap'];
+            order.forEach(function(p) {
+                var cfg = configs[p];
+                if (!cfg) return;
+                var items = '';
+                if (Object.keys(cfg.config).length === 0) {
+                    items = '<tr><td colspan="2" style="color:var(--ispace-color-text-tertiary);">{% trans "未配置" %}</td></tr>';
+                } else {
+                    for (var k in cfg.config) {
+                        items += '<tr><td>' + escapeHTML(k) + '</td><td>' + escapeHTML(cfg.config[k]) + '</td></tr>';
+                    }
+                }
+                // Build edit form
+                var fields = AUTH_FIELDS[p] || [];
+                var editForm = '';
+                fields.forEach(function(f) {
+                    var currentVal = cfg.config[f.key] || '';
+                    var inputType = f.type || 'text';
+                    editForm += '<div class="form-group"><label>' + f.label + '</label>';
+                    if (inputType === 'password') {
+                        editForm += '<input type="password" id="edit-' + p + '-' + f.key + '" placeholder="' + (f.hint || '') + '" autocomplete="new-password">';
+                        if (currentVal) editForm += '<small style="color:var(--ispace-color-text-tertiary);">(' + currentVal + ')</small>';
+                    } else {
+                        editForm += '<input type="text" id="edit-' + p + '-' + f.key + '" value="' + escapeHTML(currentVal) + '" placeholder="' + (f.hint || '') + '">';
+                    }
+                    editForm += '</div>';
+                });
+
+                var hasConfig = Object.keys(cfg.config).length > 0;
+                html += '<div class="auth-card" id="auth-card-' + p + '">';
+                html += '<div class="auth-card-header">';
+                html += '<span class="auth-card-title">' + escapeHTML(cfg.label) + '</span>';
+                html += '<span style="display:flex;align-items:center;gap:8px;">';
+                if (hasConfig) {
+                    html += '<label class="auth-toggle-switch" title="' + (cfg.enabled ? '{% trans "已启用" %}' : '{% trans "已禁用" %}') + '">';
+                    html += '<input type="checkbox" ' + (cfg.enabled ? 'checked' : '') + ' onchange="toggleAuthEnabled(\'' + p + '\', this.checked)">';
+                    html += '<span class="auth-toggle-slider"></span>';
+                    html += '</label>';
+                }
+                html += '<span class="auth-card-badge ' + (cfg.enabled ? 'auth-badge-on' : 'auth-badge-off') + '">' + (cfg.enabled ? '{% trans "已启用" %}' : (hasConfig ? '{% trans "已禁用" %}' : '{% trans "未配置" %}')) + '</span>';
+                html += '</span>';
+                html += '</div>';
+                html += '<div class="auth-card-body">';
+                html += '<table class="auth-config-table"><tbody>' + items + '</tbody></table>';
+                html += '<div class="auth-edit-form">' + editForm + '</div>';
+                html += '</div>';
+                html += '<div class="auth-card-actions">';
+                html += '<button class="ispace-btn ispace-btn-primary ispace-btn-sm" onclick="enterEditMode(\'' + p + '\')">{% trans "编辑配置" %}</button>';
+                if (cfg.enabled && (p === 'oidc' || p === 'ldap')) {
+                    html += '<button class="ispace-btn ispace-btn-outline ispace-btn-sm" onclick="testAuth(\'' + p + '\')" style="margin-left:8px;">{% trans "测试连接" %}</button>';
+                }
+                if (hasConfig && (p === 'wecom' || p === 'ldap')) {
+                    html += '<button class="ispace-btn ispace-btn-outline ispace-btn-sm" onclick="triggerSync(\'' + p + '\')" style="margin-left:8px;">{% trans "同步" %}</button>';
+                }
+                html += '<div class="auth-test-result" id="test-result-' + p + '"></div>';
+                html += '<div class="auth-sync-status" id="sync-status-' + p + '" style="display:none;margin-top:8px;padding:6px 10px;border-radius:6px;font-size:12px;"></div>';
+                html += '</div>';
+                html += '<div class="auth-card-actions auth-edit-form" style="border-top-color:var(--ispace-color-brand-100);background:var(--ispace-color-brand-50,#f8faff);">';
+                html += '<button class="ispace-btn ispace-btn-primary ispace-btn-sm" onclick="saveAuthConfig(\'' + p + '\')">{% trans "保存配置" %}</button>';
+                html += '<button class="ispace-btn ispace-btn-outline ispace-btn-sm" onclick="exitEditMode(\'' + p + '\')" style="margin-left:8px;">{% trans "取消" %}</button>';
+                if (hasConfig) {
+                    html += '<button class="ispace-btn ispace-btn-ghost ispace-btn-sm" onclick="clearAuthConfig(\'' + p + '\')" style="margin-left:auto;color:var(--ispace-color-error-text);">{% trans "清除配置" %}</button>';
+                }
+                html += '<div class="auth-edit-result" id="edit-result-' + p + '"></div>';
+                html += '</div>';
+                html += '</div>';
+            });
+            document.getElementById('provider-cards').innerHTML = html;
+        });
+}
+
+function enterEditMode(provider) {
+    var card = document.getElementById('auth-card-' + provider);
+    if (card) card.classList.add('edit-mode');
+    var resultEl = document.getElementById('edit-result-' + provider);
+    if (resultEl) { resultEl.className = 'auth-edit-result'; resultEl.textContent = ''; }
+}
+
+function exitEditMode(provider) {
+    var card = document.getElementById('auth-card-' + provider);
+    if (card) card.classList.remove('edit-mode');
+}
+
+function clearAuthConfig(provider) {
+    if (!confirm('{% trans "确定要清除" %}' + provider + ' {% trans "的认证配置吗？" %}')) return;
+    var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+    fetch('{% url "api_admin_auth_configs" %}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfEl ? csrfEl.value : '' },
+        body: JSON.stringify({ provider: provider, config: {} })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.status) {
+            loadProviderConfigs();
+        } else {
+            alert(data.message || '{% trans "操作失败" %}');
+        }
+    });
+}
+
+function saveAuthConfig(provider) {
+    var resultEl = document.getElementById('edit-result-' + provider);
+    resultEl.className = 'auth-edit-result';
+    resultEl.textContent = '{% trans "正在保存..." %}';
+    resultEl.style.display = 'block';
+
+    var fields = AUTH_FIELDS[provider] || [];
+    var config = {};
+    fields.forEach(function(f) {
+        var el = document.getElementById('edit-' + provider + '-' + f.key);
+        if (el) {
+            var val = el.value.trim();
+            if (val) config[f.key] = val;
+        }
+    });
+
+    if (Object.keys(config).length === 0) {
+        resultEl.className = 'auth-edit-result error';
+        resultEl.textContent = '{% trans "请至少填写一个配置项" %}';
+        return;
+    }
+
+    var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+    fetch('{% url "api_admin_auth_configs" %}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfEl ? csrfEl.value : '' },
+        body: JSON.stringify({ provider: provider, config: config })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.status) {
+            resultEl.className = 'auth-edit-result success';
+            resultEl.textContent = data.message || '{% trans "保存成功" %}';
+            setTimeout(function() { loadProviderConfigs(); }, 800);
+        } else {
+            resultEl.className = 'auth-edit-result error';
+            resultEl.textContent = data.message || '{% trans "保存失败" %}';
+        }
+    })
+    .catch(function() {
+        resultEl.className = 'auth-edit-result error';
+        resultEl.textContent = '{% trans "请求失败" %}';
+    });
+}
+
+function testAuth(provider) {
+    var resultEl = document.getElementById('test-result-' + provider);
+    resultEl.className = 'auth-test-result';
+    resultEl.textContent = '{% trans "正在测试..." %}';
+    resultEl.style.display = 'block';
+    var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+    fetch('{% url "api_admin_auth_configs" %}' + '../test/' + provider + '/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfEl ? csrfEl.value : '' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        resultEl.className = 'auth-test-result ' + (data.status ? 'success' : 'error');
+        resultEl.textContent = data.message;
+        if (data.detail) {
+            resultEl.textContent += ' (' + JSON.stringify(data.detail).replace(/[{}"]/g, '') + ')';
+        }
+    })
+    .catch(function() {
+        resultEl.className = 'auth-test-result error';
+        resultEl.textContent = '{% trans "请求失败" %}';
+    });
+}
+
+var bindPage = 1;
+var searchTimeout;
+
+function debounceSearch() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(loadBindings, 300);
+}
+
+function loadBindings(page) {
+    if (page) bindPage = page;
+    var provider = document.getElementById('bind-provider-filter').value;
+    var user = document.getElementById('bind-user-filter').value;
+    var params = new URLSearchParams({ page: bindPage, page_size: 20 });
+    if (provider) params.set('provider', provider);
+    if (user) params.set('user', user);
+
+    fetch('{% url "api_admin_auth_bindings" %}?' + params.toString())
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.status) return;
+            var rows = '';
+            if (data.bindings.length === 0) {
+                rows = '<tr><td colspan="6" class="bind-empty">{% trans "无绑定记录" %}</td></tr>';
+            } else {
+                data.bindings.forEach(function(b) {
+                    rows += '<tr>';
+                    rows += '<td>' + escapeHTML(b.display_name) + ' <span style="color:var(--ispace-color-text-tertiary);font-size:var(--ispace-font-xs);">(' + escapeHTML(b.username) + ')</span></td>';
+                    rows += '<td><span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;background:var(--ispace-color-surface-100);font-size:var(--ispace-font-xs);">' + escapeHTML(b.provider_label) + '</span></td>';
+                    rows += '<td style="font-family:monospace;font-size:var(--ispace-font-xs);">' + escapeHTML(b.provider_user_id) + '</td>';
+                    rows += '<td>' + escapeHTML(b.provider_user_name) + '</td>';
+                    rows += '<td style="font-size:var(--ispace-font-xs);">' + escapeHTML(b.bound_at) + '</td>';
+                    rows += '<td><button class="ispace-btn ispace-btn-ghost ispace-btn-sm" onclick="unbind(\'' + b.id + '\', \'' + escapeHTML(b.username) + '\', \'' + b.provider + '\')" style="color:var(--ispace-color-error-text);padding:2px 8px;">{% trans "解除绑定" %}</button></td>';
+                    rows += '</tr>';
+                });
+            }
+            document.getElementById('bind-tbody').innerHTML = rows;
+            renderPagination(data.total, bindPage, 20, 'bind-pagination', loadBindings);
+        });
+}
+
+function unbind(id, username, provider) {
+    if (!confirm('{% trans "确定要解除" %}' + username + ' 的 ' + provider + ' {% trans "绑定吗？" %}')) return;
+    var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+    fetch('{% url "api_admin_auth_bindings" %}' + id + '/', {
+        method: 'DELETE',
+        headers: { 'X-CSRFToken': csrfEl ? csrfEl.value : '' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.status) { loadBindings(); }
+    });
+}
+
+function loadStats() {
+    fetch('{% url "api_admin_auth_bindings" %}?page=1&page_size=5')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.status) return;
+            var stats = data.stats;
+            var labels = { oidc: 'OIDC', dingtalk: '{% trans "钉钉" %}', wecom: '{% trans "企业微信" %}', ldap: 'LDAP' };
+            var html = '';
+            for (var k in stats) {
+                html += '<div class="stat-card"><h4>' + (labels[k] || k) + '</h4><div class="stat-num">' + stats[k] + '</div></div>';
+            }
+            document.getElementById('stats-grid').innerHTML = html;
+
+            // Recent bindings
+            var rows = '';
+            if (data.bindings.length === 0) {
+                rows = '<tr><td colspan="3" class="bind-empty">{% trans "无绑定记录" %}</td></tr>';
+            } else {
+                data.bindings.forEach(function(b) {
+                    rows += '<tr><td>' + escapeHTML(b.display_name) + '</td><td>' + escapeHTML(b.provider_label) + '</td><td>' + escapeHTML(b.bound_at) + '</td></tr>';
+                });
+            }
+            document.getElementById('recent-binds-tbody').innerHTML = rows;
+        });
+}
+
+function renderPagination(total, page, pageSize, elId, loadFn) {
+    var el = document.getElementById(elId);
+    var totalPages = Math.ceil(total / pageSize) || 1;
+    var html = '';
+    html += '<button ' + (page <= 1 ? 'disabled' : '') + ' onclick="' + loadFn.name + '(' + (page - 1) + ')">{% trans "上一页" %}</button>';
+    html += '<span style="font-size:var(--ispace-font-sm);color:var(--ispace-color-text-tertiary);">' + page + ' / ' + totalPages + '</span>';
+    html += '<button ' + (page >= totalPages ? 'disabled' : '') + ' onclick="' + loadFn.name + '(' + (page + 1) + ')">{% trans "下一页" %}</button>';
+    html += ' <span style="font-size:var(--ispace-font-xs);color:var(--ispace-color-text-tertiary);">({% trans "共" %}' + total + '{% trans "条" %})</span>';
+    el.innerHTML = html;
+}
+
+function escapeHTML(str) {
+    var div = document.createElement('div');
+    div.textContent = str || '';
+    return div.innerHTML;
+}
+
+function toggleAuthEnabled(provider, enabled) {
+    var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+    fetch('{% url "api_admin_auth_configs" %}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfEl ? csrfEl.value : '' },
+        body: JSON.stringify({ provider: provider, config: { enabled: enabled ? 'true' : 'false' } })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (!data.status) {
+            alert(data.message || '{% trans "操作失败" %}');
+            loadProviderConfigs(); // 回滚 UI
+        }
+    });
+}
+
+var _syncTimers = {};
+function triggerSync(provider) {
+    var statusEl = document.getElementById('sync-status-' + provider);
+    statusEl.style.display = 'block';
+    statusEl.style.background = '#f0f9ff';
+    statusEl.style.color = '#0369a1';
+    statusEl.textContent = '{% trans "正在触发同步..." %}';
+
+    var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+    fetch('/api/sync/' + provider + '/trigger/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfEl ? csrfEl.value : '' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success || data.message) {
+            statusEl.textContent = data.message || '{% trans "同步已触发" %}';
+            pollSyncStatus(provider, 0);
+        } else {
+            statusEl.style.background = '#fef2f2';
+            statusEl.style.color = '#991b1b';
+            statusEl.textContent = data.error || '{% trans "触发失败" %}';
+        }
+    })
+    .catch(function() {
+        statusEl.style.background = '#fef2f2';
+        statusEl.style.color = '#991b1b';
+        statusEl.textContent = '{% trans "请求失败" %}';
+    });
+}
+
+function pollSyncStatus(provider, attempt) {
+    if (attempt > 20) {  // max 2 minutes
+        document.getElementById('sync-status-' + provider).textContent = '{% trans "同步超时，请稍后查询" %}';
+        return;
+    }
+    fetch('/api/sync/' + provider + '/status/')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var statusEl = document.getElementById('sync-status-' + provider);
+            var lastSync = data.last_sync;
+            if (lastSync) {
+                if (lastSync.errors && lastSync.errors.length > 0) {
+                    statusEl.style.background = '#fef2f2';
+                    statusEl.style.color = '#991b1b';
+                    statusEl.textContent = '{% trans "同步失败" %}: ' + lastSync.errors.join(', ');
+                } else {
+                    statusEl.style.background = '#dcfce7';
+                    statusEl.style.color = '#166534';
+                    statusEl.textContent = '{% trans "同步完成" %}: ' +
+                        '{% trans "部门" %} +' + (lastSync.departments_created || 0) + '/' + (lastSync.departments_updated || 0) + ', ' +
+                        '{% trans "用户" %} +' + (lastSync.users_created || 0) + '/' + (lastSync.users_updated || 0);
+                }
+            } else {
+                // 尚未完成，继续轮询
+                var next = attempt + 1;
+                _syncTimers[provider] = setTimeout(function() { pollSyncStatus(provider, next); }, 3000);
+            }
+        });
+}
+
+// Initial load
+loadProviderConfigs();
+</script>
+{% endblock %}

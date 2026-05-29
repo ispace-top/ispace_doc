@@ -1,0 +1,90 @@
+/*
+ * md-themes/minimal.css — 简约风格 Markdown 渲染主题
+ * 更小行距、减少视觉噪音、扁平化设计
+ */
+
+.markdown-body {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #374151;
+}
+
+/* 标题 — 更紧凑 */
+.markdown-body h1 { font-size: 1.6em; font-weight: 700; margin-top: 20px; margin-bottom: 10px; }
+.markdown-body h2 { font-size: 1.35em; font-weight: 700; margin-top: 18px; margin-bottom: 8px; }
+.markdown-body h3 { font-size: 1.15em; font-weight: 700; margin-top: 16px; margin-bottom: 8px; }
+.markdown-body h4 { font-size: 1em; font-weight: 600; }
+.markdown-body h5 { font-size: .9em; font-weight: 600; }
+.markdown-body h6 { font-size: .85em; font-weight: 600; color: #6b7280; }
+
+/* 段落间距更紧凑 */
+.markdown-body p { margin-bottom: 12px; }
+
+/* 引用块 — 细边框 */
+.markdown-body blockquote {
+  border-left: 3px solid #d1d5db;
+  background: none;
+  color: #6b7280;
+  padding: 4px 14px;
+  margin: 8px 0;
+  font-size: 13px;
+}
+
+/* Callout — 淡色背景 + 细边框 */
+.markdown-body blockquote.info {
+  border-left: 3px solid #60a5fa;
+  background: rgba(96, 165, 250, 0.06);
+  color: #3b82f6;
+}
+.markdown-body blockquote.warning {
+  border-left: 3px solid #fbbf24;
+  background: rgba(251, 191, 36, 0.06);
+  color: #d97706;
+}
+.markdown-body blockquote.danger {
+  border-left: 3px solid #f87171;
+  background: rgba(248, 113, 113, 0.06);
+  color: #dc2626;
+}
+.markdown-body blockquote.success {
+  border-left: 3px solid #4ade80;
+  background: rgba(74, 222, 128, 0.06);
+  color: #16a34a;
+}
+.markdown-body blockquote.tip {
+  border-left: 3px solid #a78bfa;
+  background: rgba(167, 139, 250, 0.06);
+  color: #7c3aed;
+}
+
+/* 代码块 — 扁平 */
+.markdown-body pre {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  padding: 12px;
+}
+.markdown-body code:not(.hljs) {
+  background: #f3f4f6;
+  border-radius: 3px;
+  padding: .15em .35em;
+  font-size: 88%;
+}
+
+/* 表格 — 仅水平线 */
+.markdown-body table { border-collapse: collapse; }
+.markdown-body table th { border-bottom: 2px solid #d1d5db; padding: 6px 13px; }
+.markdown-body table td { border-bottom: 1px solid #e5e7eb; padding: 6px 13px; }
+.markdown-body table thead tr { background: none; }
+.markdown-body table tr:nth-child(2n) { background: none; }
+
+/* 链接 */
+.markdown-body a { color: #4f46e5; }
+
+/* Callout 图标颜色 */
+.markdown-body .callout-icon { font-family: layui-icon; margin-right: 6px; -webkit-text-stroke: 0.4px currentColor; }
+.markdown-body blockquote.info .callout-icon { color: #3b82f6; }
+.markdown-body blockquote.warning .callout-icon { color: #d97706; }
+.markdown-body blockquote.danger .callout-icon { color: #dc2626; }
+.markdown-body blockquote.success .callout-icon { color: #16a34a; }
+.markdown-body blockquote.tip .callout-icon { color: #7c3aed; }

@@ -1,0 +1,306 @@
+{% extends "auth/base_auth.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "用户登录" %} - {{ site_name|default:"爱思文档" }}{% endblock %}
+
+{% block auth_title %}{% trans "登录" %}{% endblock %}
+{% block auth_subtitle %}{% trans "欢迎回来，请登录您的账号" %}{% endblock %}
+
+{% block auth_form %}
+<form class="ispace-auth-form" method="post" action="{% url 'login' %}?next={{ to|default:'/'|urlencode }}">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ to|default:'/' }}">
+
+    <div class="ispace-form-group">
+        <label class="ispace-form-label ispace-form-label-required" for="username">{% trans "用户名" %}</label>
+        <input type="text" id="username" name="username"
+               class="ispace-form-input" placeholder="{% trans '请输入用户名' %}"
+               required autocomplete="username" autofocus>
+    </div>
+
+    <div class="ispace-form-group">
+        <label class="ispace-form-label ispace-form-label-required" for="password">{% trans "密码" %}</label>
+        <input type="password" id="password" name="password"
+               class="ispace-form-input" placeholder="{% trans '请输入密码' %}"
+               required autocomplete="current-password">
+    </div>
+
+    {% if enable_login_check_code == 'on' %}
+    <div class="ispace-form-group">
+        <label class="ispace-form-label ispace-form-label-required" for="check_code">{% trans "验证码" %}</label>
+        <div class="ispace-flex-center ispace-gap-3">
+            <input type="text" id="check_code" name="check_code"
+                   class="ispace-form-input" placeholder="{% trans '请输入验证码' %}"
+                   required maxlength="4" style="flex:1;">
+            <img src="{% url 'check_code' %}" alt="验证码"
+                 onclick="this.src='{% url 'check_code' %}?'+Math.random()"
+                 style="height:40px;cursor:pointer;border-radius:var(--ispace-radius-md);border:1px solid var(--ispace-color-border-light);">
+        </div>
+    </div>
+    {% endif %}
+
+    <button type="submit" class="ispace-btn ispace-btn-primary ispace-btn-sm">
+        {% trans "登 录" %}
+    </button>
+</form>
+{% endblock %}
+
+{% block auth_footer %}
+{% if not close_register %}
+<span>{% trans "还没有账号？" %} <a href="{% url 'register' %}">{% trans "立即注册" %}</a></span>
+{% endif %}
+<span>{% trans "忘记密码？" %} <a href="{% url 'forget_pwd' %}">{% trans "找回密码" %}</a></span>
+<span class="ispace-auth-back-link"><a href="/">&larr; {% trans "返回首页" %}</a></span>
+{% endblock %}
+
+{% block head_extra %}
+{# OAuth 登录按钮样式 —— 在 <head> 中加载，防止 FOUC #}
+<style>
+.ispace-oauth-buttons {
+    margin-top: var(--ispace-space-4);
+}
+.ispace-oauth-divider {
+    display: flex;
+    align-items: center;
+    gap: var(--ispace-space-3);
+    margin-bottom: var(--ispace-space-3);
+    color: var(--ispace-color-text-tertiary);
+    font-size: var(--ispace-font-xs);
+}
+.ispace-oauth-divider::before,
+.ispace-oauth-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--ispace-color-border-light);
+}
+.ispace-oauth-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ispace-space-2);
+}
+.ispace-oauth-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--ispace-space-2);
+    width: 100%;
+    padding: var(--ispace-space-2) var(--ispace-space-3);
+    font-size: var(--ispace-font-sm);
+    font-weight: var(--ispace-font-medium);
+    color: var(--ispace-color-text-primary);
+    background: var(--ispace-color-surface-0);
+    border: 1px solid var(--ispace-color-border);
+    border-radius: var(--ispace-radius-md);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all var(--ispace-duration-fast);
+}
+.ispace-oauth-btn:hover {
+    border-color: var(--ispace-color-brand-400);
+    background: var(--ispace-color-brand-50);
+    color: var(--ispace-color-brand-600);
+    text-decoration: none;
+}
+.ispace-oauth-btn-icon {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+}
+/* LDAP 表单弹窗 */
+.ispace-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+.ispace-modal-overlay[hidden] { display: none; }
+.ispace-modal-box {
+    background: var(--ispace-color-surface-0);
+    border-radius: var(--ispace-radius-lg);
+    box-shadow: var(--ispace-shadow-xl);
+    width: 380px;
+    max-width: 90vw;
+    padding: var(--ispace-space-6);
+}
+.ispace-modal-box h3 {
+    margin: 0 0 var(--ispace-space-4);
+    font-size: var(--ispace-font-lg);
+    color: var(--ispace-color-text-primary);
+}
+.ispace-modal-box .ispace-form-group { margin-bottom: var(--ispace-space-3); }
+.ispace-modal-actions {
+    display: flex;
+    gap: var(--ispace-space-2);
+    justify-content: flex-end;
+    margin-top: var(--ispace-space-4);
+}
+.ispace-modal-error {
+    font-size: var(--ispace-font-xs);
+    color: var(--ispace-color-error-text);
+    margin-top: var(--ispace-space-2);
+    display: none;
+}
+</style>
+{% endblock %}
+
+{% block auth_oauth %}
+<div id="oauth-buttons" class="ispace-oauth-buttons" style="display:none;">
+    <div class="ispace-oauth-divider">
+        <span>{% trans "其他登录方式" %}</span>
+    </div>
+    <div class="ispace-oauth-list" id="oauth-list"></div>
+</div>
+
+{# LDAP 用户名密码登录弹窗 #}
+<div class="ispace-modal-overlay" id="ldap-modal" hidden>
+    <div class="ispace-modal-box">
+        <h3 id="ldap-modal-title">{% trans "LDAP 登录" %}</h3>
+        <div class="ispace-form-group">
+            <label class="ispace-form-label ispace-form-label-required" for="ldap-username">{% trans "用户名" %}</label>
+            <input type="text" id="ldap-username" class="ispace-form-input" placeholder="{% trans '请输入 LDAP 用户名' %}" autocomplete="username">
+        </div>
+        <div class="ispace-form-group">
+            <label class="ispace-form-label ispace-form-label-required" for="ldap-password">{% trans "密码" %}</label>
+            <input type="password" id="ldap-password" class="ispace-form-input" placeholder="{% trans '请输入 LDAP 密码' %}" autocomplete="current-password">
+        </div>
+        <div class="ispace-modal-error" id="ldap-modal-error"></div>
+        <div class="ispace-modal-actions">
+            <button type="button" class="ispace-btn ispace-btn-outline ispace-btn-sm" onclick="closeLDAPModal()">{% trans "取消" %}</button>
+            <button type="button" class="ispace-btn ispace-btn-primary ispace-btn-sm" id="ldap-submit-btn" onclick="submitLDAPLogin()">{% trans "登 录" %}</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block core_scripts %}
+<script>
+(function() {
+    var container = document.getElementById('oauth-buttons');
+    var list = document.getElementById('oauth-list');
+
+    var PROVIDER_LABELS = {
+        'oidc': '{% trans "OIDC 登录" %}',
+        'dingtalk': '{% trans "钉钉登录" %}',
+        'wecom': '{% trans "企业微信登录" %}',
+        'ldap': '{% trans "LDAP 登录" %}'
+    };
+
+    var PROVIDER_ICONS = {
+        'oidc': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3"/></svg>',
+        'dingtalk': '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.49 7.11c-.35 2.96-1.68 5.91-3.05 8.5-1.37-2.59-2.7-5.41-2.99-8.5h2.16l-2.05-2.05 1.41-1.41L14.38 8h-2.16c.35-1.68.94-3.28 1.76-4.74.12.04.24.08.35.12C15.16 4.72 16.06 5.98 16.49 9.11z"/></svg>',
+        'wecom': '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm-1 6a1 1 0 0 1 2 0v3h3a1 1 0 0 1 0 2h-3v3a1 1 0 0 1-2 0v-3H8a1 1 0 0 1 0-2h3V8z"/></svg>',
+        'ldap': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
+    };
+
+    function getIcon(provider) {
+        return PROVIDER_ICONS[provider] || PROVIDER_ICONS['oidc'];
+    }
+
+    fetch('/auth/providers/')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var providers = data.providers || [];
+            if (providers.length === 0) return;
+
+            var html = '';
+            providers.forEach(function(p) {
+                var label = PROVIDER_LABELS[p.name] || p.name;
+                if (p.type === 'form') {
+                    html += '<button onclick="openLDAPModal(\'' + p.name + '\', \'' + label + '\', \'' + p.url + '\')" class="ispace-oauth-btn ispace-oauth-btn--' + p.name + '" title="' + label + '">';
+                } else {
+                    html += '<a href="' + p.url + '" class="ispace-oauth-btn ispace-oauth-btn--' + p.name + '" title="' + label + '">';
+                }
+                html += '<span class="ispace-oauth-btn-icon">' + getIcon(p.name) + '</span>';
+                html += '<span>' + label + '</span>';
+                if (p.type === 'form') {
+                    html += '</button>';
+                } else {
+                    html += '</a>';
+                }
+            });
+            list.innerHTML = html;
+            container.style.display = '';
+        })
+        .catch(function() {
+            // 获取 OAuth 提供方失败，静默隐藏按钮区
+        });
+
+    var _ldapLoginUrl = '';
+    function openLDAPModal(provider, label, url) {
+        _ldapLoginUrl = url;
+        document.getElementById('ldap-modal-title').textContent = label;
+        document.getElementById('ldap-username').value = '';
+        document.getElementById('ldap-password').value = '';
+        document.getElementById('ldap-modal-error').style.display = 'none';
+        document.getElementById('ldap-modal').hidden = false;
+        setTimeout(function() {
+            document.getElementById('ldap-username').focus();
+        }, 100);
+    }
+    function closeLDAPModal() {
+        document.getElementById('ldap-modal').hidden = true;
+    }
+    function submitLDAPLogin() {
+        var username = document.getElementById('ldap-username').value.trim();
+        var password = document.getElementById('ldap-password').value.trim();
+        var errorEl = document.getElementById('ldap-modal-error');
+        var btn = document.getElementById('ldap-submit-btn');
+
+        if (!username || !password) {
+            errorEl.textContent = '{% trans "请输入用户名和密码" %}';
+            errorEl.style.display = 'block';
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = '{% trans "登录中..." %}';
+        errorEl.style.display = 'none';
+
+        var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+        fetch(_ldapLoginUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfEl ? csrfEl.value : ''
+            },
+            body: JSON.stringify({ username: username, password: password })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.status === 'ok') {
+                window.location.href = data.redirect || '/';
+            } else {
+                errorEl.textContent = data.error || '{% trans "登录失败" %}';
+                errorEl.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = '{% trans "登 录" %}';
+            }
+        })
+        .catch(function() {
+            errorEl.textContent = '{% trans "网络异常，请稍后重试" %}';
+            errorEl.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = '{% trans "登 录" %}';
+        });
+    }
+
+    // Enter 键提交 LDAP 表单
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !document.getElementById('ldap-modal').hidden) {
+            submitLDAPLogin();
+        }
+    });
+
+    // 点击遮罩关闭
+    document.getElementById('ldap-modal').addEventListener('click', function(e) {
+        if (e.target === this) closeLDAPModal();
+    });
+})();
+</script>
+{% endblock %}

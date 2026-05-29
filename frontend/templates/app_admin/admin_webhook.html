@@ -1,0 +1,408 @@
+{% extends "base.html" %}
+{% load static %}{% load i18n %}
+
+{% block title %}{% trans "WebHook 管理" %}{% endblock %}
+
+{% block styles %}
+<style>
+.webhook-page { padding: var(--ispace-space-6); max-width: 1100px; }
+.webhook-page h2 { margin: 0 0 var(--ispace-space-5); font-size: var(--ispace-font-xl); color: var(--ispace-color-text-primary); }
+.webhook-toolbar { display: flex; align-items: center; gap: var(--ispace-space-3); margin-bottom: var(--ispace-space-4); flex-wrap: wrap; }
+.webhook-toolbar .ispace-btn { display: inline-flex; align-items: center; gap: 4px; }
+.webhook-table-wrap { overflow-x: auto; }
+.webhook-table { width: 100%; border-collapse: collapse; font-size: var(--ispace-font-sm); }
+.webhook-table th, .webhook-table td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--ispace-color-border-light); }
+.webhook-table th { color: var(--ispace-color-text-secondary); font-weight: 500; background: #f8fafc; white-space: nowrap; }
+.webhook-table tr:hover { background: #f8fafc; }
+.webhook-status { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: var(--ispace-radius-full); font-size: var(--ispace-font-xs); }
+.webhook-status.on { background: #dcfce7; color: #166534; }
+.webhook-status.off { background: #f1f5f9; color: #64748b; }
+.webhook-events { display: flex; flex-wrap: wrap; gap: 2px; }
+.webhook-event-tag { display: inline-block; padding: 1px 6px; background: #ede9fe; color: #5b21b6; border-radius: 3px; font-size: 11px; }
+.webhook-actions { display: flex; gap: 4px; }
+.webhook-empty { text-align: center; padding: var(--ispace-space-8); color: var(--ispace-color-text-tertiary); }
+.webhook-tabs { display: flex; gap: 0; margin-bottom: var(--ispace-space-4); border-bottom: 2px solid var(--ispace-color-border-light); }
+.webhook-tab { padding: 8px 20px; cursor: pointer; font-size: var(--ispace-font-sm); color: var(--ispace-color-text-secondary); border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.15s; }
+.webhook-tab:hover { color: var(--ispace-color-text-primary); }
+.webhook-tab.active { color: var(--ispace-color-brand-600); border-bottom-color: var(--ispace-color-brand-600); font-weight: 500; }
+.webhook-delivery-success { color: #16a34a; font-weight: 500; }
+.webhook-delivery-fail { color: #dc2626; font-weight: 500; }
+.webhook-form-row { margin-bottom: var(--ispace-space-3); }
+.webhook-form-row label { display: block; margin-bottom: 4px; font-size: var(--ispace-font-sm); color: var(--ispace-color-text-secondary); }
+.webhook-form-row .ispace-form-input { width: 100%; height: 36px; }
+.webhook-form-row textarea.ispace-form-input { height: 80px; }
+.webhook-checkbox-group { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.webhook-checkbox-group label { display: inline-flex; align-items: center; gap: 4px; font-size: var(--ispace-font-sm); cursor: pointer; }
+.webhook-detail-panel { background: #f8fafc; border: 1px solid var(--ispace-color-border-light); border-radius: var(--ispace-radius-md); padding: var(--ispace-space-4); margin-top: var(--ispace-space-3); }
+.webhook-detail-panel pre { font-size: 12px; background: #1e293b; color: #e2e8f0; padding: 12px; border-radius: var(--ispace-radius-sm); overflow-x: auto; max-height: 300px; white-space: pre-wrap; word-break: break-all; }
+.webhook-pagination { display: flex; align-items: center; justify-content: flex-end; gap: var(--ispace-space-3); margin-top: var(--ispace-space-4); font-size: var(--ispace-font-sm); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="webhook-page">
+    <h2>{% trans "WebHook 管理" %}</h2>
+
+    <!-- Tabs -->
+    <div class="webhook-tabs">
+        <div class="webhook-tab active" data-tab="configs" onclick="switchTab('configs')">{% trans "WebHook 配置" %}</div>
+        <div class="webhook-tab" data-tab="deliveries" onclick="switchTab('deliveries')">{% trans "投递日志" %}</div>
+    </div>
+
+    <!-- Config tab -->
+    <div id="tab-configs">
+        <div class="webhook-toolbar">
+            <button class="ispace-btn ispace-btn-sm ispace-btn-primary" onclick="openConfigForm()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                {% trans "新建 WebHook" %}
+            </button>
+            <button class="ispace-btn ispace-btn-sm ispace-btn-secondary" onclick="loadConfigs()">{% trans "刷新" %}</button>
+        </div>
+        <div class="webhook-table-wrap">
+            <table class="webhook-table">
+                <thead><tr>
+                    <th>{% trans "名称" %}</th><th>{% trans "URL" %}</th><th>{% trans "订阅事件" %}</th><th>{% trans "状态" %}</th><th>{% trans "创建时间" %}</th><th>{% trans "操作" %}</th>
+                </tr></thead>
+                <tbody id="configs-tbody"><tr><td colspan="6" class="webhook-empty">{% trans "加载中..." %}</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Deliveries tab -->
+    <div id="tab-deliveries" style="display:none;">
+        <div class="webhook-toolbar">
+            <select id="delivery-config-filter" class="ispace-form-input" style="width:180px;height:34px;" onchange="loadDeliveries(1)">
+                <option value="">{% trans "全部 WebHook" %}</option>
+            </select>
+            <button class="ispace-btn ispace-btn-sm ispace-btn-secondary" onclick="loadDeliveries(1)">{% trans "刷新" %}</button>
+        </div>
+        <div class="webhook-table-wrap">
+            <table class="webhook-table">
+                <thead><tr>
+                    <th>{% trans "事件" %}</th><th>{% trans "目标 URL" %}</th><th>{% trans "状态码" %}</th><th>{% trans "结果" %}</th><th>{% trans "耗时" %}</th><th>{% trans "时间" %}</th><th>{% trans "详情" %}</th>
+                </tr></thead>
+                <tbody id="deliveries-tbody"><tr><td colspan="7" class="webhook-empty">{% trans "加载中..." %}</td></tr></tbody>
+            </table>
+        </div>
+        <div class="webhook-pagination" id="delivery-pagination"></div>
+        <div id="delivery-detail-container"></div>
+    </div>
+</div>
+
+<!-- Config form modal (inline dialog via layer) -->
+<div id="webhook-form-dialog" style="display:none;padding:var(--ispace-space-4);">
+    <form id="webhook-form" onsubmit="return false;">
+        <input type="hidden" id="wf-id" value="">
+        <div class="webhook-form-row">
+            <label>{% trans "名称" %} <span style="color:red;">*</span></label>
+            <input type="text" class="ispace-form-input" id="wf-name" required maxlength="100" placeholder="{% trans '例：钉钉通知' %}">
+        </div>
+        <div class="webhook-form-row">
+            <label>{% trans "目标 URL" %} <span style="color:red;">*</span></label>
+            <input type="url" class="ispace-form-input" id="wf-url" required placeholder="https://hooks.example.com/webhook">
+        </div>
+        <div class="webhook-form-row">
+            <label>{% trans "订阅事件" %}</label>
+            <div class="webhook-checkbox-group" id="wf-events"></div>
+        </div>
+        <div class="webhook-form-row">
+            <label>{% trans "签名密钥 (Secret)" %}</label>
+            <input type="text" class="ispace-form-input" id="wf-secret" maxlength="128" placeholder="{% trans '可选，用于 HMAC-SHA256 签名验证' %}">
+        </div>
+        <div class="webhook-form-row">
+            <label>{% trans "启用" %}</label>
+            <input type="checkbox" id="wf-enabled" checked>
+        </div>
+        <div style="margin-top:var(--ispace-space-5);display:flex;gap:var(--ispace-space-3);justify-content:flex-end;">
+            <button type="button" class="ispace-btn ispace-btn-sm ispace-btn-secondary" onclick="closeConfigForm()">{% trans "取消" %}</button>
+            <button type="button" class="ispace-btn ispace-btn-sm ispace-btn-primary" onclick="submitConfigForm()">{% trans "保存" %}</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+var _formLayerIndex = null;
+var _eventTypes = [];
+var _configs = [];
+var _currentTab = 'configs';
+var _deliveryPage = 1;
+var _deliveryPageSize = 20;
+
+// Initialize
+(function init() {
+    loadEventTypes();
+    loadConfigs();
+})();
+
+function switchTab(tab) {
+    _currentTab = tab;
+    document.querySelectorAll('.webhook-tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelector('[data-tab="' + tab + '"]').classList.add('active');
+    document.getElementById('tab-configs').style.display = tab === 'configs' ? '' : 'none';
+    document.getElementById('tab-deliveries').style.display = tab === 'deliveries' ? '' : 'none';
+    if (tab === 'deliveries') { loadDeliveries(1); loadConfigsForFilter(); }
+}
+
+// ---- Event types ----
+function loadEventTypes() {
+    fetch('/api/webhook/event-types/')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            _eventTypes = data.events || [];
+            renderEventCheckboxes();
+        });
+}
+
+function renderEventCheckboxes() {
+    var html = '';
+    _eventTypes.forEach(function(ev) {
+        html += '<label><input type="checkbox" value="' + ev.name + '" class="wf-event-cb"> ' + ev.label + '</label>';
+    });
+    document.getElementById('wf-events').innerHTML = html;
+}
+
+// ---- Config CRUD ----
+function loadConfigs() {
+    fetch('/api/webhook/configs/')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            _configs = data.configs || [];
+            renderConfigsTable();
+        })
+        .catch(function() {
+            document.getElementById('configs-tbody').innerHTML = '<tr><td colspan="6" class="webhook-empty">加载失败</td></tr>';
+        });
+}
+
+function renderConfigsTable() {
+    var tbody = document.getElementById('configs-tbody');
+    if (!_configs.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="webhook-empty">暂无 WebHook 配置，点击上方按钮新建</td></tr>';
+        return;
+    }
+    var html = '';
+    _configs.forEach(function(c) {
+        var eventsHtml = (c.events || []).map(function(ev) {
+            var label = ev;
+            _eventTypes.forEach(function(et) { if (et.name === ev) label = et.label; });
+            return '<span class="webhook-event-tag">' + label + '</span>';
+        }).join('');
+        var statusHtml = c.is_enabled
+            ? '<span class="webhook-status on">启用</span>'
+            : '<span class="webhook-status off">停用</span>';
+        html += '<tr>' +
+            '<td>' + escapeHTML(c.name) + '</td>' +
+            '<td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + escapeHTML(c.url) + '">' + escapeHTML(c.url) + '</td>' +
+            '<td><div class="webhook-events">' + eventsHtml + '</div></td>' +
+            '<td>' + statusHtml + '</td>' +
+            '<td>' + (c.created_at ? c.created_at.substring(0, 10) : '-') + '</td>' +
+            '<td class="webhook-actions">' +
+                '<button class="ispace-btn ispace-btn-xs ispace-btn-secondary" onclick="testWebhook(' + c.id + ')">测试</button>' +
+                '<button class="ispace-btn ispace-btn-xs ispace-btn-secondary" onclick="editConfig(' + c.id + ')">编辑</button>' +
+                '<button class="ispace-btn ispace-btn-xs ispace-btn-danger" onclick="deleteConfig(' + c.id + ')">删除</button>' +
+            '</td></tr>';
+    });
+    tbody.innerHTML = html;
+}
+
+function openConfigForm(id) {
+    document.getElementById('wf-id').value = id || '';
+    document.getElementById('wf-name').value = '';
+    document.getElementById('wf-url').value = '';
+    document.getElementById('wf-secret').value = '';
+    document.getElementById('wf-enabled').checked = true;
+    document.querySelectorAll('.wf-event-cb').forEach(function(cb) { cb.checked = false; });
+    if (id) {
+        var config = null;
+        _configs.forEach(function(c) { if (c.id === id) config = c; });
+        if (config) {
+            document.getElementById('wf-name').value = config.name || '';
+            document.getElementById('wf-url').value = config.url || '';
+            document.getElementById('wf-enabled').checked = config.is_enabled;
+            (config.events || []).forEach(function(ev) {
+                var cb = document.querySelector('.wf-event-cb[value="' + ev + '"]');
+                if (cb) cb.checked = true;
+            });
+        }
+    }
+    if (!_formLayerIndex) {
+        _formLayerIndex = layer.open({
+            type: 1, title: id ? '编辑 WebHook' : '新建 WebHook', content: document.getElementById('webhook-form-dialog'),
+            area: ['520px', '500px'], btn: [], closeBtn: 1
+        });
+    }
+}
+
+function closeConfigForm() {
+    if (_formLayerIndex) { layer.close(_formLayerIndex); _formLayerIndex = null; }
+}
+
+function editConfig(id) { openConfigForm(id); }
+
+function submitConfigForm() {
+    var id = document.getElementById('wf-id').value;
+    var name = document.getElementById('wf-name').value.trim();
+    var url = document.getElementById('wf-url').value.trim();
+    if (!name) { layer.msg('请输入名称'); return; }
+    if (!url) { layer.msg('请输入 URL'); return; }
+    var events = [];
+    document.querySelectorAll('.wf-event-cb:checked').forEach(function(cb) { events.push(cb.value); });
+    var payload = {
+        name: name, url: url, events: events, is_enabled: document.getElementById('wf-enabled').checked
+    };
+    var secret = document.getElementById('wf-secret').value.trim();
+    if (secret) payload.secret = secret;
+
+    var api = id ? '/api/webhook/configs/' + id + '/update/' : '/api/webhook/configs/create/';
+    var method = id ? 'PUT' : 'POST';
+
+    fetch(api, {
+        method: method, headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCSRF()},
+        body: JSON.stringify(payload)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(resp) {
+        if (resp.id || resp.status === 'ok') {
+            layer.msg('保存成功', {icon: 1});
+            closeConfigForm();
+            loadConfigs();
+        } else {
+            layer.msg('保存失败: ' + (resp.error || '未知错误'), {icon: 2});
+        }
+    })
+    .catch(function(e) { layer.msg('保存失败: ' + e.message, {icon: 2}); });
+}
+
+function deleteConfig(id) {
+    layer.confirm('确定删除此 WebHook 配置吗？', {icon: 3, title: '确认删除'}, function(idx) {
+        layer.close(idx);
+        fetch('/api/webhook/configs/' + id + '/delete/', {method: 'POST', headers: {'X-CSRFToken': getCSRF()}})
+            .then(function(r) { return r.json(); })
+            .then(function(resp) {
+                if (resp.status === 'ok') { layer.msg('已删除', {icon: 1}); loadConfigs(); }
+                else { layer.msg('删除失败: ' + (resp.error || ''), {icon: 2}); }
+            })
+            .catch(function(e) { layer.msg('删除失败: ' + e.message, {icon: 2}); });
+    });
+}
+
+function testWebhook(id) {
+    var btn = event.target;
+    btn.textContent = '测试中...';
+    btn.disabled = true;
+    fetch('/api/webhook/configs/' + id + '/test/', {method: 'POST', headers: {'X-CSRFToken': getCSRF()}})
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+            btn.textContent = '测试';
+            btn.disabled = false;
+            if (resp.success) {
+                layer.msg('测试成功 (HTTP ' + resp.response_status + ', ' + resp.duration_ms + 'ms)', {icon: 1});
+            } else {
+                layer.msg('测试失败 (HTTP ' + resp.response_status + '): ' + (resp.response_body || '').substring(0, 100), {icon: 2, time: 5000});
+            }
+        })
+        .catch(function(e) { btn.textContent = '测试'; btn.disabled = false; layer.msg('测试异常: ' + e.message, {icon: 2}); });
+}
+
+// ---- Deliveries ----
+function loadConfigsForFilter() {
+    var sel = document.getElementById('delivery-config-filter');
+    sel.innerHTML = '<option value="">全部 WebHook</option>' +
+        _configs.map(function(c) { return '<option value="' + c.id + '">' + escapeHTML(c.name) + '</option>'; }).join('');
+}
+
+function loadDeliveries(page) {
+    _deliveryPage = page || 1;
+    var configId = document.getElementById('delivery-config-filter').value;
+    var params = 'page=' + _deliveryPage + '&page_size=' + _deliveryPageSize;
+    if (configId) params += '&config_id=' + configId;
+
+    fetch('/api/webhook/deliveries/?' + params)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            renderDeliveriesTable(data);
+            renderDeliveryPagination(data);
+        })
+        .catch(function() {
+            document.getElementById('deliveries-tbody').innerHTML = '<tr><td colspan="7" class="webhook-empty">加载失败</td></tr>';
+        });
+}
+
+function renderDeliveriesTable(data) {
+    var tbody = document.getElementById('deliveries-tbody');
+    var items = data.deliveries || [];
+    if (!items.length) { tbody.innerHTML = '<tr><td colspan="7" class="webhook-empty">暂无投递记录</td></tr>'; return; }
+    var html = '';
+    items.forEach(function(d) {
+        var eventLabel = d.event;
+        _eventTypes.forEach(function(et) { if (et.name === d.event) eventLabel = et.label; });
+        var resultHtml = d.success
+            ? '<span class="webhook-delivery-success">成功</span>'
+            : '<span class="webhook-delivery-fail">失败</span>';
+        html += '<tr>' +
+            '<td>' + eventLabel + '</td>' +
+            '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + escapeHTML(d.target_url) + '">' + escapeHTML(d.target_url) + '</td>' +
+            '<td>' + (d.response_status || '-') + '</td>' +
+            '<td>' + resultHtml + '</td>' +
+            '<td>' + (d.duration_ms ? d.duration_ms + 'ms' : '-') + '</td>' +
+            '<td>' + (d.created_at ? d.created_at.substring(0, 19).replace('T', ' ') : '-') + '</td>' +
+            '<td><button class="ispace-btn ispace-btn-xs ispace-btn-secondary" onclick="showDeliveryDetail(' + d.id + ')">详情</button></td>' +
+            '</tr>';
+    });
+    tbody.innerHTML = html;
+}
+
+function renderDeliveryPagination(data) {
+    var total = data.total || 0;
+    var totalPages = Math.ceil(total / _deliveryPageSize) || 1;
+    var html = '<span>共 ' + total + ' 条</span>';
+    html += '<button class="ispace-btn ispace-btn-xs ispace-btn-secondary" ' + (_deliveryPage <= 1 ? 'disabled' : '') + ' onclick="loadDeliveries(' + (_deliveryPage - 1) + ')">上一页</button>';
+    html += '<span>' + _deliveryPage + ' / ' + totalPages + '</span>';
+    html += '<button class="ispace-btn ispace-btn-xs ispace-btn-secondary" ' + (_deliveryPage >= totalPages ? 'disabled' : '') + ' onclick="loadDeliveries(' + (_deliveryPage + 1) + ')">下一页</button>';
+    document.getElementById('delivery-pagination').innerHTML = html;
+}
+
+function showDeliveryDetail(id) {
+    fetch('/api/webhook/deliveries/' + id + '/')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            var container = document.getElementById('delivery-detail-container');
+            var requestBody = '';
+            try { requestBody = JSON.stringify(JSON.parse(d.request_body), null, 2); } catch(e) { requestBody = d.request_body || ''; }
+            var responseBody = '';
+            try { responseBody = JSON.stringify(JSON.parse(d.response_body), null, 2); } catch(e) { responseBody = d.response_body || ''; }
+            container.innerHTML = '<div class="webhook-detail-panel">' +
+                '<h4 style="margin:0 0 12px;">投递详情 #' + d.id + '</h4>' +
+                '<div style="display:grid;grid-template-columns:120px 1fr;gap:4px 12px;font-size:13px;margin-bottom:12px;">' +
+                '<span style="color:var(--ispace-color-text-tertiary);">事件:</span><span>' + escapeHTML(d.event) + '</span>' +
+                '<span style="color:var(--ispace-color-text-tertiary);">目标 URL:</span><span>' + escapeHTML(d.target_url) + '</span>' +
+                '<span style="color:var(--ispace-color-text-tertiary);">状态码:</span><span>' + (d.response_status || '-') + '</span>' +
+                '<span style="color:var(--ispace-color-text-tertiary);">结果:</span><span class="' + (d.success ? 'webhook-delivery-success' : 'webhook-delivery-fail') + '">' + (d.success ? '成功' : '失败') + '</span>' +
+                '<span style="color:var(--ispace-color-text-tertiary);">耗时:</span><span>' + (d.duration_ms || '-') + 'ms</span>' +
+                '<span style="color:var(--ispace-color-text-tertiary);">重试次数:</span><span>' + (d.attempt || 1) + '</span>' +
+                '</div>' +
+                '<p style="font-size:12px;color:var(--ispace-color-text-tertiary);margin:12px 0 4px;">请求体:</p>' +
+                '<pre>' + escapeHTML(requestBody) + '</pre>' +
+                '<p style="font-size:12px;color:var(--ispace-color-text-tertiary);margin:12px 0 4px;">响应体:</p>' +
+                '<pre>' + escapeHTML(responseBody) + '</pre>' +
+                '<button class="ispace-btn ispace-btn-xs ispace-btn-secondary" style="margin-top:8px;" onclick="document.getElementById(\'delivery-detail-container\').innerHTML=\'\';">关闭</button>' +
+                '</div>';
+        })
+        .catch(function(e) { layer.msg('获取详情失败: ' + e.message, {icon: 2}); });
+}
+
+// ---- Helpers ----
+function escapeHTML(str) {
+    var div = document.createElement('div');
+    div.textContent = str || '';
+    return div.innerHTML;
+}
+
+function getCSRF() {
+    var el = document.querySelector('[name=csrfmiddlewaretoken]');
+    return el ? el.value : (window.__ISPACEDOC__ ? window.__ISPACEDOC__.csrfToken : '');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,16 @@
+/* ============================================================
+   iSpaceDoc Theme: Light
+   This file sets the color tokens for the light theme.
+   It is loaded as the default (no [data-ispace-theme] selector
+   needed since tokens.css already defines light defaults).
+   ============================================================ */
+
+/* Light theme is the default in tokens.css.
+   This file exists as the canonical light theme and can be
+   extended with light-specific overrides if needed. */
+
+:root,
+[data-ispace-theme="light"] {
+  /* All color tokens are already defined as light defaults
+     in tokens.css. This file is intentionally minimal. */
+}

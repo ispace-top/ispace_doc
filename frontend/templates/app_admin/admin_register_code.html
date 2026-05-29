@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}注册码管理{% endblock %}
+
+{% block styles %}
+<style>
+.admin-rc-table-wrap { overflow-x: auto; }
+
+.admin-rc-page-size { display: flex; align-items: center; gap: var(--ispace-space-2); font-size: var(--ispace-font-sm); color: var(--ispace-color-text-tertiary); }
+.admin-rc-page-size select { height: 30px; padding: 0 6px; font-size: var(--ispace-font-sm); border: 1px solid var(--ispace-color-border-medium); border-radius: var(--ispace-radius-sm); background: var(--ispace-color-surface-0); color: var(--ispace-color-text-primary); }
+.rc-table-col-code { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rc-table-col-users { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ispace-card">
+    <div class="ispace-card-header" style="display:flex;align-items:center;">
+        <button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="create-rc-btn" style="margin-left:auto;">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" style="margin-right:var(--ispace-space-1);">
+                <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+            </svg>
+            新增注册码
+        </button>
+    </div>
+    <div class="ispace-card-body">
+        <div class="admin-rc-table-wrap">
+            <table class="ispace-table" id="registercode-table">
+                <thead>
+                    <tr>
+                        <th>注册邀请码</th>
+                        <th>有效注册数量</th>
+                        <th>已使用数量</th>
+                        <th>有效期</th>
+                        <th>状态</th>
+                        <th>用户列表</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="registercode-tbody">
+                    <tr><td colspan="8" class="ispace-text-center ispace-text-tertiary" style="padding:40px;">加载中...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="ispace-flex-between ispace-mt-4">
+            <div id="rc-pagination" class="ispace-pagination"></div>
+            <div class="admin-rc-page-size">
+                <span>每页</span>
+                <select id="page-size-select">
+                    <option value="10">10</option>
+                    <option value="20" selected>20</option>
+                    <option value="50">50</option>
+                </select>
+                <span>条</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    const API_URL = "{% url 'api_admin_register_code' %}";
+    const CSRF_TOKEN = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    function getPageSize() {
+        var sel = document.getElementById('page-size-select');
+        return sel ? parseInt(sel.value) : 20;
+    }
+    let currentPage = 1;
+    let totalCount = 0;
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '';
+        const d = new Date(dateStr);
+        const pad = n => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    function loadTable(page) {
+        currentPage = page || 1;
+        const tbody = document.getElementById('registercode-tbody');
+        tbody.innerHTML = '<tr><td colspan="8" class="ispace-text-center ispace-text-tertiary" style="padding:40px;">加载中...</td></tr>';
+
+        fetch(API_URL + '?page=' + currentPage + '&limit=' + getPageSize())
+            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                if (r.code === 0) {
+                    totalCount = r.count || 0;
+                    renderTable(r.data || []);
+                    renderPagination();
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="8" class="ispace-text-center ispace-text-tertiary" style="padding:40px;">数据加载失败</td></tr>';
+                }
+            })
+            .catch(function() {
+                tbody.innerHTML = '<tr><td colspan="8" class="ispace-text-center ispace-text-tertiary" style="padding:40px;">数据加载异常</td></tr>';
+            });
+    }
+
+    function renderTable(data) {
+        const tbody = document.getElementById('registercode-tbody');
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="ispace-text-center ispace-text-tertiary" style="padding:40px;">暂无数据</td></tr>';
+            return;
+        }
+
+        let html = '';
+        for (let i = 0; i < data.length; i++) {
+            const d = data[i];
+            const statusBadge = d.status === 'expired'
+                ? '<span class="ispace-badge ispace-badge-danger">已过期</span>'
+                : '<span class="ispace-badge ispace-badge-success">有效</span>';
+            html += '<tr>';
+            html += '<td class="rc-table-col-code" title="' + escapeHtml(d.code || '') + '">' + escapeHtml(d.code || '') + '</td>';
+            html += '<td>' + (d.all_cnt != null ? d.all_cnt : '') + '</td>';
+            html += '<td>' + (d.used_cnt != null ? d.used_cnt : '') + '</td>';
+            html += '<td>' + escapeHtml(d.expire_date || '') + '</td>';
+            html += '<td>' + statusBadge + '</td>';
+            html += '<td class="rc-table-col-users" title="' + escapeHtml(d.user_list || '') + '">' + escapeHtml(d.user_list || '') + '</td>';
+            html += '<td class="ispace-text-sm">' + formatDate(d.create_time) + '</td>';
+            html += '<td><button class="ispace-btn ispace-btn-danger ispace-btn-sm" data-action="delete" data-id="' + d.id + '">';
+            html += '<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>';
+            html += '</button></td>';
+            html += '</tr>';
+        }
+        tbody.innerHTML = html;
+    }
+
+    function renderPagination() {
+        const container = document.getElementById('rc-pagination');
+        const totalPages = Math.ceil(totalCount / getPageSize()) || 1;
+        let html = '';
+
+        html += '<button class="ispace-pagination-btn" data-page="' + (currentPage - 1) + '" ' + (currentPage <= 1 ? 'disabled' : '') + '>上一页</button>';
+
+        const startPage = Math.max(1, currentPage - 2);
+        const endPage = Math.min(totalPages, currentPage + 2);
+
+        if (startPage > 1) {
+            html += '<button class="ispace-pagination-btn" data-page="1">1</button>';
+            if (startPage > 2) html += '<span class="ispace-pagination-info">...</span>';
+        }
+        for (let i = startPage; i <= endPage; i++) {
+            html += '<button class="ispace-pagination-btn' + (i === currentPage ? ' ispace-active' : '') + '" data-page="' + i + '">' + i + '</button>';
+        }
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) html += '<span class="ispace-pagination-info">...</span>';
+            html += '<button class="ispace-pagination-btn" data-page="' + totalPages + '">' + totalPages + '</button>';
+        }
+
+        html += '<button class="ispace-pagination-btn" data-page="' + (currentPage + 1) + '" ' + (currentPage >= totalPages ? 'disabled' : '') + '>下一页</button>';
+        html += '<span class="ispace-pagination-info">共 ' + totalCount + ' 条</span>';
+
+        container.innerHTML = html;
+
+        container.querySelectorAll('.ispace-pagination-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const p = parseInt(this.dataset.page);
+                if (p >= 1 && p <= totalPages && p !== currentPage) {
+                    loadTable(p);
+                }
+            });
+        });
+    }
+
+    function createRegisterCode() {
+        const defaultExpireDate = new Date();
+        defaultExpireDate.setDate(defaultExpireDate.getDate() + 7);
+        const defaultDateStr = defaultExpireDate.toISOString().split('T')[0];
+
+        const modalId = 'create-rc-modal';
+        let existing = document.getElementById(modalId);
+        if (existing) existing.remove();
+
+        const backdrop = document.createElement('div');
+        backdrop.className = 'ispace-modal-backdrop';
+        backdrop.id = modalId;
+        backdrop.innerHTML = `
+            <div class="ispace-modal ispace-modal-sm">
+                <div class="ispace-modal-header">
+                    <h3 class="ispace-modal-title">新增注册码</h3>
+                    <button class="ispace-modal-close" data-ispace-modal-close>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="ispace-modal-body">
+                    <div class="ispace-form-group">
+                        <label class="ispace-form-label">有效注册数</label>
+                        <input class="ispace-form-input" id="regCodeCnt" type="number" value="1" min="1" placeholder="输入注册码最大使用次数">
+                    </div>
+                    <div class="ispace-form-group">
+                        <label class="ispace-form-label">有效期</label>
+                        <input type="date" class="ispace-form-input" id="registerCodeExpireDate" value="${defaultDateStr}">
+                    </div>
+                </div>
+                <div class="ispace-modal-footer">
+                    <button class="ispace-btn ispace-btn-secondary" data-ispace-modal-close>取消</button>
+                    <button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="modalConfirmReg">确定</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(backdrop);
+
+        function closeModal() {
+            iSpaceDoc.Modal.close(backdrop);
+            setTimeout(function() { backdrop.remove(); }, 300);
+        }
+
+        backdrop.querySelector('[data-ispace-modal-close]').addEventListener('click', closeModal);
+        backdrop.querySelector('#modalConfirmReg').addEventListener('click', function() {
+            const cnt = document.getElementById('regCodeCnt').value;
+            const expireDate = document.getElementById('registerCodeExpireDate').value;
+
+            const formData = new FormData();
+            formData.append('all_cnt', cnt);
+            formData.append('expire_date', expireDate);
+            formData.append('csrfmiddlewaretoken', CSRF_TOKEN);
+
+            fetch(API_URL, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': CSRF_TOKEN },
+                body: formData
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                closeModal();
+                if (r.code === 0) {
+                    showSuccess("{% trans '新增成功' %}", {duration: 1500});
+                    loadTable(1);
+                } else {
+                    showError(r.data);
+                }
+            })
+            .catch(function() {
+                closeModal();
+                showError('新增注册码异常');
+            });
+        });
+
+        iSpaceDoc.Modal.open(backdrop);
+    }
+
+    async function delRegisterCode(codeId) {
+        const confirmed = await iSpaceDoc.confirm(
+            '警告：此操作将<span style="font-weight:700;color:red;">删除此注册码且不可恢复！</span>',
+            { title: '删除注册码' }
+        );
+        if (!confirmed) return;
+
+        try {
+            const resp = await fetch(API_URL + '?code_id=' + encodeURIComponent(codeId), {
+                method: 'DELETE',
+                headers: { 'X-CSRFToken': CSRF_TOKEN }
+            });
+            const result = await resp.json();
+            if (result.code === 0) {
+                showSuccess("{% trans '删除成功' %}", {duration: 1500});
+                loadTable(currentPage);
+            } else {
+                showError(result.data);
+            }
+        } catch (err) {
+            showError('删除注册码异常');
+        }
+    }
+
+    document.getElementById('registercode-tbody').addEventListener('click', function(e) {
+        const btn = e.target.closest('[data-action="delete"]');
+        if (!btn) return;
+        delRegisterCode(btn.dataset.id);
+    });
+
+    document.getElementById('create-rc-btn').addEventListener('click', createRegisterCode);
+
+    document.getElementById('page-size-select').addEventListener('change', function() {
+        loadTable(1);
+    });
+
+    loadTable(1);
+})();
+</script>
+{% endblock %}

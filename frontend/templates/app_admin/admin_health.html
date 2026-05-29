@@ -1,0 +1,1132 @@
+{% extends "base.html" %}
+{% load static %}{% load i18n %}
+
+{% block title %}{% trans "系统健康" %} - {% trans "后台管理" %}{% endblock %}
+
+{% block content %}
+<div class="health-wrapper">
+
+{# ── 加载进度提示 ── #}
+<div class="health-loading" id="healthLoading">
+    <div class="health-loading-spinner"><div></div><div></div><div></div></div>
+    <p class="health-loading-text">{% trans "正在收集系统运行数据..." %}</p>
+</div>
+
+{# ── 健康评分 + 运行负荷 双栏布局 ── #}
+<div class="health-dashboard-row">
+    {# ── 左侧：健康评分 ── #}
+    <div class="health-card health-score-panel">
+        <div class="health-card-header">
+            <h3 class="health-card-title">{% trans "健康评分" %}</h3>
+            <span class="health-card-subtitle">{% trans "系统综合健康度评估" %}</span>
+        </div>
+        <div class="health-card-body">
+            <div class="health-score-visual">
+                <div class="health-score-ring" id="healthScoreRing">
+                    <div class="health-score-inner">
+                        <span class="health-score-big" id="healthScoreBig">--</span>
+                        <span class="health-score-unit" id="healthScoreUnit">/ 100</span>
+                    </div>
+                </div>
+                <div class="health-score-right">
+                    <div class="health-score-status" id="healthScoreStatus">
+                        <span class="health-score-status-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                        </span>
+                        <div class="health-score-status-body">
+                            <span class="health-score-status-title" id="healthScoreTitle">{% trans "正在检查..." %}</span>
+                            <span class="health-score-status-sub" id="healthScoreSub">{% trans "正在收集系统运行数据" %}</span>
+                            <span class="health-score-status-extra" id="healthScoreExtra"></span>
+                        </div>
+                        <div class="health-score-tooltip" id="healthAnomalyTooltip">
+                            <div class="health-score-tooltip-arrow"></div>
+                            <div class="health-score-tooltip-section" id="healthTooltipAnomalySection" style="display:none;">
+                                <div class="health-score-tooltip-section-title">{% trans "检测异常" %}</div>
+                                <ul class="health-score-tooltip-list" id="healthAnomalyTooltipList"></ul>
+                            </div>
+                            <div class="health-score-tooltip-section" id="healthTooltipDeductionSection" style="display:none;">
+                                <div class="health-score-tooltip-section-title">{% trans "扣分明细" %}</div>
+                                <ul class="health-score-tooltip-list" id="healthDeductionTooltipList"></ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="health-score-gauges" id="healthGauges">
+                        <div class="health-gauge">
+                            <div class="health-gauge-ring">
+                                <div class="health-gauge-inner">
+                                    <span class="health-gauge-value">--</span>
+                                    <span class="health-gauge-unit">%</span>
+                                </div>
+                            </div>
+                            <div class="health-gauge-label">
+                                <span class="health-gauge-name">CPU</span>
+                                <span class="health-gauge-sub">-- {% trans "核" %}</span>
+                            </div>
+                        </div>
+                        <div class="health-gauge">
+                            <div class="health-gauge-ring">
+                                <div class="health-gauge-inner">
+                                    <span class="health-gauge-value">--</span>
+                                    <span class="health-gauge-unit">%</span>
+                                </div>
+                            </div>
+                            <div class="health-gauge-label">
+                                <span class="health-gauge-name">{% trans "内存" %}</span>
+                                <span class="health-gauge-sub">-- / --</span>
+                            </div>
+                        </div>
+                        <div class="health-gauge">
+                            <div class="health-gauge-ring">
+                                <div class="health-gauge-inner">
+                                    <span class="health-gauge-value">--</span>
+                                    <span class="health-gauge-unit">%</span>
+                                </div>
+                            </div>
+                            <div class="health-gauge-label">
+                                <span class="health-gauge-name">{% trans "磁盘" %}</span>
+                                <span class="health-gauge-sub">-- / --</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ── 右侧：运行负荷 ── #}
+    <div class="health-card health-load-panel">
+        <div class="health-card-header">
+            <h3 class="health-card-title">{% trans "运行负荷" %}</h3>
+            <span class="health-card-subtitle">{% trans "系统压力与请求处理能力" %}</span>
+        </div>
+        <div class="health-card-body">
+            <div class="health-load-grid" id="healthLoadStats">
+                <div class="health-load-item">
+                    <div class="health-load-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    </div>
+                    <div class="health-load-value" id="loadAvg1h">--</div>
+                    <div class="health-load-label">{% trans "平均负载 (1小时)" %}</div>
+                    <div class="health-load-desc">{% trans "系统1小时内平均负载" %}</div>
+                </div>
+                <div class="health-load-item">
+                    <div class="health-load-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                    </div>
+                    <div class="health-load-value" id="loadAvg24h">--</div>
+                    <div class="health-load-label">{% trans "平均负载 (24小时)" %}</div>
+                    <div class="health-load-desc">{% trans "系统24小时内平均负载" %}</div>
+                </div>
+                <div class="health-load-item">
+                    <div class="health-load-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    </div>
+                    <div class="health-load-value" id="loadAvg1w">--</div>
+                    <div class="health-load-label">{% trans "平均负载 (1周)" %}</div>
+                    <div class="health-load-desc">{% trans "系统7天内平均负载" %}</div>
+                </div>
+                <div class="health-load-item">
+                    <div class="health-load-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></svg>
+                    </div>
+                    <div class="health-load-value" id="concurrentThreads">--</div>
+                    <div class="health-load-label">{% trans "当前线程数" %}</div>
+                    <div class="health-load-desc">{% trans "当前进程活跃线程" %}</div>
+                </div>
+                <div class="health-load-item">
+                    <div class="health-load-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                    </div>
+                    <div class="health-load-value" id="peakConcurrency">--</div>
+                    <div class="health-load-peak-time" id="peakConcurrencyTime"></div>
+                    <div class="health-load-label">{% trans "近期峰值并发" %}</div>
+                    <div class="health-load-desc">{% trans "近7天最高并发请求数" %}</div>
+                </div>
+                <div class="health-load-item">
+                    <div class="health-load-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 0 1-9 9m9-9a9 9 0 0 0-9-9m9 9H3m9 9a9 9 0 0 1-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 0 1 9-9"/></svg>
+                    </div>
+                    <div class="health-load-value" id="activeConns">--</div>
+                    <div class="health-load-label">{% trans "活跃连接数" %}</div>
+                    <div class="health-load-desc">{% trans "当前活跃网络连接" %}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ── 核心服务状态 ── #}
+<div class="health-card">
+    <div class="health-card-header">
+        <h3 class="health-card-title">{% trans "核心服务" %}</h3>
+        <span class="health-card-subtitle">{% trans "数据库、缓存、邮件等服务运行状态" %}</span>
+    </div>
+    <div class="health-card-body">
+        <div class="health-services" id="healthServices">
+            <div class="health-service-item">
+                <div class="health-service-icon"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M3 12v3c0 1.657 3.134 3 7 3s7-1.343 7-3v-3c0 1.657-3.134 3-7 3s-7-1.343-7-3z"/><path d="M3 7v3c0 1.657 3.134 3 7 3s7-1.343 7-3V7c0 1.657-3.134 3-7 3S3 8.657 3 7z"/><path d="M17 5c0 1.657-3.134 3-7 3S3 6.657 3 5s3.134-3 7-3 7 1.343 7 3z"/></svg></div>
+                <div class="health-service-info">
+                    <span class="health-service-name">{% trans "数据库" %}</span>
+                    <span class="health-service-status">--</span>
+                </div>
+            </div>
+            <div class="health-service-item">
+                <div class="health-service-icon"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg></div>
+                <div class="health-service-info">
+                    <span class="health-service-name">{% trans "缓存" %}</span>
+                    <span class="health-service-status">--</span>
+                </div>
+            </div>
+            <div class="health-service-item">
+                <div class="health-service-icon"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M2.94 6.412A2 2 0 002 8.108V16a2 2 0 002 2h12a2 2 0 002-2V8.108a2 2 0 00-.94-1.696l-6-3.75a2 2 0 00-2.12 0l-6 3.75zm2.615 2.423a1 1 0 10-1.11 1.664l5 3.333a1 1 0 001.11 0l5-3.333a1 1 0 00-1.11-1.664L10 11.798 5.555 8.835z" clip-rule="evenodd"/></svg></div>
+                <div class="health-service-info">
+                    <span class="health-service-name">{% trans "邮件" %}</span>
+                    <span class="health-service-status">--</span>
+                </div>
+            </div>
+            <div class="health-service-item">
+                <div class="health-service-icon"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm5 5a1 1 0 011-1h1a1 1 0 110 2h-1a1 1 0 01-1-1zm0 4a1 1 0 011-1h1a1 1 0 110 2h-1a1 1 0 01-1-1z" clip-rule="evenodd"/></svg></div>
+                <div class="health-service-info">
+                    <span class="health-service-name">{% trans "媒体文件" %}</span>
+                    <span class="health-service-status">--</span>
+                </div>
+            </div>
+            <div class="health-service-item">
+                <div class="health-service-icon"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/></svg></div>
+                <div class="health-service-info">
+                    <span class="health-service-name">{% trans "文件存储" %}</span>
+                    <span class="health-service-status">--</span>
+                </div>
+            </div>
+            <div class="health-service-item">
+                <div class="health-service-icon"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM4.332 8.027a6.012 6.012 0 011.912-2.706C6.512 5.73 6.974 6 7.5 6A1.5 1.5 0 019 7.5V8a2 2 0 004 0 2 2 0 011.523-1.943A5.977 5.977 0 0116 10c0 .34-.028.675-.083 1H15a2 2 0 00-2 2v2.197A5.973 5.973 0 0110 16v-2a2 2 0 00-2-2 2 2 0 01-2-2 2 2 0 00-1.668-1.973z" clip-rule="evenodd"/></svg></div>
+                <div class="health-service-info">
+                    <span class="health-service-name">{% trans "企业微信" %}</span>
+                    <span class="health-service-status">--</span>
+                </div>
+            </div>
+            <div class="health-service-item">
+                <div class="health-service-icon"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/></svg></div>
+                <div class="health-service-info">
+                    <span class="health-service-name">{% trans "通知渠道" %}</span>
+                    <span class="health-service-status">--</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ── 运行信息 + 系统环境 ── #}
+<div class="health-two-col">
+    <div class="health-card">
+        <div class="health-card-header">
+            <h3 class="health-card-title">{% trans "运行信息" %}</h3>
+        </div>
+        <div class="health-card-body">
+            <div class="health-info-list" id="healthRunInfo">
+                <div class="health-info-row"><span class="health-info-label">{% trans "运行时长" %}</span><span class="health-info-value">--</span></div>
+                <div class="health-info-row"><span class="health-info-label">{% trans "启动时间" %}</span><span class="health-info-value">--</span></div>
+                <div class="health-info-row"><span class="health-info-label">PID</span><span class="health-info-value">--</span></div>
+                <div class="health-info-row"><span class="health-info-label">{% trans "进程内存" %}</span><span class="health-info-value">--</span></div>
+                <div class="health-info-row"><span class="health-info-label">{% trans "线程数" %}</span><span class="health-info-value">--</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="health-card">
+        <div class="health-card-header">
+            <h3 class="health-card-title">{% trans "系统环境" %}</h3>
+        </div>
+        <div class="health-card-body">
+            <div class="health-info-list" id="healthSysInfo">
+                <div class="health-info-row"><span class="health-info-label">Django</span><span class="health-info-value">--</span></div>
+                <div class="health-info-row"><span class="health-info-label">Python</span><span class="health-info-value">--</span></div>
+                <div class="health-info-row"><span class="health-info-label">{% trans "操作系统" %}</span><span class="health-info-value">--</span></div>
+                <div class="health-info-row"><span class="health-info-label">{% trans "数据库引擎" %}</span><span class="health-info-value">--</span></div>
+                <div class="health-info-row"><span class="health-info-label">{% trans "文件存储" %}</span><span class="health-info-value">--</span></div>
+                <div class="health-info-row"><span class="health-info-label">Debug</span><span class="health-info-value">--</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ── 异常提醒 ── #}
+<div class="health-anomalies" id="healthAnomalies" style="display:none;">
+    <div class="health-card health-card--warn">
+        <div class="health-card-header">
+            <h3 class="health-card-title">{% trans "检测到以下异常" %}</h3>
+        </div>
+        <div class="health-card-body">
+            <ul class="health-anomaly-list" id="healthAnomalyList"></ul>
+        </div>
+    </div>
+</div>
+
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+/* ===== Health Wrapper ===== */
+.health-wrapper {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--ispace-space-4);
+    position: relative;
+}
+
+/* ===== Loading Overlay ===== */
+.health-loading {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(255,255,255,0.85);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    border-radius: var(--ispace-radius-xl);
+    transition: opacity 0.3s ease;
+}
+[data-ispace-theme="dark"] .health-loading { background: rgba(15,23,42,0.85); }
+.health-loading.ispace-hidden { opacity: 0; pointer-events: none; }
+.health-loading-spinner {
+    display: flex;
+    gap: 8px;
+    margin-bottom: var(--ispace-space-4);
+}
+.health-loading-spinner div {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--ispace-color-brand-500);
+    animation: health-dot-bounce 1.2s ease-in-out infinite;
+}
+.health-loading-spinner div:nth-child(1) { animation-delay: 0s; }
+.health-loading-spinner div:nth-child(2) { animation-delay: 0.15s; }
+.health-loading-spinner div:nth-child(3) { animation-delay: 0.3s; }
+@keyframes health-dot-bounce {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+    40% { transform: scale(1); opacity: 1; }
+}
+.health-loading-text {
+    font-size: var(--ispace-font-sm);
+    color: var(--ispace-color-text-tertiary);
+    margin: 0;
+}
+
+/* ===== Cards ===== */
+.health-card {
+    background: var(--ispace-color-surface-0);
+    border: 1px solid var(--ispace-color-border-light);
+    border-radius: var(--ispace-radius-xl);
+    overflow: hidden;
+    transition: border-color var(--ispace-duration-normal) var(--ispace-ease-out);
+}
+.health-card-header {
+    padding: var(--ispace-space-4) var(--ispace-space-5);
+    border-bottom: 1px solid var(--ispace-color-border-light);
+    display: flex;
+    align-items: center;
+    gap: var(--ispace-space-3);
+}
+.health-card-title {
+    font-size: var(--ispace-font-base);
+    font-weight: var(--ispace-font-semibold);
+    color: var(--ispace-color-text-primary);
+    margin: 0;
+}
+.health-card-subtitle {
+    font-size: var(--ispace-font-xs);
+    color: var(--ispace-color-text-quaternary);
+    margin-left: auto;
+}
+.health-card-body { padding: 0; }
+.health-card--warn { border-color: #f59e0b; }
+
+/* ===== Dashboard Row: Score + Load side by side ===== */
+.health-dashboard-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--ispace-space-4);
+}
+
+/* ===== Left Panel: Health Score ===== */
+.health-score-panel .health-card-body {
+    padding: var(--ispace-space-4) var(--ispace-space-5);
+}
+
+/* Horizontal layout: ring left, info right */
+.health-score-visual {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--ispace-space-5);
+    width: 100%;
+}
+
+/* Big score ring — left side */
+.health-score-ring {
+    width: 140px; height: 140px;
+    border-radius: 50%;
+    background: conic-gradient(
+        var(--score-color, #3b82f6) 0% var(--score-pct, 0%),
+        var(--ispace-color-surface-100) var(--score-pct, 0%) 100%
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    flex-shrink: 0;
+    transition: background 0.5s var(--ispace-ease-out);
+    box-shadow: 0 0 0 5px var(--ispace-color-surface-0),
+                0 0 0 6px var(--ispace-color-border-light),
+                0 4px 20px rgba(0,0,0,0.06);
+}
+[data-ispace-theme="dark"] .health-score-ring {
+    box-shadow: 0 0 0 5px var(--ispace-color-surface-0),
+                0 0 0 6px rgba(255,255,255,0.08),
+                0 4px 20px rgba(0,0,0,0.3);
+}
+.health-score-inner {
+    width: 108px; height: 108px;
+    border-radius: 50%;
+    background: var(--ispace-color-surface-0);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.06);
+}
+.health-score-big {
+    font-size: 2.5rem;
+    font-weight: var(--ispace-font-bold);
+    color: var(--ispace-color-text-primary);
+    line-height: 1;
+    transition: color 0.3s;
+}
+.health-score-unit {
+    font-size: var(--ispace-font-xs);
+    color: var(--ispace-color-text-quaternary);
+    margin-top: 2px;
+    font-weight: var(--ispace-font-medium);
+}
+
+/* Right side container — stacked status + gauges */
+.health-score-right {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--ispace-space-4);
+}
+
+/* Status row: icon + text in one line */
+.health-score-status {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--ispace-space-3);
+    transition: color 0.3s;
+}
+.health-score-status-icon {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.3s, color 0.3s;
+}
+.health-score-status-icon svg { width: 18px; height: 18px; }
+.health-score-status-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+}
+.health-score-status-title {
+    font-size: var(--ispace-font-base);
+    font-weight: var(--ispace-font-bold);
+    color: var(--ispace-color-text-primary);
+    transition: color 0.3s;
+    white-space: nowrap;
+}
+.health-score-status-sub {
+    font-size: var(--ispace-font-xs);
+    color: var(--ispace-color-text-tertiary);
+    line-height: var(--ispace-leading-normal);
+}
+.health-score-status-extra {
+    font-size: var(--ispace-font-xs);
+    font-weight: var(--ispace-font-semibold);
+    min-height: 1.2em;
+}
+
+/* Status color variants */
+.health-score-status.ok .health-score-status-icon { background: rgba(16,185,129,0.12); color: #10b981; }
+.health-score-status.warn .health-score-status-icon { background: rgba(245,158,11,0.12); color: #f59e0b; }
+.health-score-status.error .health-score-status-icon { background: rgba(239,68,68,0.12); color: #ef4444; }
+.health-score-status.ok .health-score-status-extra { color: #10b981; }
+.health-score-status.warn .health-score-status-extra { color: #f59e0b; }
+.health-score-status.error .health-score-status-extra { color: #ef4444; }
+[data-ispace-theme="dark"] .health-score-status.ok .health-score-status-icon { background: rgba(16,185,129,0.18); color: #6ee7b7; }
+[data-ispace-theme="dark"] .health-score-status.warn .health-score-status-icon { background: rgba(245,158,11,0.18); color: #fcd34d; }
+[data-ispace-theme="dark"] .health-score-status.error .health-score-status-icon { background: rgba(239,68,68,0.18); color: #fca5a5; }
+
+/* Status tooltip — shows anomaly details on hover */
+.health-score-status {
+    position: relative;
+}
+.health-score-tooltip {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: var(--ispace-space-3);
+    background: var(--ispace-color-surface-0);
+    border: 1px solid var(--ispace-color-border-medium);
+    border-radius: var(--ispace-radius-lg);
+    box-shadow: var(--ispace-shadow-lg);
+    padding: var(--ispace-space-3) 0;
+    min-width: 300px;
+    max-width: 380px;
+    max-height: 360px;
+    overflow-y: auto;
+    z-index: var(--ispace-z-tooltip);
+}
+.health-score-tooltip-arrow {
+    position: absolute;
+    top: -6px;
+    left: 28px;
+    width: 12px;
+    height: 12px;
+    background: var(--ispace-color-surface-0);
+    border-left: 1px solid var(--ispace-color-border-medium);
+    border-top: 1px solid var(--ispace-color-border-medium);
+    transform: rotate(45deg);
+}
+/* Show tooltip when hovering over status body or extra (only when anomalies exist) */
+.health-score-status.has-anomalies:hover .health-score-tooltip,
+.health-score-status.has-anomalies .health-score-status-extra:hover ~ .health-score-tooltip {
+    display: block;
+}
+.health-score-tooltip-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.health-score-tooltip-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--ispace-space-2);
+    padding: var(--ispace-space-2) var(--ispace-space-4);
+    font-size: var(--ispace-font-sm);
+    line-height: var(--ispace-leading-normal);
+}
+.health-score-tooltip-item:first-child { padding-top: 0; }
+.health-score-tooltip-level {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-top: 6px;
+    flex-shrink: 0;
+}
+.health-score-tooltip-level.warn { background: #f59e0b; }
+.health-score-tooltip-level.error { background: #ef4444; }
+.health-score-tooltip-text { color: var(--ispace-color-text-secondary); }
+.health-score-tooltip-section {
+    padding-bottom: var(--ispace-space-2);
+    border-bottom: 1px solid var(--ispace-color-border-light);
+    margin-bottom: var(--ispace-space-1);
+}
+.health-score-tooltip-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+.health-score-tooltip-section-title {
+    font-size: var(--ispace-font-xs);
+    font-weight: var(--ispace-font-bold);
+    color: var(--ispace-color-text-tertiary);
+    padding: 0 var(--ispace-space-4) var(--ispace-space-1);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.health-score-tooltip-deduction {
+    font-size: var(--ispace-font-xs);
+    color: var(--ispace-color-text-tertiary);
+    margin-left: auto;
+    padding-left: var(--ispace-space-3);
+    white-space: nowrap;
+}
+.health-score-tooltip-deduction .deducted { color: #ef4444; font-weight: var(--ispace-font-semibold); }
+.health-score-tooltip-deduction .earned { color: #22c55e; }
+
+/* Gauges row — right side bottom */
+.health-score-gauges {
+    display: flex;
+    gap: var(--ispace-space-4);
+    justify-content: space-around;
+    align-items: center;
+    padding-top: var(--ispace-space-3);
+    border-top: 1px solid var(--ispace-color-border-light);
+}
+.health-gauge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--ispace-space-2);
+}
+.health-gauge-ring {
+    width: 68px; height: 68px;
+    border-radius: 50%;
+    background: conic-gradient(
+        var(--gauge-color, #3b82f6) 0% var(--gauge-pct, 0%),
+        var(--ispace-color-surface-100) var(--gauge-pct, 0%) 100%
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.5s var(--ispace-ease-out);
+}
+.health-gauge-inner {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: var(--ispace-color-surface-0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.health-gauge-value {
+    font-size: 1rem;
+    font-weight: var(--ispace-font-bold);
+    color: var(--ispace-color-text-primary);
+    line-height: 1;
+}
+.health-gauge-unit {
+    font-size: 0.55rem;
+    color: var(--ispace-color-text-tertiary);
+    font-weight: var(--ispace-font-medium);
+    margin-top: 1px;
+}
+.health-gauge-label { text-align: center; }
+.health-gauge-name {
+    display: block;
+    font-size: var(--ispace-font-xs);
+    font-weight: var(--ispace-font-semibold);
+    color: var(--ispace-color-text-secondary);
+}
+.health-gauge-sub {
+    display: block;
+    font-size: 0.625rem;
+    color: var(--ispace-color-text-quaternary);
+    margin-top: 1px;
+}
+
+/* ===== Right Panel: Load & Concurrency ===== */
+.health-load-panel .health-card-body {
+    padding: var(--ispace-space-3) var(--ispace-space-4);
+}
+.health-load-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--ispace-space-2);
+}
+.health-load-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: var(--ispace-space-3) var(--ispace-space-1);
+    border-radius: var(--ispace-radius-lg);
+    background: var(--ispace-color-surface-50);
+    transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+    cursor: default;
+}
+.health-load-item:hover {
+    background: var(--ispace-color-surface-100);
+    transform: translateY(-1px);
+    box-shadow: var(--ispace-shadow-sm);
+}
+.health-load-icon {
+    width: 28px; height: 28px;
+    border-radius: var(--ispace-radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: var(--ispace-space-1);
+    color: var(--ispace-color-text-quaternary);
+    transition: color 0.3s;
+}
+.health-load-icon svg { width: 16px; height: 16px; }
+.health-load-item:hover .health-load-icon {
+    color: var(--ispace-color-brand-500);
+}
+.health-load-value {
+    font-size: 1.3rem;
+    font-weight: var(--ispace-font-bold);
+    color: var(--ispace-color-text-primary);
+    line-height: 1.2;
+    transition: color 0.3s;
+}
+.health-load-value.warn { color: #f59e0b; }
+.health-load-value.high { color: #ef4444; }
+.health-load-peak-time {
+    font-size: 0.625rem;
+    color: var(--ispace-color-text-quaternary);
+    margin-bottom: 1px;
+    min-height: 1em;
+}
+.health-load-label {
+    font-size: var(--ispace-font-xs);
+    color: var(--ispace-color-text-secondary);
+    font-weight: var(--ispace-font-semibold);
+}
+.health-load-desc { display: none; }
+
+/* ===== Service Status ===== */
+.health-services {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.health-service-item {
+    display: flex;
+    align-items: center;
+    gap: var(--ispace-space-3);
+    padding: var(--ispace-space-4) var(--ispace-space-5);
+    border-right: 1px solid var(--ispace-color-border-light);
+    border-bottom: 1px solid var(--ispace-color-border-light);
+    transition: background 0.15s;
+    min-height: 72px;
+    box-sizing: border-box;
+    min-width: 0;
+    overflow: hidden;
+}
+.health-service-item:nth-child(4n) { border-right: none; }
+.health-service-item:hover { background: var(--ispace-color-surface-50); }
+.health-service-icon {
+    width: 40px; height: 40px;
+    border-radius: var(--ispace-radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.health-service-icon svg { width: 20px; height: 20px; }
+.health-service-icon.ok { background: rgba(16,185,129,0.1); color: #10b981; }
+.health-service-icon.warn { background: rgba(245,158,11,0.1); color: #f59e0b; }
+.health-service-icon.error { background: rgba(239,68,68,0.1); color: #ef4444; }
+.health-service-icon.disabled { background: var(--ispace-color-surface-100); color: var(--ispace-color-text-quaternary); }
+.health-service-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.health-service-name {
+    font-size: var(--ispace-font-sm);
+    font-weight: var(--ispace-font-semibold);
+    color: var(--ispace-color-text-primary);
+}
+.health-service-status {
+    font-size: var(--ispace-font-xs);
+    color: var(--ispace-color-text-tertiary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ===== Two-column layout (run info + system env) ===== */
+.health-two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--ispace-space-4);
+}
+
+/* ===== Info list ===== */
+.health-info-list { padding: 0; }
+.health-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--ispace-space-3) var(--ispace-space-5);
+    border-bottom: 1px solid var(--ispace-color-border-light);
+}
+.health-info-row:last-child { border-bottom: none; }
+.health-info-label {
+    font-size: var(--ispace-font-sm);
+    color: var(--ispace-color-text-tertiary);
+}
+.health-info-value {
+    font-size: var(--ispace-font-sm);
+    font-weight: var(--ispace-font-semibold);
+    color: var(--ispace-color-text-primary);
+    text-align: right;
+}
+
+/* ===== Anomalies ===== */
+.health-anomalies { margin-top: 0; }
+.health-anomaly-list { list-style: none; margin: 0; padding: 0; }
+.health-anomaly-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--ispace-space-3);
+    padding: var(--ispace-space-3) var(--ispace-space-5);
+    border-bottom: 1px solid var(--ispace-color-border-light);
+    font-size: var(--ispace-font-sm);
+}
+.health-anomaly-item:last-child { border-bottom: none; }
+.health-anomaly-level {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-top: 6px;
+    flex-shrink: 0;
+}
+.health-anomaly-level.warn { background: #f59e0b; }
+.health-anomaly-level.error { background: #ef4444; }
+.health-anomaly-text { color: var(--ispace-color-text-secondary); line-height: 1.5; }
+
+/* ===== Responsive ===== */
+@media (max-width: 1200px) {
+    .health-dashboard-row { grid-template-columns: 1fr; }
+    .health-services { grid-template-columns: repeat(2, 1fr); }
+    .health-service-item:nth-child(2n) { border-right: none; }
+}
+@media (max-width: 900px) {
+    .health-two-col { grid-template-columns: 1fr; }
+    .health-load-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+    .health-score-status-sub { max-width: 200px; }
+    .health-dashboard-row { grid-template-columns: 1fr; }
+    .health-score-visual { flex-direction: column; }
+    .health-score-status { justify-content: center; }
+    .health-score-status-body { align-items: center; text-align: center; }
+    .health-score-right { gap: var(--ispace-space-3); }
+    .health-score-gauges { gap: var(--ispace-space-2); }
+    .health-gauge-ring { width: 56px; height: 56px; }
+    .health-gauge-inner { width: 38px; height: 38px; }
+    .health-gauge-value { font-size: 0.85rem; }
+    .health-load-grid { grid-template-columns: 1fr 1fr; }
+    .health-services { grid-template-columns: 1fr; }
+    .health-service-item { border-right: none; }
+}
+@media (max-width: 480px) {
+    .health-score-gauges { flex-direction: column; gap: var(--ispace-space-3); }
+    .health-load-grid { grid-template-columns: 1fr; }
+    .health-score-ring { width: 110px; height: 110px; }
+    .health-score-inner { width: 84px; height: 84px; }
+    .health-score-big { font-size: 2rem; }
+    .health-score-right { gap: var(--ispace-space-3); }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    var STATUS_LABELS = {
+        'ok': '{% trans "正常" %}',
+        'warn': '{% trans "警告" %}',
+        'error': '{% trans "异常" %}',
+        'disabled': '{% trans "未启用" %}'
+    };
+
+    function gaugeColor(pct) {
+        if (pct >= 90) return '#ef4444';
+        if (pct >= 75) return '#f59e0b';
+        if (pct >= 50) return '#3b82f6';
+        return '#10b981';
+    }
+
+    function scoreColor(score) {
+        if (score >= 90) return '#10b981';
+        if (score >= 60) return '#f59e0b';
+        return '#ef4444';
+    }
+
+    function scoreStatus(score) {
+        if (score >= 90) return 'ok';
+        if (score >= 60) return 'warn';
+        return 'error';
+    }
+
+    function renderGauge(container, value, label, sub) {
+        var color = gaugeColor(value);
+        var el = container.querySelector('.health-gauge-ring');
+        el.style.setProperty('--gauge-pct', value + '%');
+        el.style.setProperty('--gauge-color', color);
+        container.querySelector('.health-gauge-value').textContent = value;
+        container.querySelector('.health-gauge-sub').textContent = sub || '';
+    }
+
+    function renderService(el, status, message) {
+        el.querySelector('.health-service-status').textContent = message || '';
+        var icon = el.querySelector('.health-service-icon');
+        icon.className = 'health-service-icon ' + (status || 'ok');
+    }
+
+    function buildInfoRows(container, rows) {
+        var html = '';
+        rows.forEach(function(r) {
+            html += '<div class="health-info-row">';
+            html += '<span class="health-info-label">' + escapeHTML(r[0]) + '</span>';
+            html += '<span class="health-info-value">' + escapeHTML(r[1]) + '</span>';
+            html += '</div>';
+        });
+        container.innerHTML = html;
+    }
+
+    function hideLoading() {
+        var el = document.getElementById('healthLoading');
+        if (el) { el.classList.add('ispace-hidden'); }
+    }
+
+    function loadHealth() {
+        fetch('/admin/api/health/', { headers: { 'X-CSRFToken': window.__ISPACEDOC__ ? window.__ISPACEDOC__.csrfToken : '' } })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            var h = d.health;
+
+            // --- Big Score Gauge ---
+            var score = h.score || 0;
+            var sColor = scoreColor(score);
+            var sStatus = scoreStatus(score);
+            var scoreRing = document.getElementById('healthScoreRing');
+            scoreRing.style.setProperty('--score-pct', score + '%');
+            scoreRing.style.setProperty('--score-color', sColor);
+            document.getElementById('healthScoreBig').textContent = score;
+            document.getElementById('healthScoreBig').style.color = sColor;
+            document.getElementById('healthScoreUnit').textContent = '/ ' + (h.max_score || 100);
+
+            // --- Score Status (title, subtitle, anomaly count) ---
+            var statusDiv = document.getElementById('healthScoreStatus');
+            statusDiv.className = 'health-score-status ' + sStatus;
+            var titleMap = {
+                'ok': '{% trans "系统运行正常" %}',
+                'warn': '{% trans "系统存在告警" %}',
+                'error': '{% trans "系统存在严重问题" %}'
+            };
+            document.getElementById('healthScoreTitle').textContent = titleMap[sStatus] || '';
+            var subMap = {
+                'ok': '{% trans "所有服务运行正常，健康评分良好" %}',
+                'warn': '{% trans "部分指标出现异常，建议查看详情" %}',
+                'error': '{% trans "关键服务不可用，请立即处理" %}'
+            };
+            document.getElementById('healthScoreSub').textContent = subMap[sStatus] || '';
+            var extraEl = document.getElementById('healthScoreExtra');
+            if (h.anomalies && h.anomalies.length > 0) {
+                extraEl.textContent = h.anomalies.length + ' ' + '{% trans "项异常" %}';
+            } else {
+                extraEl.textContent = '';
+            }
+
+            // --- Small Gauges (CPU / Memory / Disk) ---
+            var gaugeRow = document.getElementById('healthGauges');
+            var gauges = gaugeRow.querySelectorAll('.health-gauge');
+            renderGauge(gauges[0], h.cpu ? h.cpu.percent : 0, 'CPU', (h.cpu ? h.cpu.cores : '--') + ' {% trans "核" %}');
+            renderGauge(gauges[1], h.memory ? h.memory.percent : 0, '{% trans "内存" %}', (h.memory ? h.memory.used : '--') + ' / ' + (h.memory ? h.memory.total : '--'));
+            renderGauge(gauges[2], h.disk ? h.disk.percent : 0, '{% trans "磁盘" %}', (h.disk ? h.disk.used : '--') + ' / ' + (h.disk ? h.disk.total : '--'));
+
+            // --- Services ---
+            var services = document.getElementById('healthServices');
+            var items = services.querySelectorAll('.health-service-item');
+            renderService(items[0], h.database ? h.database.status : 'error',
+                h.database ? (h.database.status === 'ok' ? '{% trans "连接正常" %}' : h.database.message) : '--');
+            renderService(items[1], h.cache ? h.cache.status : 'error',
+                h.cache ? h.cache.message : '--');
+            renderService(items[2], h.email ? h.email.status : 'disabled',
+                h.email ? h.email.message : '--');
+            var mediaMsg = '';
+            if (h.media) {
+                mediaMsg = '{% trans "文件" %}: ' + (h.media.file_count || 0) + ' / ' + (h.media.total_size || '0 B');
+            }
+            renderService(items[3], h.media ? h.media.status : 'ok', mediaMsg);
+            renderService(items[4], h.storage ? h.storage.status : 'error',
+                h.storage ? h.storage.message : '--');
+            var wecomMsg = h.wecom ? h.wecom.message : '--';
+            if (h.wecom && h.wecom.status === 'disabled') wecomMsg = '{% trans "未启用" %}';
+            renderService(items[5], h.wecom ? h.wecom.status : 'disabled', wecomMsg);
+            var notifMsg = '';
+            if (h.notification_channels) {
+                var ncList = [];
+                var ncData = h.notification_channels;
+                if (ncData.in_app) {
+                    ncList.push('{% trans "站内" %}' + (ncData.in_app.status === 'ok' ? '✓' : '✗'));
+                }
+                if (ncData.email) {
+                    if (ncData.email.status !== 'disabled') {
+                        ncList.push('{% trans "邮件" %}' + (ncData.email.status === 'ok' ? '✓' : '✗'));
+                    } else {
+                        ncList.push('{% trans "邮件" %}✗');
+                    }
+                }
+                if (ncData.wecom) {
+                    if (ncData.wecom.status !== 'disabled') {
+                        ncList.push('{% trans "企微" %}' + (ncData.wecom.status === 'ok' ? '✓' : '✗'));
+                    } else {
+                        ncList.push('{% trans "企微" %}✗');
+                    }
+                }
+                notifMsg = ncList.length > 0 ? ncList.join(' ') : '{% trans "无可用渠道" %}';
+            }
+            renderService(items[6], notifMsg ? 'ok' : 'warn', notifMsg || '--');
+
+            // --- Run Info ---
+            buildInfoRows(document.getElementById('healthRunInfo'), [
+                ['{% trans "运行时长" %}', h.uptime ? h.uptime.display : '--'],
+                ['{% trans "启动时间" %}', h.uptime ? h.uptime.start_time : '--'],
+                ['PID', h.python ? String(h.python.pid) : '--'],
+                ['{% trans "进程内存" %}', h.python ? h.python.memory_mb + ' MB' : '--'],
+                ['{% trans "线程数" %}', h.python ? String(h.python.threads) : '--'],
+            ]);
+
+            // --- System Info ---
+            buildInfoRows(document.getElementById('healthSysInfo'), [
+                ['Django', h.system ? h.system.django_version : '--'],
+                ['Python', h.system ? h.system.python_version : '--'],
+                ['{% trans "操作系统" %}', h.system ? h.system.os : '--'],
+                ['{% trans "数据库引擎" %}', h.database ? h.database.vendor : '--'],
+                ['{% trans "文件存储" %}', h.storage ? h.storage.type : '--'],
+                ['Debug', h.system ? (h.system.debug ? '{% trans "开启" %}' + ' ⚠' : '{% trans "关闭" %}') : '--'],
+            ]);
+
+            // --- Load Average (1h / 24h / 1w) ---
+            var loadAvg = h.load_avg;
+            if (loadAvg) {
+                var cores = loadAvg.cpu_cores || 1;
+                function fmtLoad(v) {
+                    if (v == null) return { text: '--', cls: '' };
+                    var ratio = v / cores;
+                    var cls = ratio > 0.8 ? 'high' : (ratio > 0.5 ? 'warn' : '');
+                    return { text: String(v), cls: cls };
+                }
+                var l1h = fmtLoad(loadAvg['1h']);
+                var l24h = fmtLoad(loadAvg['24h']);
+                var l1w = fmtLoad(loadAvg['1w']);
+                setLoadValue('loadAvg1h', l1h.text, l1h.cls);
+                setLoadValue('loadAvg24h', l24h.text, l24h.cls);
+                setLoadValue('loadAvg1w', l1w.text, l1w.cls);
+                if (loadAvg.sample_count) {
+                    document.getElementById('loadAvg1w').title = '采样点: ' + loadAvg.sample_count;
+                }
+                if (loadAvg.current != null) {
+                    document.getElementById('loadAvg1h').title = '当前瞬时: ' + loadAvg.current;
+                }
+            }
+
+            // --- Concurrency ---
+            var conc = h.concurrency;
+            if (conc) {
+                setLoadValue('concurrentThreads', String(conc.current_threads || 0),
+                    conc.current_threads > 50 ? 'high' : (conc.current_threads > 20 ? 'warn' : ''));
+                setLoadValue('peakConcurrency', String(conc.recent_peak || 0),
+                    conc.recent_peak > 100 ? 'high' : (conc.recent_peak > 50 ? 'warn' : ''));
+                var peakTimeEl = document.getElementById('peakConcurrencyTime');
+                if (peakTimeEl) {
+                    peakTimeEl.textContent = (conc.peak_time && conc.peak_time !== '-') ? conc.peak_time : '';
+                }
+                setLoadValue('activeConns', String(conc.active_connections || 0),
+                    conc.active_connections > 100 ? 'high' : (conc.active_connections > 50 ? 'warn' : ''));
+            }
+
+            // --- Anomalies ---
+            var anomaliesDiv = document.getElementById('healthAnomalies');
+            var anomalyList = document.getElementById('healthAnomalyList');
+            var statusEl2 = document.getElementById('healthScoreStatus');
+            var hasAnomalies = h.anomalies && h.anomalies.length > 0;
+            var hasDeductions = h.deductions && h.deductions.length > 0;
+
+            if (hasAnomalies) {
+                var anomalyHTML = '';
+                h.anomalies.forEach(function(a) {
+                    anomalyHTML += '<li class="health-anomaly-item">';
+                    anomalyHTML += '<span class="health-anomaly-level ' + a.level + '"></span>';
+                    anomalyHTML += '<span class="health-anomaly-text">' + escapeHTML(a.message) + '</span>';
+                    anomalyHTML += '</li>';
+                });
+                anomalyList.innerHTML = anomalyHTML;
+                anomaliesDiv.style.display = 'block';
+
+                // Populate tooltip anomaly section
+                var tooltipHTML = '';
+                h.anomalies.forEach(function(a) {
+                    tooltipHTML += '<li class="health-score-tooltip-item">';
+                    tooltipHTML += '<span class="health-score-tooltip-level ' + a.level + '"></span>';
+                    tooltipHTML += '<span class="health-score-tooltip-text">' + escapeHTML(a.message) + '</span>';
+                    tooltipHTML += '</li>';
+                });
+                var tooltipList = document.getElementById('healthAnomalyTooltipList');
+                if (tooltipList) tooltipList.innerHTML = tooltipHTML;
+                document.getElementById('healthTooltipAnomalySection').style.display = '';
+            } else {
+                anomaliesDiv.style.display = 'none';
+                document.getElementById('healthTooltipAnomalySection').style.display = 'none';
+            }
+
+            // Populate deduction details in tooltip
+            var dedSection = document.getElementById('healthTooltipDeductionSection');
+            var dedList = document.getElementById('healthDeductionTooltipList');
+            if (hasDeductions) {
+                var dedHTML = '';
+                h.deductions.forEach(function(d) {
+                    var deducted = d.deducted_norm != null ? d.deducted_norm : d.deducted;
+                    var earned = d.earned_norm != null ? d.earned_norm : d.earned;
+                    dedHTML += '<li class="health-score-tooltip-item">';
+                    dedHTML += '<span class="health-score-tooltip-text">' + escapeHTML(d.check) + '</span>';
+                    dedHTML += '<span class="health-score-tooltip-deduction">';
+                    if (earned > 0) {
+                        dedHTML += '<span class="earned">+' + earned.toFixed(1) + '</span> / ';
+                    }
+                    dedHTML += '<span class="deducted">-' + deducted.toFixed(1) + '</span>';
+                    dedHTML += '</span>';
+                    dedHTML += '</li>';
+                });
+                if (dedList) dedList.innerHTML = dedHTML;
+                dedSection.style.display = '';
+            } else {
+                dedSection.style.display = 'none';
+            }
+
+            if (hasAnomalies || hasDeductions) {
+                if (statusEl2) statusEl2.classList.add('has-anomalies');
+            } else {
+                if (statusEl2) statusEl2.classList.remove('has-anomalies');
+            }
+            hideLoading();
+        })
+        .catch(function(e) {
+            hideLoading();
+            document.getElementById('healthScoreBig').textContent = '!';
+            document.getElementById('healthScoreBig').style.color = '#ef4444';
+            document.getElementById('healthScoreTitle').textContent = '{% trans "健康检查失败" %}';
+            document.getElementById('healthScoreSub').textContent = '{% trans "无法获取系统健康数据，请检查服务器状态" %}';
+            document.getElementById('healthScoreExtra').textContent = '';
+            document.getElementById('healthScoreStatus').className = 'health-score-status error';
+            document.getElementById('healthScoreRing').style.setProperty('--score-color', '#ef4444');
+            console.error('Health check failed:', e);
+        });
+    }
+
+    function escapeHTML(s) {
+        if (!s) return '';
+        var d = document.createElement('div');
+        d.textContent = String(s);
+        return d.innerHTML;
+    }
+
+    function setLoadValue(elId, text, cls) {
+        var el = document.getElementById(elId);
+        if (el) {
+            el.textContent = text;
+            el.className = 'health-load-value' + (cls ? ' ' + cls : '');
+        }
+    }
+
+    loadHealth();
+})();
+</script>
+{% endblock %}

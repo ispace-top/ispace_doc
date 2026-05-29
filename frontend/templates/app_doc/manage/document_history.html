@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+{% block title %}{% trans "文档历史版本管理" %}{% endblock %}
+
+{% block content %}
+<div class="ispace-page">
+    <div class="ispace-page-header">
+        <h2 class="ispace-page-title">{% trans "历史版本管理" %}</h2>
+    </div>
+
+    <!-- Breadcrumb -->
+    <div class="ispace-content-card" style="margin-bottom:var(--ispace-spacing-4);">
+        <div style="padding:var(--ispace-spacing-3) var(--ispace-spacing-5);">
+            <nav class="ispace-breadcrumb" aria-label="breadcrumb">
+                <a href="{% url 'manage_doc' %}" style="color:var(--ispace-color-text-secondary);text-decoration:none;">{% trans "文档管理" %}</a>
+                <span style="color:var(--ispace-color-text-tertiary);margin:0 var(--ispace-spacing-2);">/</span>
+                <span style="color:var(--ispace-color-text);">{% trans "历史版本管理" %}</span>
+            </nav>
+        </div>
+    </div>
+
+    <div class="ispace-content-card">
+        <div style="padding:var(--ispace-spacing-4) var(--ispace-spacing-5);border-bottom:1px solid var(--ispace-color-border);">
+            <span style="font-size:var(--ispace-font-size-base);font-weight:var(--ispace-font-weight-semibold);">
+                {% trans "文档：" %}{{ doc.name }} {% trans "的历史版本管理" %}
+            </span>
+        </div>
+        <div style="overflow-x:auto;">
+            <table class="ispace-table">
+                <thead>
+                    <tr>
+                        <th>{% trans "创建时间" %}</th>
+                        <th>{% trans "创建人" %}</th>
+                        <th>{% trans "操作" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for his in historys %}
+                    <tr>
+                        <td>{{ his.create_time }}</td>
+                        <td>{{ his.create_user }}</td>
+                        <td>
+                            <div style="display:flex;gap:var(--ispace-spacing-2);">
+                                <a href="{% url 'diff_doc' doc.id his.id %}" target="_blank" class="ispace-btn ispace-btn-secondary ispace-btn-sm">
+                                    {% trans "对比" %}
+                                </a>
+                                <a href="javascript:void(0);" onclick="delDocHis('{{ his.id }}');" class="ispace-btn ispace-btn-danger ispace-btn-sm">
+                                    {% trans "删除" %}
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" style="text-align:center;padding:var(--ispace-spacing-8) var(--ispace-spacing-4);color:var(--ispace-color-text-tertiary);">{% trans "暂无历史版本" %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% include 'includes/pagination.html' with page_obj=historys %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    window.delDocHis = function(history_id) {
+        iSpaceDoc.confirm({
+            title: '{% trans "删除历史记录" %}',
+            message: '{% trans "警告：此操作将删除此文档历史版本记录！" %}'
+        }).then(function(confirmed) {
+            if (!confirmed) return;
+            var loadingEl = document.createElement('div');
+            loadingEl.className = 'ispace-loading-overlay';
+            loadingEl.innerHTML = '<div class="ispace-spinner"></div>';
+            document.body.appendChild(loadingEl);
+
+            var data = new URLSearchParams();
+            data.append('history_id', history_id);
+
+            fetch('{% url "manage_doc_history" doc.id %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: data.toString()
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                loadingEl.remove();
+                if (r.status) {
+                    window.location.reload();
+                } else {
+                    showError(r.data || '{% trans "删除失败" %}');
+                }
+            })
+            .catch(function() {
+                loadingEl.remove();
+                showError('{% trans "删除异常" %}');
+            });
+        });
+    };
+})();
+</script>
+{% endblock %}

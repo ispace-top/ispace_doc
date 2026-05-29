@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+{% load static %}{% load i18n %}
+
+{% block title %}{% trans "文档管理" %}{% endblock %}
+{% block breadcrumb %}{% include "includes/breadcrumb.html" with breadcrumbs=breadcrumb_items %}{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+
+{# --- Filter Card --- #}
+<div class="ispace-content-card ispace-mb-4">
+    <div class="ispace-card-header" style="font-weight:600;">{% trans "高级筛选" %}</div>
+    <div class="ispace-card-body">
+        <form id="filter-form" method="get" action="{% url 'manage_doc' %}">
+            <div class="ispace-flex-center ispace-gap-3 ispace-mb-3" style="flex-wrap:wrap;">
+                <label class="ispace-form-label" style="width:auto;margin-bottom:0;">{% trans "关键词" %}</label>
+                <input type="text" name="kw" value="{{ kw|default:'' }}" placeholder="{% trans '请输入标题' %}" class="ispace-form-input" style="max-width:220px;">
+                <button type="submit" class="ispace-btn ispace-btn-primary ispace-btn-sm">{% trans "搜索" %}</button>
+            </div>
+            
+            <div class="ispace-flex-center ispace-gap-3" style="flex-wrap:wrap;">
+                <label class="ispace-form-label" style="width:auto;margin-bottom:0;">{% trans "文档状态" %}</label>
+                <label style="cursor:pointer;font-size:14px;margin-right:12px;">
+                    <input type="radio" name="status" value="-1" {% if status == '-1' or not status %}checked{% endif %} onchange="handleStatusChange(this.value)"> {% trans "全部" %}({{ all_cnt }})
+                </label>
+                <label style="cursor:pointer;font-size:14px;margin-right:12px;">
+                    <input type="radio" name="status" value="0" {% if status == '0' %}checked{% endif %} onchange="handleStatusChange(this.value)"> {% trans "草稿" %}({{ draft_doc_cnt }})
+                </label>
+                <label style="cursor:pointer;font-size:14px;margin-right:12px;">
+                    <input type="radio" name="status" value="1" {% if status == '1' %}checked{% endif %} onchange="handleStatusChange(this.value)"> {% trans "已发布" %}({{ published_doc_cnt }})
+                </label>
+                <label style="cursor:pointer;font-size:14px;">
+                    <input type="radio" name="status" value="3" {% if status == '3' %}checked{% endif %} onchange="handleStatusChange(this.value)"> {% trans "已删除" %}({{ recycle_doc_cnt }})
+                </label>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# --- Table Card --- #}
+<div class="ispace-content-card">
+    <div class="ispace-card-body">
+        <div class="ispace-flex-between ispace-mb-3">
+            <div class="ispace-flex-center ispace-gap-2">
+                <a href="{% url 'create_doc' %}" target="_blank" class="ispace-btn ispace-btn-primary ispace-btn-sm">+ {% trans "新增" %}</a>
+                <button class="ispace-btn ispace-btn-danger ispace-btn-sm" id="batchRemove">{% trans "删除" %}</button>
+            </div>
+            <span class="ispace-text-sm ispace-text-tertiary">{% trans "共" %} {{ docs.paginator.count|default:0 }} {% trans "篇文档" %}</span>
+        </div>
+
+        {% if docs and docs.paginator.count > 0 %}
+        <div class="ispace-table-wrap" style="overflow-x:auto;">
+            <table class="ispace-table">
+                <thead>
+                    <tr>
+                        <th style="width:36px;"><input type="checkbox" id="selectAll" title="{% trans '全选' %}"></th>
+                        <th>{% trans "文档名称" %}</th>
+                        <th style="width:90px;">{% trans "状态" %}</th>
+                        <th>{% trans "上级" %}</th>
+                                                <th style="width:90px;">{% trans "编辑模式" %}</th>
+                        <th style="width:80px;">{% trans "展开下级" %}</th>
+                        <th>{% trans "最后编辑" %}</th>
+                        <th style="width:150px;">{% trans "操作" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in docs %}
+                    <tr>
+                        <td><input type="checkbox" class="doc-checkbox" value="{{ d.id }}"></td>
+                        <td>
+                            {% if d.status == 1 %}
+                            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#3b82f6;margin-right:6px;"></span>
+                            <a href="/pages/{{ d.id }}/" target="_blank" style="font-weight:500;">{{ d.name }}</a>
+                            {% elif d.status == 0 %}
+                            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b;margin-right:6px;"></span>
+                            <a href="{% url 'modify_doc' d.id %}" target="_blank" title="{% blocktrans with name=d.name %}修改文档：{{ name }}{% endblocktrans %}" style="font-weight:500;">{{ d.name }}</a>
+                            {% endif %}
+                            {% if d.editor_mode in '2,4' %}
+                            <span title="{% trans '普通文档' %}" style="margin-left:4px;font-size:12px;">&#128196;</span>
+                            {% elif d.editor_mode == 4 %}
+                            <span title="{% trans '表格文档' %}" style="margin-left:4px;font-size:12px;">&#128202;</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if d.status == 1 %}
+                            <span class="ispace-badge ispace-badge-success">{% trans "已发布" %}</span>
+                            {% elif d.status == 0 %}
+                            <span class="ispace-badge ispace-badge-warning" style="cursor:pointer;" onclick="fastPubDoc({{ d.id }})" title="{% trans '点击一键发布' %}">{% trans "草稿" %}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ d.parent|default:'--' }}</td>
+                                                <td>
+                            {% if d.editor_mode == 2 %}Vditor
+                            {% elif d.editor_mode == 4 %}{% trans "在线表格" %}
+                            {% else %}--{% endif %}
+                        </td>
+                        <td>{% if d.open_children %}{% trans "展开" %}{% else %}{% trans "收起" %}{% endif %}</td>
+                        <td>{{ d.modify_time|date:"Y-m-d H:i:s" }}</td>
+                        <td>
+                            <a href="{% url 'manage_doc_history' d.id %}" class="ispace-btn ispace-btn-sm ispace-btn-ghost" title="{% trans '历史' %}">{% trans "历史" %}</a>
+                            <a href="{% url 'modify_doc' d.id %}" target="_blank" class="ispace-btn ispace-btn-sm ispace-btn-ghost" title="{% trans '编辑' %}">{% trans "编辑" %}</a>
+                            <button class="ispace-btn ispace-btn-sm ispace-btn-danger" onclick="delDoc({{ d.id }})" title="{% trans '删除' %}">{% trans "删除" %}</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% include "includes/pagination.html" with page_obj=docs query_string=query_string %}
+        {% else %}
+        {% include "includes/empty_state.html" with title="暂无文档" description="当前没有符合条件的文档" %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function getCSRF() {
+    var el = document.querySelector('[name=csrfmiddlewaretoken]');
+    return el ? el.value : '';
+}
+
+function getFilterParams() {
+    var kw = document.querySelector('input[name=kw]').value.trim();
+    
+    var statusEl = document.querySelector('input[name=status]:checked');
+    var statusVal = statusEl ? statusEl.value : '-1';
+    var params = [];
+    if (kw) params.push('kw=' + encodeURIComponent(kw));
+    if (statusVal !== '-1') params.push('status=' + statusVal);
+    return params.length ? '?' + params.join('&') : '';
+}
+
+function reloadWithFilter() {
+    window.location.href = '{% url "manage_doc" %}' + getFilterParams();
+}
+
+function doFilter() {
+    reloadWithFilter();
+}
+
+function handleStatusChange(val) {
+    if (val === '3') {
+        window.location.href = '{% url "doc_recycle" %}';
+        return;
+    }
+    reloadWithFilter();
+}
+
+// --- Single Delete ---
+function delDoc(doc_id) {
+    iSpaceDoc.confirm({
+        title: '{% trans "删除文档" %}',
+        message: '{% trans "警告：此操作将删除此文档！" %}'
+    }).then(function(confirmed) {
+        if (!confirmed) return;
+        var loadingEl = document.getElementById('loadingIndicator');
+        if (loadingEl) loadingEl.style.display = 'flex';
+        fetch('{% url "del_doc" %}', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCSRF(), 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ doc_id: doc_id })
+        }).then(function(r) { return r.json(); }).then(function(r) {
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (r.status) {
+                showSuccess('{% trans "删除成功" %}');
+                setTimeout(function() { window.location.reload(); }, 800);
+            } else {
+                showError(r.data || '{% trans "删除失败" %}');
+            }
+        }).catch(function(e) {
+            if (loadingEl) loadingEl.style.display = 'none';
+            showError('{% trans "网络异常" %}');
+        });
+    });
+}
+
+// --- Fast Publish ---
+function fastPubDoc(doc_id) {
+    var loadingEl = document.getElementById('loadingIndicator');
+    if (loadingEl) loadingEl.style.display = 'flex';
+    fetch('{% url "fast_pub_doc" %}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRF(), 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ doc_id: doc_id })
+    }).then(function(r) { return r.json(); }).then(function(r) {
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (r.status) {
+            showSuccess('{% trans "发布成功" %}');
+            setTimeout(function() { window.location.reload(); }, 800);
+        } else {
+            showError(r.data || '{% trans "发布失败" %}');
+        }
+    }).catch(function(e) {
+        if (loadingEl) loadingEl.style.display = 'none';
+        showError('{% trans "网络异常" %}');
+    });
+}
+
+// --- Batch Delete ---
+var batchRemoveBtn = document.getElementById('batchRemove');
+if (batchRemoveBtn) batchRemoveBtn.addEventListener('click', function() {
+    var checks = document.querySelectorAll('.doc-checkbox:checked');
+    if (checks.length === 0) {
+        showError('{% trans "未选中任何文档" %}');
+        return;
+    }
+    var ids = [];
+    checks.forEach(function(cb) { ids.push(cb.value); });
+    iSpaceDoc.confirm({
+        title: '{% trans "批量删除" %}',
+        message: '{% trans "确定要删除这些文档？" %}'
+    }).then(function(confirmed) {
+        if (!confirmed) return;
+        var loadingEl = document.getElementById('loadingIndicator');
+        if (loadingEl) loadingEl.style.display = 'flex';
+        fetch('{% url "del_doc" %}', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCSRF(), 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ doc_id: ids.join(','), range: 'multi' })
+        }).then(function(r) { return r.json(); }).then(function(r) {
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (r.status) {
+                showSuccess('{% trans "删除成功" %}');
+                setTimeout(function() { window.location.reload(); }, 800);
+            } else {
+                showError(r.data || '{% trans "删除失败" %}');
+            }
+        }).catch(function(e) {
+            if (loadingEl) loadingEl.style.display = 'none';
+            showError('{% trans "网络异常" %}');
+        });
+    });
+});
+
+// Select All / Deselect All
+var selectAllCb = document.getElementById('selectAll');
+if (selectAllCb) selectAllCb.addEventListener('change', function() {
+    var checked = this.checked;
+    document.querySelectorAll('.doc-checkbox').forEach(function(cb) { cb.checked = checked; });
+});
+</script>
+{% endblock %}

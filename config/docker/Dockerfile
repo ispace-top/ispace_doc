@@ -1,0 +1,60 @@
+# Stage 1: Build stage
+FROM python:3.11-alpine AS builder
+
+LABEL maintainer="isdoc.pro"
+
+# 设置 Python 环境变量
+ENV PYTHONUNBUFFERED=0 \
+    TZ=Asia/Shanghai \
+    PIP_NO_PROXY='*'
+
+# 替换 alpine 软件仓库的源并安装编译依赖
+RUN set -x \
+    && apk add --no-cache --virtual .build-deps build-base g++ gcc libxslt-dev py3-lxml openldap-dev python3-dev linux-headers \
+    && apk add --no-cache git tzdata zlib-dev freetype-dev jpeg-dev mariadb-dev postgresql-dev
+
+# 设置工作目录并复制依赖文件
+WORKDIR /app/iSpaceDoc
+COPY requirements.txt /app/iSpaceDoc/
+
+# 升级 pip 并安装 Python 依赖
+RUN python -m pip install --upgrade pip -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com \
+    && pip install --no-cache-dir -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com \
+    && pip install --no-cache-dir uwsgi -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com
+
+# Stage 2: Final stage
+FROM python:3.11-alpine
+
+# 设置时区和基本环境变量
+ENV PYTHONUNBUFFERED=0 \
+    TZ=Asia/Shanghai \
+    LISTEN_PORT=10086 \
+    USER=admin \
+    PIP_NO_PROXY='*' \
+    ISDOC_CONFIG=config-docker.ini
+
+# 替换 alpine 软件仓库的源并安装运行时依赖
+RUN set -x \
+    && apk add --no-cache tzdata ttf-dejavu fontconfig libmagic libffi-dev libxml2 \
+    && ln -snf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && echo "Asia/Shanghai" > /etc/timezone
+
+# 复制字体文件
+COPY frontend/static/SourceHanSerifCN-Medium.otf /usr/share/fonts/sourcehan/SourceHanSerifCN-Medium.otf
+
+# 从构建阶段复制已安装的 Python 依赖
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# 复制应用代码
+COPY . /app/iSpaceDoc/
+WORKDIR /app/iSpaceDoc
+
+# 设置启动脚本权限
+RUN chmod +x config/docker/entrypoint.sh config/tests/test_django.py
+
+# 暴露端口
+EXPOSE 10086
+
+# 容器启动命令
+ENTRYPOINT ["./config/docker/entrypoint.sh"]
+CMD ["uwsgi", "--ini", "/app/iSpaceDoc/config/conf/uwsgi.ini"]

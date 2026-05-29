@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% load static %}{% load i18n %}
+
+{% block title %}{% trans "通知管理" %} - {% trans "后台管理" %}{% endblock %}
+
+{% block styles %}
+<style>
+.ispace-badge-sm { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+.ispace-badge-info { background: #dbeafe; color: #1e40af; }
+.ispace-badge-warning { background: #fef3c7; color: #d97706; }
+.ispace-badge-purple { background: #ede9fe; color: #6d28d9; }
+
+.admin-notifications-page-size { display: flex; align-items: center; gap: var(--ispace-space-2); font-size: var(--ispace-font-sm); color: var(--ispace-color-text-tertiary); }
+.admin-notifications-page-size select { height: 30px; padding: 0 6px; font-size: var(--ispace-font-sm); border: 1px solid var(--ispace-color-border-medium); border-radius: var(--ispace-radius-sm); background: var(--ispace-color-surface-0); color: var(--ispace-color-text-primary); }
+.notif-table-col-recipient { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.notif-table-col-sender { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.notif-table-col-title { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ispace-card">
+    <div class="ispace-card-header">
+        <h3 class="ispace-card-title">{% trans "通知管理" %}</h3>
+        <div style="display:flex;align-items:center;gap:var(--ispace-space-3);flex-wrap:wrap;flex:1;justify-content:flex-end;">
+            <input type="text" class="ispace-form-input" id="filterRecipient" placeholder="{% trans '接收者' %}" style="max-width:120px;">
+            <select class="ispace-form-select" id="filterType" style="max-width:120px;">
+                <option value="">{% trans "全部类型" %}</option>
+                <option value="system">{% trans "系统通知" %}</option>
+                <option value="comment">{% trans "文档评论" %}</option>
+                <option value="reply">{% trans "评论回复" %}</option>
+                <option value="mention">{% trans "@提及" %}</option>
+                <option value="doc_change">{% trans "文档变更" %}</option>
+                <option value="doc_like">{% trans "文档点赞" %}</option>
+                <option value="perm_apply">{% trans "权限申请" %}</option>
+                <option value="perm_change">{% trans "权限变更" %}</option>
+            </select>
+            <select class="ispace-form-select" id="filterRead" style="max-width:100px;">
+                <option value="">{% trans "全部状态" %}</option>
+                <option value="read">{% trans "已读" %}</option>
+                <option value="unread">{% trans "未读" %}</option>
+            </select>
+            <button class="ispace-btn ispace-btn-secondary ispace-btn-sm" id="searchBtn">{% trans "筛选" %}</button>
+            <button class="ispace-btn ispace-btn-secondary ispace-btn-sm" id="resetBtn">{% trans "重置" %}</button>
+        </div>
+    </div>
+    <div class="ispace-card-body">
+        <div style="overflow-x:auto;">
+            <table class="ispace-table" id="notifTable">
+                <thead>
+                    <tr>
+                        <th>{% trans "时间" %}</th>
+                        <th>{% trans "接收者" %}</th>
+                        <th>{% trans "发送者" %}</th>
+                        <th>{% trans "类型" %}</th>
+                        <th>{% trans "标题" %}</th>
+                        <th>{% trans "内容" %}</th>
+                        <th>{% trans "状态" %}</th>
+                    </tr>
+                </thead>
+                <tbody id="notifTbody"></tbody>
+            </table>
+        </div>
+        <div class="ispace-flex-between" style="margin-top:var(--ispace-space-4)">
+            <div id="notifPagination"></div>
+            <div class="admin-notifications-page-size">
+                <span>每页</span>
+                <select id="page-size-select">
+                    <option value="10">10</option>
+                    <option value="20" selected>20</option>
+                    <option value="50">50</option>
+                </select>
+                <span>条</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    var currentPage = 1, currentFilters = {};
+
+    function getPageSize() {
+        var sel = document.getElementById('page-size-select');
+        return sel ? parseInt(sel.value) : 20;
+    }
+
+    function getCSRF() { var t = document.querySelector('[name=csrfmiddlewaretoken]'); return t ? t.value : ''; }
+
+    function getTypeBadgeClass(type) {
+        var map = { system: 'ispace-badge-info', comment: 'ispace-badge-info', reply: 'ispace-badge-purple', mention: 'ispace-badge-warning', doc_change: 'ispace-badge-info', doc_like: 'ispace-badge-purple', perm_apply: 'ispace-badge-warning', perm_change: 'ispace-badge-purple' };
+        return map[type] || 'ispace-badge-info';
+    }
+
+    function loadNotifications() {
+        var params = new URLSearchParams({ page: currentPage, size: getPageSize() });
+        Object.keys(currentFilters).forEach(function(k) { if (currentFilters[k]) params.set(k, currentFilters[k]); });
+        fetch('/admin/api/notifications/?' + params.toString(), { headers: { 'X-CSRFToken': getCSRF() } })
+        .then(function(r) { return r.json(); }).then(function(d) {
+            var tbody = document.getElementById('notifTbody');
+            if (!d.notifications || !d.notifications.length) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:var(--ispace-space-8);color:var(--ispace-color-text-tertiary)">{% trans "暂无通知" %}</td></tr>';
+                document.getElementById('notifPagination').innerHTML = ''; return;
+            }
+            tbody.innerHTML = d.notifications.map(function(n) {
+                return '<tr><td style="white-space:nowrap">' + n.created_at + '</td>'
+                    + '<td class="notif-table-col-recipient" title="' + escapeHTML(n.recipient_name) + '">' + escapeHTML(n.recipient_name) + '</td>'
+                    + '<td class="notif-table-col-sender" title="' + escapeHTML(n.sender_name) + '">' + escapeHTML(n.sender_name) + '</td>'
+                    + '<td><span class="ispace-badge-sm ' + getTypeBadgeClass(n.notification_type) + '">' + escapeHTML(n.type_display) + '</span></td>'
+                    + '<td class="notif-table-col-title" title="' + escapeHTML(n.title) + '">' + escapeHTML(n.title) + '</td>'
+                    + '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + escapeHTML(n.body) + '">' + escapeHTML(n.body) + '</td>'
+                    + '<td>' + (n.is_read ? '{% trans "已读" %}' : '{% trans "未读" %}') + '</td></tr>';
+            }).join('');
+            var totalPages = Math.ceil(d.total / getPageSize());
+            renderPagination(d.total, currentPage, totalPages, 'notifPagination', function(p) { currentPage = p; loadNotifications(); });
+        });
+    }
+
+    function renderPagination(count, page, totalPages, containerId, callback) {
+        var container = document.getElementById(containerId);
+        if (totalPages <= 1) { container.innerHTML = '<span class="ispace-pagination-info">共 ' + count + ' 条</span>'; return; }
+        var html = '';
+        html += '<button class="ispace-pagination-btn" data-page="' + (page - 1) + '" ' + (page <= 1 ? 'disabled' : '') + '>上一页</button>';
+        var startPage = Math.max(1, page - 2);
+        var endPage = Math.min(totalPages, page + 2);
+        if (startPage > 1) { html += '<button class="ispace-pagination-btn" data-page="1">1</button>'; if (startPage > 2) html += '<span class="ispace-pagination-info">...</span>'; }
+        for (var i = startPage; i <= endPage; i++) { html += '<button class="ispace-pagination-btn ' + (i === page ? 'ispace-active' : '') + '" data-page="' + i + '">' + i + '</button>'; }
+        if (endPage < totalPages) { if (endPage < totalPages - 1) html += '<span class="ispace-pagination-info">...</span>'; html += '<button class="ispace-pagination-btn" data-page="' + totalPages + '">' + totalPages + '</button>'; }
+        html += '<button class="ispace-pagination-btn" data-page="' + (page + 1) + '" ' + (page >= totalPages ? 'disabled' : '') + '>下一页</button>';
+        html += '<span class="ispace-pagination-info">共 ' + count + ' 条</span>';
+        container.innerHTML = html;
+        container.querySelectorAll('.ispace-pagination-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() { var p = parseInt(this.dataset.page); if (p >= 1 && p <= totalPages && p !== page) callback(p); });
+        });
+    }
+
+    document.getElementById('searchBtn').addEventListener('click', function() {
+        currentFilters = {
+            recipient: document.getElementById('filterRecipient').value.trim(),
+            type: document.getElementById('filterType').value,
+            read: document.getElementById('filterRead').value
+        };
+        currentPage = 1; loadNotifications();
+    });
+    document.getElementById('resetBtn').addEventListener('click', function() {
+        document.getElementById('filterRecipient').value = '';
+        document.getElementById('filterType').value = '';
+        document.getElementById('filterRead').value = '';
+        currentFilters = {}; currentPage = 1; loadNotifications();
+    });
+
+    function escapeHTML(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+    document.getElementById('page-size-select').addEventListener('change', function() {
+        currentPage = 1; loadNotifications();
+    });
+
+    loadNotifications();
+})();
+</script>
+{% endblock %}

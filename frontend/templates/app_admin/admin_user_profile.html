@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "用户资料设置" %}{% endblock %}
+
+{% block styles %}
+<style>
+.profile-form-wrapper {
+    max-width: 680px;
+}
+.form-group-inline {
+    display: flex;
+    align-items: center;
+    gap: var(--ispace-space-4);
+}
+.form-group-inline .ispace-form-label {
+    width: 120px;
+    flex-shrink: 0;
+    text-align: right;
+    padding-top: var(--ispace-space-2);
+    margin-bottom: 0;
+}
+.form-group-inline .ispace-form-input,
+.form-group-inline .ispace-form-select {
+    flex: 1;
+}
+.form-helper {
+    font-size: var(--ispace-font-xs);
+    color: var(--ispace-color-text-tertiary);
+    margin-left: var(--ispace-space-2);
+}
+.checkbox-switch-wrapper {
+    display: flex;
+    align-items: center;
+    gap: var(--ispace-space-2);
+}
+.checkbox-switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+.checkbox-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.checkbox-switch .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--ispace-color-border-medium);
+    transition: 0.3s;
+    border-radius: 24px;
+}
+.checkbox-switch .slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+}
+.checkbox-switch input:checked + .slider {
+    background-color: var(--ispace-color-brand-500);
+}
+.checkbox-switch input:checked + .slider:before {
+    transform: translateX(20px);
+}
+.switch-label {
+    font-size: var(--ispace-font-sm);
+    color: var(--ispace-color-text-secondary);
+}
+.user-form .btn-row {
+    margin-top: var(--ispace-space-6);
+    padding-left: 124px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ispace-card">
+    <div class="ispace-card-header">
+        <nav class="ispace-breadcrumb">
+            <a href="{% url 'user_manage' %}">用户管理</a>
+            <span>/</span>
+            <span>用户资料编辑</span>
+        </nav>
+    </div>
+    <div class="ispace-card-body">
+        <div class="profile-form-wrapper">
+            <form class="user-form" id="userProfileForm">
+                {% csrf_token %}
+                <div class="form-group-inline ispace-mb-4">
+                    <label class="ispace-form-label">{% trans "用户名" %}</label>
+                    <input type="text" name="username" id="username" class="ispace-form-input" disabled autocomplete="off">
+                    <span class="form-helper">{% trans "不可修改" %}</span>
+                </div>
+
+                <div class="form-group-inline ispace-mb-4">
+                    <label class="ispace-form-label">{% trans "昵称" %}</label>
+                    <input type="text" name="nickname" id="nickname" class="ispace-form-input" required placeholder="{% trans '请输入昵称' %}" autocomplete="off">
+                </div>
+
+                <div class="form-group-inline ispace-mb-4">
+                    <label class="ispace-form-label">{% trans "电子邮箱" %}</label>
+                    <input type="email" name="email" id="email" class="ispace-form-input" required placeholder="{% trans '请输入电子邮箱地址' %}" autocomplete="off">
+                </div>
+
+                <div class="form-group-inline ispace-mb-4">
+                    <label class="ispace-form-label">{% trans "用户状态" %}</label>
+                    <div class="checkbox-switch-wrapper">
+                        <label class="checkbox-switch">
+                            <input type="checkbox" name="is_active" id="is_active">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="switch-label" id="is_active_text">启用</span>
+                    </div>
+                </div>
+
+                <div class="form-group-inline ispace-mb-4">
+                    <label class="ispace-form-label">{% trans "用户角色" %}</label>
+                    <select name="is_superuser" id="is_superuser" class="ispace-form-select" style="flex:0 0 auto; width: 200px;">
+                        <option value="false">普通用户</option>
+                        <option value="true">超级管理员</option>
+                    </select>
+                </div>
+
+                <div class="form-group-inline ispace-mb-4">
+                    <label class="ispace-form-label">{% trans "新密码" %}</label>
+                    <button type="button" class="ispace-btn ispace-btn-secondary ispace-btn-sm" id="change-pwd-btn">{% trans "点击修改密码" %}</button>
+                </div>
+
+                <div class="btn-row">
+                    <button type="button" class="ispace-btn ispace-btn-primary ispace-btn-sm" id="update-user-btn">{% trans "更新用户资料" %}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    const CSRF_TOKEN = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    function getCsrf() {
+        return CSRF_TOKEN;
+    }
+
+    function getQueryVariable(variable) {
+        const query = window.location.search.substring(1);
+        const vars = query.split("&");
+        for (let i = 0; i < vars.length; i++) {
+            const pair = vars[i].split("=");
+            if (pair[0] === variable) { return pair[1]; }
+        }
+        return false;
+    }
+
+    const userId = getQueryVariable("id");
+
+    function loadUserProfile() {
+        fetch('/admin/api/user/' + userId, {
+            method: 'GET',
+            headers: { 'X-CSRFToken': getCsrf() }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(r) {
+            if (r.code === 0) {
+                const data = r.data;
+                document.getElementById('username').value = data.username || '';
+                document.getElementById('nickname').value = data.first_name || '';
+                document.getElementById('email').value = data.email || '';
+
+                const isActiveCheckbox = document.getElementById('is_active');
+                isActiveCheckbox.checked = data.is_active;
+                updateActiveText(data.is_active);
+
+                document.getElementById('is_superuser').value = data.is_superuser ? 'true' : 'false';
+
+                isActiveCheckbox.addEventListener('change', function() {
+                    updateActiveText(this.checked);
+                });
+            } else {
+                showError('用户资料获取出错');
+            }
+        })
+        .catch(function() {
+            showError('用户资料获取异常');
+        });
+    }
+
+    function updateActiveText(isActive) {
+        document.getElementById('is_active_text').textContent = isActive ? '启用' : '停用';
+    }
+
+    function changePwd() {
+        const modalId = 'change-pwd-modal';
+        let existing = document.getElementById(modalId);
+        if (existing) existing.remove();
+
+        const backdrop = document.createElement('div');
+        backdrop.className = 'ispace-modal-backdrop';
+        backdrop.id = modalId;
+        backdrop.innerHTML = `
+            <div class="ispace-modal ispace-modal-sm">
+                <div class="ispace-modal-header">
+                    <h3 class="ispace-modal-title">修改密码</h3>
+                    <button class="ispace-modal-close" data-ispace-modal-close>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="ispace-modal-body">
+                    <div class="ispace-form-group">
+                        <input class="ispace-form-input" type="password" id="newPwd1" style="margin-bottom:var(--ispace-space-3);" placeholder="输入新密码" required>
+                        <input class="ispace-form-input" type="password" id="newPwd2" placeholder="再次确认新密码" required>
+                    </div>
+                </div>
+                <div class="ispace-modal-footer">
+                    <button class="ispace-btn ispace-btn-secondary" data-ispace-modal-close>取消</button>
+                    <button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="change-pwd-confirm">确认修改</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(backdrop);
+
+        function closeModal() {
+            iSpaceDoc.Modal.close(backdrop);
+            setTimeout(function() { backdrop.remove(); }, 300);
+        }
+
+        backdrop.querySelector('[data-ispace-modal-close]').addEventListener('click', closeModal);
+        backdrop.querySelector('#change-pwd-confirm').addEventListener('click', function() {
+            const pwd1 = document.getElementById('newPwd1').value;
+            const pwd2 = document.getElementById('newPwd2').value;
+
+            if (!pwd1 || !pwd2) {
+                showWarning('请填写密码');
+                return;
+            }
+            if (pwd1 !== pwd2) {
+                showWarning('两次输入的密码不一致');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('obj', 'pwd');
+            formData.append('password', pwd1);
+            formData.append('password2', pwd2);
+
+            fetch('/admin/api/user/' + userId, {
+                method: 'PUT',
+                headers: { 'X-CSRFToken': getCsrf() },
+                body: formData
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                closeModal();
+                if (r.code === 0) {
+                    showSuccess(r.data);
+                } else {
+                    showError(r.data);
+                }
+            })
+            .catch(function() {
+                closeModal();
+                showError('修改密码异常');
+            });
+        });
+
+        iSpaceDoc.Modal.open(backdrop);
+    }
+
+    function updateUser() {
+        const formData = new FormData();
+        formData.append('obj', 'info');
+        formData.append('nickname', document.getElementById('nickname').value);
+        formData.append('email', document.getElementById('email').value);
+        formData.append('is_active', document.getElementById('is_active').checked);
+        formData.append('is_superuser', document.getElementById('is_superuser').value);
+
+        fetch('/admin/api/user/' + userId, {
+            method: 'PUT',
+            headers: { 'X-CSRFToken': getCsrf() },
+            body: formData
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(r) {
+            if (r.code === 0) {
+                showSuccess(r.data);
+            } else {
+                showError(r.data);
+            }
+        })
+        .catch(function() {
+            showError('更新用户资料异常');
+        });
+    }
+
+    document.getElementById('change-pwd-btn').addEventListener('click', changePwd);
+    document.getElementById('update-user-btn').addEventListener('click', updateUser);
+
+    loadUserProfile();
+})();
+</script>
+{% endblock %}

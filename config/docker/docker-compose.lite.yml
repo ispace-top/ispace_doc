@@ -1,0 +1,29 @@
+version: '3.8'
+
+# ============================================================
+# iSpaceDoc 轻量单容器部署（SQLite + Whoosh）
+# 适用于个人用户、开发测试、快速体验场景
+#
+# 启动: docker compose -f config/docker/docker-compose.lite.yml up -d
+# 停止: docker compose -f config/docker/docker-compose.lite.yml down
+# ============================================================
+
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: config/docker/Dockerfile
+    restart: always
+    environment:
+      - ISDOC_CONFIG=config-lite.ini
+    volumes:
+      - ispace_data:/app/iSpaceDoc/config/conf   # SQLite 数据库文件
+      - ispace_media:/app/iSpaceDoc/media         # 上传文件
+      - ispace_index:/app/iSpaceDoc/whoosh_index  # 搜索索引
+    ports:
+      - "10086:10086"
+
+volumes:
+  ispace_data:
+  ispace_media:
+  ispace_index:

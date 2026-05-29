@@ -1,0 +1,14 @@
+<div id="ispace-loading-overlay" class="ispace-loading-overlay">
+    <div class="ispace-spinner"></div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var overlay = document.getElementById('ispace-loading-overlay');
+    if (overlay) {
+        setTimeout(function() {
+            overlay.classList.add('ispace-hidden');
+            setTimeout(function() { overlay.remove(); }, 300);
+        }, 150);
+    }
+});
+</script>

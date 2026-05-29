@@ -1,0 +1,519 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+{% block title %}用户管理{% endblock %}
+
+{% block styles %}
+<style>
+    .admin-user-search-row {
+        display: flex;
+        align-items: center;
+        gap: var(--ispace-space-3);
+        flex-wrap: nowrap;
+    }
+    .admin-user-search-row .ispace-form-input {
+        max-width: 240px;
+    }
+    .admin-user-table-wrap {
+        overflow-x: auto;
+    }
+    .admin-user-status-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 6px;
+    }
+    .admin-user-status-dot.active { background: #22c55e; }
+    .admin-user-status-dot.inactive { background: #ef4444; }
+    .admin-user-action-link {
+        color: var(--ispace-color-text-link);
+        cursor: pointer;
+        font-size: var(--ispace-font-sm);
+        margin-right: var(--ispace-space-3);
+        text-decoration: none;
+    }
+    .admin-user-action-link:hover { text-decoration: underline; }
+    .admin-user-action-link.danger { color: var(--ispace-color-error-text); }
+    .admin-user-modal-body { display: flex; flex-direction: column; gap: var(--ispace-space-3); }
+    td .admin-user-action-link { margin-right: var(--ispace-space-3); }
+    td .admin-user-action-link:last-child { margin-right: 0; }
+    .admin-user-page-size { display: flex; align-items: center; gap: var(--ispace-space-2); font-size: var(--ispace-font-sm); color: var(--ispace-color-text-tertiary); }
+    .admin-user-page-size select { height: 30px; padding: 0 6px; font-size: var(--ispace-font-sm); border: 1px solid var(--ispace-color-border-medium); border-radius: var(--ispace-radius-sm); background: var(--ispace-color-surface-0); color: var(--ispace-color-text-primary); }
+    .user-table-col-username { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .user-table-col-nickname { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .user-table-col-email { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ispace-card">
+    <div class="ispace-card-header" style="display:flex;align-items:center;">
+        <div class="admin-user-search-row">
+            <input type="text" id="username-search" placeholder="输入用户名" class="ispace-form-input">
+            <button class="ispace-btn ispace-btn-secondary ispace-btn-sm" id="search-btn">搜索</button>
+        </div>
+        <div class="ispace-flex-center ispace-gap-3" style="margin-left:auto;">
+            <button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="create-user-btn">新增用户</button>
+            <button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="create-admin-btn">添加管理员</button>
+        </div>
+    </div>
+    <div class="ispace-card-body">
+        <div class="admin-user-table-wrap">
+            <table class="ispace-table" id="user-table">
+                <thead>
+                    <tr>
+                        <th>用户名</th>
+                        <th>昵称</th>
+                        <th>电子邮箱</th>
+                        <th>用户角色</th>
+                        <th>注册时间</th>
+                        <th>最后登录时间</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="user-table-body">
+                </tbody>
+            </table>
+        </div>
+        <div class="ispace-flex-between ispace-mt-3">
+            <div id="user-pagination" class="ispace-pagination"></div>
+            <div class="admin-user-page-size">
+                <span>每页</span>
+                <select id="page-size-select">
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                </select>
+                <span>条</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    const API_URL = "{% url 'api_admin_users' %}";
+    const PROFILE_URL = "{% url 'user_profile' %}";
+    const CSRF_TOKEN = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    function getPageSize() {
+        var sel = document.getElementById('page-size-select');
+        return sel ? parseInt(sel.value) : 10;
+    }
+    let currentPage = 1;
+    let currentFilters = {};
+
+    function getCSRFHeaders() {
+        return {
+            'X-CSRFToken': CSRF_TOKEN,
+            'Content-Type': 'application/x-www-form-urlencoded',
+        };
+    }
+
+    function formatDateTime(dateStr) {
+        if (!dateStr) return '-';
+        const d = new Date(dateStr);
+        const pad = n => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
+
+    async function loadTable(page) {
+        if (page === undefined) page = currentPage;
+        currentPage = page;
+
+        const params = new URLSearchParams();
+        params.set('page', page);
+        params.set('limit', getPageSize());
+        if (currentFilters.username) params.set('username', currentFilters.username);
+
+        try {
+            const resp = await fetch(`${API_URL}?${params.toString()}`);
+            const result = await resp.json();
+            if (result.code === 0) {
+                renderTableRows(result.data || []);
+                renderPagination(result.count || 0, page);
+            } else {
+                showError(result.data || '获取用户列表失败');
+            }
+        } catch (err) {
+            showError('网络异常，获取用户列表失败');
+        }
+    }
+
+    function renderTableRows(rows) {
+        const tbody = document.getElementById('user-table-body');
+        if (!rows.length) {
+            tbody.innerHTML = `<tr><td colspan="8" class="ispace-text-center ispace-text-tertiary" style="padding:40px;">暂无数据</td></tr>`;
+            return;
+        }
+        tbody.innerHTML = rows.map(function(row) {
+            const roleHtml = row.is_superuser
+                ? '<span class="ispace-badge ispace-badge-primary">超级管理员</span>'
+                : '<span class="ispace-badge">普通用户</span>';
+            const statusHtml = row.is_active
+                ? '<span class="admin-user-status-dot active"></span>正常'
+                : '<span class="admin-user-status-dot inactive"></span>禁用';
+            return `
+                <tr data-user-id="${row.id}">
+                    <td class="user-table-col-username" title="${escapeHtml(row.username)}">${escapeHtml(row.username)}</td>
+                    <td class="user-table-col-nickname" title="${escapeHtml(row.first_name || '-')}">${escapeHtml(row.first_name || '-')}</td>
+                    <td class="user-table-col-email" title="${escapeHtml(row.email || '-')}">${escapeHtml(row.email || '-')}</td>
+                    <td><a class="admin-user-action-link" data-action="toggle-role" data-id="${row.id}" data-super="${row.is_superuser ? '1' : '0'}" title="点击切换角色">${roleHtml}</a></td>
+                    <td class="ispace-text-sm">${formatDateTime(row.date_joined)}</td>
+                    <td class="ispace-text-sm">${formatDateTime(row.last_login)}</td>
+                    <td><a class="admin-user-action-link" data-action="toggle-active" data-id="${row.id}" data-active="${row.is_active ? '1' : '0'}" title="点击切换状态">${statusHtml}</a></td>
+                    <td>
+                        <a class="admin-user-action-link" data-action="edit" data-id="${row.id}" data-username="${escapeHtml(row.username)}">编辑</a>
+                        <a class="admin-user-action-link" data-action="pwd" data-id="${row.id}" data-username="${escapeHtml(row.username)}">密码</a>
+                        <a class="admin-user-action-link danger" data-action="delete" data-id="${row.id}" data-username="${escapeHtml(row.username)}">删除</a>
+                    </td>
+                </tr>`;
+        }).join('');
+    }
+
+    function renderPagination(count, page) {
+        const container = document.getElementById('user-pagination');
+        const totalPages = Math.ceil(count / getPageSize()) || 1;
+        let html = '';
+
+        html += `<button class="ispace-pagination-btn" data-page="${page - 1}" ${page <= 1 ? 'disabled' : ''}>上一页</button>`;
+
+        const startPage = Math.max(1, page - 2);
+        const endPage = Math.min(totalPages, page + 2);
+
+        if (startPage > 1) {
+            html += `<button class="ispace-pagination-btn" data-page="1">1</button>`;
+            if (startPage > 2) html += '<span class="ispace-pagination-info">...</span>';
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            html += `<button class="ispace-pagination-btn ${i === page ? 'ispace-active' : ''}" data-page="${i}">${i}</button>`;
+        }
+
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) html += '<span class="ispace-pagination-info">...</span>';
+            html += `<button class="ispace-pagination-btn" data-page="${totalPages}">${totalPages}</button>`;
+        }
+
+        html += `<button class="ispace-pagination-btn" data-page="${page + 1}" ${page >= totalPages ? 'disabled' : ''}>下一页</button>`;
+        html += `<span class="ispace-pagination-info">共 ${count} 条</span>`;
+
+        container.innerHTML = html;
+
+        container.querySelectorAll('.ispace-pagination-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const p = parseInt(this.dataset.page);
+                if (p >= 1 && p <= totalPages && p !== currentPage) {
+                    loadTable(p);
+                }
+            });
+        });
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    function openCreateUserModal(isAdmin) {
+        const modalId = isAdmin ? 'create-admin-modal' : 'create-user-modal';
+        const title = isAdmin ? '新增管理员' : '新建用户';
+        let existing = document.getElementById(modalId);
+        if (existing) existing.remove();
+
+        const backdrop = document.createElement('div');
+        backdrop.className = 'ispace-modal-backdrop';
+        backdrop.id = modalId;
+        backdrop.innerHTML = `
+            <div class="ispace-modal ispace-modal-sm">
+                <div class="ispace-modal-header">
+                    <h3 class="ispace-modal-title">${title}</h3>
+                    <button class="ispace-modal-close" data-ispace-modal-close>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="ispace-modal-body">
+                    <div class="admin-user-modal-body">
+                        <input class="ispace-form-input" type="text" id="${modalId}-username" placeholder="输入用户名，长度不少于5位" required>
+                        <input class="ispace-form-input" type="email" id="${modalId}-email" placeholder="输入电子邮箱" required>
+                        <input class="ispace-form-input" type="password" id="${modalId}-password" placeholder="输入密码，长度不少于6位" required>
+                    </div>
+                </div>
+                <div class="ispace-modal-footer">
+                    <button class="ispace-btn ispace-btn-secondary" data-ispace-modal-close>取消</button>
+                    <button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="${modalId}-confirm">确定</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(backdrop);
+
+        backdrop.querySelector('[data-ispace-modal-close]').addEventListener('click', function() {
+            iSpaceDoc.Modal.close(backdrop);
+            setTimeout(function() { backdrop.remove(); }, 300);
+        });
+        backdrop.querySelector(`#${modalId}-confirm`).addEventListener('click', async function() {
+            const username = document.getElementById(`${modalId}-username`).value.trim();
+            const email = document.getElementById(`${modalId}-email`).value.trim();
+            const password = document.getElementById(`${modalId}-password`).value;
+
+            if (!username || !password) {
+                showWarning('请填写完整信息');
+                return;
+            }
+
+            const body = new URLSearchParams();
+            body.set('username', username);
+            body.set('email', email);
+            body.set('password', password);
+            body.set('csrfmiddlewaretoken', CSRF_TOKEN);
+            if (isAdmin) body.set('user_type', '1');
+
+            try {
+                const resp = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: getCSRFHeaders(),
+                    body: body.toString()
+                });
+                const result = await resp.json();
+                iSpaceDoc.Modal.close(backdrop);
+                setTimeout(function() { backdrop.remove(); }, 300);
+                if (result.code === 0) {
+                    showSuccess('创建成功');
+                    loadTable(1);
+                } else {
+                    showError(result.data || '创建失败');
+                }
+            } catch (err) {
+                iSpaceDoc.Modal.close(backdrop);
+                setTimeout(function() { backdrop.remove(); }, 300);
+                showError('请检查输入信息是否正确');
+            }
+        });
+
+        iSpaceDoc.Modal.open(backdrop);
+    }
+
+    function openChangePwdModal(uid, username) {
+        const modalId = 'change-pwd-modal';
+        let existing = document.getElementById(modalId);
+        if (existing) existing.remove();
+
+        const backdrop = document.createElement('div');
+        backdrop.className = 'ispace-modal-backdrop';
+        backdrop.id = modalId;
+        backdrop.innerHTML = `
+            <div class="ispace-modal ispace-modal-sm">
+                <div class="ispace-modal-header">
+                    <h3 class="ispace-modal-title">修改密码</h3>
+                    <button class="ispace-modal-close" data-ispace-modal-close>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="ispace-modal-body">
+                    <p class="ispace-text-sm ispace-text-secondary ispace-mb-4">修改用户 [${escapeHtml(username)}] 的密码：</p>
+                    <div class="admin-user-modal-body">
+                        <input class="ispace-form-input" type="password" id="newPwd1" placeholder="输入新密码" required>
+                        <input class="ispace-form-input" type="password" id="newPwd2" placeholder="再次确认新密码" required>
+                    </div>
+                </div>
+                <div class="ispace-modal-footer">
+                    <button class="ispace-btn ispace-btn-secondary" data-ispace-modal-close>取消</button>
+                    <button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="change-pwd-confirm">确认修改</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(backdrop);
+
+        backdrop.querySelector('[data-ispace-modal-close]').addEventListener('click', function() {
+            iSpaceDoc.Modal.close(backdrop);
+            setTimeout(function() { backdrop.remove(); }, 300);
+        });
+        backdrop.querySelector('#change-pwd-confirm').addEventListener('click', async function() {
+            const pwd1 = document.getElementById('newPwd1').value;
+            const pwd2 = document.getElementById('newPwd2').value;
+            if (!pwd1 || !pwd2) {
+                showWarning('请填写新密码');
+                return;
+            }
+            if (pwd1 !== pwd2) {
+                showWarning('两次输入的密码不一致');
+                return;
+            }
+
+            const body = new URLSearchParams();
+            body.set('obj', 'pwd');
+            body.set('password', pwd1);
+            body.set('password2', pwd2);
+            body.set('csrfmiddlewaretoken', CSRF_TOKEN);
+
+            try {
+                const resp = await fetch('/admin/api/user/' + uid, {
+                    method: 'PUT',
+                    headers: getCSRFHeaders(),
+                    body: body.toString()
+                });
+                const result = await resp.json();
+                iSpaceDoc.Modal.close(backdrop);
+                setTimeout(function() { backdrop.remove(); }, 300);
+                if (result.code === 0) {
+                    showSuccess(result.data);
+                } else {
+                    showError(result.data);
+                }
+            } catch (err) {
+                iSpaceDoc.Modal.close(backdrop);
+                setTimeout(function() { backdrop.remove(); }, 300);
+                showError('修改失败');
+            }
+        });
+
+        iSpaceDoc.Modal.open(backdrop);
+    }
+
+    async function toggleUserActive(uid, username, currentlyActive) {
+        const action = currentlyActive ? '禁用' : '启用';
+        const confirmed = await iSpaceDoc.confirm({
+            title: action + '用户',
+            message: '确认' + action + '用户 ' + username + '？',
+            variant: 'warning'
+        });
+        if (!confirmed) return;
+
+        const body = new URLSearchParams();
+        body.set('obj', 'info');
+        body.set('is_active', currentlyActive ? '' : 'on');
+        body.set('csrfmiddlewaretoken', CSRF_TOKEN);
+
+        try {
+            const resp = await fetch('/admin/api/user/' + uid, {
+                method: 'PUT',
+                headers: getCSRFHeaders(),
+                body: body.toString()
+            });
+            const result = await resp.json();
+            if (result.code === 0) {
+                showSuccess(action + '成功');
+                loadTable(currentPage);
+            } else {
+                showError(result.data || action + '失败');
+            }
+        } catch (err) {
+            showError(action + '失败');
+        }
+    }
+
+    async function toggleUserRole(uid, username, currentlyAdmin) {
+        const newRole = currentlyAdmin ? '普通用户' : '超级管理员';
+        const confirmed = await iSpaceDoc.confirm({
+            title: '修改角色',
+            message: '确认将 ' + username + ' 的角色改为「' + newRole + '」？',
+            variant: 'warning'
+        });
+        if (!confirmed) return;
+
+        const body = new URLSearchParams();
+        body.set('obj', 'info');
+        body.set('is_superuser', currentlyAdmin ? 'false' : 'true');
+        body.set('csrfmiddlewaretoken', CSRF_TOKEN);
+
+        try {
+            const resp = await fetch('/admin/api/user/' + uid, {
+                method: 'PUT',
+                headers: getCSRFHeaders(),
+                body: body.toString()
+            });
+            const result = await resp.json();
+            if (result.code === 0) {
+                showSuccess('角色修改成功');
+                loadTable(currentPage);
+            } else {
+                showError(result.data || '角色修改失败');
+            }
+        } catch (err) {
+            showError('角色修改失败');
+        }
+    }
+
+    async function delUser(uid, username) {
+        const confirmed = await iSpaceDoc.confirm(
+            '警告：此操作将删除用户 ' + username + ' 及其所有文档！',
+            { title: '删除用户' }
+        );
+        if (!confirmed) return;
+
+        try {
+            const resp = await fetch('/admin/api/user/' + uid, {
+                method: 'DELETE',
+                headers: getCSRFHeaders()
+            });
+            const result = await resp.json();
+            if (result.code === 0) {
+                showSuccess('删除成功');
+                loadTable(1);
+            } else {
+                showError(result.data);
+            }
+        } catch (err) {
+            showError('删除失败');
+        }
+    }
+
+    document.getElementById('user-table-body').addEventListener('click', function(e) {
+        const target = e.target.closest('[data-action]');
+        if (!target) return;
+
+        const action = target.dataset.action;
+        const uid = target.dataset.id;
+        const username = target.dataset.username;
+
+        if (action === 'edit') {
+            location.href = PROFILE_URL + '?id=' + uid;
+        } else if (action === 'delete') {
+            delUser(uid, username);
+        } else if (action === 'pwd') {
+            openChangePwdModal(uid, username);
+        } else if (action === 'toggle-active') {
+            toggleUserActive(uid, username, target.dataset.active === '1');
+        } else if (action === 'toggle-role') {
+            toggleUserRole(uid, username, target.dataset.super === '1');
+        }
+    });
+
+    document.getElementById('search-btn').addEventListener('click', function() {
+        currentFilters.username = document.getElementById('username-search').value.trim();
+        loadTable(1);
+    });
+
+    document.getElementById('username-search').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            currentFilters.username = this.value.trim();
+            loadTable(1);
+        }
+    });
+
+    document.getElementById('create-user-btn').addEventListener('click', function() {
+        openCreateUserModal(false);
+    });
+
+    document.getElementById('create-admin-btn').addEventListener('click', function() {
+        openCreateUserModal(true);
+    });
+
+    document.getElementById('page-size-select').addEventListener('change', function() {
+        loadTable(1);
+    });
+
+    loadTable(1);
+})();
+</script>
+{% endblock %}

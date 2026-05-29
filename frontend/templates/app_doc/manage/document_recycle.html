@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+{% load doc_filter %}
+{% block title %}{% trans "文档回收站管理" %}{% endblock %}
+{% block breadcrumb %}{% include "includes/breadcrumb.html" with breadcrumbs=breadcrumb_items %}{% endblock %}
+
+{% block content %}
+<div class="ispace-page">
+    <div class="ispace-page-header">
+        <h2 class="ispace-page-title">{% trans "文档回收站管理" %}</h2>
+        <div class="ispace-page-actions">
+            <button class="ispace-btn ispace-btn-secondary ispace-btn-sm" onclick="restoreAll()">
+                {% trans "还原所有" %}
+            </button>
+            <button class="ispace-btn ispace-btn-danger ispace-btn-sm" onclick="emptyDoc()">
+                {% trans "清空回收站" %}
+            </button>
+        </div>
+    </div>
+
+    <div class="ispace-content-card">
+        <div style="overflow-x:auto;">
+            <table class="ispace-table">
+                <thead>
+                    <tr>
+                        <th>{% trans "文档名称" %}</th>
+                        <th>{% trans "上级文档" %}</th>
+                        <th>{% trans "所属" %}</th>
+                        <th>{% trans "创建时间" %}</th>
+                        <th>{% trans "删除时间" %}</th>
+                        <th>{% trans "操作" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for doc in docs %}
+                    <tr>
+                        <td>{{ doc.name }}</td>
+                        <td>{{ doc.parent_doc|get_doc_parent }}</td>
+                        <td>--</td>
+                        <td>{{ doc.create_time }}</td>
+                        <td>{{ doc.modify_time }}</td>
+                        <td>
+                            <div style="display:flex;gap:var(--ispace-spacing-2);">
+                                <button onclick="restoreDoc('{{ doc.id }}')" class="ispace-btn ispace-btn-secondary ispace-btn-sm">
+                                    {% trans "还原" %}
+                                </button>
+                                <button onclick="delDoc('{{ doc.id }}');" class="ispace-btn ispace-btn-danger ispace-btn-sm">
+                                    {% trans "删除" %}
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" style="text-align:center;padding:var(--ispace-spacing-8) var(--ispace-spacing-4);color:var(--ispace-color-text-tertiary);">{% trans "回收站为空" %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% include 'includes/pagination.html' with page_obj=docs %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    function doPost(data, onSuccess) {
+        var loadingEl = document.createElement('div');
+        loadingEl.className = 'ispace-loading-overlay';
+        loadingEl.innerHTML = '<div class="ispace-spinner"></div>';
+        document.body.appendChild(loadingEl);
+
+        var bodyData = new URLSearchParams();
+        for (var key in data) {
+            bodyData.append(key, data[key]);
+        }
+
+        fetch('{% url "doc_recycle" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: bodyData.toString()
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(r) {
+            loadingEl.remove();
+            if (r.status) {
+                if (onSuccess) onSuccess();
+            } else {
+                showError(r.data || '{% trans "操作失败" %}');
+            }
+        })
+        .catch(function() {
+            loadingEl.remove();
+            showError('{% trans "操作异常" %}');
+        });
+    }
+
+    window.delDoc = function(doc_id) {
+        iSpaceDoc.confirm({
+            title: '{% trans "删除文档" %}',
+            message: '{% trans "警告：此操作将彻底删除此文档！" %}'
+        }).then(function(confirmed) {
+            if (!confirmed) return;
+            doPost({ doc_id: doc_id, type: 'del' }, function() {
+                window.location.reload();
+            });
+        });
+    };
+
+    window.restoreDoc = function(doc_id) {
+        iSpaceDoc.confirm({
+            title: '{% trans "还原文档" %}',
+            message: '{% trans "提示：文档将还原为草稿状态！" %}'
+        }).then(function(confirmed) {
+            if (!confirmed) return;
+            doPost({ doc_id: doc_id, type: 'restore' }, function() {
+                window.location.reload();
+            });
+        });
+    };
+
+    window.emptyDoc = function() {
+        iSpaceDoc.confirm({
+            title: '{% trans "清空回收站" %}',
+            message: '{% trans "警告：此操作将彻底删除回收站所有文档！" %}'
+        }).then(function(confirmed) {
+            if (!confirmed) return;
+            doPost({ type: 'empty' }, function() {
+                window.location.reload();
+            });
+        });
+    };
+
+    window.restoreAll = function() {
+        iSpaceDoc.confirm({
+            title: '{% trans "还原回收站" %}',
+            message: '{% trans "警告：此操作将还原回收站所有文档为草稿状态！" %}'
+        }).then(function(confirmed) {
+            if (!confirmed) return;
+            doPost({ type: 'restoreAll' }, function() {
+                window.location.reload();
+            });
+        });
+    };
+
+})();
+</script>
+{% endblock %}

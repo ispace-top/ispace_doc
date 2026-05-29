@@ -1,0 +1,149 @@
+/* ============================================================
+   iSpaceDoc Design Tokens v3
+   Namespace: --ispace-{category}-{property}[-{variant}]
+   ============================================================ */
+
+:root {
+  /* ---- Font Families ---- */
+  --ispace-font-sans: 'Inter', 'PingFang SC', 'Hiragino Sans GB',
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --ispace-font-mono: 'JetBrains Mono', 'SF Mono', 'Monaco',
+    'Cascadia Code', 'Consolas', monospace;
+
+  /* ---- Font Sizes (基准 14px = 0.875rem) ---- */
+  --ispace-font-xs: 0.625rem;    /* 10px */
+  --ispace-font-sm: 0.75rem;     /* 12px */
+  --ispace-font-base: 0.875rem;  /* 14px — 正文/树节点/面包屑/表格 */
+  --ispace-font-lg: 1rem;        /* 16px */
+  --ispace-font-xl: 1.125rem;    /* 18px */
+  --ispace-font-2xl: 1.25rem;    /* 20px */
+  --ispace-font-3xl: 1.4375rem;  /* 23px */
+  --ispace-font-4xl: 1.6875rem;  /* 27px */
+
+  /* ---- Heading Sizes (基于 14px 正文等比推算) ---- */
+  --ispace-heading-h1: var(--ispace-font-4xl);   /* 1.6875rem / 27px */
+  --ispace-heading-h2: var(--ispace-font-3xl);   /* 1.4375rem / 23px */
+  --ispace-heading-h3: var(--ispace-font-2xl);   /* 1.25rem   / 20px */
+  --ispace-heading-h4: var(--ispace-font-xl);    /* 1.125rem  / 18px */
+  --ispace-heading-h5: var(--ispace-font-lg);    /* 1rem      / 16px */
+  --ispace-heading-h6: var(--ispace-font-base);  /* 0.875rem  / 14px (= 正文基准) */
+
+  /* ---- Font Weights ---- */
+  --ispace-font-light: 300;
+  --ispace-font-normal: 400;
+  --ispace-font-medium: 500;
+  --ispace-font-semibold: 600;
+  --ispace-font-bold: 700;
+
+  /* ---- Line Heights ---- */
+  --ispace-leading-tight: 1.25;
+  --ispace-leading-normal: 1.5;
+  --ispace-leading-relaxed: 1.625;
+
+  /* ---- Spacing (8px grid) ---- */
+  --ispace-space-0: 0;
+  --ispace-space-1: 0.25rem;
+  --ispace-space-2: 0.5rem;
+  --ispace-space-3: 0.75rem;
+  --ispace-space-4: 1rem;
+  --ispace-space-5: 1.25rem;
+  --ispace-space-6: 1.5rem;
+  --ispace-space-8: 2rem;
+  --ispace-space-10: 2.5rem;
+  --ispace-space-12: 3rem;
+  --ispace-space-16: 4rem;
+  --ispace-space-20: 5rem;
+
+  /* ---- Border Radius ---- */
+  --ispace-radius-none: 0;
+  --ispace-radius-sm: 0.25rem;
+  --ispace-radius-md: 0.5rem;
+  --ispace-radius-lg: 0.75rem;
+  --ispace-radius-xl: 1rem;
+  --ispace-radius-full: 9999px;
+
+  /* ---- Shadows ---- */
+  --ispace-shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --ispace-shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --ispace-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --ispace-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --ispace-shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+  /* ---- Z-Index Scale ---- */
+  --ispace-z-dropdown: 1000;
+  --ispace-z-sticky: 1030;
+  --ispace-z-sidebar: 1020;
+  --ispace-z-modal-backdrop: 3000;
+  --ispace-z-modal: 3001;
+  --ispace-z-toast: 1060;
+  --ispace-z-tooltip: 1070;
+
+  /* ---- Animation ---- */
+  --ispace-duration-fast: 150ms;
+  --ispace-duration-normal: 200ms;
+  --ispace-duration-slow: 300ms;
+  --ispace-ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ispace-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ispace-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ---- Layout Sizes ---- */
+  --ispace-header-height: 64px;
+  --ispace-sidebar-width: 260px;
+  --ispace-sidebar-collapsed-width: 40px;
+  --ispace-content-max-width: 1200px;
+  --ispace-doc-content-max-width: 860px;
+
+  /* ============================================================
+     COLOR TOKENS (Light Theme Defaults)
+     Override these in themes/dark.css via [data-ispace-theme="dark"]
+     ============================================================ */
+
+  /* Surface colors */
+  --ispace-color-surface-0: #ffffff;
+  --ispace-color-surface-50: #f8fafc;
+  --ispace-color-surface-100: #f1f5f9;
+  --ispace-color-surface-200: #e2e8f0;
+  --ispace-color-surface-hover: #f8fafc;
+  --ispace-color-surface-active: #eff6ff;
+
+  /* Text colors */
+  --ispace-color-text-primary: #0f172a;
+  --ispace-color-text-secondary: #374151;
+  --ispace-color-text-tertiary: #6b7280;
+  --ispace-color-text-quaternary: #9ca3af;
+  --ispace-color-text-inverse: #ffffff;
+  --ispace-color-text-link: #3b82f6;
+
+  /* Border colors */
+  --ispace-color-border-light: #f3f4f6;
+  --ispace-color-border-medium: #e5e7eb;
+  --ispace-color-border-strong: #d1d5db;
+
+  /* Brand colors */
+  --ispace-color-brand-50: #eff6ff;
+  --ispace-color-brand-100: #dbeafe;
+  --ispace-color-brand-200: #bfdbfe;
+  --ispace-color-brand-500: #3b82f6;
+  --ispace-color-brand-600: #2563eb;
+  --ispace-color-brand-700: #1d4ed8;
+
+  /* Status: Success */
+  --ispace-color-success-bg: #d1fae5;
+  --ispace-color-success-text: #065f46;
+  --ispace-color-success-border: #10b981;
+
+  /* Status: Warning */
+  --ispace-color-warning-bg: #fef3c7;
+  --ispace-color-warning-text: #92400e;
+  --ispace-color-warning-border: #f59e0b;
+
+  /* Status: Error */
+  --ispace-color-error-bg: #fee2e2;
+  --ispace-color-error-text: #991b1b;
+  --ispace-color-error-border: #ef4444;
+
+  /* Status: Info */
+  --ispace-color-info-bg: #cffafe;
+  --ispace-color-info-text: #164e63;
+  --ispace-color-info-border: #06b6d4;
+}
