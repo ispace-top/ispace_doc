@@ -56,6 +56,6 @@ pydantic-settings==2.7.*
 boto3==1.37.*
 oss2==2.19.*
 # 搜索
-elasticsearch-py==8.17.*
+elasticsearch==8.17.*
 # 任务队列
 celery==5.4.*
