@@ -3432,7 +3432,7 @@ def api_admin_notification_channels(request):
         {
             'id': 'wecom',
             'name': '企业微信',
-            'description': '通过企业微信应用消息推送通知（预留通道）',
+            'description': '通过企业微信应用消息推送通知（开发中，暂不可用）',
             'enabled': _check_channel_config('wecom'),
             'configurable': True,
             'summary': _get_stub_channel_summary('wecom'),
@@ -3440,7 +3440,7 @@ def api_admin_notification_channels(request):
         {
             'id': 'dingtalk',
             'name': '钉钉',
-            'description': '通过钉钉工作通知推送（预留通道）',
+            'description': '通过钉钉工作通知推送（开发中，暂不可用）',
             'enabled': _check_channel_config('dingtalk'),
             'configurable': True,
             'summary': _get_stub_channel_summary('dingtalk'),
@@ -3448,7 +3448,7 @@ def api_admin_notification_channels(request):
         {
             'id': 'oa',
             'name': '企业OA',
-            'description': '通过企业 OA 系统推送通知（预留通道）',
+            'description': '通过企业 OA 系统推送通知（开发中，暂不可用）',
             'enabled': _check_channel_config('oa'),
             'configurable': True,
             'summary': _get_stub_channel_summary('oa'),
@@ -3456,7 +3456,7 @@ def api_admin_notification_channels(request):
         {
             'id': 'webhook',
             'name': 'Webhook',
-            'description': '通过自定义 Webhook URL 推送通知（预留通道）',
+            'description': '通过自定义 Webhook URL 推送通知（开发中，暂不可用）',
             'enabled': _check_channel_config('webhook'),
             'configurable': True,
             'summary': _get_stub_channel_summary('webhook'),
@@ -3519,7 +3519,7 @@ def _check_channel_config(channel_id):
 def _get_stub_channel_summary(channel_id):
     """获取预留通道的配置摘要。"""
     if _check_channel_config(channel_id):
-        return {'状态': '已启用（预留，未实际发送）'}
+        return {'状态': '已启用（开发中，暂不可用）'}
     return {'状态': '未启用'}
 
 
