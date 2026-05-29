@@ -3425,7 +3425,7 @@ def api_admin_notification_channels(request):
             'id': 'email',
             'name': '邮件通知',
             'description': '通过 SMTP 邮件发送通知，支持每日汇总',
-            'enabled': False,
+            'enabled': _check_channel_config('email'),
             'configurable': True,
             'summary': _get_email_channel_summary(),
         },
