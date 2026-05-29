@@ -1308,7 +1308,7 @@ def admin_site_config(request):
 
 # 检测版本更新（功能已禁用，保留接口避免前端报错）
 def check_update(request):
-    """检查版本更新——通过 GitHub Releases API 获取最新版本。"""
+    """检查版本更新——通过 GitHub Releases API 按语义版本号获取真正最新版本。"""
     import re
 
     current_version = settings.VERSIONS.strip()
@@ -1322,37 +1322,46 @@ def check_update(request):
         'download_url': '',
     }
 
-    GITHUB_API = 'https://api.github.com/repos/ispace-top/ispace_doc/releases/latest'
+    GITHUB_API = 'https://api.github.com/repos/ispace-top/ispace_doc/releases'
 
     try:
         import requests
-        resp = requests.get(GITHUB_API, timeout=15, headers={'Accept': 'application/vnd.github+json'})
+        resp = requests.get(GITHUB_API, timeout=15, headers={'Accept': 'application/vnd.github+json'}, params={'per_page': 20})
         if resp.status_code == 403 and 'X-RateLimit-Remaining' in resp.headers:
-            # 使用 GitHub API 频率限制豁免的回退 HEAD 请求
             result['update_info'] = _('检查更新请求过于频繁，请稍后重试')
             return JsonResponse(result)
         if resp.status_code != 200:
             result['update_info'] = _('检查更新失败：GitHub API 返回 {code}').format(code=resp.status_code)
             return JsonResponse(result)
 
-        release = resp.json()
-        tag_name = release.get('tag_name', '')
-        latest = tag_name.lstrip('v').strip()
-        if not latest or not re.match(r'^\d', latest):
+        releases = resp.json()
+        if not releases:
             result['update_info'] = _('未找到正式版本发布记录')
             return JsonResponse(result)
 
-        result['latest_version'] = latest
-        result['download_url'] = release.get('html_url', '')
+        # 按语义版本号找出最大者（而非按发布时间）
+        best = releases[0]
+        best_ver = best.get('tag_name', '').lstrip('v').strip()
+        for rel in releases[1:]:
+            tag = rel.get('tag_name', '').lstrip('v').strip()
+            if tag and re.match(r'^\d', tag) and _version_greater(tag, best_ver):
+                best = rel
+                best_ver = tag
 
-        if _version_greater(latest, current_version):
+        if not best_ver or not re.match(r'^\d', best_ver):
+            result['update_info'] = _('未找到正式版本发布记录')
+            return JsonResponse(result)
+
+        result['latest_version'] = best_ver
+        result['download_url'] = best.get('html_url', '')
+
+        if _version_greater(best_ver, current_version):
             result['has_update'] = True
             result['update_info'] = _('发现新版本 v{version}，当前版本为 v{current}').format(
-                version=latest, current=current_version
+                version=best_ver, current=current_version
             )
-            body = release.get('body', '')
+            body = best.get('body', '')
             if body:
-                # 取 release body 前 500 字符作为更新日志
                 result['changelog'] = body[:500]
         else:
             result['update_info'] = _('当前已是最新版本 v{version}').format(version=current_version)
