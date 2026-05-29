@@ -255,17 +255,11 @@ SESSION_COOKIE_HTTPONLY = CONFIG.getboolean('session','cookie_httponly',fallback
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'frontend', 'static'), ]
 
-# Whitenoise — 生产环境静态文件服务（Docker uWSGI），开发环境自动禁用
+# Whitenoise — 静态文件服务（Docker uWSGI 生产环境；本地 runserver 由 Django 自带处理）
 MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
-
-if DEBUG:
-    # 本地开发: Django runserver 直接从 STATICFILES_DIRS 提供静态文件
-    STATIC_ROOT = None
-else:
-    # Docker 生产: collectstatic → STATIC_ROOT → Whitenoise 提供服务
-    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # 媒体文件
 MEDIA_URL = '/media/'
