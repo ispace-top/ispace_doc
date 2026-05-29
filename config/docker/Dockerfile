@@ -49,6 +49,11 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 COPY . /app/iSpaceDoc/
 WORKDIR /app/iSpaceDoc
 
+# 备份配置模板（用于首次部署时初始化持久化卷）
+RUN mkdir -p /app/iSpaceDoc/config/conf-templates \
+    && cp /app/iSpaceDoc/config/conf/config-lite.ini /app/iSpaceDoc/config/conf-templates/ \
+    && cp /app/iSpaceDoc/config/conf/config-docker.ini /app/iSpaceDoc/config/conf-templates/
+
 # 设置启动脚本权限
 RUN chmod +x config/docker/entrypoint.sh config/tests/test_django.py
 

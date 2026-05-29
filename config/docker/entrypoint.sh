@@ -20,6 +20,20 @@ fi
 # 确保持久化目录存在
 mkdir -p /app/iSpaceDoc/data /app/iSpaceDoc/media /app/iSpaceDoc/log /app/iSpaceDoc/whoosh_index
 
+# 初始化持久化配置文件（首次部署时从镜像默认配置复制）
+for _cfg in config-lite.ini config-docker.ini; do
+    _cfg_path="/app/iSpaceDoc/config/conf/${_cfg}"
+    if [ -d "$_cfg_path" ]; then
+        # Docker bind mount 的空目录，删除后从镜像模板复制
+        echo "Replacing directory ${_cfg_path} with default config file..."
+        rm -rf "$_cfg_path"
+    fi
+    if [ ! -f "$_cfg_path" ] && [ -f "/app/iSpaceDoc/config/conf-templates/${_cfg}" ]; then
+        cp "/app/iSpaceDoc/config/conf-templates/${_cfg}" "$_cfg_path"
+        echo "Created ${_cfg} from default template."
+    fi
+done
+
 # 执行传入的命令，如果 uwsgi ini 文件缺失则回退到命令行参数
 if [ "$1" = "uwsgi" ] && [ "$2" = "--ini" ]; then
     UWSGI_INI="$3"
