@@ -2,6 +2,7 @@
  * iSpaceDoc Author Card Popup
  * Hover on elements with [data-user-id] to show user info card.
  * 300ms enter delay, 200ms leave delay, async loading with skeleton.
+ * Card always appears above the trigger, fade-in only (150ms, no position animation).
  */
 window.iSpaceDoc = window.iSpaceDoc || {};
 window.iSpaceDoc.AuthorCard = (() => {
@@ -139,24 +140,24 @@ window.iSpaceDoc.AuthorCard = (() => {
     cardEl.addEventListener('mouseleave', function() { hide(); });
   }
 
-  /* ---- Position card ---- */
+  /* ---- Position card — always above the trigger ---- */
   function position(trigger) {
     if (!cardEl || !trigger) return;
     var rect = trigger.getBoundingClientRect();
     var cardW = 280;
     var cardH = cardEl.offsetHeight || 180;
     var gap = 8;
-    // 以触发元素中心为基准，保证嵌套评论中卡片不随缩进偏移
+    // 以触发元素中心为基准
     var left = rect.left + rect.width / 2 - cardW / 2;
-    var top = rect.bottom + gap;
+    var top = rect.top - cardH - gap;
 
     // Keep within viewport
     if (left + cardW > window.innerWidth - 12) left = window.innerWidth - cardW - 12;
     if (left < 8) left = 8;
-    // If not enough room below, show above
-    if (top + cardH > window.innerHeight) {
-      top = rect.top - cardH - gap;
-      if (top < 8) top = 8;
+    // If not enough room above, fall back to below
+    if (top < 8) {
+      top = rect.bottom + gap;
+      if (top + cardH > window.innerHeight) top = window.innerHeight - cardH - 8;
     }
 
     cardEl.style.left = left + 'px';

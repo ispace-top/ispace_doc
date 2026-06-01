@@ -978,8 +978,7 @@ a.ispace-card:hover {
   padding: var(--ispace-space-4);
   opacity: 0;
   visibility: hidden;
-  transform: translateY(4px);
-  transition: all var(--ispace-duration-fast) var(--ispace-ease-out);
+  transition: opacity 150ms ease-out, visibility 150ms ease-out;
   pointer-events: none;
 }
 .ispace-author-card.ispace-visible {

@@ -451,15 +451,17 @@
           var itemClass = depth > 0 ? ' ispace-inline-comment-reply-item' : '';
           var avatarHtml = '';
           if (comment.user_avatar) {
-            avatarHtml = '<img class="ispace-inline-comment-avatar" src="' + escapeHtml(comment.user_avatar) + '" alt="" data-user-id="' + (comment.user_id || '') + '">';
+            avatarHtml = '<img class="ispace-inline-comment-avatar" src="' + escapeHtml(comment.user_avatar) + '" alt="">';
           } else {
             var initial = (comment.user_name || '?').charAt(0).toUpperCase();
-            avatarHtml = '<span class="ispace-inline-comment-avatar ispace-inline-comment-avatar-initial" data-user-id="' + (comment.user_id || '') + '">' + initial + '</span>';
+            avatarHtml = '<span class="ispace-inline-comment-avatar ispace-inline-comment-avatar-initial">' + initial + '</span>';
           }
           return '<div class="ispace-inline-comment-item' + itemClass + '">' +
             '<div class="ispace-inline-comment-item-header">' +
+            '<span class="ispace-inline-comment-author" data-user-id="' + (comment.user_id || '') + '">' +
             avatarHtml +
-            '<strong data-user-id="' + (comment.user_id || '') + '">' + escapeHtml(comment.user_name) + '</strong>' +
+            '<strong>' + escapeHtml(comment.user_name) + '</strong>' +
+            '</span>' +
             '<span class="ispace-inline-comment-time">' + comment.create_time + '</span>' +
             deleteBtn +
             '</div>' +

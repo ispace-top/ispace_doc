@@ -41,6 +41,7 @@
 .ispace-comment-item { padding: var(--ispace-space-3) 0; border-bottom: 1px solid var(--ispace-color-border-light); }
 .ispace-comment-item:last-child { border-bottom: none; }
 .ispace-comment-item-header { display: flex; align-items: center; gap: var(--ispace-space-2); margin-bottom: var(--ispace-space-1); }
+.ispace-comment-author { display: inline-flex; align-items: center; gap: var(--ispace-space-2); cursor: pointer; }
 .ispace-comment-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--ispace-color-brand-100); color: var(--ispace-color-brand-600); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: var(--ispace-font-semibold); flex-shrink: 0; }
 .ispace-comment-user { font-size: var(--ispace-font-sm); font-weight: var(--ispace-font-medium); color: var(--ispace-color-text-primary); }
 .ispace-comment-time { font-size: var(--ispace-font-xs); color: var(--ispace-color-text-tertiary); margin-left: var(--ispace-space-2); }
@@ -107,8 +108,10 @@
     function renderComment(comment) {
         var html = '<div class="ispace-comment-item" id="comment-' + comment.id + '">';
         html += '<div class="ispace-comment-item-header">';
-        html += '<span class="ispace-comment-avatar" data-user-id="' + (comment.user_id || '') + '">' + avatarLetter(comment.user_name) + '</span>';
-        html += '<span class="ispace-comment-user" data-user-id="' + (comment.user_id || '') + '">' + escapeHTML(comment.user_name) + '</span>';
+        html += '<span class="ispace-comment-author" data-user-id="' + (comment.user_id || '') + '">';
+        html += '<span class="ispace-comment-avatar">' + avatarLetter(comment.user_name) + '</span>';
+        html += '<span class="ispace-comment-user">' + escapeHTML(comment.user_name) + '</span>';
+        html += '</span>';
         html += '<span class="ispace-comment-time">' + timeAgo(comment.create_time) + '</span>';
         html += '</div>';
         html += '<div class="ispace-comment-body">' + (comment.content_html || escapeHTML(comment.content)) + '</div>';
