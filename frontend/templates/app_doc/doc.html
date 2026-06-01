@@ -1382,15 +1382,19 @@ document.addEventListener('DOMContentLoaded',function(){
                         var isSelf = Math.abs(fromX - toX) < 2;
                         var color = '#475569';
                         if (isSelf) {
-                            // Self-referencing: draw curved loop to the right
-                            var loopR = 24;
-                            var cx = fromX + 8, cy = y;
-                            var pathStr = 'M' + fromX + ' ' + y + ' C' + (fromX + loopR) + ' ' + (y - loopR/2) + ' ' + (fromX + loopR) + ' ' + (y + loopR/2) + ' ' + fromX + ' ' + (y + loopR);
+                            // Self-referencing: semicircle to the right with arrow
+                            var r = 20;
+                            var cx = fromX + r;
+                            var yy = y;
+                            // Semicircle path: M x y, A rx ry 0 0 1 x2 y2
+                            var pathStr = 'M' + fromX + ' ' + yy + ' A' + r + ' ' + r + ' 0 0 1 ' + fromX + ' ' + (yy + r * 2);
                             var line = paper.path(pathStr).attr({stroke: color, 'stroke-width': 1.5, fill: 'none'});
                             if (isReturn) line.attr({'stroke-dasharray': '6,4'});
-                            paper.path('M' + fromX + ' ' + (y + loopR) + ' L' + (fromX + 5) + ' ' + (y + loopR - 4) + ' L' + (fromX - 4) + ' ' + (y + loopR + 2) + ' Z')
+                            // Arrowhead at end (pointing left/down into actor)
+                            var ey = yy + r * 2;
+                            paper.path('M' + fromX + ' ' + ey + ' L' + (fromX + 6) + ' ' + (ey - 5) + ' L' + (fromX - 2) + ' ' + (ey - 3) + ' Z')
                                 .attr({fill: color, stroke: 'none'});
-                            paper.text(fromX + loopR + 10, y, (sig.message || '').replace(/\\\\n/g, ' '))
+                            paper.text(fromX + r + 10, yy + r, (sig.message || '').replace(/\\\\n/g, ' '))
                                 .attr({'font-size': 12, fill: color, 'text-anchor': 'start'});
                         } else {
                             var line = paper.path('M' + fromX + ' ' + y + ' L' + toX + ' ' + y)
