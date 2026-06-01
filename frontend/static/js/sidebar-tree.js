@@ -205,10 +205,15 @@
 
 	var _contextNode = null;
 
+	function _isLoggedIn() {
+		return !!(window.__ISPACEDOC__ && window.__ISPACEDOC__.isAuthenticated);
+	}
+
 	// Context menu on sidebar nav — tree rows + empty space
 	sidebarNav.addEventListener('contextmenu', function(e) {
 		var row = e.target.closest('.ispace-tree-row');
 		if (!row) {
+			if (!_isLoggedIn()) return;
 			_contextNode = null;
 			var items = [];
 			items.push({label: '新建文档', action: 'new-doc-root:'});
