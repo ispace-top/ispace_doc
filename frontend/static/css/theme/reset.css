@@ -53,6 +53,12 @@ ul, ol {
   list-style: none;
 }
 
+/* 文档正文内容区域恢复列表样式 */
+.vditor-reset ul { list-style: disc; }
+.vditor-reset ol { list-style: decimal; }
+.vditor-reset ul ul { list-style: circle; }
+.vditor-reset ul ul ul { list-style: square; }
+
 table {
   border-collapse: collapse;
   width: 100%;
