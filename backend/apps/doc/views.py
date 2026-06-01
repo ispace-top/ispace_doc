@@ -3019,8 +3019,7 @@ def document_comments_handler(request, pro_id, doc_id):
             from backend.apps.doc.services import NotificationService
             doc_url = f'/pages/{doc_id}/'
             for mu in mentioned_users:
-                if mu != request.user:
-                    NotificationService.send(
+                NotificationService.send(
                         recipient=mu, notification_type='mention', title='有人 @了你',
                         sender=request.user, send_email=True,
                         body=f'{request.user.first_name or request.user.username} 在文档评论中 @了你',
@@ -3126,7 +3125,7 @@ def _serialize_comment(comment, current_user, depth=0):
         'content_html': _render_comment_html(comment.content, mentioned),
         'user_id': comment.user.id,
         'user_name': comment.user.first_name or comment.user.username,
-        'user_avatar': comment.user.avatar.url if hasattr(comment.user, 'avatar') and comment.user.avatar else None,
+        'user_avatar': comment.user.profile.avatar.url if hasattr(comment.user, 'profile') and comment.user.profile.avatar else None,
         'create_time': comment.create_time.strftime('%Y-%m-%d %H:%M'),
         'parent_id': comment.parent_id,
         'depth': depth,
@@ -3173,6 +3172,11 @@ def inline_comments(request, pro_id=None, doc_id=None):
         for c in all_comments:
             children_map.setdefault(c.parent_id, []).append(c)
 
+        def _get_user_avatar(user):
+            if hasattr(user, 'profile') and user.profile.avatar:
+                return user.profile.avatar.url
+            return None
+
         def _build_inline_tree(comment_list):
             result = []
             for c in comment_list:
@@ -3183,6 +3187,7 @@ def inline_comments(request, pro_id=None, doc_id=None):
                     'id': c.id,
                     'user_id': c.user_id,
                     'user_name': c.user.first_name or c.user.username,
+                    'user_avatar': _get_user_avatar(c.user),
                     'content': c.content,
                     'content_html': _render_comment_html(c.content, c_mentioned),
                     'create_time': c.create_time.strftime('%Y-%m-%d %H:%M'),
@@ -3214,6 +3219,7 @@ def inline_comments(request, pro_id=None, doc_id=None):
                 'id': c.id,
                 'user_id': c.user_id,
                 'user_name': c.user.first_name or c.user.username,
+                'user_avatar': _get_user_avatar(c.user),
                 'content': c.content,
                 'content_html': _render_comment_html(c.content, c_top_mentioned),
                 'create_time': c.create_time.strftime('%Y-%m-%d %H:%M'),
@@ -3306,7 +3312,7 @@ def inline_comments(request, pro_id=None, doc_id=None):
     if mentioned:
         mentioned_users = User.objects.filter(username__in=mentioned, is_active=True)
         for mu in mentioned_users:
-            if mu != request.user and mu != (parent.user if parent else None):
+            if mu != (parent.user if parent else None):
                 NotificationService.send(
                     recipient=mu, notification_type='mention', title='有人 @了你',
                     sender=request.user, send_email=True,

@@ -1203,7 +1203,7 @@ function getInlineEditorPreContent() {
     if (m === 1) return JSON.stringify(_getOptimizedSheets());
     var ed = window._inlineEditor;
     if (!ed) return '';
-    return _fixCodeFences(ed.getMarkdown ? ed.getMarkdown() : '');
+    return _fixCodeFences(ed.getValue ? ed.getValue() : '');
 }
 
 // Fix code blocks whose ``` fences were stripped by Vditor's custom handlers

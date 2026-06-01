@@ -448,8 +448,16 @@
           }
           var replyBtn = '<button class="ispace-inline-comment-reply-btn" data-id="' + comment.id + '">回复</button>';
           var itemClass = depth > 0 ? ' ispace-inline-comment-reply-item' : '';
+          var avatarHtml = '';
+          if (comment.user_avatar) {
+            avatarHtml = '<img class="ispace-inline-comment-avatar" src="' + escapeHtml(comment.user_avatar) + '" alt="" data-user-id="' + (comment.user_id || '') + '">';
+          } else {
+            var initial = (comment.user_name || '?').charAt(0).toUpperCase();
+            avatarHtml = '<span class="ispace-inline-comment-avatar ispace-inline-comment-avatar-initial" data-user-id="' + (comment.user_id || '') + '">' + initial + '</span>';
+          }
           return '<div class="ispace-inline-comment-item' + itemClass + '">' +
             '<div class="ispace-inline-comment-item-header">' +
+            avatarHtml +
             '<strong data-user-id="' + (comment.user_id || '') + '">' + escapeHtml(comment.user_name) + '</strong>' +
             '<span class="ispace-inline-comment-time">' + comment.create_time + '</span>' +
             deleteBtn +

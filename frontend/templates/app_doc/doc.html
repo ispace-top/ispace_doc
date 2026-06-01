@@ -340,7 +340,7 @@
 {% endblock %}
 
 {% block styles %}
-{% if doc.editor_mode == 0 %}
+{% if doc.editor_mode == 0 or doc.editor_mode == 2 or doc.editor_mode == 3 %}
 <link rel="stylesheet" href="{% static 'vditor/dist/index.css' %}?version={{ isdoc_version }}">
 {% elif doc.editor_mode == 1 %}
 <link rel="stylesheet" href="{% static 'luckysheet/dist/css/luckysheet.css' %}?version={{ isdoc_version }}">
@@ -514,7 +514,7 @@
     margin: 24px 48px;
 }
 </style>
-<div class="ispace-watermark-layer" id="watermark-layer"></div>
+<div class="ispace-watermark-layer" id="watermark-layer" aria-hidden="true"></div>
 <script>
 (function(){
     var layer = document.getElementById("watermark-layer");
@@ -655,7 +655,7 @@
 <script src="{% static 'viewerjs/viewer.min.js' %}?version={{ isdoc_version }}"></script>
 <script src="{% static 'prismjs/prism.js' %}?version={{ isdoc_version }}"></script>
 <script src="{% static 'js/attachment-preview.js' %}?version={{ isdoc_version }}"></script>
-{% if doc.editor_mode == 0 %}
+{% if doc.editor_mode == 0 or doc.editor_mode == 2 or doc.editor_mode == 3 %}
 <script src="{% static 'vditor/dist/index.min.js' %}?version={{ isdoc_version }}"></script>
 <script src="{% static 'markdown-ext/marked/marked.min.js' %}?version={{ isdoc_version }}"></script>
 <script src="{% static 'js/icon-picker.js' %}?version={{ isdoc_version }}"></script>
