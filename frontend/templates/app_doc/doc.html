@@ -1382,19 +1382,24 @@ document.addEventListener('DOMContentLoaded',function(){
                         var isSelf = Math.abs(fromX - toX) < 2;
                         var color = '#475569';
                         if (isSelf) {
-                            // Self-referencing: semicircle to the right with arrow
-                            var r = 20;
-                            var cx = fromX + r;
+                            // Self-referencing: horizontal → arc → horizontal back with arrow
+                            var r = 14, hExt = 20;
                             var yy = y;
-                            // Semicircle path: M x y, A rx ry 0 0 1 x2 y2
-                            var pathStr = 'M' + fromX + ' ' + yy + ' A' + r + ' ' + r + ' 0 0 1 ' + fromX + ' ' + (yy + r * 2);
+                            var x1 = fromX + hExt;
+                            var x2 = fromX + hExt;
+                            var y1 = yy;
+                            var y2 = yy + r * 2;
+                            // ──┐ horizontal right → arc down → ──┘ horizontal left back
+                            var pathStr = 'M' + fromX + ' ' + yy
+                                + ' L' + x1 + ' ' + y1
+                                + ' A' + r + ' ' + r + ' 0 0 1 ' + x2 + ' ' + y2
+                                + ' L' + fromX + ' ' + y2;
                             var line = paper.path(pathStr).attr({stroke: color, 'stroke-width': 1.5, fill: 'none'});
                             if (isReturn) line.attr({'stroke-dasharray': '6,4'});
-                            // Arrowhead at end (pointing left/down into actor)
-                            var ey = yy + r * 2;
-                            paper.path('M' + fromX + ' ' + ey + ' L' + (fromX + 6) + ' ' + (ey - 5) + ' L' + (fromX - 2) + ' ' + (ey - 3) + ' Z')
+                            // Arrowhead pointing left
+                            paper.path('M' + fromX + ' ' + y2 + ' L' + (fromX + 6) + ' ' + (y2 - 4) + ' L' + (fromX + 6) + ' ' + (y2 + 4) + ' Z')
                                 .attr({fill: color, stroke: 'none'});
-                            paper.text(fromX + r + 10, yy + r, (sig.message || '').replace(/\\\\n/g, ' '))
+                            paper.text(x1 + r + 8, yy + r, (sig.message || '').replace(/\\\\n/g, ' '))
                                 .attr({'font-size': 12, fill: color, 'text-anchor': 'start'});
                         } else {
                             var line = paper.path('M' + fromX + ' ' + y + ' L' + toX + ' ' + y)
