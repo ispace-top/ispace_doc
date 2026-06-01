@@ -1349,40 +1349,49 @@ document.addEventListener('DOMContentLoaded',function(){
                 try {
                     var diagram = Diagram.parse(sCode);
                     sBlock.innerHTML = '';
-                    // Calculate canvas size based on actors and signals
                     var actors = diagram.actors;
                     var signals = diagram.signals;
-                    var w = Math.max(500, Object.keys(actors).length * 150);
-                    var h = Math.max(150, signals.length * 40 + 40);
-                    var paper = Raphael(sBlock, w, h);
-                    // Layout actors evenly across the top
                     var actorKeys = Object.keys(actors);
+                    var actorCount = actorKeys.length;
+                    var nSignals = signals.length;
+                    var margin = 130, rightMargin = 40;
+                    var step = actorCount > 1 ? (800 - margin - rightMargin) / (actorCount - 1) : 0;
+                    var w = actorCount > 1 ? margin + (actorCount - 1) * step + rightMargin : 500;
+                    var h = Math.max(150, nSignals * 38 + 50);
+                    var paper = Raphael(sBlock, w, h);
+                    // Map actor index AND name -> x position
                     var actorX = {};
-                    var margin = 120;
-                    var step = (w - margin * 2) / Math.max(1, actorKeys.length - 1);
                     actorKeys.forEach(function(key, idx) {
-                        var x = actorKeys.length === 1 ? w / 2 : margin + idx * step;
-                        actorX[key] = x;
-                        // Actor box
+                        var x = actorCount === 1 ? w / 2 : margin + idx * step;
                         var name = actors[key].name || key;
-                        var tw = Math.max(60, name.length * 10);
-                        paper.rect(x - tw/2, 10, tw, 30, 4).attr({fill: '#e8f4fd', stroke: '#3b82f6', 'stroke-width': 1.5});
+                        actorX[key] = x;
+                        actorX[name] = x;  // allow lookup by name too
+                        var tw = Math.max(50, name.length * 14 + 10);
+                        paper.rect(x - tw / 2, 10, tw, 30, 4).attr({fill: '#e8f4fd', stroke: '#3b82f6', 'stroke-width': 1.5});
                         paper.text(x, 25, name).attr({'font-size': 13, fill: '#1e293b'});
                         // Lifeline
-                        paper.path('M' + x + ' 40 L' + x + ' ' + (h - 20)).attr({stroke: '#cbd5e1', 'stroke-dasharray': '4,4'});
+                        paper.path('M' + x + ' 40 L' + x + ' ' + (h - 16)).attr({stroke: '#cbd5e1', 'stroke-dasharray': '4,4'});
                     });
                     // Draw signals
                     signals.forEach(function(sig, idx) {
-                        var y = 60 + idx * 32;
-                        var fromX = actorX[sig.actorA.name] || margin;
-                        var toX = actorX[sig.actorB.name] || w - margin;
-                        var isReturn = sig.type === 'Signal' && sig.isReturn;
-                        var arrowColor = '#64748b';
-                        paper.path('M' + fromX + ' ' + y + ' L' + toX + ' ' + y)
-                            .attr({stroke: arrowColor, 'stroke-width': 1.5, 'arrow-end': 'block-midium'});
-                        var text = (sig.title || '').replace(/\\\\n/g, ' ');
+                        var y = 60 + idx * 36;
+                        var fromX = actorX[sig.actorA.name];
+                        var toX = actorX[sig.actorB.name];
+                        if (fromX == null || toX == null) return;
+                        var isReturn = String(sig.linetype) === '1' || String(sig.arrowtype) === '1';
+                        var color = '#475569';
+                        var line = paper.path('M' + fromX + ' ' + y + ' L' + toX + ' ' + y)
+                            .attr({stroke: color, 'stroke-width': 1.5});
+                        if (isReturn) line.attr({'stroke-dasharray': '6,4'});
+                        // Arrowhead
+                        var headLen = 8;
+                        var ax = toX - (toX > fromX ? 1 : -1) * headLen;
+                        var ay1 = y - 4, ay2 = y + 4;
+                        paper.path('M' + toX + ' ' + y + ' L' + ax + ' ' + ay1 + ' L' + ax + ' ' + ay2 + ' Z')
+                            .attr({fill: color, stroke: 'none'});
+                        var text = (sig.message || '').replace(/\\\\n/g, ' ');
                         var midX = (fromX + toX) / 2;
-                        paper.text(midX, y - 8, text).attr({'font-size': 12, fill: '#475569'});
+                        paper.text(midX, y - 9, text).attr({'font-size': 12, fill: color});
                     });
                 } catch(e) {}
             }
