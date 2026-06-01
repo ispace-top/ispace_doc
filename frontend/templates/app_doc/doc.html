@@ -658,8 +658,6 @@
 {% if doc.editor_mode == 0 or doc.editor_mode == 2 or doc.editor_mode == 3 %}
 <script src="{% static 'vditor/dist/index.min.js' %}?version={{ isdoc_version }}"></script>
 <script src="{% static 'markdown-ext/marked/marked.min.js' %}?version={{ isdoc_version }}"></script>
-<script src="{% static 'markdown-ext/sequence/raphael.min.js' %}?version={{ isdoc_version }}"></script>
-<script src="{% static 'markdown-ext/sequence/sequence-diagram.min.js' %}?version={{ isdoc_version }}"></script>
 <script src="{% static 'markdown-ext/plantuml/plantuml-encoder.min.js' %}?version={{ isdoc_version }}"></script>
 <script src="{% static 'js/icon-picker.js' %}?version={{ isdoc_version }}"></script>
 {% elif doc.editor_mode == 1 %}
