@@ -145,7 +145,8 @@ window.iSpaceDoc.AuthorCard = (() => {
     var rect = trigger.getBoundingClientRect();
     var cardW = 280;
     var gap = 8;
-    var left = rect.left;
+    // 以触发元素中心为基准，保证嵌套评论中卡片不随缩进偏移
+    var left = rect.left + rect.width / 2 - cardW / 2;
     var top = rect.bottom + gap;
 
     // Keep within viewport
