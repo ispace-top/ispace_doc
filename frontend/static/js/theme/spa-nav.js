@@ -127,6 +127,19 @@
       if (docLink) {
         docLink.classList.add('ispace-active');
         expandAncestors(docLink);
+        // 展开当前文档自身的下级子文档列表
+        var node = docLink.closest('.ispace-tree-node');
+        if (node) {
+          var ownChildren = node.querySelector(':scope > .ispace-tree-children');
+          if (ownChildren) {
+            ownChildren.style.display = 'block';
+            var ownToggle = node.querySelector(':scope > .ispace-tree-row > .ispace-tree-toggle');
+            if (ownToggle && ownToggle.getAttribute('data-has-children') === '1') {
+              updateTreeIconSpa(ownToggle, 'folder-open');
+              ownToggle.setAttribute('data-expanded', '1');
+            }
+          }
+        }
       }
     } else if (pathname === '/') {
       var homeLink = document.querySelector('#' + SIDEBAR_NAV_ID + ' .ispace-tree-link[href="/"]');
