@@ -318,8 +318,9 @@
       fragment.appendChild(mark);
       if (after) fragment.appendChild(document.createTextNode(after));
 
-      textNode.parentNode.replaceChild(fragment, textNode);
-      textNode.parentNode.normalize();
+      var parent = textNode.parentNode;
+      parent.replaceChild(fragment, textNode);
+      parent.normalize();
     }
   }
 
@@ -736,8 +737,9 @@
         fragment.appendChild(span);
         if (after) fragment.appendChild(document.createTextNode(after));
 
-        textNode.parentNode.replaceChild(fragment, textNode);
-        textNode.parentNode.normalize();
+        var parent2 = textNode.parentNode;
+        parent2.replaceChild(fragment, textNode);
+        parent2.normalize();
       }
     });
   }

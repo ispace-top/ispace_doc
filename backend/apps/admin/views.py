@@ -1296,9 +1296,17 @@ def admin_setting(request):
 def admin_site_config(request):
     try:
         raw = json.loads(request.body.decode('utf-8'))
-        data_json = json.loads(raw.get('data', '[]'))
+        if isinstance(raw, list):
+            data_json = raw
+        elif isinstance(raw, dict):
+            data_json = json.loads(raw.get('data', '[]'))
+        else:
+            data_json = []
     except (json.JSONDecodeError, UnicodeDecodeError):
-        data_json = json.loads(request.POST.get("data", '[]'))
+        try:
+            data_json = json.loads(request.POST.get("data", '[]'))
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            data_json = []
     try:
         for d in data_json:
             if d['type'] == 'email' and d['name'] == 'pwd':
