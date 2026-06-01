@@ -3248,7 +3248,7 @@ def inline_comments(request, pro_id=None, doc_id=None):
 
     if not content:
         return JsonResponse({'status': False, 'data': _('评论内容不能为空')})
-    if len(selected_text) < 1:
+    if not parent_id and len(selected_text) < 1:
         return JsonResponse({'status': False, 'data': _('划词文本不能为空')})
 
     # 上限校验（每文档最多 500 条）
@@ -3268,6 +3268,10 @@ def inline_comments(request, pro_id=None, doc_id=None):
     expected_hash = hashlib.md5(selected_text.encode('utf-8')).hexdigest()
     if anchor_hash and anchor_hash != expected_hash:
         return JsonResponse({'status': False, 'data': _('划词文本校验失败，请重试')})
+
+    # 回复已有评论时，继承父评论的划词文本
+    if parent and not selected_text:
+        selected_text = parent.selected_text
 
     comment = InlineComment.objects.create(
         doc=doc,

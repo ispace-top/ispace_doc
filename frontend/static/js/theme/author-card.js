@@ -144,6 +144,7 @@ window.iSpaceDoc.AuthorCard = (() => {
     if (!cardEl || !trigger) return;
     var rect = trigger.getBoundingClientRect();
     var cardW = 280;
+    var cardH = cardEl.offsetHeight || 180;
     var gap = 8;
     // 以触发元素中心为基准，保证嵌套评论中卡片不随缩进偏移
     var left = rect.left + rect.width / 2 - cardW / 2;
@@ -153,8 +154,8 @@ window.iSpaceDoc.AuthorCard = (() => {
     if (left + cardW > window.innerWidth - 12) left = window.innerWidth - cardW - 12;
     if (left < 8) left = 8;
     // If not enough room below, show above
-    if (top + 180 > window.innerHeight) {
-      top = rect.top - 180 - gap;
+    if (top + cardH > window.innerHeight) {
+      top = rect.top - cardH - gap;
       if (top < 8) top = 8;
     }
 
