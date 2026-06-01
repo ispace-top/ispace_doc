@@ -658,6 +658,9 @@
 {% if doc.editor_mode == 0 or doc.editor_mode == 2 or doc.editor_mode == 3 %}
 <script src="{% static 'vditor/dist/index.min.js' %}?version={{ isdoc_version }}"></script>
 <script src="{% static 'markdown-ext/marked/marked.min.js' %}?version={{ isdoc_version }}"></script>
+<script src="{% static 'markdown-ext/sequence/raphael.min.js' %}?version={{ isdoc_version }}"></script>
+<script src="{% static 'markdown-ext/sequence/sequence-diagram.min.js' %}?version={{ isdoc_version }}"></script>
+<script src="{% static 'markdown-ext/plantuml/plantuml-encoder.min.js' %}?version={{ isdoc_version }}"></script>
 <script src="{% static 'js/icon-picker.js' %}?version={{ isdoc_version }}"></script>
 {% elif doc.editor_mode == 1 %}
 <script src="{% static 'luckysheet/dist/plugins/js/plugin.js' %}?version={{ isdoc_version }}"></script>
@@ -1112,6 +1115,7 @@ function refreshDocView() {
                 setTimeout(function() {
                     processCallouts(vdEl);
                     processDocMentions(vdEl);
+                    processCustomCodeBlocks(vdEl);
                     if (window.AttachmentPreview) window.AttachmentPreview.init(vdEl);
                 }, 200);
             }
@@ -1331,9 +1335,37 @@ document.addEventListener('DOMContentLoaded',function(){
         }
     }
     window.processCallouts = processCallouts;
+
+    // ---- Custom code block rendering (PlantUML) ----
+    function processCustomCodeBlocks(container) {
+        if (!container) return;
+        // PlantUML — encode and load from plantuml.com server
+        if (typeof plantumlEncoder !== 'undefined') {
+            var pumlBlocks = container.querySelectorAll('.language-plantuml');
+            for (var j = 0; j < pumlBlocks.length; j++) {
+                var pBlock = pumlBlocks[j];
+                var pCode = (pBlock.textContent || '').trim();
+                if (!pCode || pBlock.querySelector('img,object')) continue;
+                try {
+                    var encoded = plantumlEncoder.encode(pCode);
+                    var svgUrl = 'https://www.plantuml.com/plantuml/svg/' + encoded;
+                    var obj = document.createElement('object');
+                    obj.type = 'image/svg+xml';
+                    obj.data = svgUrl;
+                    obj.style.maxWidth = '100%';
+                    pBlock.innerHTML = '';
+                    pBlock.appendChild(obj);
+                } catch(e) {}
+            }
+        }
+        // Note: sequence diagrams (js-sequence-diagrams v1.0.4) lack drawSVG,
+        // rendered as syntax-highlighted code blocks instead.
+    }
+    window.processCustomCodeBlocks = processCustomCodeBlocks;
+
     // Process callouts after Vditor renders (both initial and refresh)
     var _vc = document.getElementById('vditor-doc-content');
-    if (_vc && _vc.children.length > 0) { processCallouts(_vc); }
+    if (_vc && _vc.children.length > 0) { processCallouts(_vc); processCustomCodeBlocks(_vc); }
 
     initOutlinePanel();
 

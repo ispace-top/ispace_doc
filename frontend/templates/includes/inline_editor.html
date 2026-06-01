@@ -1221,7 +1221,7 @@ function _fixCodeFences(md) {
     if (!container) return md;
 
     // Collect all code blocks from the Vditor IR DOM that still have content
-    var customLangs = ['echarts', 'mermaid', 'flowchart', 'markmap', 'mindmap'];
+    var customLangs = ['echarts', 'mermaid', 'flowchart', 'markmap', 'mindmap', 'sequence', 'plantuml', 'graphviz', 'abc', 'excalidraw'];
     var blocks = [];
     var codeEls = container.querySelectorAll('.vditor-reset pre code');
     for (var i = 0; i < codeEls.length; i++) {
