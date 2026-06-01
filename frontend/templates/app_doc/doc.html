@@ -658,6 +658,8 @@
 {% if doc.editor_mode == 0 or doc.editor_mode == 2 or doc.editor_mode == 3 %}
 <script src="{% static 'vditor/dist/index.min.js' %}?version={{ isdoc_version }}"></script>
 <script src="{% static 'markdown-ext/marked/marked.min.js' %}?version={{ isdoc_version }}"></script>
+<script src="{% static 'markdown-ext/sequence/raphael.min.js' %}?version={{ isdoc_version }}"></script>
+<script src="{% static 'markdown-ext/sequence/sequence-diagram.min.js' %}?version={{ isdoc_version }}"></script>
 <script src="{% static 'markdown-ext/plantuml/plantuml-encoder.min.js' %}?version={{ isdoc_version }}"></script>
 <script src="{% static 'js/icon-picker.js' %}?version={{ isdoc_version }}"></script>
 {% elif doc.editor_mode == 1 %}
@@ -1334,9 +1336,57 @@ document.addEventListener('DOMContentLoaded',function(){
     }
     window.processCallouts = processCallouts;
 
-    // ---- Custom code block rendering (PlantUML) ----
+    // ---- Custom code block rendering (PlantUML, Sequence) ----
     function processCustomCodeBlocks(container) {
         if (!container) return;
+        // Sequence diagrams — render with js-sequence-diagrams + Raphael
+        if (typeof Diagram !== 'undefined' && typeof Raphael !== 'undefined') {
+            var seqBlocks = container.querySelectorAll('.language-sequence');
+            for (var i = 0; i < seqBlocks.length; i++) {
+                var sBlock = seqBlocks[i];
+                var sCode = (sBlock.textContent || '').trim();
+                if (!sCode || sBlock.querySelector('svg')) continue;
+                try {
+                    var diagram = Diagram.parse(sCode);
+                    sBlock.innerHTML = '';
+                    // Calculate canvas size based on actors and signals
+                    var actors = diagram.actors;
+                    var signals = diagram.signals;
+                    var w = Math.max(500, Object.keys(actors).length * 150);
+                    var h = Math.max(150, signals.length * 40 + 40);
+                    var paper = Raphael(sBlock, w, h);
+                    // Layout actors evenly across the top
+                    var actorKeys = Object.keys(actors);
+                    var actorX = {};
+                    var margin = 120;
+                    var step = (w - margin * 2) / Math.max(1, actorKeys.length - 1);
+                    actorKeys.forEach(function(key, idx) {
+                        var x = actorKeys.length === 1 ? w / 2 : margin + idx * step;
+                        actorX[key] = x;
+                        // Actor box
+                        var name = actors[key].name || key;
+                        var tw = Math.max(60, name.length * 10);
+                        paper.rect(x - tw/2, 10, tw, 30, 4).attr({fill: '#e8f4fd', stroke: '#3b82f6', 'stroke-width': 1.5});
+                        paper.text(x, 25, name).attr({'font-size': 13, fill: '#1e293b'});
+                        // Lifeline
+                        paper.path('M' + x + ' 40 L' + x + ' ' + (h - 20)).attr({stroke: '#cbd5e1', 'stroke-dasharray': '4,4'});
+                    });
+                    // Draw signals
+                    signals.forEach(function(sig, idx) {
+                        var y = 60 + idx * 32;
+                        var fromX = actorX[sig.actorA.name] || margin;
+                        var toX = actorX[sig.actorB.name] || w - margin;
+                        var isReturn = sig.type === 'Signal' && sig.isReturn;
+                        var arrowColor = '#64748b';
+                        paper.path('M' + fromX + ' ' + y + ' L' + toX + ' ' + y)
+                            .attr({stroke: arrowColor, 'stroke-width': 1.5, 'arrow-end': 'block-midium'});
+                        var text = (sig.title || '').replace(/\\\\n/g, ' ');
+                        var midX = (fromX + toX) / 2;
+                        paper.text(midX, y - 8, text).attr({'font-size': 12, fill: '#475569'});
+                    });
+                } catch(e) {}
+            }
+        }
         // PlantUML — encode and load from plantuml.com server
         if (typeof plantumlEncoder !== 'undefined') {
             var pumlBlocks = container.querySelectorAll('.language-plantuml');
@@ -1356,14 +1406,17 @@ document.addEventListener('DOMContentLoaded',function(){
                 } catch(e) {}
             }
         }
-        // Note: sequence diagrams (js-sequence-diagrams v1.0.4) lack drawSVG,
-        // rendered as syntax-highlighted code blocks instead.
     }
     window.processCustomCodeBlocks = processCustomCodeBlocks;
 
     // Process callouts after Vditor renders (both initial and refresh)
     var _vc = document.getElementById('vditor-doc-content');
     if (_vc && _vc.children.length > 0) { processCallouts(_vc); processCustomCodeBlocks(_vc); }
+    // Also run after full page load (sequence/plantuml libraries may need time)
+    window.addEventListener('load', function() {
+        var vc = document.getElementById('vditor-doc-content');
+        if (vc) processCustomCodeBlocks(vc);
+    });
 
     initOutlinePanel();
 
