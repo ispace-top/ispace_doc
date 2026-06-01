@@ -661,6 +661,7 @@
 <script src="{% static 'markdown-ext/sequence/raphael.min.js' %}?version={{ isdoc_version }}"></script>
 <script src="{% static 'markdown-ext/sequence/sequence-diagram.min.js' %}?version={{ isdoc_version }}"></script>
 <script src="{% static 'markdown-ext/plantuml/plantuml-encoder.min.js' %}?version={{ isdoc_version }}"></script>
+<script src="{% static 'markdown-ext/echarts/echarts.min.js' %}?version={{ isdoc_version }}"></script>
 <script src="{% static 'js/icon-picker.js' %}?version={{ isdoc_version }}"></script>
 {% elif doc.editor_mode == 1 %}
 <script src="{% static 'luckysheet/dist/plugins/js/plugin.js' %}?version={{ isdoc_version }}"></script>
@@ -1116,6 +1117,7 @@ function refreshDocView() {
                     processCallouts(vdEl);
                     processDocMentions(vdEl);
                     processCustomCodeBlocks(vdEl);
+                    fixLeakedECharts(vdEl);
                     if (window.AttachmentPreview) window.AttachmentPreview.init(vdEl);
                 }, 200);
             }
@@ -1336,6 +1338,46 @@ document.addEventListener('DOMContentLoaded',function(){
     }
     window.processCallouts = processCallouts;
 
+    // ---- Fix leaked ECharts: find error divs and re-render from pre_content ----
+    function fixLeakedECharts(container) {
+        if (!container || typeof echarts === 'undefined') return;
+        var errDivs = container.querySelectorAll('.vditor-reset--error');
+        if (!errDivs.length) return;
+        var pre = window._docPreContent || '';
+        var blocks = [];
+        var pos = 0;
+        while ((pos = pre.indexOf('```echarts', pos)) !== -1) {
+            pos += 10; // skip ```echarts
+            if (pre[pos] === '\r') pos++;
+            if (pre[pos] === '\n') pos++;
+            var end = pre.indexOf('```', pos);
+            if (end === -1) break;
+            var json = pre.substring(pos, end).trim();
+            blocks.push(json);
+            pos = end + 3;
+        }
+        // Also handle bare echarts (no opening ```)
+        pos = 0;
+        while ((pos = pre.indexOf('\necharts\n', pos)) !== -1) {
+            pos += 9;
+            var e = pre.indexOf('\n```', pos);
+            if (e === -1) e = pre.indexOf('```', pos);
+            if (e === -1) break;
+            var j = pre.substring(pos, e).trim();
+            if (j) blocks.splice(blocks.length - Math.min(errDivs.length - blocks.length, 1), 0, j);
+            pos = e + 3;
+        }
+        for (var i = 0; i < Math.min(errDivs.length, blocks.length); i++) {
+            try {
+                var parsed = JSON.parse(blocks[i]);
+                var d = document.createElement('div');
+                d.style.width = '100%'; d.style.height = '400px';
+                errDivs[i].parentNode.replaceChild(d, errDivs[i]);
+                echarts.init(d).setOption(parsed);
+            } catch(e) {}
+        }
+    }
+
     // ---- Custom code block rendering (PlantUML, Sequence) ----
     function processCustomCodeBlocks(container) {
         if (!container) return;
@@ -1489,14 +1531,15 @@ document.addEventListener('DOMContentLoaded',function(){
         }
     }
     window.processCustomCodeBlocks = processCustomCodeBlocks;
+    window.fixLeakedECharts = fixLeakedECharts;
 
     // Process callouts after Vditor renders (both initial and refresh)
     var _vc = document.getElementById('vditor-doc-content');
-    if (_vc && _vc.children.length > 0) { processCallouts(_vc); processCustomCodeBlocks(_vc); }
+    if (_vc && _vc.children.length > 0) { processCallouts(_vc); processCustomCodeBlocks(_vc); fixLeakedECharts(_vc); }
     // Also run after full page load (sequence/plantuml libraries may need time)
     window.addEventListener('load', function() {
         var vc = document.getElementById('vditor-doc-content');
-        if (vc) processCustomCodeBlocks(vc);
+        if (vc) { processCustomCodeBlocks(vc); fixLeakedECharts(vc); }
     });
 
     initOutlinePanel();
