@@ -357,13 +357,37 @@ print('superusers:', User.objects.filter(is_superuser=True).count())"
 - T4.5.2：Ctrl+Y 重做 → 文字恢复
 
 ### T4.6 图表（ECharts）
-- T4.6.1：编辑模式点击"图表" → 配置并插入
-- 验证：` ```echarts\n{json}\n``` ` 代码块
-- 查看页渲染为 Canvas
+- **T4.6.1 柱状图**：编辑模式点击"图表"下拉 → 选择柱状图 → 配置数据 → 插入 ` ```echarts\n{json}\n``` ` 代码块 → 发布
+- **验证**：查看页 `#vditor-doc-content canvas` 存在（≥2 个 canvas 元素），图表正确渲染
+- **T4.6.2 折线图**：同上，选择折线图类型 → 插入并发布 → Canvas 渲染
+- **T4.6.3 饼图**：同上，选择饼图类型 → Canvas 渲染
+- **T4.6.4 散点图**：同上，选择散点图类型 → Canvas 渲染
+- **T4.6.5 雷达图**：同上 → Canvas 渲染
+- **T4.6.6 空数据**：插入无 series 数据的 ECharts → 不崩溃，显示空图表或提示
+- **T4.6.7 JSON 语法错误**：插入含语法错误的 JSON → 不崩溃，渲染容错处理
+- **T4.6.8 图表下拉 UI**：点击"图表"按钮 → 弹出下拉面板，含 5+ 种图表类型图标+名称
 
-### T4.7 思维导图
-- T4.7.1：编辑模式点击"思维导图" → Markdown 列表转思维导图
-- 查看页渲染为 SVG/Canvas
+### T4.7 思维导图 / 流程图 / 手绘图
+- **T4.7.1 思维导图**：编辑模式点击"思维导图" → 插入 ` ```mindmap ` 代码块（Markdown 嵌套列表格式） → 发布
+- **验证**：查看页渲染为 SVG（`#vditor-doc-content svg` 存在）
+- **T4.7.2 流程图**：编辑模式点击"流程图" → 插入 ` ```flowchart ` 代码块（flowchart.js 语法：st=>start/e=>end/op=>operation/cond=>condition） → 发布
+- **验证**：查看页渲染为 SVG（9 个 flowchart 元素），节点和连线正确显示
+- **T4.7.3 手绘图**：编辑模式点击"手绘图" → 插入 ` ```excalidraw ` 代码块 → 发布
+- **验证**：查看页渲染为 SVG/Canvas，支持缩放和拖拽
+- **T4.7.4 思维导图空内容**：插入空的 ` ```mindmap ``` ` → 不崩溃，显示空 SVG 或占位
+- **T4.7.5 流程图语法错误**：插入含错误语法的流程图 → 渲染降级，至少显示原始文本
+- **T4.7.6 代码块语言标记**：验证 pre code 的 class 正确对应：`language-mindmap` / `language-flowchart` / `language-echarts`
+
+**验证脚本**：
+```js
+() => ({
+  'T4.6_echarts_canvas': document.querySelectorAll('#vditor-doc-content canvas').length,
+  'T4.7_mindmap_svg': !!document.querySelector('#vditor-doc-content svg'),
+  'T4.7_flowchart_elements': document.querySelectorAll('#vditor-doc-content [class*="flowchart"], #vditor-doc-content [class*="flow"]').length,
+  'T4.6_hasECharts': !!document.querySelector('#vditor-doc-content [class*="echarts"]'),
+  'pre_count': document.querySelectorAll('#vditor-doc-content pre').length
+})
+```
 
 ---
 
