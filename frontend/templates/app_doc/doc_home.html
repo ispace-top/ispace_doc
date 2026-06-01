@@ -528,7 +528,7 @@ function enterHomeCreateMode(forceEditorMode) {
     window._inlineDocId = 0;
     // Read parent context from URL params (from create_doc redirect or sidebar-tree.js)
     document.getElementById('inline-parent-doc').value = parentDoc || '0';
-    initInlineEditor(mode, true);
+    initInlineEditor(window._inlineEditorMode, true);
 }
 
 // ---- Favorites horizontal scroll ----

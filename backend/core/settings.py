@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 """
 
 import os
+import sys
 from configparser import ConfigParser,RawConfigParser
 from loguru import logger
 
@@ -52,7 +53,17 @@ if not SECRET_KEY:
     warnings.warn('未设置 SECRET_KEY 环境变量，已自动生成临时密钥。生产环境请务必设置 SECRET_KEY！', RuntimeWarning)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = CONFIG.getboolean('site','debug',fallback=False)
+def _resolve_debug():
+    """解析 DEBUG，优先级：环境变量 > 自动检测 > 配置文件。"""
+    env_debug = os.environ.get('DEBUG') or os.environ.get('DJANGO_DEBUG')
+    if env_debug is not None:
+        return env_debug.lower() in ('true', '1', 'yes', 'on')
+    if 'runserver' in sys.argv:
+        return True
+    return CONFIG.getboolean('site', 'debug', fallback=False)
+
+
+DEBUG = _resolve_debug()
 
 VERSIONS = '0.9.1_dev'
 
