@@ -81,6 +81,7 @@ window.iSpaceDoc.AuthorCard = (() => {
     var cached = cache[uid];
     if (cached && (Date.now() - cached.ts) < CACHE_TTL) {
       render(cached.data, trigger);
+      position(trigger); // re-position after cached render (height may differ from skeleton)
       return;
     }
 
@@ -140,7 +141,7 @@ window.iSpaceDoc.AuthorCard = (() => {
     cardEl.addEventListener('mouseleave', function() { hide(); });
   }
 
-  /* ---- Position card — always above the trigger ---- */
+  /* ---- Position card — below the trigger, fallback to above ---- */
   function position(trigger) {
     if (!cardEl || !trigger) return;
     var rect = trigger.getBoundingClientRect();
@@ -149,16 +150,16 @@ window.iSpaceDoc.AuthorCard = (() => {
     var gap = 8;
     // 以触发元素中心为基准
     var left = rect.left + rect.width / 2 - cardW / 2;
-    var top = rect.top - cardH - gap;
+    var top = rect.bottom + gap;
 
-    // Keep within viewport
+    // If not enough room below, show above
+    if (top + cardH > window.innerHeight) {
+      top = rect.top - cardH - gap;
+      if (top < 8) top = 8;
+    }
+    // Keep within horizontal viewport
     if (left + cardW > window.innerWidth - 12) left = window.innerWidth - cardW - 12;
     if (left < 8) left = 8;
-    // If not enough room above, fall back to below
-    if (top < 8) {
-      top = rect.bottom + gap;
-      if (top + cardH > window.innerHeight) top = window.innerHeight - cardH - 8;
-    }
 
     cardEl.style.left = left + 'px';
     cardEl.style.top = top + 'px';
