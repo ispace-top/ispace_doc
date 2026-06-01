@@ -98,12 +98,29 @@
 
 ## 5. 链接与图片
 
+### 5.1 链接
+
 **使用方式：**
 
 ```markdown
-[链接文字](https://example.com)
-![图片描述](/media/logos/site_logo.png)
+[爱思文档官网](https://doc2.itjl.top:91)
 ```
+
+**渲染效果：**
+
+[爱思文档官网](https://doc2.itjl.top:91)
+
+### 5.2 图片
+
+**使用方式：**
+
+```markdown
+![Logo](/media/logos/site_logo.png)
+```
+
+**渲染效果：**
+
+![Logo](/media/logos/site_logo.png)
 
 ## 6. Callout 提示块
 
