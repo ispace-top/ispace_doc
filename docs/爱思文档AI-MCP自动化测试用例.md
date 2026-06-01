@@ -409,19 +409,29 @@ print('superusers:', User.objects.filter(is_superuser=True).count())"
 
 ### T4.10 时序图 (sequence)
 - **T4.10.1**：` ```sequence\n客户端->服务器: 请求\n服务器-->客户端: 响应\n``` ` → 发布
-- **验证**：渲染为 SVG（注意：当前版本以语法高亮代码形式显示，为已知问题）
+- **验证**：⚠️ **已知问题** — 当前版本以 `language-sequence hljs` 代码高亮形式显示，未渲染为 SVG 时序图
 
 ### T4.11 PlantUML
 - **T4.11.1**：` ```plantuml\n@startuml\nAlice -> Bob: Hello\n@enduml\n``` ` → 发布
-- **验证**：渲染为图片（服务端或客户端转换）
+- **验证**：⚠️ **已知问题** — `.language-plantuml` DIV 存在但内容为空(textLen=0)，PlantUML 转换器未正常工作
 
 ### T4.12 Graphviz (DOT)
-- **T4.12.1**：` ```graphviz\ndigraph { a -> b; }\n``` ` → 发布
-- **验证**：渲染为 SVG
+- **T4.12.1**：` ```graphviz\ndigraph G { rankdir=LR; A -> B -> C; A -> C; }\n``` ` → 发布
+- **验证**：✅ `.language-graphviz` DIV 含 SVG，有向图正确渲染（节点 A/B/C + 连线 A→B, B→C, A→C）
 
 ### T4.13 音乐乐谱 (abcjs)
-- **T4.13.1**：` ```abc\nX:1\nT:Test\nK:C\nCDEF|\n``` ` → 发布
-- **验证**：渲染为 SVG 五线谱
+- **T4.13.1**：` ```abc\nX:1\nT:小星星\nK:C\nC C G G | A A G2 |\n``` ` → 发布
+- **验证**：✅ `.language-abc` DIV 含 SVG，五线谱正确渲染
+
+### T4.14 手绘图 (Excalidraw)
+- **T4.14.1**：编辑模式点击"手绘图" → 插入 ` ```excalidraw ` 代码块 → 发布
+- **验证**：⚠️ **已知问题** — 当前版本以 `<PRE>` 显示原始 JSON 源码，Excalidraw 交互式画布未激活
+
+### T4.15 代码块增强
+- **T4.15.1 语法高亮**：` ```python\n...\n``` ` → 查看页 `<code class="language-python hljs">`
+- **T4.15.2 代码标题**：` ```python title=文件名.py\n...\n``` ` → 代码块顶部显示文件名标签
+- **T4.15.3 行号**：代码块可配置行号显示
+- **T4.15.4 复制按钮**：代码块右上角复制按钮 → 点击复制内容到剪贴板
 
 ### T4.14 编辑器图表插入综合验证
 ```js
