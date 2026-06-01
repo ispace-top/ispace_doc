@@ -1446,7 +1446,10 @@ document.addEventListener('DOMContentLoaded',function(){
                         if (leftX == null) leftX = margin;
                         if (rightX == null) rightX = w - rightMargin;
                         var nx = leftX - 10, ny = sigY - 14;
-                        var nw = Math.max(rightX - leftX + 20, 120); // min 120px for text
+                        var nw = Math.max(rightX - leftX + 20, 120);
+                        // Clamp within canvas
+                        if (nx + nw > w - 4) { nx = w - nw - 4; }
+                        if (nx < 4) { nx = 4; nw = Math.min(nw, w - 8); }
                         var nh = 26;
                         // Note box background
                         paper.rect(nx, ny, nw, nh, 4).attr({fill: '#fef9c3', stroke: '#ca8a04', 'stroke-width': 1});
