@@ -85,7 +85,7 @@
         <div class="about-hero-text">
             <h1 class="about-hero-name">
                 {{ site_name|default:_("爱思文档") }}
-                <span class="about-hero-version">v{{ app_version }}</span>
+                {% if app_version %}<span class="about-hero-version">v{{ app_version }}</span>{% endif %}
             </h1>
             <p class="about-hero-tagline">{% trans "爱要春风化雨，思必汇流成渊" %}</p>
         </div>
@@ -150,7 +150,7 @@
         <div class="about-info-card">
             <div class="about-info-grid">
                 <span class="about-info-label">iSpaceDoc</span>
-                <span class="about-info-value">v{{ app_version }}</span>
+                <span class="about-info-value">{% if app_version %}v{{ app_version }}{% else %}-{% endif %}</span>
                 <span class="about-info-label">Django</span>
                 <span class="about-info-value">{{ django_version }}</span>
                 <span class="about-info-label">Python</span>
@@ -172,7 +172,7 @@
         <div class="about-info-card">
             <div class="about-info-grid">
                 <span class="about-info-label">iSpaceDoc</span>
-                <span class="about-info-value">v{{ app_version }}</span>
+                <span class="about-info-value">{% if app_version %}v{{ app_version }}{% else %}-{% endif %}</span>
             </div>
         </div>
         {% if is_superuser %}

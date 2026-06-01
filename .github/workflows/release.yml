@@ -48,11 +48,16 @@ jobs:
       # ============================================================
       - name: Update version in code
         run: |
-          sed -i "s/VERSIONS = '.*'/VERSIONS = '${VERSION}'/" backend/core/settings.py
+          V="${{ steps.version.outputs.version }}"
+          if [ -z "${V}" ]; then
+            echo "Error: version is empty, aborting"
+            exit 1
+          fi
+          sed -i "s/VERSIONS = '.*'/VERSIONS = '${V}'/" backend/core/settings.py
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add backend/core/settings.py
-          git commit -m "chore: bump version to ${VERSION}" || true
+          git diff --cached --quiet || git commit -m "chore: bump version to ${V}"
           git push origin HEAD:main
 
       # ============================================================
