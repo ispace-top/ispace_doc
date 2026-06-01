@@ -21,7 +21,6 @@ class RequiredLoginMiddleware():
             r'/media/(.*)$',  # 媒体文件
             r'/share_doc(.*)$',  # 文档分享
             r'/api/(.*)$',  # token api 获取文集列表
-            r'^/\w+\.\w+$',  # 根目录验证文件（企业微信/百度/Google等站点验证）
         )
         self.exceptions = tuple(re.compile(url) for url in compile_tuple)
 
