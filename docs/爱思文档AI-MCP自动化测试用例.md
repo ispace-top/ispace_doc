@@ -391,6 +391,54 @@ print('superusers:', User.objects.filter(is_superuser=True).count())"
 
 ---
 
+### T4.8 数学公式 (KaTeX)
+- **T4.8.1 行内公式**：编辑器中输入 `$E=mc^2$` → 发布 → 查看页渲染为 KaTeX HTML（`.katex` 元素 > 0）
+- **T4.8.2 块级公式**：`$$\n\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}\n$$` → KaTeX 块级渲染
+- **T4.8.3 分数公式**：`$\\frac{a}{b}$` → KaTeX 渲染
+- **T4.8.4 矩阵公式**：`$$\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}$$` → KaTeX 渲染
+- **T4.8.5 无效公式**：`$未闭合公式 → 显示原始文本，不崩溃
+- **验证**：`#vditor-doc-content .katex` 元素数量 ≥ 输入公式数
+
+### T4.9 Mermaid 图表
+- **T4.9.1 流程图 (graph TD)**：` ```mermaid\ngraph TD\nA-->B\n``` ` → 渲染为 SVG 流程图
+- **T4.9.2 时序图 (sequenceDiagram)**：mermaid 时序图语法 → SVG
+- **T4.9.3 类图 (classDiagram)**：UML 类图 → SVG
+- **T4.9.4 状态图 (stateDiagram-v2)**：状态机图 → SVG
+- **T4.9.5 Gantt 图**：甘特图 → SVG
+- **验证**：`#vditor-doc-content` 含 mermaid 渲染 SVG 或 Canvas
+
+### T4.10 时序图 (sequence)
+- **T4.10.1**：` ```sequence\n客户端->服务器: 请求\n服务器-->客户端: 响应\n``` ` → 发布
+- **验证**：渲染为 SVG（注意：当前版本以语法高亮代码形式显示，为已知问题）
+
+### T4.11 PlantUML
+- **T4.11.1**：` ```plantuml\n@startuml\nAlice -> Bob: Hello\n@enduml\n``` ` → 发布
+- **验证**：渲染为图片（服务端或客户端转换）
+
+### T4.12 Graphviz (DOT)
+- **T4.12.1**：` ```graphviz\ndigraph { a -> b; }\n``` ` → 发布
+- **验证**：渲染为 SVG
+
+### T4.13 音乐乐谱 (abcjs)
+- **T4.13.1**：` ```abc\nX:1\nT:Test\nK:C\nCDEF|\n``` ` → 发布
+- **验证**：渲染为 SVG 五线谱
+
+### T4.14 编辑器图表插入综合验证
+```js
+() => ({
+  'katex_elements': document.querySelectorAll('.katex').length,
+  'mermaid_svg': document.querySelectorAll('[id*="mermaid"] svg, .mermaid svg').length,
+  'total_svg': document.querySelectorAll('#vditor-doc-content svg').length,
+  'total_canvas': document.querySelectorAll('#vditor-doc-content canvas').length,
+  'code_blocks': document.querySelectorAll('#vditor-doc-content pre code').length,
+  'isT4.8_katex': document.querySelectorAll('.katex').length > 0,
+  'isT4.9_mermaid': document.querySelectorAll('#vditor-doc-content svg').length >= 4,
+  'isT4.6_echarts': document.querySelectorAll('#vditor-doc-content canvas').length >= 2
+})
+```
+
+---
+
 ## 第5章 文档树
 
 ### T5.1 层级显示
