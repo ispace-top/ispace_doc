@@ -1347,7 +1347,24 @@ document.addEventListener('DOMContentLoaded',function(){
                 var sCode = (sBlock.textContent || '').trim();
                 if (!sCode || sBlock.querySelector('svg')) continue;
                 try {
-                    var diagram = Diagram.parse(sCode);
+                    // Pre-process: extract Note over lines
+                    var lines = sCode.split(/\n/);
+                    var noteLines = [];
+                    var signalLines = [];
+                    for (var li = 0; li < lines.length; li++) {
+                        var line = lines[li].trim();
+                        var noteMatch = line.match(/^Note\s+(?:over|left of|right of)\s+(.+?)\s*:\s*(.*)$/i);
+                        if (noteMatch) {
+                            noteLines.push({
+                                lineIndex: signalLines.length, // position among signals
+                                actors: noteMatch[1].split(/\s*,\s*/).map(function(s){return s.trim();}),
+                                text: noteMatch[2] || ''
+                            });
+                        } else {
+                            signalLines.push(lines[li]);
+                        }
+                    }
+                    var diagram = Diagram.parse(signalLines.join('\n'));
                     sBlock.innerHTML = '';
                     var actors = diagram.actors;
                     var signals = diagram.signals;
@@ -1357,7 +1374,7 @@ document.addEventListener('DOMContentLoaded',function(){
                     var margin = 130, rightMargin = 40;
                     var step = actorCount > 1 ? (800 - margin - rightMargin) / (actorCount - 1) : 0;
                     var w = actorCount > 1 ? margin + (actorCount - 1) * step + rightMargin : 500;
-                    var h = Math.max(150, nSignals * 38 + 50);
+                    var h = Math.max(150, (nSignals + noteLines.length) * 38 + 50);
                     var paper = Raphael(sBlock, w, h);
                     // Map actor index AND name -> x position
                     var actorX = {};
@@ -1413,6 +1430,36 @@ document.addEventListener('DOMContentLoaded',function(){
                             var text = (sig.message || '').replace(/\\\\n/g, ' ');
                             var midX = (fromX + toX) / 2;
                             paper.text(midX, y - 9, text).attr({'font-size': 12, fill: color});
+                        }
+                    });
+                    // Draw Note over boxes
+                    noteLines.forEach(function(note) {
+                        var sigY = 60 + note.lineIndex * 36;
+                        var leftX = null, rightX = null;
+                        note.actors.forEach(function(a) {
+                            var ax = actorX[a];
+                            if (ax != null) {
+                                if (leftX == null || ax < leftX) leftX = ax;
+                                if (rightX == null || ax > rightX) rightX = ax;
+                            }
+                        });
+                        if (leftX == null) leftX = margin;
+                        if (rightX == null) rightX = w - rightMargin;
+                        var nx = leftX - 10, ny = sigY - 14;
+                        var nw = Math.max(rightX - leftX + 20, 120); // min 120px for text
+                        var nh = 26;
+                        // Note box background
+                        paper.rect(nx, ny, nw, nh, 4).attr({fill: '#fef9c3', stroke: '#ca8a04', 'stroke-width': 1});
+                        // Note text
+                        var noteText = note.text;
+                        var textEl = paper.text(nx + nw / 2, ny + nh / 2, noteText).attr({'font-size': 11, fill: '#854d0e'});
+                        if (textEl.getBBox().width > nw - 12) {
+                            textEl.attr({'font-size': 10});
+                            var txt = noteText;
+                            while (txt.length > 2 && textEl.getBBox().width > nw - 12) {
+                                txt = txt.substring(0, txt.length - 1);
+                                textEl.attr({text: txt + '..'});
+                            }
                         }
                     });
                 } catch(e) {}
