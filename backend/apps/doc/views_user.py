@@ -686,6 +686,88 @@ def api_browse_history(request):
     return JsonResponse({'status': True, 'items': items, 'has_more': (start + page_size) < total, 'total': total})
 
 
+# ========== 第三方账号绑定 API ==========
+
+@login_required
+@require_http_methods(['GET'])
+def api_user_bindings(request):
+    """查询当前用户的第三方平台绑定状态。"""
+    from backend.apps.doc.auth.config import get_enabled_backends
+
+    bindings = {}
+    try:
+        profile = UserProfile.objects.only('wecom_userid', 'dingtalk_userid').get(user=request.user)
+    except UserProfile.DoesNotExist:
+        profile = None
+
+    # 企业微信
+    enabled_backends = {b.provider for b in get_enabled_backends()}
+    bindings['wecom'] = {
+        'enabled': 'wecom' in enabled_backends,
+        'bound': bool(profile and profile.wecom_userid),
+        'bound_name': profile.wecom_userid if (profile and profile.wecom_userid) else '',
+    }
+    bindings['dingtalk'] = {
+        'enabled': 'dingtalk' in enabled_backends,
+        'bound': bool(profile and profile.dingtalk_userid),
+        'bound_name': profile.dingtalk_userid if (profile and profile.dingtalk_userid) else '',
+    }
+
+    # 尝试通过 IspOAuthBinding 获取更详细的绑定信息
+    try:
+        from backend.apps.doc.models_v2 import IspOAuthBinding
+        oauth_bindings = IspOAuthBinding.objects.filter(user=request.user)
+        for ob in oauth_bindings:
+            if ob.provider in bindings:
+                bindings[ob.provider]['bound'] = True
+                bindings[ob.provider]['bound_name'] = ob.provider_user_name or ob.provider_user_id
+                bindings[ob.provider]['bound_at'] = ob.bound_at.strftime('%Y-%m-%d') if ob.bound_at else ''
+    except Exception:
+        pass
+
+    return JsonResponse({'status': True, 'bindings': bindings})
+
+
+@login_required
+@require_POST
+def api_user_unbind(request, provider):
+    """解除指定平台的第三方账号绑定。"""
+    if provider not in ('wecom', 'dingtalk', 'oidc'):
+        return JsonResponse({'status': False, 'error': '不支持的平台'})
+
+    try:
+        profile = UserProfile.objects.get(user=request.user)
+    except UserProfile.DoesNotExist:
+        return JsonResponse({'status': False, 'error': '用户档案不存在'})
+
+    if provider == 'wecom':
+        profile.wecom_userid = ''
+    elif provider == 'dingtalk':
+        profile.dingtalk_userid = ''
+    profile.save(update_fields=['wecom_userid', 'dingtalk_userid'] if provider in ('wecom', 'dingtalk') else [])
+
+    # 同步关闭对应通知渠道
+    try:
+        settings = json.loads(profile.notify_settings or '{}')
+        channel_key = f'{provider}_enabled'
+        if channel_key in settings:
+            settings[channel_key] = False
+            profile.notify_settings = json.dumps(settings, ensure_ascii=False)
+            profile.save(update_fields=['notify_settings'])
+    except Exception:
+        pass
+
+    # 删除 IspOAuthBinding 绑定记录
+    try:
+        from backend.apps.doc.models_v2 import IspOAuthBinding
+        IspOAuthBinding.objects.filter(user=request.user, provider=provider).delete()
+    except Exception:
+        pass
+
+    logger.info(f'用户 {request.user.username} 解除了 {provider} 账号绑定')
+    return JsonResponse({'status': True, 'message': f'已解除{provider}账号绑定'})
+
+
 # ========== 文档模板 API ==========
 
 @login_required

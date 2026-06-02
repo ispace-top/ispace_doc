@@ -238,6 +238,26 @@ print('superusers:', User.objects.filter(is_superuser=True).count())"
 - 填写完整表单（username="testuser2", email="test2@test.com", password="test123456", password2="test123456"）
 - 提交
 - **验证**：跳转登录页，`User.objects.filter(username='testuser2').exists()`
+- **验证欢迎通知**：
+  - `Notification.objects.filter(recipient=user, notification_type='welcome').exists()` → True
+  - 欢迎通知的 `title` 含"欢迎"关键词
+  - 欢迎通知的 `link` 指向用户指南文档
+  - 首页展示欢迎横幅（Welcome Banner）
+
+### T2.5a 注册 - 欢迎通知内容验证
+- 登录新注册的用户
+- 检查 Header 通知铃铛显示红色角标 "1"
+- 打开通知下拉面板 → 第一条通知为欢迎通知，类型图标为信封图标
+- 点击欢迎通知 → 跳转到内置用户指南文档
+- 铃铛角标消失（欢迎通知标记为已读）
+
+### T2.5b 注册 - 欢迎横幅交互
+- 新用户首次登录后首页顶部显示欢迎横幅
+- 横幅含站点名称、快速入门引导文案、"查看使用文档"和"开始创作"两个按钮
+- 点击"查看使用文档"→ 跳转到用户指南文档
+- 点击"开始创作"→ 跳转到新建文档页
+- 点击关闭按钮 [✕] → 横幅消失
+- 刷新页面 → 横幅不再显示（`localStorage.ispace_welcome_dismissed` 已记录）
 
 ### T2.6 注册 - 用户名已存在
 - 用已存在的用户名（如 "Admin"）注册
@@ -272,6 +292,16 @@ print('superusers:', User.objects.filter(is_superuser=True).count())"
 - **T3.2.3 超长标题**：标题输入 200 字符 → 确认可发布或有限制
 - **T3.2.4 空内容**：标题="空内容测试"，不填内容，点击"发布"
 - **验证**：可成功发布，内容为空
+- **T3.2.5 防重复提交**：新建文档，填写标题和内容，快速双击"发布"按钮
+- **验证**：第一次点击后按钮立即变为 `[spinner] 发布中...` 且禁用（opacity 0.6）
+- **验证**：第二次点击被 `_isSubmitting` 守卫拦截，不发起第二次请求
+- **验证**：请求完成后数据库仅存在 1 条同名文档（`Doc.objects.filter(name=title).count() == 1`）
+- **T3.2.6 保存草稿防重复**：同上，快速双击"保存草稿"按钮
+- **验证**：按钮变为 `[spinner] 保存中...`，仅执行一次保存
+- **T3.2.7 按钮恢复**：提交成功后按钮自动恢复为正常样式（"发布" + 图标，可点击）
+- **验证**：`ispace-spinner` 已移除，`opacity` 恢复为 `''`，`disabled` 为 `false`
+- **T3.2.8 按钮失败恢复**：模拟网络断开，点击"发布" → 请求失败 → 按钮恢复
+- **验证**：失败后按钮恢复为可用状态，不永久禁用
 
 ### T3.3 新建表格
 - **前置**：已登录
@@ -558,6 +588,18 @@ print('superusers:', User.objects.filter(is_superuser=True).count())"
 | T7.6.5 划词评论@提及 | 划词评论 @用户 | `mention` |
 | T7.6.6 权限变更 | 文档授权 | `perm_change` |
 | T7.6.7 权限申请 | 用户申请访问 | `perm_apply` |
+
+### T7.7 欢迎通知
+
+| 用例 | 测试内容 | 验证点 |
+|------|----------|--------|
+| T7.7.1 通知创建 | 注册新用户 → 检查 Notification 表 | `notification_type='welcome'`, `recipient` 正确 |
+| T7.7.2 通知内容 | 查看欢迎通知的 title 和 body | title 含"欢迎加入", body 含站点名称和入门引导 |
+| T7.7.3 通知链接 | 点击欢迎通知 | 跳转到内置用户指南文档 |
+| T7.7.4 欢迎横幅 | 新用户首次登录首页 | 顶部展示欢迎横幅，含"查看使用文档"按钮 |
+| T7.7.5 横幅关闭 | 点击横幅关闭按钮 → 刷新页面 | 横幅不再显示 |
+| T7.7.6 欢迎邮件 | 检查邮件是否发送（需 SMTP 已配置） | 注册邮箱收到欢迎邮件，含用户名和站点名称 |
+| T7.7.7 不重复推送 | 老用户登录（非首次） | 不显示欢迎横幅，无新的 welcome 通知 |
 
 ---
 
@@ -1163,3 +1205,71 @@ print('superusers:', User.objects.filter(is_superuser=True).count())"
 ### T27.4 注册开关
 - **T27.4.1** 关闭注册 (`close_register=on`) → `/register/` 返回 404
 - **T27.4.2** 开启注册 → `/register/` 正常访问
+
+---
+
+## 第28章 企业微信账号绑定
+
+> 前置条件：`[auth.wecom]` 已配置且 `enabled=true`
+
+### T28.1 绑定入口
+
+- **T28.1.1** 登录 → 个人中心 → 账号安全 Tab → 第三方账号绑定区域可见
+- **T28.1.2** 绑定区域展示：企业微信、钉钉、OIDC 三行（已配置的显示"未绑定"，未配置的显示"未配置"）
+- **T28.1.3** 未绑定状态显示"绑定企业微信"按钮（outline 样式）
+- **T28.1.4** 未配置状态显示"暂不可用"灰色 disabled 按钮
+
+### T28.2 绑定流程
+
+- **T28.2.1** 点击"绑定企业微信"→ 跳转到 `/auth/wecom/bind/`
+- **T28.2.2** 302 重定向到企业微信 OAuth 授权页
+- **T28.2.3** 用户扫码确认 → 回调 `/auth/wecom/bind/callback/`
+- **T28.2.4** 绑定成功 → 重定向回个人中心 → Toast "企业微信账号绑定成功"
+- **验证**：`UserProfile.wecom_userid` 非空，`IspOAuthBinding` 表有记录
+- **验证**：页面刷新后绑定状态变为绿色"已绑定" + 企微用户名 + 绑定日期
+
+### T28.3 绑定后通知渠道联动
+
+- **T28.3.1** 绑定企微后，通知设置中的企微渠道开关自动开启
+- **T28.3.2** 用户被 @提及 → 站内通知 + 企微消息均送达（需企微应用消息 API 正常）
+
+### T28.4 解绑流程
+
+- **T28.4.1** 已绑定状态显示红色"解绑"文字按钮
+- **T28.4.2** 点击"解绑"→ 弹出确认对话框："确定要解除企业微信账号绑定吗？解绑后将无法通过企业微信接收通知消息。"
+- **T28.4.3** 确认解绑 → AJAX POST `/api/user/bindings/wecom/unbind/` → Toast "已解除绑定"
+- **验证**：`UserProfile.wecom_userid` 变为空字符串，`IspOAuthBinding` 记录删除
+- **验证**：通知设置中企微渠道开关自动关闭并置灰
+
+### T28.5 解绑后通知回退
+
+- **T28.5.1** 解绑后，被 @提及 → 仅站内通知 + 邮件（不再尝试企微渠道）
+
+### T28.6 管理后台绑定管理
+
+- **T28.6.1** 超管进入 `/admin/system/auth/` → 企业微信面板 → 点击"绑定管理"
+- **T28.6.2** 弹出绑定管理模态框（720px），表格展示所有用户的绑定状态
+- **T28.6.3** 按用户名搜索 → 结果过滤
+- **T28.6.4** 按状态筛选（全部/已绑定/未绑定）→ 结果过滤
+- **T28.6.5** 管理员手动解绑某用户 → 二次确认 → 解绑成功
+- **验证**：解绑操作记录到审计日志（`action='unbind', target_type='oauth_binding'`）
+
+### T28.7 边界测试
+
+- **T28.7.1** 已绑定用户再次绑定 → 更新绑定信息（覆盖旧 `wecom_userid`）
+- **T28.7.2** 一个企微账号绑定到多个本地用户 → 最后一个绑定生效，之前的自动解绑
+- **T28.7.3** 企微配置随后被禁用 → 已绑定的用户显示"已绑定（平台已禁用）"灰色标签
+
+### T28.8 API 验证
+
+```bash
+# 查询当前用户绑定状态
+python manage.py shell -c "
+from django.contrib.auth.models import User
+from backend.apps.doc.models import UserProfile
+u = User.objects.get(username='Admin')
+p = UserProfile.objects.get(user=u)
+print('wecom_userid:', repr(p.wecom_userid))
+print('dingtalk_userid:', repr(p.dingtalk_userid))
+"
+```

@@ -1065,7 +1065,6 @@ function inlineSaveDoc(status) {
             refreshDocView();
             if (window.InlineComments) { setTimeout(function() { window.InlineComments.refresh(); }, 100); }
             if (status === 0) {
-                // Draft saved: stay in edit mode
                 if (typeof layer !== 'undefined') layer.msg('草稿已保存', {icon: 1});
             } else {
                 exitEditMode();
@@ -1073,10 +1072,12 @@ function inlineSaveDoc(status) {
             }
         } else {
             if (typeof layer !== 'undefined') layer.msg('保存失败: ' + (r.data || ''), {icon: 2});
-            else alert('保存失败');
         }
     }).catch(function() {
         if (typeof layer !== 'undefined') layer.msg('保存异常', {icon: 2});
+    }).finally(function() {
+        window._isSubmitting = false;
+        if (typeof _resetSubmitButtons === 'function') _resetSubmitButtons();
     });
 }
 

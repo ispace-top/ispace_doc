@@ -229,6 +229,26 @@ def register(request):
                                 )
                         if user.is_active:
                             login(request, user)
+                            # 发送欢迎通知
+                            try:
+                                from backend.apps.doc.services import NotificationService
+                                site_name = 'i·Space Doc'
+                                try:
+                                    st = SysSetting.objects.filter(types='basic', name='site_name').first()
+                                    if st:
+                                        site_name = st.value
+                                except Exception:
+                                    pass
+                                guide_link = request.build_absolute_uri('/pages/0/')
+                                NotificationService.send(
+                                    recipient=user,
+                                    notification_type='welcome',
+                                    title=f'欢迎加入 {site_name}',
+                                    body=f'Hi {username}，欢迎注册 {site_name}！点击查看《快速入门指南》，开始您的知识管理之旅。',
+                                    link=guide_link,
+                                )
+                            except Exception:
+                                logger.exception('欢迎通知发送失败')
                             return redirect('/')
                         else:
                             errormsg = _('用户被禁用，请联系管理员！')

@@ -79,19 +79,44 @@ def _get_or_create_user(user_info) -> User:
 
 
 def _save_oauth_bind(user: User, user_info):
-    """保存 OAuth 绑定信息（后续可迁移到 UserOAuthBinding 模型）。"""
-    binds = {
-        "provider": user_info.provider,
-        "provider_uid": user_info.provider_uid,
-        "nickname": user_info.nickname,
-        "avatar_url": user_info.avatar_url,
-    }
-    user.profile.extra_oauth = binds
-    user.profile.save(update_fields=["extra_oauth"]) if hasattr(user.profile, "extra_oauth") else None
-    # 存 session 作为临时方案
-    import hashlib
+    """保存 OAuth 绑定信息到 UserProfile 和 IspOAuthBinding。"""
+    provider = user_info.provider
+    provider_uid = user_info.provider_uid
 
-    session_key = hashlib.sha256(f"{user_info.provider}:{user_info.provider_uid}".encode()).hexdigest()[:16]
+    # 更新 UserProfile 上的提供商特定字段
+    profile = user.profile
+    update_fields = []
+    if provider == 'wecom':
+        # 从 extra 或 provider_uid 中提取原始 user_id（用于通知渠道 API 调用）
+        raw_user_id = ''
+        if user_info.extra and isinstance(user_info.extra, dict):
+            raw_user_id = user_info.extra.get('userid', '')
+        if not raw_user_id and ':' in provider_uid:
+            # provider_uid 格式: wecom:corp_id:user_id
+            raw_user_id = provider_uid.rsplit(':', 1)[-1]
+        profile.wecom_userid = raw_user_id
+        update_fields.append('wecom_userid')
+    elif provider == 'dingtalk':
+        profile.dingtalk_userid = provider_uid
+        update_fields.append('dingtalk_userid')
+
+    # 保存或创建 IspOAuthBinding 记录
+    try:
+        from backend.apps.doc.models_v2 import IspOAuthBinding
+        binding, created = IspOAuthBinding.objects.update_or_create(
+            user=user,
+            provider=provider,
+            defaults={
+                'provider_user_id': provider_uid,
+                'provider_user_name': user_info.nickname or '',
+                'extra_data': {},
+            },
+        )
+        logger.info(f'[OAuth绑定] {"创建" if created else "更新"}绑定 user={user.username} provider={provider} uid={provider_uid}')
+    except Exception:
+        logger.exception(f'[OAuth绑定] IspOAuthBinding 保存失败')
+
+    profile.save(update_fields=update_fields)
 
 
 def oauth_login(request, provider: str):
@@ -211,7 +236,8 @@ def oauth_bind_callback(request, provider: str):
         return JsonResponse({"error": str(e)}, status=400)
 
     _save_oauth_bind(request.user, result.user_info)
-    return JsonResponse({"status": "ok", "provider": provider})
+    # 绑定成功后重定向到个人中心通知设置页
+    return redirect('/my/?tab=notify')
 
 
 def oauth_login_form(request, provider: str):

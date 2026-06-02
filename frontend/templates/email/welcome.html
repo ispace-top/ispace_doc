@@ -1,0 +1,25 @@
+{% extends "email/base.html" %}
+{% block content %}
+<h2 style="font-size:18px;color:#333;margin:0 0 16px">欢迎加入 {{ site_name }}！</h2>
+
+<p>Hi {{ recipient_name }}，</p>
+
+<p>恭喜您已成功注册 <strong>{{ site_name }}</strong> 账号。从此，您可以：</p>
+
+<div class="highlight">
+    <p style="margin:0">📝 <strong>创建与编辑文档</strong> — 使用 Markdown 所见即所得编辑器轻松撰写</p>
+    <p style="margin:8px 0 0">🔍 <strong>全文搜索</strong> — 快速定位团队知识库中的内容</p>
+    <p style="margin:8px 0 0">👥 <strong>团队协作</strong> — 分组管理、权限控制、划词评论</p>
+    <p style="margin:8px 0 0">🔔 <strong>实时通知</strong> — 文档变更、@提及、评论回复随时知晓</p>
+</div>
+
+<p>您的登录信息：</p>
+<ul>
+    <li>用户名：<strong>{{ recipient_name }}</strong></li>
+    <li>登录地址：<a href="{{ site_url }}/login/">{{ site_url }}/login/</a></li>
+</ul>
+
+{% if guide_link %}
+<p style="margin-top:16px"><a href="{{ guide_link }}" class="btn">查看快速入门指南</a></p>
+{% endif %}
+{% endblock %}

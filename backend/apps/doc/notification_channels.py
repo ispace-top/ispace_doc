@@ -18,6 +18,7 @@ from backend.apps.doc.models import Notification
 # ---------------------------------------------------------------
 
 NOTIFICATION_CHANNEL_ROUTES: dict[str, list[str]] = {
+    'welcome': ['in_app', 'email', 'wecom'],
     'system': ['in_app', 'email'],
     'comment': ['in_app', 'wecom'],
     'reply': ['in_app', 'wecom'],
@@ -128,6 +129,7 @@ class EmailChannel(BaseNotificationChannel):
         sender_name = (notification.sender.first_name or notification.sender.username) if notification.sender else '系统'
         ctx = {
             'sender_name': sender_name,
+            'recipient_name': recipient.first_name or recipient.username,
             'site_name': EmailService._get_site_name(),
             'site_url': EmailService._get_site_url(),
             'body': notification.body,

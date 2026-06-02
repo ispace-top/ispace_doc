@@ -1528,34 +1528,72 @@
     function renderThirdPartyBindings(settings) {
         var container = document.getElementById('thirdPartyBindings');
         if (!container) return;
-        var bindings = [
-            { key: 'wecom_userid', label: '{% trans "企业微信 UserID" %}', placeholder: '{% trans "请输入企业微信用户ID（暂未开放）" %}' },
-            { key: 'dingtalk_userid', label: '{% trans "钉钉 UserID" %}', placeholder: '{% trans "请输入钉钉用户ID（暂未开放）" %}' },
-            { key: 'oa_userid', label: '{% trans "企业OA UserID" %}', placeholder: '{% trans "请输入OA系统用户ID（暂未开放）" %}' }
-        ];
-        var html = '';
-        bindings.forEach(function(b) {
-            html += '<div class="ispace-toggle-item"><div class="ispace-toggle-label"><span class="ispace-toggle-title">' + b.label + '</span></div>';
-            html += '<input type="text" class="ispace-form-input" data-bind-key="' + b.key + '" value="' + (settings[b.key] || '') + '" placeholder="' + b.placeholder + '" disabled onchange="saveBindSetting()" style="max-width:320px">';
-            html += '</div>';
-        });
-        container.innerHTML = html;
+        container.innerHTML = '<p style="color:var(--ispace-color-text-tertiary);font-size:var(--ispace-font-sm)"><span class="ispace-spinner"></span>{% trans "加载绑定状态..." %}</p>';
+        var csrf = getCSRF();
+        fetch('/api/user/bindings/', { headers: { 'X-CSRFToken': csrf } })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!data.status) throw new Error('Failed');
+                var bindings = data.bindings;
+                var html = '';
+                var platformDefs = [
+                    { key: 'wecom', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178A1.17 1.17 0 0 1 4.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178 1.17 1.17 0 0 1-1.162-1.178c0-.651.52-1.18 1.162-1.18zm5.34 2.867c-1.797-.052-3.746.512-5.28 1.786-1.72 1.428-2.687 3.72-1.78 6.22.742 2.041 2.439 3.316 4.464 3.848.394.103.806.155 1.223.155.822 0 1.626-.135 2.386-.405a.72.72 0 0 1 .598.082l1.584.926a.272.272 0 0 0 .14.047c.134 0 .24-.111.24-.247 0-.06-.023-.12-.04-.178l-.325-1.233a.49.49 0 0 1 .178-.554C23.028 18.48 24 16.82 24 14.98c0-3.21-2.931-5.837-7.062-6.122zm-2.18 2.769c.535 0 .969.44.969.982a.976.976 0 0 1-.969.983.976.976 0 0 1-.969-.983c0-.542.434-.982.97-.982zm4.844 0c.535 0 .969.44.969.982a.976.976 0 0 1-.969.983.976.976 0 0 1-.969-.983c0-.542.434-.982.97-.982z"/></svg>', label: '{% trans "企业微信" %}' },
+                    { key: 'dingtalk', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>', label: '{% trans "钉钉" %}' }
+                ];
+                platformDefs.forEach(function(p) {
+                    var b = bindings[p.key];
+                    if (!b) return;
+                    html += '<div class="ispace-toggle-item">';
+                    html += '<div class="ispace-toggle-label" style="flex-direction:row;align-items:center;gap:8px;">';
+                    html += '<span style="color:var(--ispace-color-text-secondary);display:flex;align-items:center;">' + p.icon + '</span>';
+                    html += '<span class="ispace-toggle-title">' + p.label + '</span>';
+                    html += '</div>';
+                    if (!b.enabled) {
+                        html += '<span style="font-size:var(--ispace-font-sm);color:var(--ispace-color-text-quaternary);">{% trans "未配置" %}</span>';
+                    } else if (b.bound) {
+                        html += '<span style="display:flex;align-items:center;gap:8px;">';
+                        html += '<span style="font-size:var(--ispace-font-sm);color:var(--ispace-color-success,#27AE60);">{% trans "已绑定" %}</span>';
+                        if (b.bound_name) html += '<span style="font-size:var(--ispace-font-sm);color:var(--ispace-color-text-secondary);">' + b.bound_name + '</span>';
+                        if (b.bound_at) html += '<span style="font-size:var(--ispace-font-xs);color:var(--ispace-color-text-quaternary);">' + b.bound_at + '</span>';
+                        html += '<button class="ispace-btn ispace-btn-ghost ispace-btn-sm" style="color:#E74C3C;font-size:var(--ispace-font-xs);" onclick="unbindAccount(\'' + p.key + '\')">{% trans "解绑" %}</button>';
+                        html += '</span>';
+                    } else {
+                        html += '<button class="ispace-btn ispace-btn-outline ispace-btn-sm" onclick="bindAccount(\'' + p.key + '\')">{% trans "绑定" %}' + p.label + '</button>';
+                    }
+                    html += '</div>';
+                });
+                if (!html) html = '<p style="color:var(--ispace-color-text-tertiary);font-size:var(--ispace-font-sm)">{% trans "暂无可绑定的第三方平台" %}</p>';
+                container.innerHTML = html;
+            })
+            .catch(function() {
+                container.innerHTML = '<p style="color:#E74C3C">{% trans "加载失败" %}</p>';
+            });
     }
 
-    window.saveBindSetting = function() {
-        var data = {};
-        document.querySelectorAll('#thirdPartyBindings [data-bind-key]').forEach(function(el) {
-            data[el.getAttribute('data-bind-key')] = el.value;
-        });
+    window.bindAccount = function(provider) {
+        window.location.href = '/auth/' + provider + '/bind/';
+    };
+
+    window.unbindAccount = function(provider) {
+        if (!confirm('{% trans "确定要解除" %}' + provider + '{% trans "账号绑定吗？解绑后将无法通过该平台接收通知消息。" %}')) return;
         var csrf = getCSRF();
-        fetch('/api/user/notify-settings/save/', {
+        fetch('/api/user/bindings/' + provider + '/unbind/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
-            body: JSON.stringify(data)
-        }).then(function(r) { return r.json(); }).then(function(d) {
-            if (d.status) showToast('{% trans "设置已保存" %}', 'success');
-        }).catch(function() {
-            showToast('{% trans "保存失败" %}', 'error');
+            body: '{}'
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.status) {
+                showToast(data.message || '{% trans "已解除绑定" %}', 'success');
+                notifySettingsLoaded = false;
+                loadNotifySettings();
+            } else {
+                showToast(data.error || '{% trans "解绑失败" %}', 'error');
+            }
+        })
+        .catch(function() {
+            showToast('{% trans "解绑失败" %}', 'error');
         });
     };
 

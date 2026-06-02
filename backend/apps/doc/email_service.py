@@ -96,6 +96,7 @@ class EmailService:
     # ========== 模板化发送 ==========
 
     NOTIFY_TEMPLATES = {
+        'welcome': 'email/welcome.html',
         'comment': 'email/comment.html',
         'mention': 'email/mention.html',
         'perm_change': 'email/perm_change.html',

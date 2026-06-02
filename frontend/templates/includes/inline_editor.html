@@ -263,11 +263,11 @@
                placeholder="{% trans '文档标题' %}" value="{{ doc.name|default:'' }}"
                oninput="var bc=document.getElementById('inline-breadcrumb-doc');if(bc)bc.textContent=this.value||this.placeholder">
         <span id="inline-doc-status-badge" style="display:none;font-size:var(--ispace-font-xs);padding:2px 8px;border-radius:10px;line-height:20px;white-space:nowrap;"></span>
-        <button class="ispace-btn ispace-btn-outline ispace-btn-sm" id="inline-draft-btn" onclick="(window._inlineSubmitFn||function(){})(0)" title="{% trans '保存草稿，不公开' %}" style="display:none">
+        <button class="ispace-btn ispace-btn-outline ispace-btn-sm" id="inline-draft-btn" onclick="_guardedSubmit(0)" title="{% trans '保存草稿，不公开' %}" style="display:none">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
             <span id="inline-draft-btn-text">{% trans '保存草稿' %}</span>
         </button>
-        <button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="inline-publish-btn" onclick="(window._inlineSubmitFn||function(){})(1)" title="{% trans '发布文档' %}">
+        <button class="ispace-btn ispace-btn-primary ispace-btn-sm" id="inline-publish-btn" onclick="_guardedSubmit(1)" title="{% trans '发布文档' %}">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
             <span id="inline-publish-btn-text">{% trans '发布' %}</span>
         </button>
@@ -325,6 +325,65 @@ window._inlineParentDoc = {{ doc.parent_doc|default:0 }};
 window._inlineEditorAssetsLoaded = {};
 window._inlineSubmitFn = null;  // set by doc.html
 window._inlineCancelFn = null;  // set by doc.html
+window._isSubmitting = false;
+
+// 带防重复提交守卫的提交包装函数
+function _guardedSubmit(status) {
+    if (window._isSubmitting) return;
+    var fn = window._inlineSubmitFn;
+    if (!fn) return;
+
+    window._isSubmitting = true;
+    var draftBtn = document.getElementById('inline-draft-btn');
+    var publishBtn = document.getElementById('inline-publish-btn');
+    var draftText = document.getElementById('inline-draft-btn-text');
+    var publishText = document.getElementById('inline-publish-btn-text');
+
+    // 禁用按钮 + 显示加载状态
+    if (draftBtn) { draftBtn.disabled = true; draftBtn.style.opacity = '0.6'; draftBtn.style.cursor = 'not-allowed'; }
+    if (publishBtn) { publishBtn.disabled = true; publishBtn.style.opacity = '0.6'; publishBtn.style.cursor = 'not-allowed'; }
+    if (status === 0 && draftText) {
+        draftBtn._origHTML = draftBtn.innerHTML;
+        draftBtn.innerHTML = '<span class="ispace-spinner"></span> 保存中...';
+    } else if (status === 1 && publishText) {
+        publishBtn._origHTML = publishBtn.innerHTML;
+        publishBtn.innerHTML = '<span class="ispace-spinner"></span> 发布中...';
+    }
+
+    // 超时安全阀：15秒后自动恢复按钮（防止异常情况下按钮永久禁用）
+    var timeoutId = setTimeout(function() {
+        _resetSubmitButtons();
+        window._isSubmitting = false;
+    }, 15000);
+
+    // 包装原始函数，在完成后恢复按钮
+    window._submitTimeoutId = timeoutId;
+    try {
+        fn(status);
+    } catch(e) {
+        _resetSubmitButtons();
+        window._isSubmitting = false;
+        clearTimeout(timeoutId);
+    }
+}
+
+// 恢复按钮到正常状态
+function _resetSubmitButtons() {
+    var draftBtn = document.getElementById('inline-draft-btn');
+    var publishBtn = document.getElementById('inline-publish-btn');
+    if (draftBtn) {
+        if (draftBtn._origHTML) draftBtn.innerHTML = draftBtn._origHTML;
+        draftBtn.disabled = false;
+        draftBtn.style.opacity = '';
+        draftBtn.style.cursor = '';
+    }
+    if (publishBtn) {
+        if (publishBtn._origHTML) publishBtn.innerHTML = publishBtn._origHTML;
+        publishBtn.disabled = false;
+        publishBtn.style.opacity = '';
+        publishBtn.style.cursor = '';
+    }
+}
 
 function _updateDocStatusBadge(status) {
     var badge = document.getElementById('inline-doc-status-badge');
@@ -1671,10 +1730,14 @@ function inlineCreateSubmit(status) {
                     else { window.location.href = newUrl; }
                 }
             } else {
-                alert('保存失败：' + (r.data || ''));
+                if (typeof layer !== 'undefined') layer.msg('保存失败：' + (r.data || ''), {icon: 2});
             }
         }).catch(function() {
             if (typeof layer !== 'undefined') layer.msg('保存异常', {icon: 2});
+        }).finally(function() {
+            _resetSubmitButtons();
+            window._isSubmitting = false;
+            clearTimeout(window._submitTimeoutId);
         });
         return;
     }
@@ -1716,12 +1779,17 @@ function inlineCreateSubmit(status) {
                 }
             }
         } else {
-            alert(r.data);
+            if (typeof layer !== 'undefined') layer.msg(r.data || '创建失败', {icon: 2});
         }
     })
     .catch(function(e) {
         console.error(e);
-        alert('Network error');
+        if (typeof layer !== 'undefined') layer.msg('网络异常，请重试', {icon: 2});
+    })
+    .finally(function() {
+        _resetSubmitButtons();
+        window._isSubmitting = false;
+        clearTimeout(window._submitTimeoutId);
     });
 }
 
