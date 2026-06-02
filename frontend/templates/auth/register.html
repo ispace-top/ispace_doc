@@ -53,10 +53,27 @@
     </div>
     {% endif %}
 
-    <button type="submit" class="ispace-btn ispace-btn-primary ispace-btn-sm">
+    <button type="submit" class="ispace-btn ispace-btn-primary ispace-btn-sm" id="register-submit-btn">
         {% trans "注 册" %}
     </button>
 </form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    var form = document.querySelector('.ispace-auth-form');
+    if (!form) return;
+    form.addEventListener('submit', function() {
+        var btn = document.getElementById('register-submit-btn');
+        if (!btn || btn.disabled) return;
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'not-allowed';
+        btn.innerHTML = '<span class="ispace-spinner"></span> 注册中...';
+    });
+})();
+</script>
 {% endblock %}
 
 {% block auth_footer %}

@@ -36,7 +36,7 @@
                required autocomplete="new-password">
     </div>
 
-    <button type="submit" class="ispace-btn ispace-btn-primary ispace-btn-sm">
+    <button type="submit" class="ispace-btn ispace-btn-primary ispace-btn-sm" id="reset-pwd-submit-btn">
         {% trans "重置密码" %}
     </button>
 </form>
@@ -48,6 +48,19 @@
 
 {% block scripts %}
 <script>
+(function() {
+    var form = document.querySelector('.ispace-auth-form');
+    if (!form) return;
+    form.addEventListener('submit', function() {
+        var btn = document.getElementById('reset-pwd-submit-btn');
+        if (!btn || btn.disabled) return;
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'not-allowed';
+        btn.innerHTML = '<span class="ispace-spinner"></span> 提交中...';
+    });
+})();
+
 function sendVcode() {
     const email = document.getElementById('email').value.trim();
     if (!email) {
