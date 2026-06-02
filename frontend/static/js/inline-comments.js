@@ -456,11 +456,23 @@
             var initial = (comment.user_name || '?').charAt(0).toUpperCase();
             avatarHtml = '<span class="ispace-inline-comment-avatar ispace-inline-comment-avatar-initial">' + initial + '</span>';
           }
+          var userName = escapeHtml(comment.user_name);
+          // 超长用户名使用中间省略：保留前几字和后两字，中间用 CSS text-overflow 截断
+          var nameHtml;
+          if (userName.length > 5) {
+            var keepEnd = Math.min(2, Math.floor(userName.length / 3));
+            nameHtml = '<span class="ispace-inline-comment-name">' +
+              '<span class="ispace-inline-comment-name-start">' + userName.substring(0, userName.length - keepEnd) + '</span>' +
+              '<span class="ispace-inline-comment-name-end">' + userName.substring(userName.length - keepEnd) + '</span>' +
+              '</span>';
+          } else {
+            nameHtml = '<strong>' + userName + '</strong>';
+          }
           return '<div class="ispace-inline-comment-item' + itemClass + '">' +
             '<div class="ispace-inline-comment-item-header">' +
             '<span class="ispace-inline-comment-author" data-user-id="' + (comment.user_id || '') + '">' +
             avatarHtml +
-            '<strong>' + escapeHtml(comment.user_name) + '</strong>' +
+            nameHtml +
             '</span>' +
             '<span class="ispace-inline-comment-time">' + comment.create_time + '</span>' +
             deleteBtn +
