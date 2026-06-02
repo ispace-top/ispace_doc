@@ -58,9 +58,78 @@
             {% block auth_footer %}{% endblock %}
         </div>
 
+        {# --- Loading Overlay --- #}
+        <div class="ispace-auth-loading-overlay" id="auth-loading-overlay">
+            <div class="ispace-auth-loading-spinner"></div>
+            <span class="ispace-auth-loading-text" id="auth-loading-text">{% trans "处理中，请稍候..." %}</span>
+        </div>
+
     </div>
 </div>
 {% endblock %}
 
 {% block core_scripts %}{% endblock %}
 {% block inline_bootstrap %}{% endblock %}
+
+{% block scripts %}
+<style>
+.ispace-auth-card { position: relative; }
+.ispace-auth-loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.85);
+    border-radius: inherit;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    z-index: 10;
+}
+.ispace-auth-loading-overlay.active { display: flex; }
+.ispace-auth-loading-spinner {
+    width: 32px; height: 32px;
+    border: 3px solid var(--ispace-color-border-light, #e2e8f0);
+    border-top-color: var(--ispace-color-brand-500);
+    border-radius: 50%;
+    animation: ispace-spin 0.7s linear infinite;
+}
+.ispace-auth-loading-text {
+    font-size: var(--ispace-font-sm);
+    color: var(--ispace-color-text-secondary);
+}
+@keyframes ispace-spin { to { transform: rotate(360deg); } }
+</style>
+<script>
+// 认证表单遮罩安全机制
+(function() {
+    var overlay = document.getElementById('auth-loading-overlay');
+    if (!overlay) return;
+
+    // 安全机制 1：页面从 bfcache 恢复时重置遮罩
+    window.addEventListener('pageshow', function(e) {
+        if (e.persisted) overlay.classList.remove('active');
+    });
+
+    // 安全机制 2：10 秒超时自动关闭（页面仍在但表单未跳转 = 异常）
+    window._showAuthLoading = function(msg) {
+        if (overlay.classList.contains('active')) return false;
+        var text = document.getElementById('auth-loading-text');
+        if (text && msg) text.textContent = msg;
+        overlay.classList.add('active');
+        window._authLoadingTimer = setTimeout(function() {
+            overlay.classList.remove('active');
+        }, 10000);
+        return true;
+    };
+
+    // 安全机制 3：异常时手动关闭遮罩的逃生出口（Esc 键）
+    window.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && overlay.classList.contains('active')) {
+            overlay.classList.remove('active');
+            if (window._authLoadingTimer) clearTimeout(window._authLoadingTimer);
+        }
+    });
+})();
+</script>
+{% endblock %}

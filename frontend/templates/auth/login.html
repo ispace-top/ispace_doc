@@ -46,17 +46,13 @@
 {% endblock %}
 
 {% block scripts %}
+{{ block.super }}
 <script>
 (function() {
     var form = document.querySelector('.ispace-auth-form');
     if (!form) return;
     form.addEventListener('submit', function() {
-        var btn = document.getElementById('login-submit-btn');
-        if (!btn || btn.disabled) return;
-        btn.disabled = true;
-        btn.style.opacity = '0.6';
-        btn.style.cursor = 'not-allowed';
-        btn.innerHTML = '<span class="ispace-spinner"></span> 登录中...';
+        window._showAuthLoading('{% trans "正在登录，请稍候..." %}');
     });
 })();
 </script>
