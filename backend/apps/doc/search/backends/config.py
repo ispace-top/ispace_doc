@@ -11,7 +11,8 @@ from django.conf import settings
 
 from .base import SearchBackend
 
-CONFIG_PATH = os.environ.get("ISDOC_CONFIG", os.path.join(settings.BASE_DIR, "config", "conf", "config.ini"))
+CONFIG_DIR = os.path.join(settings.BASE_DIR, 'config', 'conf')
+CONFIG_PATH = os.path.join(CONFIG_DIR, os.environ.get('ISDOC_CONFIG', 'config.ini'))
 
 
 def _read_config() -> configparser.ConfigParser:

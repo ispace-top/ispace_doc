@@ -701,7 +701,7 @@ def api_user_bindings(request):
         profile = None
 
     # 企业微信
-    enabled_backends = {b.provider for b in get_enabled_backends()}
+    enabled_backends = set(get_enabled_backends())
     bindings['wecom'] = {
         'enabled': 'wecom' in enabled_backends,
         'bound': bool(profile and profile.wecom_userid),
