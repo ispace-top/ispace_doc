@@ -604,19 +604,27 @@ class AdminUserDetail(APIView):
             }
             return Response(resp)
         elif obj == 'info': # 修改资料
-            status = request.POST.get('is_active', '')  # 状态
-            username = request.POST.get('username', '')  # 用户名
-            nickname = request.POST.get('nickname', '')  # 昵称
-            email = request.POST.get('email', '')  # 电子邮箱
-            is_superuser = request.POST.get('is_superuser', '')  # 是否超级管理员
+            # 仅更新请求中实际包含的字段，防止未提交的关键字段被误清空（如 username）
+            update_fields = {}
+
+            if 'nickname' in request.data:
+                update_fields['first_name'] = request.data.get('nickname', '')
+            if 'email' in request.data:
+                update_fields['email'] = request.data.get('email', '')
+            if 'is_active' in request.data:
+                val = request.data.get('is_active', '')
+                update_fields['is_active'] = True if val in ('on', 'true', True) else False
+            if 'is_superuser' in request.data:
+                val = request.data.get('is_superuser', '')
+                update_fields['is_superuser'] = True if val in ('true', True) else False
+            if 'username' in request.data:
+                update_fields['username'] = request.data.get('username', '')
+
+            if not update_fields:
+                return Response({'code': 5, 'data': _('没有需要更新的字段')})
+
             try:
-                User.objects.filter(id=id).update(
-                    username = username,
-                    first_name = nickname,
-                    email = email,
-                    is_active = True if status == 'on' else False,
-                    is_superuser = True if is_superuser == 'true' else False
-                )
+                User.objects.filter(id=id).update(**update_fields)
                 return Response({'code': 0, 'data': _('修改成功')})
             except:
                 logger.exception("修改用户资料异常")
