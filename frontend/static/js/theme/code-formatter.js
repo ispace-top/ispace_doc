@@ -71,7 +71,7 @@
       .then(function (r) { return r.json(); })
       .then(function (data) {
         if (data.code === 0 && data.data && data.data.formatted && data.data.formatted !== b.code) {
-          return { index: b.index, oldCode: b.fullMatch, newCode: '```' + b.lang + '\n' + data.data.formatted + '```' };
+          return { index: b.index, oldCode: b.fullMatch, newCode: '```' + b.lang + '\n' + data.data.formatted.trimEnd() + '\n' + '```' };
         }
         return null;
       });
@@ -98,28 +98,7 @@
         var origBacktick = (originalMd.match(/```/g) || []).length;
         var newBacktick = (md.match(/```/g) || []).length;
         if (origBacktick === newBacktick) {
-          // Destroy + re-create Vditor to force block re-parse
-          try {
-            var ed = window._inlineEditor;
-            var container = document.getElementById('inline-editor-md');
-            var currentMode = window._currentVditorMode || 'ir';
-            if (ed && container) {
-              ed.destroy();
-              window._inlineEditor = null;
-              container.innerHTML = '';
-              var ta = document.createElement('textarea');
-              ta.style.display = 'none';
-              ta.value = md;
-              container.appendChild(ta);
-              window._currentVditorMode = currentMode;
-              if (typeof _initVditorWithMode === 'function') {
-                _initVditorWithMode(container, currentMode, md);
-              }
-            }
-          } catch (e) {
-            // Fallback: plain setValue
-            window._inlineEditor.setValue(md);
-          }
+          window._inlineEditor.setValue(md);
         } else {
           showToast('error', '格式化异常：代码块边界不匹配，操作已取消');
         }
