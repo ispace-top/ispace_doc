@@ -9,17 +9,13 @@
 
   var FORMAT_API = '/api/format-code/';
   var LANG_MAP = {
-    js: 'javascript', javascript: 'javascript', jsx: 'javascript',
     json: 'json', json5: 'json',
     py: 'python', python: 'python',
-    html: 'html', htm: 'html', xml: 'html', svg: 'html',
-    css: 'css', scss: 'css', less: 'css',
-    ts: 'typescript', typescript: 'typescript', tsx: 'typescript',
-    java: 'java', go: 'go', rust: 'rust', sql: 'sql',
-    md: 'markdown', markdown: 'markdown',
-    yaml: 'yaml', yml: 'yaml',
-    sh: 'bash', bash: 'bash', shell: 'bash', zsh: 'bash',
-    php: 'php', rb: 'ruby', ruby: 'ruby', c: 'c', cpp: 'cpp', csharp: 'csharp',
+    js: 'generic', javascript: 'generic', jsx: 'generic',
+    html: 'generic', css: 'generic',
+    java: 'generic', go: 'generic', rust: 'generic',
+    ts: 'generic', tsx: 'generic', sql: 'generic',
+    sh: 'generic', bash: 'generic', php: 'generic', c: 'generic', cpp: 'generic',
   };
 
   var csrfToken = window.__ISPACEDOC__ && window.__ISPACEDOC__.csrfToken || '';
@@ -121,8 +117,9 @@
   }
 
   function showToast(type, msg) {
-    if (window.iSpaceToast && window.iSpaceToast[type]) {
-      window.iSpaceToast[type](msg);
+    if (window.iSpaceDoc && window.iSpaceDoc.Toast) {
+      var fn = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
+      window.iSpaceDoc.Toast[fn](msg);
     } else if (typeof layer !== 'undefined') {
       layer.msg(msg);
     } else {

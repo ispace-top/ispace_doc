@@ -319,19 +319,16 @@ class DingTalkChannel(BaseNotificationChannel):
 
         import requests
         resp = requests.post(
-            'https://api.dingtalk.com/v1.0/oauth2/accessToken',
-            json={'appKey': cfg['app_key'], 'appSecret': cfg['app_secret']},
+            'https://oapi.dingtalk.com/gettoken',
+            params={'appkey': cfg['app_key'], 'appsecret': cfg['app_secret']},
             timeout=15,
-            headers={'Content-Type': 'application/json'},
         )
-        if resp.status_code != 200:
-            raise RuntimeError(f"钉钉 access_token 获取失败: HTTP {resp.status_code} {resp.text[:200]}")
-
         data = resp.json()
-        self._access_token = data.get('accessToken', '')
-        self._token_expires_at = time.time() + data.get('expireIn', 7200)
-        if not self._access_token:
-            raise RuntimeError('钉钉 access_token 返回为空')
+        if data.get('errcode') != 0:
+            raise RuntimeError(f"钉钉 access_token 获取失败: {data.get('errmsg', resp.text[:200])}")
+
+        self._access_token = data['access_token']
+        self._token_expires_at = time.time() + data.get('expires_in', 7200)
         return self._access_token
 
     def send(self, notification: Notification, recipient: User) -> bool:
@@ -358,6 +355,11 @@ class DingTalkChannel(BaseNotificationChannel):
             token = self._get_access_token()
             cfg = self._get_config()
 
+            agent_id = cfg.get('agent_id', '')
+            if not agent_id:
+                logger.warning(f'[DingTalkChannel] agent_id 未配置')
+                return False
+
             sender_name = (notification.sender.first_name or notification.sender.username) if notification.sender else '系统'
             link = notification.link or ''
 
@@ -379,14 +381,14 @@ class DingTalkChannel(BaseNotificationChannel):
                 }
 
             body = {
-                'agent_id': cfg.get('agent_id', ''),
+                'agent_id': int(agent_id) if agent_id.isdigit() else agent_id,
                 'userid_list': profile.dingtalk_userid,
                 'msg': msg,
             }
 
             import requests
             resp = requests.post(
-                f'https://api.dingtalk.com/v1.0/topapi/message/corpconversation/asyncsend_v2?access_token={token}',
+                f'https://oapi.dingtalk.com/topapi/message/corpconversation/asyncsend_v2?access_token={token}',
                 json=body, timeout=10,
             )
             if resp.status_code == 200:

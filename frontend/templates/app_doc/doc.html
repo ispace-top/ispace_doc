@@ -1520,7 +1520,7 @@ document.addEventListener('DOMContentLoaded',function(){
             if (cdlBlock.getAttribute('data-rendered')) continue;
             cdlBlock.setAttribute('data-rendered', '1');
             (function(block) {
-                var docId = window.__ISPACEDOC__ && window.__ISPACEDOC__.docId;
+                var docId = window._docId;
                 if (!docId) { block.textContent = '子文档目录加载失败：无法获取文档ID'; return; }
                 fetch('/documents/' + docId + '/children/')
                 .then(function(r) { return r.json(); })

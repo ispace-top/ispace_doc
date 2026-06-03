@@ -188,7 +188,7 @@
                     t.style.color = d.status ? '#065f46' : '#991b1b';
                     t.style.borderLeft = '4px solid ' + (d.status ? '#10b981' : '#ef4444');
                     t.style.opacity = '1';
-                    setTimeout(function() { t.style.opacity = '0'; }, 3000);
+                    setTimeout(function() { t.style.opacity = '0'; setTimeout(function() { if (t.parentNode) t.parentNode.removeChild(t); }, 400); }, 3000);
                 }
             }
             loadData();

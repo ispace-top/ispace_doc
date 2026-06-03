@@ -15,12 +15,16 @@
   function init(containerSelector) {
     containerSelector = containerSelector || CONTAINER_SELECTOR;
     var containers = document.querySelectorAll(containerSelector);
-    containers.forEach(function (container) {
+    Array.prototype.forEach.call(containers, function (container) {
       makeTablesResizable(container);
-      // 监 hearing 动态插入的内容（SPA 页面切换后重新绑定）
+      // 监听动态插入的内容（SPA 页面切换后重新绑定）
       if (window.MutationObserver) {
+        var timer = null;
         var observer = new MutationObserver(function () {
-          makeTablesResizable(container);
+          clearTimeout(timer);
+          timer = setTimeout(function () {
+            makeTablesResizable(container);
+          }, 200);
         });
         observer.observe(container, { childList: true, subtree: true });
       }
@@ -29,7 +33,7 @@
 
   function makeTablesResizable(container) {
     var tables = container.querySelectorAll('table');
-    tables.forEach(function (table) {
+    Array.prototype.forEach.call(tables, function (table) {
       if (table.hasAttribute('data-table-resize')) return;
       table.setAttribute('data-table-resize', 'enabled');
       addDragHandles(table);
