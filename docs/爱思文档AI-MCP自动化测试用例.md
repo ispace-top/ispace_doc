@@ -439,11 +439,11 @@ print('superusers:', User.objects.filter(is_superuser=True).count())"
 
 ### T4.10 时序图 (sequence)
 - **T4.10.1**：` ```sequence\n客户端->服务器: 请求\n服务器-->客户端: 响应\n``` ` → 发布
-- **验证**：⚠️ **已知问题** — 当前版本以 `language-sequence hljs` 代码高亮形式显示，未渲染为 SVG 时序图
+- **验证**：渲染为 SVG 时序图（`Raphael` + `js-sequence-diagrams`），`#vditor-doc-content svg` 存在
 
 ### T4.11 PlantUML
 - **T4.11.1**：` ```plantuml\n@startuml\nAlice -> Bob: Hello\n@enduml\n``` ` → 发布
-- **验证**：⚠️ **已知问题** — `.language-plantuml` DIV 存在但内容为空(textLen=0)，PlantUML 转换器未正常工作
+- **验证**：通过客户端 `plantumlEncoder` 编码后调用 `https://www.plantuml.com/plantuml/svg/` 渲染为 SVG，`.language-plantuml object` 或 `img` 存在
 
 ### T4.12 Graphviz (DOT)
 - **T4.12.1**：` ```graphviz\ndigraph G { rankdir=LR; A -> B -> C; A -> C; }\n``` ` → 发布
@@ -455,7 +455,7 @@ print('superusers:', User.objects.filter(is_superuser=True).count())"
 
 ### T4.14 手绘图 (Excalidraw)
 - **T4.14.1**：编辑模式点击"手绘图" → 插入 ` ```excalidraw ` 代码块 → 发布
-- **验证**：⚠️ **已知问题** — 当前版本以 `<PRE>` 显示原始 JSON 源码，Excalidraw 交互式画布未激活
+- **验证**：通过独立 Excalidraw 编辑模板（`editor_mode=7`）渲染为 SVG/Canvas
 
 ### T4.15 代码块增强
 - **T4.15.1 语法高亮**：` ```python\n...\n``` ` → 查看页 `<code class="language-python hljs">`
