@@ -1,14 +1,31 @@
 # coding:utf-8
-"""代码格式化 API — 支持多种语言的自动格式化。"""
+"""代码格式化 API — Python(autopep8) / JSON(json) / 其他(prettier)。"""
 
 import json
+import os
 import re
+import subprocess
 import textwrap
 
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from loguru import logger
+
+# -------------------------------------------------------------------
+#  Prettier 语言映射 (language → prettier parser)
+# -------------------------------------------------------------------
+
+PRETTIER_LANGS = {
+    'java': 'java',
+    'javascript': 'babel', 'js': 'babel', 'jsx': 'babel',
+    'typescript': 'typescript', 'ts': 'typescript', 'tsx': 'typescript',
+    'html': 'html', 'css': 'css', 'scss': 'css', 'less': 'css',
+    'json': 'json', 'json5': 'json',
+    'markdown': 'markdown', 'md': 'markdown',
+    'yaml': 'yaml', 'yml': 'yaml',
+    'graphql': 'graphql',
+}
 
 
 def _format_json(code: str) -> str:
@@ -27,55 +44,44 @@ def _format_python(code: str) -> str:
             return result
     except ImportError:
         pass
-    # autopep8 didn't change anything or unavailable: manual cleanup
     lines = code.split('\n')
     cleaned = []
     for line in lines:
-        # Normalize multiple spaces (preserve indent)
         stripped = line.lstrip()
         indent = line[:len(line) - len(stripped)]
-        # Collapse multiple spaces between tokens (not inside strings)
         normalized = re.sub(r' {2,}', ' ', stripped)
         cleaned.append(indent + normalized)
     return textwrap.dedent('\n'.join(cleaned)).strip() + '\n'
 
 
-def _format_js_like(code: str) -> str:
-    """基础格式化适用于 JS/Java/C/Go 等类C语言。"""
-    lines = code.split('\n')
-    result = []
-    for line in lines:
-        indent = len(line) - len(line.lstrip())
-        s = line.strip()
-        if not s:
-            result.append('')
-            continue
-        # comma spacing: x,y → x, y
-        s = re.sub(r',(?!\s)', ', ', s)
-        # operator spacing: =+-*/  but not == != <= >= ++ --
-        s = re.sub(r'(?<![=+\-*/%<>&|^!])([=+\-*/%])(?!=)', r' \1 ', s)
-        s = re.sub(r'([=+\-*/%]) (?=[=+\-*/%])', r'\1', s)
-        # brace spacing: fx(){ → fx() {,  ){ → ) {
-        s = re.sub(r'\)\s*\{', ') {', s)
-        s = re.sub(r'\b(else|do|try|finally)\s*\{', r'\1 {', s)
-        # closing brace spacing: }else → } else
-        s = re.sub(r'\}\s*(?=\w)', '} ', s)
-        # semicolon spacing: x;y → x; y (except end of statement)
-        s = re.sub(r';(?=\S)', '; ', s)
-        # paren spacing
-        s = re.sub(r'\(\s+', '(', s)
-        s = re.sub(r'\s+\)', ')', s)
-        # keyword spacing: if(for(while(
-        s = re.sub(r'\b(if|for|while|switch|catch|synchronized)\s*\(', r'\1 (', s)
-        # collapse multiple spaces
-        s = re.sub(r' {2,}', ' ', s)
-        s = s.rstrip()
-        result.append(' ' * indent + s)
-    return '\n'.join(result).strip() + '\n'
+def _format_prettier(code: str, parser: str) -> str:
+    """调用 Prettier 格式化代码。"""
+    npx = 'npx.cmd' if os.name == 'nt' else 'npx'
+    args = [npx, '-y', 'prettier', '--parser', parser, '--stdin-filepath', f'dummy.{parser}']
+    if parser in ('java',):
+        args.insert(3, 'prettier-plugin-java')
+        args.insert(3, '--plugin')
+    try:
+        proc = subprocess.run(
+            args,
+            input=code,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            env={**os.environ, 'CI': '1'},
+        )
+        if proc.returncode == 0 and proc.stdout.strip():
+            return proc.stdout
+        logger.warning(f'Prettier failed ({parser}): {proc.stderr[:200]}')
+        raise RuntimeError(proc.stderr.strip() or '格式化失败')
+    except FileNotFoundError:
+        raise RuntimeError('npx 不可用，请安装 Node.js')
+    except subprocess.TimeoutExpired:
+        raise RuntimeError('prettier 格式化超时')
 
 
 def _format_generic(code: str) -> str:
-    """通用格式化：去公共缩进 + 去除多余空行 + 基础空格规范化。"""
+    """通用格式化：去公共缩进 + 去除多余空行。"""
     lines = code.split('\n')
     while lines and lines[0].strip() == '':
         lines.pop(0)
@@ -96,18 +102,17 @@ LANGUAGE_FORMATTERS = {
     'json': _format_json,
     'python': _format_python,
     'py': _format_python,
-    'javascript': _format_js_like,
-    'js': _format_js_like,
-    'java': _format_js_like,
-    'c': _format_js_like,
-    'cpp': _format_js_like,
-    'csharp': _format_js_like,
-    'go': _format_js_like,
-    'rust': _format_js_like,
-    'php': _format_js_like,
-    'typescript': _format_js_like,
-    'ts': _format_js_like,
 }
+
+
+def _get_formatter(language: str):
+    """根据语言选择格式化器：优先内置(Python/JSON)，其次Prettier。"""
+    if language in LANGUAGE_FORMATTERS:
+        return LANGUAGE_FORMATTERS[language], None
+    parser = PRETTIER_LANGS.get(language)
+    if parser:
+        return _format_prettier, parser
+    return _format_generic, None
 
 
 @require_POST
@@ -124,19 +129,15 @@ def api_format_code(request):
     if not code.strip():
         return JsonResponse({'code': 5, 'msg': '代码不能为空'})
 
-    formatter = LANGUAGE_FORMATTERS.get(language)
-    if formatter:
-        try:
+    formatter, extra = _get_formatter(language)
+    try:
+        if extra:
+            formatted = formatter(code, extra)
+        else:
             formatted = formatter(code)
-            return JsonResponse({'code': 0, 'data': {'formatted': formatted}})
-        except ValueError as e:
-            return JsonResponse({'code': 5, 'msg': str(e)})
-        except Exception as e:
-            logger.exception(f'代码格式化失败 language={language}')
-            return JsonResponse({'code': 5, 'msg': f'格式化失败: {e}'})
-    else:
-        try:
-            formatted = _format_generic(code)
-            return JsonResponse({'code': 0, 'data': {'formatted': formatted}})
-        except Exception as e:
-            return JsonResponse({'code': 5, 'msg': str(e)})
+        return JsonResponse({'code': 0, 'data': {'formatted': formatted}})
+    except ValueError as e:
+        return JsonResponse({'code': 5, 'msg': str(e)})
+    except Exception as e:
+        logger.exception(f'代码格式化失败 language={language}')
+        return JsonResponse({'code': 5, 'msg': str(e)})
