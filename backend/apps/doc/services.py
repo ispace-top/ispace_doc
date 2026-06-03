@@ -448,6 +448,9 @@ class NotificationService:
                 logger.info(f'[通知] 通道发送成功: {succeeded} notif_id={notif.id}')
             if failed:
                 logger.warning(f'[通知] 通道发送失败: {failed} notif_id={notif.id}')
+            # Save per-channel delivery results
+            notif.channel_results = {ch: ok for ch, ok in results.items()}
+            notif.save(update_fields=['channel_results'])
         except Exception:
             logger.exception('NotificationService: 通道分发异常')
 

@@ -362,6 +362,7 @@ class Notification(models.Model):
     body = models.TextField(blank=True, default='', verbose_name="通知内容")
     link = models.URLField(max_length=500, blank=True, default='', verbose_name="关联链接")
     is_read = models.BooleanField(default=False, verbose_name="是否已读")
+    channel_results = models.JSONField(default=dict, blank=True, verbose_name="渠道投递结果")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
 
     def __str__(self):

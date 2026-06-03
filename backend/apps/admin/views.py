@@ -2262,6 +2262,7 @@ def api_admin_notifications(request):
         'body': n.body,
         'is_read': n.is_read,
         'link': n.link,
+        'channel_results': n.channel_results or {},
         'created_at': n.created_at.strftime('%Y-%m-%d %H:%M:%S') if n.created_at else '',
     } for n in notifications]
     return JsonResponse({'status': True, 'notifications': result, 'total': total})
