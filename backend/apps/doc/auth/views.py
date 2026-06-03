@@ -236,8 +236,50 @@ def oauth_bind_callback(request, provider: str):
         return JsonResponse({"error": str(e)}, status=400)
 
     _save_oauth_bind(request.user, result.user_info)
+
+    # 企业微信绑定后补推未读通知
+    if provider == 'wecom':
+        _backfill_wecom_notifications(request.user)
+
     # 绑定成功后重定向到个人中心通知设置页
     return redirect('/my/?tab=notify')
+
+
+def _backfill_wecom_notifications(user):
+    """企业微信绑定后，补推用户未读通知（含欢迎通知）到企微通道。"""
+    try:
+        from backend.apps.doc.models import Notification
+        from backend.apps.doc.notification_channels import (
+            get_channel_manager,
+            WeComChannel,
+        )
+
+        # 检查用户是否已绑定企微且有未读通知
+        from backend.apps.doc.models import UserProfile
+        profile = UserProfile.objects.only('wecom_userid').get(user=user)
+        if not profile.wecom_userid:
+            return
+
+        unread = Notification.objects.filter(recipient=user, is_read=False)
+        if not unread.exists():
+            return
+
+        manager = get_channel_manager()
+        wecom = manager.get_channel('wecom')
+        if wecom is None:
+            wecom = WeComChannel()
+            manager.register(wecom)
+
+        sent = 0
+        for notification in unread:
+            try:
+                if wecom.send(notification, user):
+                    sent += 1
+            except Exception:
+                logger.exception(f'[绑定补推] 通知发送失败 id={notification.pk}')
+        logger.info(f'[绑定补推] 用户 {user.username} 绑定企微后补推 {sent}/{unread.count()} 条通知')
+    except Exception:
+        logger.exception(f'[绑定补推] 补推异常 user={user.pk}')
 
 
 def oauth_login_form(request, provider: str):
