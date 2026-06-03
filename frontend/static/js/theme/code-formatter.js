@@ -98,7 +98,28 @@
         var origBacktick = (originalMd.match(/```/g) || []).length;
         var newBacktick = (md.match(/```/g) || []).length;
         if (origBacktick === newBacktick) {
-          window._inlineEditor.setValue(md);
+          // Destroy + re-create Vditor to force block re-parse
+          try {
+            var ed = window._inlineEditor;
+            var container = document.getElementById('inline-editor-md');
+            var currentMode = window._currentVditorMode || 'ir';
+            if (ed && container) {
+              ed.destroy();
+              window._inlineEditor = null;
+              container.innerHTML = '';
+              var ta = document.createElement('textarea');
+              ta.style.display = 'none';
+              ta.value = md;
+              container.appendChild(ta);
+              window._currentVditorMode = currentMode;
+              if (typeof _initVditorWithMode === 'function') {
+                _initVditorWithMode(container, currentMode, md);
+              }
+            }
+          } catch (e) {
+            // Fallback: plain setValue
+            window._inlineEditor.setValue(md);
+          }
         } else {
           showToast('error', '格式化异常：代码块边界不匹配，操作已取消');
         }
