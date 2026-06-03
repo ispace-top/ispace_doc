@@ -664,24 +664,35 @@ function initFavExpand() {
 }
 
 function updateFavVisibility() {
+    var collapsedRows = 2;
+    var expandedRows = 4;
+    var cards2Rows = favCardsPerRow * collapsedRows;
+    var cards4Rows = favCardsPerRow * expandedRows;
+    var total = favAllCards.length;
+
     if (favExpanded) {
         favGrid.style.maxHeight = '21rem';
         favExpandText.textContent = '{% trans "收起" %}';
         favExpandIcon.style.transform = 'rotate(180deg)';
+        // Show "more" arrow in last slot of 4th row when total > 4 rows
+        var showMore = total > cards4Rows;
+        var limit = showMore ? cards4Rows - 1 : total;
+        favAllCards.forEach(function(card, i) {
+            card.style.display = i < limit ? '' : 'none';
+        });
+        favMoreCard.style.display = showMore ? '' : 'none';
     } else {
         favGrid.style.maxHeight = '8.5rem';
         favExpandText.textContent = '{% trans "展开" %}';
         favExpandIcon.style.transform = '';
+        // Show "more" arrow in last slot of 2nd row when total > 2 rows
+        var showMore2 = total > cards2Rows;
+        var limit2 = showMore2 ? cards2Rows - 1 : total;
+        favAllCards.forEach(function(card, i) {
+            card.style.display = i < limit2 ? '' : 'none';
+        });
+        favMoreCard.style.display = showMore2 ? '' : 'none';
     }
-
-    var showMore = favExpanded && favAllCards.length > favMaxCards5Rows;
-    var regularLimit = showMore ? favMaxCards5Rows - 1 : favAllCards.length;
-
-    favAllCards.forEach(function(card, i) {
-        card.style.display = i < regularLimit ? '' : 'none';
-    });
-
-    favMoreCard.style.display = showMore ? '' : 'none';
 
     // Update scroll arrows after layout change
     setTimeout(function() {
