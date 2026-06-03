@@ -8,6 +8,7 @@
 .vditor-reset table th,
 .vditor-ir table td,
 .vditor-ir table th {
+  box-sizing: border-box;
   white-space: normal !important;
   word-break: break-word !important;
 }
@@ -28,6 +29,7 @@
 
 .vditor-ir table th,
 .vditor-ir table td {
+  box-sizing: border-box;
   padding: 6px 13px;
   border: 1px solid #dfe2e5;
   min-width: 60px;
