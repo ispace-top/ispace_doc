@@ -184,9 +184,9 @@
                         document.body.appendChild(t);
                     }
                     t.textContent = d.message;
-                    t.style.background = d.status ? '#d1fae5' : '#fee2e2';
-                    t.style.color = d.status ? '#065f46' : '#991b1b';
-                    t.style.borderLeft = '4px solid ' + (d.status ? '#10b981' : '#ef4444');
+                    t.style.background = d.status ? 'var(--ispace-color-success-bg, #d1fae5)' : 'var(--ispace-color-error-bg, #fee2e2)';
+                    t.style.color = d.status ? 'var(--ispace-color-success-text, #065f46)' : 'var(--ispace-color-error-text, #991b1b)';
+                    t.style.borderLeft = '4px solid ' + (d.status ? 'var(--ispace-color-success-border, #10b981)' : 'var(--ispace-color-error-border, #ef4444)');
                     t.style.opacity = '1';
                     setTimeout(function() { t.style.opacity = '0'; setTimeout(function() { if (t.parentNode) t.parentNode.removeChild(t); }, 400); }, 3000);
                 }

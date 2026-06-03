@@ -610,7 +610,17 @@ function _initVditorWithMode(container, mode, val, vdHeight) {
             window._inlineEditor.focus();
         }
     };
-;
+    var formatCodeBtn = {
+        name: 'format-code',
+        tipPosition: 's',
+        tip: '格式化代码',
+        icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
+        click: function() {
+            if (window.CodeFormatter) {
+                window.CodeFormatter.formatFocused();
+            }
+        }
+    };
 
     // ---- ECharts 图表工具按钮 ----
     function closeEchartsDropdown() {
@@ -964,7 +974,7 @@ function _initVditorWithMode(container, mode, val, vdHeight) {
         "emoji","headings","bold","|",
         "quote","code","inline-code","link","|",
         "list","ordered-list","check","|",
-        mindmapBtn,flowchartBtn,drawingBtn,childDocListBtn,echartsBtnGroup,"|",
+        mindmapBtn,flowchartBtn,drawingBtn,childDocListBtn,formatCodeBtn,echartsBtnGroup,"|",
         uploadImgBtn,uploadAttachBtn,"|",
         "undo","redo","|",
         "fullscreen",modeToggleBtn
@@ -972,7 +982,7 @@ function _initVditorWithMode(container, mode, val, vdHeight) {
         "emoji","headings","bold","italic","strike","|",
         "quote","code","inline-code","link","|",
         "list","ordered-list","check",tableInsertBtn,"|",
-        mindmapBtn,flowchartBtn,drawingBtn,childDocListBtn,echartsBtnGroup,"|",
+        mindmapBtn,flowchartBtn,drawingBtn,childDocListBtn,formatCodeBtn,echartsBtnGroup,"|",
         uploadImgBtn,uploadAttachBtn,"|",
         "outline","|",
         "undo","redo","|",

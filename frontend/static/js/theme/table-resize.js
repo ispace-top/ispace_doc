@@ -8,23 +8,23 @@
   'use strict';
 
   var CONTAINER_SELECTOR = '.markdown-body, #vditor-doc-content';
-  var MIN_COL_WIDTH = 40;
+  var MIN_COL_WIDTH = 60;
 
-  var state = null; // { table, colIndex, startX, startWidth, colWidths, cells }
+  var state = null;
+  var SAVE_API = null; // set from init options
 
-  function init(containerSelector) {
+  function init(containerSelector, opts) {
+    opts = opts || {};
+    SAVE_API = opts.saveApi || null;
     containerSelector = containerSelector || CONTAINER_SELECTOR;
     var containers = document.querySelectorAll(containerSelector);
     Array.prototype.forEach.call(containers, function (container) {
       makeTablesResizable(container);
-      // 监听动态插入的内容（SPA 页面切换后重新绑定）
       if (window.MutationObserver) {
         var timer = null;
         var observer = new MutationObserver(function () {
           clearTimeout(timer);
-          timer = setTimeout(function () {
-            makeTablesResizable(container);
-          }, 200);
+          timer = setTimeout(function () { makeTablesResizable(container); }, 200);
         });
         observer.observe(container, { childList: true, subtree: true });
       }
@@ -38,31 +38,55 @@
       table.setAttribute('data-table-resize', 'enabled');
       addDragHandles(table);
     });
+    // Load persisted widths for the first table
+    if (window._docId && tables.length > 0 && !container.hasAttribute('data-widths-loaded')) {
+      container.setAttribute('data-widths-loaded', '1');
+      loadWidths(tables);
+    }
+  }
+
+  function loadWidths(tables) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '/api/docs/' + window._docId + '/table-widths/load/', true);
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    xhr.onload = function () {
+      try {
+        var data = JSON.parse(xhr.responseText);
+        if (data.status && data.widths && data.widths.length > 0) {
+          Array.prototype.forEach.call(tables, function (table) {
+            var rows = table.querySelectorAll('tr');
+            var colEls = rows.length > 0 ? rows[0].querySelectorAll('th, td') : [];
+            data.widths.forEach(function (w, idx) {
+              if (idx >= colEls.length) return;
+              Array.prototype.forEach.call(rows, function (row) {
+                var cell = row.querySelectorAll('th, td')[idx];
+                if (cell) { cell.style.width = w + 'px'; }
+              });
+            });
+          });
+        }
+      } catch (e) {}
+    };
+    xhr.send();
   }
 
   function addDragHandles(table) {
     var headerRow = table.querySelector('thead tr') || table.querySelector('tr');
     if (!headerRow) return;
-
     var cells = headerRow.querySelectorAll('th, td');
-    cells.forEach(function (cell, index) {
-      if (index === cells.length - 1) return; // 最后一列不需要拖拽手柄
+    Array.prototype.forEach.call(cells, function (cell, index) {
+      if (index === cells.length - 1) return;
       if (cell.querySelector('.ispace-col-resizer')) return;
-
       var resizer = document.createElement('div');
       resizer.className = 'ispace-col-resizer';
       resizer.style.cssText =
         'position:absolute;top:0;right:-4px;width:8px;height:100%;' +
-        'cursor:col-resize;z-index:10;' +
-        'background:transparent;';
-
+        'cursor:col-resize;z-index:10;background:transparent;';
       cell.style.position = 'relative';
-
       resizer.addEventListener('mousedown', function (e) {
         e.preventDefault();
         startResize(table, index, e.clientX);
       });
-
       cell.appendChild(resizer);
     });
   }
@@ -70,24 +94,13 @@
   function startResize(table, colIndex, startX) {
     var rows = table.querySelectorAll('tr');
     var cellWidths = [];
-
-    rows.forEach(function (row) {
+    Array.prototype.forEach.call(rows, function (row) {
       var cells = row.querySelectorAll('th, td');
       if (cells[colIndex]) {
-        cellWidths.push({
-          cell: cells[colIndex],
-          width: cells[colIndex].getBoundingClientRect().width,
-        });
+        cellWidths.push({ cell: cells[colIndex], width: cells[colIndex].getBoundingClientRect().width });
       }
     });
-
-    state = {
-      table: table,
-      colIndex: colIndex,
-      startX: startX,
-      cellWidths: cellWidths,
-    };
-
+    state = { table: table, colIndex: colIndex, startX: startX, cellWidths: cellWidths };
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
     document.addEventListener('mousemove', onMouseMove);
@@ -96,17 +109,13 @@
 
   function onMouseMove(e) {
     if (!state) return;
-
     var delta = e.clientX - state.startX;
     var newWidth = Math.max(MIN_COL_WIDTH, state.cellWidths[0].width + delta);
-
-    state.cellWidths.forEach(function (item) {
+    Array.prototype.forEach.call(state.cellWidths, function (item) {
       item.cell.style.width = newWidth + 'px';
       item.cell.style.minWidth = newWidth + 'px';
       item.cell.style.maxWidth = newWidth + 'px';
     });
-
-    // 显示当前宽度 tooltip
     showWidthTooltip(e.clientX, e.clientY, Math.round(newWidth) + 'px');
   }
 
@@ -116,10 +125,29 @@
     document.removeEventListener('mousemove', onMouseMove);
     document.removeEventListener('mouseup', onMouseUp);
     hideWidthTooltip();
+    // Persist widths
+    if (state && state.table && window._docId) {
+      persistWidths(state.table);
+    }
     state = null;
   }
 
-  // Tooltip 显示当前列宽
+  function persistWidths(table) {
+    var rows = table.querySelectorAll('tr');
+    if (!rows.length) return;
+    var cells = rows[0].querySelectorAll('th, td');
+    if (!cells.length) return;
+    var widths = [];
+    Array.prototype.forEach.call(cells, function (cell) {
+      widths.push(Math.round(cell.getBoundingClientRect().width));
+    });
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/docs/' + window._docId + '/table-widths/save/', true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.setRequestHeader('X-CSRFToken', (window.__ISPACEDOC__ && window.__ISPACEDOC__.csrfToken) || '');
+    xhr.send(JSON.stringify({ widths: widths }));
+  }
+
   var tooltipEl = null;
 
   function showWidthTooltip(x, y, text) {
@@ -138,14 +166,8 @@
   }
 
   function hideWidthTooltip() {
-    if (tooltipEl) {
-      tooltipEl.remove();
-      tooltipEl = null;
-    }
+    if (tooltipEl) { tooltipEl.remove(); tooltipEl = null; }
   }
 
-  // 导出 API
-  window.TableResize = {
-    init: init,
-  };
+  window.TableResize = { init: init };
 })();

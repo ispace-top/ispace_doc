@@ -973,6 +973,44 @@ def get_document_children_count(request, doc_id):
     })
 
 
+@login_required
+@require_POST
+def api_save_table_widths(request, doc_id):
+    """保存表格列宽到文档的 content_json。"""
+    import json
+    try:
+        doc = Doc.objects.get(pk=doc_id)
+    except Doc.DoesNotExist:
+        return JsonResponse({'status': False, 'msg': '文档不存在'})
+    try:
+        body = json.loads(request.body.decode('utf-8'))
+    except Exception:
+        return JsonResponse({'status': False, 'msg': '请求格式错误'})
+    widths = body.get('widths', [])
+    if not isinstance(widths, list):
+        return JsonResponse({'status': False, 'msg': '参数格式错误'})
+    cj = doc.content_json
+    if not isinstance(cj, dict):
+        cj = {}
+    cj['_table_widths'] = widths
+    doc.content_json = cj
+    doc.save(update_fields=['content_json'])
+    return JsonResponse({'status': True})
+
+
+@login_required(login_url='/login/')
+def api_load_table_widths(request, doc_id):
+    """读取 content_json 中保存的表格列宽。"""
+    try:
+        doc = Doc.objects.only('content_json').get(pk=doc_id)
+    except Doc.DoesNotExist:
+        return JsonResponse({'status': False, 'msg': '文档不存在'})
+    cj = doc.content_json
+    if isinstance(cj, dict) and '_table_widths' in cj:
+        return JsonResponse({'status': True, 'widths': cj['_table_widths']})
+    return JsonResponse({'status': True, 'widths': []})
+
+
 # 恢复已删除文档
 @login_required()
 @require_POST

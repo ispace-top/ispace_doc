@@ -72,6 +72,9 @@ urlpatterns = [
     path('api/user/token-info/', views_user.api_user_token_info, name='api_user_token_info'),  # Token信息
     path('api/user/bindings/', views_user.api_user_bindings, name='api_user_bindings'),  # 第三方绑定状态
     path('api/user/bindings/<str:provider>/unbind/', views_user.api_user_unbind, name='api_user_unbind'),  # 解除绑定
+    #################表格列宽持久化
+    path('api/docs/<int:doc_id>/table-widths/save/', views.api_save_table_widths, name='api_save_table_widths'),
+    path('api/docs/<int:doc_id>/table-widths/load/', views.api_load_table_widths, name='api_load_table_widths'),
     path('files/upload/image/',util_upload_img.upload_img,name="upload_doc_img"), # 上传图片
     path('files/upload/ice-image/',util_upload_img.upload_ice_img,name="upload_ice_img"), # iceeditor上传图片
     path('search/',views.search,name="search"), # 搜索功能
