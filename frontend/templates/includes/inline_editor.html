@@ -476,6 +476,7 @@ function initInlineEditor(editorMode, isCreate) {
 
 function initVditor(container) {
     _loadCSS('{% static "vditor/dist/index.css" %}?' + (window._isdocVersion || ''))
+    .then(function() { return _loadCSS('{% static "css/theme/vditor-fixes.css" %}?' + (window._isdocVersion || '')); })
     .then(function() { return _loadScript('{% static "vditor/dist/index.min.js" %}?' + (window._isdocVersion || '')); })
     .then(function() {
         if (typeof Vditor === 'undefined') { _editorFallback('Vditor'); return; }
@@ -599,7 +600,7 @@ function _initVditorWithMode(container, mode, val, vdHeight) {
         name: 'insert-child-doc-list',
         tipPosition: 's',
         tip: '子文档目录',
-        icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/><path d="M12 12v4"/><path d="M10 14h4"/></svg>',
+        icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="2.5"/><path d="M12 7.5v3"/><line x1="8" y1="14" x2="16" y2="14"/><line x1="10" y1="18" x2="14" y2="18"/><circle cx="5" cy="17" r="2"/><circle cx="19" cy="17" r="2"/><path d="M7 9l-1.5 6.5"/><path d="M17 9l1.5 6.5"/></svg>',
         click: function() {
             window._inlineEditor.insertValue('\n```child-doc-list\n[子文档目录: 保存后将在查看页自动渲染]\n```\n');
             window._inlineEditor.focus();
@@ -966,19 +967,21 @@ function _initVditorWithMode(container, mode, val, vdHeight) {
     }
 
     var vdToolbar = isMobile ? [
-        "emoji","headings","bold","|",
+        "headings","bold","|",
         "quote","code","inline-code","link","|",
         "list","ordered-list","check","|",
-        mindmapBtn,flowchartBtn,drawingBtn,childDocListBtn,formatCodeBtn,echartsBtnGroup,"|",
-        uploadImgBtn,uploadAttachBtn,"|",
+        mindmapBtn,flowchartBtn,drawingBtn,echartsBtnGroup,"|",
+        childDocListBtn,formatCodeBtn,"|",
+        "emoji",uploadImgBtn,uploadAttachBtn,"|",
         "undo","redo","|",
         "fullscreen",modeToggleBtn
     ] : [
-        "emoji","headings","bold","italic","strike","|",
+        "headings","bold","italic","strike","|",
         "quote","code","inline-code","link","|",
         "list","ordered-list","check",tableInsertBtn,"|",
-        mindmapBtn,flowchartBtn,drawingBtn,childDocListBtn,formatCodeBtn,echartsBtnGroup,"|",
-        uploadImgBtn,uploadAttachBtn,"|",
+        mindmapBtn,flowchartBtn,drawingBtn,echartsBtnGroup,"|",
+        childDocListBtn,formatCodeBtn,"|",
+        "emoji",uploadImgBtn,uploadAttachBtn,"|",
         "outline","|",
         "undo","redo","|",
         "fullscreen",modeToggleBtn,"|",

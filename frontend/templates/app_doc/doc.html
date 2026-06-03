@@ -342,6 +342,7 @@
 {% block styles %}
 {% if doc.editor_mode == 0 or doc.editor_mode == 2 or doc.editor_mode == 3 %}
 <link rel="stylesheet" href="{% static 'vditor/dist/index.css' %}?version={{ isdoc_version }}">
+<link rel="stylesheet" href="{% static 'css/theme/vditor-fixes.css' %}?version={{ isdoc_version }}">
 {% elif doc.editor_mode == 1 %}
 <link rel="stylesheet" href="{% static 'luckysheet/dist/css/luckysheet.css' %}?version={{ isdoc_version }}">
 <link rel="stylesheet" href="{% static 'luckysheet/dist/plugins/css/pluginsCss.css' %}?version={{ isdoc_version }}">

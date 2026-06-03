@@ -1,0 +1,271 @@
+/* ============================================================
+   Vditor 显示覆盖样式
+   加载在 Vditor CSS 之后，修复表格渲染等问题
+   ============================================================ */
+
+/* ---- 表格单元格自动换行 ---- */
+.vditor-reset table td,
+.vditor-reset table th,
+.vditor-ir table td,
+.vditor-ir table th {
+  white-space: normal !important;
+  word-break: break-word !important;
+}
+
+/* 保留表格容器横向滚动作为兜底 */
+.vditor-reset table,
+.vditor-ir table {
+  overflow-x: auto !important;
+}
+
+/* ---- HTML 表格样式统一（合并后转成的 HTML 表格） ---- */
+.vditor-ir table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  margin-bottom: 16px;
+  display: table;
+  width: 100%;
+}
+
+.vditor-ir table th,
+.vditor-ir table td {
+  padding: 6px 13px;
+  border: 1px solid #dfe2e5;
+  min-width: 60px;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.vditor-ir table tr {
+  background-color: #fafbfc;
+  border-top: 1px solid #c6cbd1;
+}
+
+.vditor-ir table tbody tr:nth-child(2n) {
+  background-color: #fff;
+}
+
+.vditor-ir table th {
+  font-weight: 600;
+  background-color: #f6f8fa;
+}
+
+.vditor-ir table thead {
+  border-bottom: 2px solid #dfe2e5;
+}
+
+/* ---- 表格列宽拖拽手柄（始终可见蓝色竖线） ---- */
+.vditor-reset th,
+.vditor-ir th {
+  position: relative;
+}
+
+.table-resize-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 14px;
+  cursor: col-resize;
+  user-select: none;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 蓝色竖线 —— 始终可见 */
+.table-resize-handle::after {
+  content: '';
+  width: 2px;
+  height: 60%;
+  background: #cbd5e1;
+  border-radius: 1px;
+  transition: all 0.2s;
+}
+
+.table-resize-handle:hover {
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.table-resize-handle:hover::after {
+  background: #3b82f6;
+  width: 3px;
+  height: 80%;
+}
+
+.table-resize-handle.active {
+  background: rgba(59, 130, 246, 0.12);
+}
+
+.table-resize-handle.active::after {
+  background: #2563eb;
+  width: 3px;
+  height: 100%;
+}
+
+.table-resize-line {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #2563eb;
+  pointer-events: none;
+  z-index: 9999;
+  display: none;
+  box-shadow: 0 0 4px rgba(37, 99, 235, 0.3);
+}
+
+/* ---- 子文档目录卡片 ---- */
+.isp-doctoc-card {
+  margin: 24px 0;
+  border: 1px solid var(--ispace-color-border-light, #e5e7eb);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--ispace-color-surface-0, #fff);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.isp-doctoc-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, var(--ispace-color-brand-50, #eff6ff) 0%, var(--ispace-color-surface-0, #fff) 100%);
+  border-bottom: 1px solid var(--ispace-color-border-light, #e5e7eb);
+}
+
+.isp-doctoc-header svg {
+  color: var(--ispace-color-brand-500, #3b82f6);
+  flex-shrink: 0;
+}
+
+.isp-doctoc-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ispace-color-text-primary, #1f2937);
+}
+
+.isp-doctoc-count {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--ispace-color-text-quaternary, #9ca3af);
+  background: var(--ispace-color-surface-100, #f3f4f6);
+  padding: 2px 10px;
+  border-radius: 10px;
+}
+
+.isp-doctoc-stats {
+  display: flex;
+  gap: 8px;
+  padding: 10px 20px;
+  font-size: 12px;
+}
+
+.isp-doctoc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.isp-doctoc-badge--pub {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.isp-doctoc-badge--draft {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.isp-doctoc-list {
+  border-top: 1px solid var(--ispace-color-border-light, #e5e7eb);
+}
+
+.isp-doctoc-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  text-decoration: none;
+  color: var(--ispace-color-text-primary, #1f2937);
+  border-bottom: 1px solid var(--ispace-color-border-light, #f3f4f6);
+  transition: background 0.15s;
+  font-size: 14px;
+}
+
+.isp-doctoc-item:last-child {
+  border-bottom: none;
+}
+
+.isp-doctoc-item:hover {
+  background: var(--ispace-color-surface-50, #f9fafb);
+  text-decoration: none;
+}
+
+.isp-doctoc-item-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--ispace-color-surface-100, #f3f4f6);
+  color: var(--ispace-color-text-tertiary, #6b7280);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.isp-doctoc-item:hover .isp-doctoc-item-num {
+  background: var(--ispace-color-brand-100, #dbeafe);
+  color: var(--ispace-color-brand-600, #2563eb);
+}
+
+.isp-doctoc-item-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.isp-doctoc-item-status {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: var(--ispace-color-text-quaternary, #9ca3af);
+  background: var(--ispace-color-surface-100, #f3f4f6);
+  flex-shrink: 0;
+}
+
+.isp-doctoc-item-status--pub {
+  color: #059669;
+  background: #ecfdf5;
+}
+
+.isp-doctoc-empty {
+  text-align: center;
+  padding: 32px 20px;
+  color: var(--ispace-color-text-quaternary, #9ca3af);
+  font-size: 14px;
+}
+
+.isp-doctoc-loading {
+  text-align: center;
+  padding: 20px;
+  color: var(--ispace-color-text-tertiary, #9ca3af);
+  font-size: 14px;
+}
+
+/* ---- 表情面板增大显示行数 ---- */
+.vditor-panel .vditor-emojis {
+  max-height: 360px !important;
+}
+
+.vditor-panel .vditor-emojis button {
+  padding: 6px 4px !important;
+}
