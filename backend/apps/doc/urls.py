@@ -1,6 +1,6 @@
 from django.urls import path,re_path,include
 from django.views.generic import RedirectView
-from backend.apps.doc import views,views_user,views_search,util_upload_img,views_import,views_group,views_org,views_permission,views_notification
+from backend.apps.doc import views,views_user,views_search,util_upload_img,views_import,views_group,views_org,views_permission,views_notification,views_format
 from backend.apps.doc.storage import views as storage_views
 
 urlpatterns = [
@@ -155,4 +155,6 @@ urlpatterns = [
     re_path(r'^docs/(?P<doc_id>\d+)/inline-comments/$', RedirectView.as_view(pattern_name='inline_comments_v2', permanent=True)),
     re_path(r'^docs/(?P<pro_id>\d+)/(?P<doc_id>\d+)/$', RedirectView.as_view(pattern_name='doc', permanent=True)),
     re_path(r'^docs/(?P<doc_id>\d+)/$', RedirectView.as_view(pattern_name='doc_by_id', permanent=True)),
+    #################代码格式化
+    path('api/format-code/', views_format.api_format_code, name='api_format_code'),
 ]

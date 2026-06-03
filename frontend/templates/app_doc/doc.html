@@ -656,6 +656,7 @@
 <script src="{% static 'prismjs/prism.js' %}?version={{ isdoc_version }}"></script>
 <script src="{% static 'js/attachment-preview.js' %}?version={{ isdoc_version }}"></script>
 <script src="{% static 'js/theme/table-resize.js' %}?version={{ isdoc_version }}"></script>
+<script src="{% static 'js/theme/code-formatter.js' %}?version={{ isdoc_version }}"></script>
 {% if doc.editor_mode == 0 or doc.editor_mode == 2 or doc.editor_mode == 3 %}
 <script src="{% static 'vditor/dist/index.min.js' %}?version={{ isdoc_version }}"></script>
 <script src="{% static 'markdown-ext/marked/marked.min.js' %}?version={{ isdoc_version }}"></script>
@@ -1584,6 +1585,9 @@ document.addEventListener('DOMContentLoaded',function(){
     // 初始化表格列宽拖拽
     if (window.TableResize) {
       TableResize.init();
+    }
+    if (window.CodeFormatter) {
+      CodeFormatter.init();
     }
 
     initOutlinePanel();
