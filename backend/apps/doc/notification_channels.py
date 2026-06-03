@@ -285,29 +285,134 @@ class WeComChannel(BaseNotificationChannel):
 
 
 class DingTalkChannel(BaseNotificationChannel):
-    """钉钉通知通道（预留）。"""
+    """钉钉通知通道 — 通过钉钉工作通知发送消息给指定用户。"""
 
     channel_id = 'dingtalk'
     channel_name = '钉钉'
 
+    def __init__(self):
+        self._access_token: str = ''
+        self._token_expires_at: float = 0.0
+
+    def _get_config(self) -> dict:
+        """读取钉钉应用配置。"""
+        from backend.apps.doc.storage.config import _read_config
+        parser = _read_config()
+        section = 'auth.dingtalk'
+        if not parser.has_section(section):
+            return {}
+        return {
+            'app_key': parser.get(section, 'app_key', fallback=''),
+            'app_secret': parser.get(section, 'app_secret', fallback=''),
+            'agent_id': parser.get(section, 'agent_id', fallback=''),
+        }
+
+    def _get_access_token(self) -> str:
+        """获取钉钉 access_token（含缓存）。"""
+        import time
+        if self._access_token and time.time() < self._token_expires_at - 60:
+            return self._access_token
+
+        cfg = self._get_config()
+        if not cfg.get('app_key') or not cfg.get('app_secret'):
+            raise RuntimeError('钉钉 app_key / app_secret 未配置')
+
+        import requests
+        resp = requests.post(
+            'https://api.dingtalk.com/v1.0/oauth2/accessToken',
+            json={'appKey': cfg['app_key'], 'appSecret': cfg['app_secret']},
+            timeout=15,
+            headers={'Content-Type': 'application/json'},
+        )
+        if resp.status_code != 200:
+            raise RuntimeError(f"钉钉 access_token 获取失败: HTTP {resp.status_code} {resp.text[:200]}")
+
+        data = resp.json()
+        self._access_token = data.get('accessToken', '')
+        self._token_expires_at = time.time() + data.get('expireIn', 7200)
+        if not self._access_token:
+            raise RuntimeError('钉钉 access_token 返回为空')
+        return self._access_token
+
     def send(self, notification: Notification, recipient: User) -> bool:
-        logger.info(f'[DingTalkChannel] 预留通道，未实际发送: recipient={recipient.pk} type={notification.notification_type}')
-        return False
+        """通过钉钉工作通知发送消息。"""
+        try:
+            from backend.apps.doc.models import UserProfile
+            profile = UserProfile.objects.only('dingtalk_userid', 'notify_settings').get(user=recipient)
+        except UserProfile.DoesNotExist:
+            logger.warning(f'[DingTalkChannel] 用户无 UserProfile: recipient={recipient.pk}')
+            return False
+
+        if not profile.dingtalk_userid:
+            logger.warning(f'[DingTalkChannel] 用户未绑定钉钉: recipient={recipient.pk}')
+            return False
+
+        try:
+            settings = _json.loads(profile.notify_settings or '{}')
+            if not settings.get('dingtalk_enabled', True):
+                return False
+        except Exception:
+            pass
+
+        try:
+            token = self._get_access_token()
+            cfg = self._get_config()
+
+            sender_name = (notification.sender.first_name or notification.sender.username) if notification.sender else '系统'
+            link = notification.link or ''
+
+            # 构建钉钉消息体 — action_card 类型（带链接跳转）
+            if link:
+                msg = {
+                    'msgtype': 'action_card',
+                    'action_card': {
+                        'title': notification.title or 'iSpaceDoc 通知',
+                        'markdown': f'### {notification.title}\n\n{sender_name}: {notification.body[:500]}',
+                        'single_title': '查看详情',
+                        'single_url': link,
+                    },
+                }
+            else:
+                msg = {
+                    'msgtype': 'text',
+                    'text': {'content': f'【{notification.title}】\n{sender_name}: {notification.body[:1000]}'},
+                }
+
+            body = {
+                'agent_id': cfg.get('agent_id', ''),
+                'userid_list': profile.dingtalk_userid,
+                'msg': msg,
+            }
+
+            import requests
+            resp = requests.post(
+                f'https://api.dingtalk.com/v1.0/topapi/message/corpconversation/asyncsend_v2?access_token={token}',
+                json=body, timeout=10,
+            )
+            if resp.status_code == 200:
+                result = resp.json()
+                if result.get('errcode') == 0 or result.get('errcode') is None:
+                    return True
+                logger.warning(f'[DingTalkChannel] 消息发送失败: {result} recipient={recipient.pk}')
+            else:
+                logger.warning(f'[DingTalkChannel] 消息发送 HTTP {resp.status_code}: {resp.text[:200]} recipient={recipient.pk}')
+            return False
+        except Exception:
+            logger.exception(f'[DingTalkChannel] 发送异常: recipient={recipient.pk}')
+            return False
 
     def validate_config(self) -> bool:
-        from backend.apps.admin.models import SysConfig
         try:
-            enabled = SysConfig.objects.get(key='channel.dingtalk.enabled')
-            return enabled.value.lower() == 'true'
-        except SysConfig.DoesNotExist:
+            cfg = self._get_config()
+            return bool(cfg.get('app_key') and cfg.get('app_secret'))
+        except Exception:
             return False
 
     def is_available_for(self, user: User) -> bool:
         try:
             from backend.apps.doc.models import UserProfile
-            profile = UserProfile.objects.only('notify_settings').get(user=user)
-            settings = _json.loads(profile.notify_settings or '{}')
-            return bool(settings.get('dingtalk_userid'))
+            profile = UserProfile.objects.only('dingtalk_userid').get(user=user)
+            return bool(profile.dingtalk_userid)
         except Exception:
             return False
 
