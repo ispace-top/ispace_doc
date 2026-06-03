@@ -1854,44 +1854,69 @@ Vditor IR 模式下，对符合以下前缀的 blockquote 自动渲染为 Callou
 
 ### 21.2 管理侧边栏菜单结构
 
+管理后台侧边栏菜单按 4 个功能分组布局，由前端 `MENU_SECTIONS` 配置控制菜单项渲染（后端 JSON 返回全部菜单项，前端按分组过滤展示）。
+
+**系统概览**
 ```
-📊 仪表盘
-───
-👥 用户管理
-📄 文档管理
-📝 模板管理
-🖼 素材管理（可折叠）
-  ├─ 图片管理
-  └─ 附件管理
-🔑 注册码管理
-───
-👥 分组管理
-🏢 组织架构
-🗑 文档回收站
-📋 审计日志
-───
-🔑 登录记录
-💬 评论管理
-🔔 通知管理
-🏥 系统健康
-🔐 认证配置───
-⚙ 站点设置
+📊 仪表盘      /admin/dashboard/overview/
+🏥 系统健康    /admin/system/health/
+📋 系统日志    /admin/system/logs/
 ```
+
+**内容管理**
+```
+📄 文档管理      /admin/documents/
+📝 模板管理      /admin/templates/
+🖼 素材管理       （可展开文件夹）
+  ├─ 图片管理    /admin/files/images/
+  └─ 附件管理    /admin/files/attachments/
+🗑 回收站        /admin/documents/trash/
+💬 评论管理      /admin/comments/manage/
+```
+
+**用户与权限**
+```
+👥 用户管理      /admin/users/
+👥 分组管理      /admin/groups/
+🏢 组织架构      /admin/organization/
+🔑 注册码        /admin/register-codes/
+```
+
+**配置管理**
+```
+⚙ 站点设置               /admin/settings/
+💾 基础配置（存储）       /admin/system/storage/
+🔗 WebHook                /admin/system/webhooks/
+🔐 认证配置               /admin/system/auth/
+🔔 通知渠道               /admin/system/notification-channels/
+ℹ 关于我们                /admin/system/about/
+```
+
+> **注**：审计日志、登录记录、通知管理三个功能模块的页面和 API 端点已实现（可通过直接 URL 访问），但当前侧边栏菜单中未展示。
 
 ### 21.3 各管理模块功能
 
-| 模块 | 功能说明 |
-| ---- | -------- |
-| 用户管理 | 用户列表、搜索、禁用/启用、编辑档案 |
-| 文档管理 | 全局文档查看、筛选、管理 |
-| 文档回收站 | 已删除文档列表、搜索筛选、单个/批量恢复、物理删除 |
-| 审计日志 | 操作时间/操作人/操作类型/目标类型/详情/IP，支持筛选，30 条/页 |
-| 登录记录 | 登录时间/用户名/IP/User-Agent/结果，支持筛选 |
-| 评论管理 | 全局评论查看、筛选（文档/评论者/状态）、删除/恢复 |
-| 通知管理 | 全局通知查看，按接收者/类型/已读状态筛选 |
-| 系统健康 | 数据库/媒体文件/磁盘/缓存状态检查，debug 警告横幅 |
-| 认证配置 | OIDC/WeCom/LDAP/DingTalk 可视化配置、启用/禁用开关、连接测试 |
-| 站点设置 | 站点名称/Logo/注册设置/邮件配置/安全设置/功能开关 |
+| 模块 | 路由 | 功能说明 |
+| ---- | ---- | -------- |
+| 仪表盘 | `/admin/dashboard/overview/` | CPU/内存/磁盘环图 + 7 项统计指标 + 运行动态 |
+| 系统健康 | `/admin/system/health/` | 综合健康评分 + 各维度状态检查 |
+| 系统日志 | `/admin/system/logs/` | 按日期/级别筛选日志文件，分页浏览 |
+| 文档管理 | `/admin/documents/` | 全局文档查看、关键词搜索、状态筛选（已发布/草稿） |
+| 模板管理 | `/admin/templates/` | 模板列表、关键词搜索、内容预览 |
+| 图片管理 | `/admin/files/images/` | 图片网格展示、分组筛选、批量删除、扫描未引用图片 |
+| 附件管理 | `/admin/files/attachments/` | 附件列表、按关键词/用户筛选、批量删除 |
+| 回收站 | `/admin/documents/trash/` | 已删除文档列表、搜索筛选、单个/批量恢复、永久删除 |
+| 评论管理 | `/admin/comments/manage/` | 全局评论查看、按文档/用户/状态筛选、删除/恢复 |
+| 用户管理 | `/admin/users/` | 用户列表、搜索、创建、禁用/启用、编辑档案、密码修改 |
+| 分组管理 | `/admin/groups/` | 分组列表、创建/编辑/删除、成员管理 |
+| 组织架构 | `/admin/organization/` | 组织树展示、创建/重命名/删除节点、成员管理、管理员任命 |
+| 注册码 | `/admin/register-codes/` | 注册邀请码列表、生成（设使用次数/过期时间）、删除 |
+| 站点设置 | `/admin/settings/` | 站点名称/Logo/注册/邮件/安全/功能开关/Logo 上传 |
+| 基础配置 | `/admin/system/storage/` | 存储后端查看/切换（Local/OSS/COS/S3/Kodo，需重启） |
+| WebHook | `/admin/system/webhooks/` | WebHook 配置 CRUD、投递日志查看、测试发送 |
+| 认证配置 | `/admin/system/auth/` | OIDC/WeCom/LDAP/DingTalk 配置、启用开关、连接测试、目录同步 |
+| 通知渠道 | `/admin/system/notification-channels/` | 6 种渠道状态管理（站内/邮件/企微/钉钉/OA/WebHook）+ 路由映射 |
+| 关于我们 | `/admin/system/about/` | 版本号、Python/Django/操作系统信息、数据库引擎 |
 
 ### 21.4 系统健康详情
 
