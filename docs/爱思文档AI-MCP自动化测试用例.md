@@ -1092,14 +1092,16 @@ print('superusers:', User.objects.filter(is_superuser=True).count())"
 
 ## 第24章 管理后台 — 审计与监控
 
-### T24.1 审计日志 `/admin/audit-logs/`
+> **注**：审计日志、登录记录、通知记录已整合到"系统日志"页面（`/admin/system/logs/`）的 4 个 TAB 中。以下 API 测试用例仍然适用。
+
+### T24.1 审计日志 `/admin/audit-logs/`（系统日志 → 审计日志 TAB）
 - **T24.1.1** 分页列表 → `GET /admin/api/audit-logs/`
 - **T24.1.2** 按操作类型筛选（8 种 action type）
 - **T24.1.3** 按操作用户筛选
 - **T24.1.4** 按日期范围筛选
 - **T24.1.5** 每条记录显示：时间、用户、IP、操作类型、目标、详情
 
-### T24.2 登录记录 `/admin/login-history/`
+### T24.2 登录记录 `/admin/login-history/`（系统日志 → 登录记录 TAB）
 - **T24.2.1** 分页列表 → `GET /admin/api/login-records/`
 - **T24.2.2** 按用户名筛选
 - **T24.2.3** 按成功/失败筛选
@@ -1158,7 +1160,7 @@ print('superusers:', User.objects.filter(is_superuser=True).count())"
 - **T25.3.5** 软删除评论 → action=delete
 - **T25.3.6** 恢复评论 → action=restore
 
-### T25.4 通知管理 `/admin/notifications/manage/`
+### T25.4 通知管理 `/admin/notifications/manage/`（系统日志 → 通知记录 TAB）
 - **T25.4.1** 通知列表 → `GET /admin/api/notifications/`
 - **T25.4.2** 按收件人筛选
 - **T25.4.3** 按通知类型筛选
