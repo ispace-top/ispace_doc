@@ -524,6 +524,7 @@ function _initVditorWithMode(container, mode, val, vdHeight) {
                         if (ret.success === 1) {
                             window._inlineEditor.insertValue('\n```child-doc-list\n[子文档目录: 保存后将在查看页自动渲染]\n```\n');
                             window._inlineEditor.focus();
+                            setTimeout(_renderChildDocListPreviews, 200);
                         }
                     });
                 };
@@ -1083,10 +1084,12 @@ function _initVditorWithMode(container, mode, val, vdHeight) {
             if (mode === 'ir' && window._initEditorMention) { window._initEditorMention(); }
             if (mode === 'ir') { _processCalloutsInlineEditor(); }
             if (mode === 'ir') { _initTableIRClickDetection(); }
+            if (mode === 'ir') { _renderChildDocListPreviews(); }
         },
         input: function() {
             window._inlineMdChanged = true;
             if ((window._currentVditorMode || mode) === 'ir') { _scheduleCalloutProcessInline(); }
+            if ((window._currentVditorMode || mode) === 'ir') { _scheduleChildDocListRender(); }
         },
         upload: {
             fieldName: 'editormd-image-file[]',
@@ -1113,6 +1116,33 @@ function _initVditorWithMode(container, mode, val, vdHeight) {
     });
 }
 
+
+// ---- Child doc list preview renderer for IR mode ----
+var _cdlTimer = null;
+function _scheduleChildDocListRender() {
+    clearTimeout(_cdlTimer);
+    _cdlTimer = setTimeout(_renderChildDocListPreviews, 300);
+}
+function _renderChildDocListPreviews() {
+    var previews = document.querySelectorAll('.vditor-ir__preview');
+    Array.prototype.forEach.call(previews, function(preview) {
+        // Check if the parent code block has child-doc-list language
+        var codeBlock = preview.closest('[data-type="code-block"]');
+        if (!codeBlock) return;
+        var info = codeBlock.querySelector('[data-type="code-block-info"]');
+        if (!info) return;
+        var infoText = (info.textContent || '').replace(/[​‌﻿]/g, '').trim();
+        if (infoText !== 'child-doc-list') return;
+        // Already rendered?
+        if (preview.querySelector('.ispace-cdl-preview')) return;
+        var div = document.createElement('div');
+        div.className = 'ispace-cdl-preview';
+        div.style.cssText = 'padding:16px;text-align:center;color:var(--ispace-color-text-tertiary,#7a6f65);font-size:13px;border:1px dashed var(--ispace-color-surface-200,#ebe3da);border-radius:8px;margin:4px;';
+        div.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:6px"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/><path d="M12 12v4"/><path d="M10 14h4"/></svg><span>子文档目录 — 保存后将在查看页自动渲染</span>';
+        preview.innerHTML = '';
+        preview.appendChild(div);
+    });
+}
 function _toggleVditorMode() {
     var ed = window._inlineEditor;
     if (!ed) return;
