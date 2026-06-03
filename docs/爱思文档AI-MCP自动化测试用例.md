@@ -1277,6 +1277,85 @@ print('superusers:', User.objects.filter(is_superuser=True).count())"
 
 ### T28.8 API 验证
 
+---
+## 第29章 文档导出与回收站
+
+### T29.1 文档导出
+- **T29.1.1** Markdown 导出：访问 `GET /documents/<id>/export/md/` → 返回 `.md` 文件下载
+- **T29.1.2** PDF 导出：访问 `GET /documents/<id>/export/pdf/` → 返回 `.pdf` 文件下载
+- **T29.1.3** HTML 导出：访问 `GET /documents/<id>/export/html/` → 返回 `.html` 文件下载
+- **T29.1.4** 不存在的文档导出 → 返回 404
+
+### T29.2 回收站管理
+- **T29.2.1** 导航到 `/documents/recycle/` → 显示已删除文档列表
+- **T29.2.2** 按文档名/作者/删除人搜索 → 结果正确过滤
+- **T29.2.3** 恢复文档 → `POST /documents/restore/` → `is_deleted=False`
+- **T29.2.4** 永久删除文档 → `DELETE` → 数据库记录物理删除
+- **T29.2.5** 清空回收站 → 所有回收站记录被清除
+- **T29.2.6** 回收站为空 → 显示空状态提示
+
+---
+## 第30章 删除验证与安全操作
+
+### T30.1 删除验证码
+- **T30.1.1** 访问 `GET /delete-verify/image/` → 返回验证码图片（Content-Type: image/png）
+- **T30.1.2** 提交正确验证码 → `POST /delete-verify/check/` → 返回 `{"code": 0}`
+- **T30.1.3** 提交错误验证码 → 返回错误提示
+
+### T30.2 关于我们页面
+- **T30.2.1** 未登录访问 `/about/` → 正常显示，含项目简介、技术栈、开源协议、版本信息
+- **T30.2.2** 页面响应式 → 移动端卡片堆叠显示
+
+### T30.3 嵌入模式
+- **T30.3.1** 访问 `/docs/<id>/?embed=1` → Header/Sidebar/Footer 隐藏，仅正文内容可见
+- **T30.3.2** 不传 embed 参数 → 正常布局（Header/Sidebar/Footer 可见）
+
+---
+## 第31章 管理后台高级运维
+
+### T31.1 数据备份
+- **T31.1.1** 触发数据备份 → `POST /admin/system/backup/` (mode=data) → 返回 ZIP 下载路径
+- **T31.1.2** 触发媒体备份 → `POST` (mode=media) → 返回 ZIP 下载路径
+
+### T31.2 缓存清理
+- **T31.2.1** `POST /admin/system/cache/clear/` → 返回成功，缓存被清除
+
+### T31.3 索引重建
+- **T31.3.1** `POST /admin/system/index/rebuild/` → whoosh 索引目录被删除，可重新搜索
+
+### T31.4 版本更新检查
+- **T31.4.1** `GET /admin/system/update/` → 返回 current/latest/changelog/download_url
+- **T31.4.2** 已是最新版本 → 提示"已是最新版本"
+- **T31.4.3** 网络不通 → 提示检查失败
+
+### T31.5 系统日志
+- **T31.5.1** `GET /admin/api/syslog/` → 返回日志列表，按日期/级别筛选
+- **T31.5.2** 按关键词搜索 → 结果过滤
+
+### T31.6 通知独立页面
+- **T31.6.1** 导航到独立通知页 → 显示所有通知列表（含已读/未读）
+- **T31.6.2** 按类型筛选 → 结果正确过滤
+- **T31.6.3** 点击"全部已读" → 所有通知标记已读
+- **T31.6.4** 点击通知跳转 → 自动标记已读
+
+### T31.7 分享链接管理
+- **T31.7.1** 创建分享链接 → 设置公开/私密类型 → 返回分享链接
+- **T31.7.2** 私密分享 → 需输入分享码验证 → 验证成功后可见文档内容
+- **T31.7.3** 禁用分享链接 → 访问该链接返回 404 或提示已禁用
+- **T31.7.4** 删除分享链接 → 链接不再可用
+
+### T31.8 分片上传（Chunked Upload）
+- **T31.8.1** 初始化分片上传 → `POST /api/upload/chunked/init/` → 返回 upload_id
+- **T31.8.2** 上传单个分片 → `POST /api/upload/chunked/<upload_id>/` → 返回已接收分片列表
+- **T31.8.3** 查询上传进度 → `GET /api/upload/chunked/<upload_id>/status/` → 返回 uploaded_chunks 和 progress
+- **T31.8.4** 合并分片 → `POST /api/upload/chunked/<upload_id>/complete/` → 文件组装完成
+- **T31.8.5** 取消上传 → `POST /api/upload/chunked/<upload_id>/abort/` → 清理临时文件
+
+### T31.9 登录记录管理
+- **T31.9.1** 超管访问 `/admin/login-history/` → 分页登录记录列表
+- **T31.9.2** 按用户名/成功状态/日期筛选 → 结果过滤
+- **T31.9.3** 每条记录显示：用户名、IP、User-Agent、时间、结果
+
 ```bash
 # 查询当前用户绑定状态
 python manage.py shell -c "
