@@ -170,7 +170,29 @@
             body: JSON.stringify({ doc_ids: ids })
         })
         .then(function(r) { return r.json(); })
-        .then(function(d) { alert(d.message || ''); loadData(); });
+        .then(function(d) {
+            if (d.message) {
+                if (window.iSpaceToast && window.iSpaceToast.success) {
+                    window.iSpaceToast[d.status ? 'success' : 'error'](d.message);
+                } else {
+                    // fallback: inline toast
+                    var t = document.getElementById('batch-toast');
+                    if (!t) {
+                        t = document.createElement('div');
+                        t.id = 'batch-toast';
+                        t.style.cssText = 'position:fixed;top:20px;right:20px;padding:12px 20px;border-radius:8px;z-index:9999;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,0.15);transition:opacity .3s;';
+                        document.body.appendChild(t);
+                    }
+                    t.textContent = d.message;
+                    t.style.background = d.status ? '#d1fae5' : '#fee2e2';
+                    t.style.color = d.status ? '#065f46' : '#991b1b';
+                    t.style.borderLeft = '4px solid ' + (d.status ? '#10b981' : '#ef4444');
+                    t.style.opacity = '1';
+                    setTimeout(function() { t.style.opacity = '0'; }, 3000);
+                }
+            }
+            loadData();
+        });
     }
 
     document.getElementById('batchRestoreBtn').addEventListener('click', function() {
