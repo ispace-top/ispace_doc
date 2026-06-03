@@ -50,22 +50,25 @@ def _format_js_like(code: str) -> str:
         if not s:
             result.append('')
             continue
-        # comma spacing: x,y → x, y  (but not inside <generics>)
+        # comma spacing: x,y → x, y
         s = re.sub(r',(?!\s)', ', ', s)
         # operator spacing: =+-*/  but not == != <= >= ++ --
         s = re.sub(r'(?<![=+\-*/%<>&|^!])([=+\-*/%])(?!=)', r' \1 ', s)
-        s = re.sub(r'([=+\-*/%]) (?=[=+\-*/%])', r'\1', s)  # fix double-spaced ops
-        # brace spacing: keyword{ → keyword {  and }{ → } {
-        s = re.sub(r'(?<=\w)\{', ' {', s)
-        s = re.sub(r'\}(?=\w)', '} ', s)
-        # paren spacing: func( → func(  keep tight, but ( a ) → (a)
+        s = re.sub(r'([=+\-*/%]) (?=[=+\-*/%])', r'\1', s)
+        # brace spacing: fx(){ → fx() {,  ){ → ) {
+        s = re.sub(r'\)\s*\{', ') {', s)
+        s = re.sub(r'\b(else|do|try|finally)\s*\{', r'\1 {', s)
+        # closing brace spacing: }else → } else
+        s = re.sub(r'\}\s*(?=\w)', '} ', s)
+        # semicolon spacing: x;y → x; y (except end of statement)
+        s = re.sub(r';(?=\S)', '; ', s)
+        # paren spacing
         s = re.sub(r'\(\s+', '(', s)
         s = re.sub(r'\s+\)', ')', s)
-        # foreach/if/while/for spacing
+        # keyword spacing: if(for(while(
         s = re.sub(r'\b(if|for|while|switch|catch|synchronized)\s*\(', r'\1 (', s)
         # collapse multiple spaces
         s = re.sub(r' {2,}', ' ', s)
-        # strip trailing space
         s = s.rstrip()
         result.append(' ' * indent + s)
     return '\n'.join(result).strip() + '\n'

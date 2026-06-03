@@ -1,5 +1,5 @@
 /**
- * 表格列宽拖拽调整 — 文档正文区内所有表格支持列边框拖拽调整宽度。
+ * 表格列宽拖拽调整 — 所有列（含最后一列）支持拖拽，宽度持久化。
  *
  * 用法: TableResize.init(containerSelector)
  * 默认容器: '.markdown-body, #vditor-doc-content'
@@ -11,11 +11,8 @@
   var MIN_COL_WIDTH = 60;
 
   var state = null;
-  var SAVE_API = null; // set from init options
 
-  function init(containerSelector, opts) {
-    opts = opts || {};
-    SAVE_API = opts.saveApi || null;
+  function init(containerSelector) {
     containerSelector = containerSelector || CONTAINER_SELECTOR;
     var containers = document.querySelectorAll(containerSelector);
     Array.prototype.forEach.call(containers, function (container) {
@@ -33,12 +30,13 @@
 
   function makeTablesResizable(container) {
     var tables = container.querySelectorAll('table');
-    Array.prototype.forEach.call(tables, function (table) {
+    Array.prototype.forEach.call(tables, function (table, tableIdx) {
       if (table.hasAttribute('data-table-resize')) return;
       table.setAttribute('data-table-resize', 'enabled');
+      table.setAttribute('data-table-idx', tableIdx);
       addDragHandles(table);
     });
-    // Load persisted widths for the first table
+    // Load persisted widths for each table
     if (window._docId && tables.length > 0 && !container.hasAttribute('data-widths-loaded')) {
       container.setAttribute('data-widths-loaded', '1');
       loadWidths(tables);
@@ -52,19 +50,23 @@
     xhr.onload = function () {
       try {
         var data = JSON.parse(xhr.responseText);
-        if (data.status && data.widths && data.widths.length > 0) {
-          Array.prototype.forEach.call(tables, function (table) {
-            var rows = table.querySelectorAll('tr');
-            var colEls = rows.length > 0 ? rows[0].querySelectorAll('th, td') : [];
-            data.widths.forEach(function (w, idx) {
-              if (idx >= colEls.length) return;
-              Array.prototype.forEach.call(rows, function (row) {
-                var cell = row.querySelectorAll('th, td')[idx];
-                if (cell) { cell.style.width = w + 'px'; }
-              });
+        if (!data.status) return;
+        var widths = data.widths || [];
+        if (!widths.length) return;
+        Array.prototype.forEach.call(tables, function (table, ti) {
+          // data.widths is a flat array of widths per column for the first table
+          // For simplicity, apply to each table
+          var rows = table.querySelectorAll('tr');
+          if (!rows.length) return;
+          var colEls = rows[0].querySelectorAll('th, td');
+          widths.forEach(function (w, idx) {
+            if (idx >= colEls.length) return;
+            Array.prototype.forEach.call(rows, function (row) {
+              var cell = row.querySelectorAll('th, td')[idx];
+              if (cell) { cell.style.width = w + 'px'; cell.style.minWidth = w + 'px'; }
             });
           });
-        }
+        });
       } catch (e) {}
     };
     xhr.send();
@@ -75,12 +77,13 @@
     if (!headerRow) return;
     var cells = headerRow.querySelectorAll('th, td');
     Array.prototype.forEach.call(cells, function (cell, index) {
-      if (index === cells.length - 1) return;
+      // All columns get a handle (including last column)
       if (cell.querySelector('.ispace-col-resizer')) return;
       var resizer = document.createElement('div');
       resizer.className = 'ispace-col-resizer';
+      resizer.setAttribute('data-col-idx', index);
       resizer.style.cssText =
-        'position:absolute;top:0;right:-4px;width:8px;height:100%;' +
+        'position:absolute;top:0;right:-2px;width:8px;height:100%;' +
         'cursor:col-resize;z-index:10;' +
         'border-right:2px solid var(--ispace-color-surface-200,#ddd);';
       cell.style.position = 'relative';
@@ -126,7 +129,6 @@
     document.removeEventListener('mousemove', onMouseMove);
     document.removeEventListener('mouseup', onMouseUp);
     hideWidthTooltip();
-    // Persist widths
     if (state && state.table && window._docId) {
       persistWidths(state.table);
     }
