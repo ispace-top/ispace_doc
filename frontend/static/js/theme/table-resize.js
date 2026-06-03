@@ -100,15 +100,28 @@
   }
 
   function startResize(table, colIndex, startX) {
+    // Lock ALL columns to their current rendered width before drag starts
     var rows = table.querySelectorAll('tr');
-    var cellWidths = [];
+    var allWidths = {}; // colIndex -> width
+
     Array.prototype.forEach.call(rows, function (row) {
       var cells = row.querySelectorAll('th, td');
-      if (cells[colIndex]) {
-        cellWidths.push({ cell: cells[colIndex], width: cells[colIndex].getBoundingClientRect().width });
-      }
+      Array.prototype.forEach.call(cells, function (cell, ci) {
+        var w = cell.getBoundingClientRect().width;
+        allWidths[ci] = Math.max(allWidths[ci] || 0, w);
+      });
     });
-    state = { table: table, colIndex: colIndex, startX: startX, cellWidths: cellWidths };
+
+    // Apply explicit widths to ALL columns so no auto-stretching
+    Array.prototype.forEach.call(rows, function (row) {
+      var cells = row.querySelectorAll('th, td');
+      Array.prototype.forEach.call(cells, function (cell, ci) {
+        cell.style.width = allWidths[ci] + 'px';
+        cell.style.minWidth = MIN_COL_WIDTH + 'px';
+      });
+    });
+
+    state = { table: table, colIndex: colIndex, startX: startX, allWidths: allWidths, rows: rows };
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
     document.addEventListener('mousemove', onMouseMove);
@@ -118,11 +131,13 @@
   function onMouseMove(e) {
     if (!state) return;
     var delta = e.clientX - state.startX;
-    var newWidth = Math.max(MIN_COL_WIDTH, state.cellWidths[0].width + delta);
-    Array.prototype.forEach.call(state.cellWidths, function (item) {
-      item.cell.style.width = newWidth + 'px';
-      item.cell.style.minWidth = newWidth + 'px';
-      item.cell.style.maxWidth = newWidth + 'px';
+    var newWidth = Math.max(MIN_COL_WIDTH, state.allWidths[state.colIndex] + delta);
+    // Only update the dragged column, others stay locked
+    Array.prototype.forEach.call(state.rows, function (row) {
+      var cells = row.querySelectorAll('th, td');
+      if (cells[state.colIndex]) {
+        cells[state.colIndex].style.width = newWidth + 'px';
+      }
     });
     showWidthTooltip(e.clientX, e.clientY, Math.round(newWidth) + 'px');
   }
