@@ -1512,7 +1512,44 @@ document.addEventListener('DOMContentLoaded',function(){
                 } catch(e) {}
             }
         }
-        // PlantUML — encode and load from plantuml.com server
+                // Child doc list — render inline sub-document directory
+        var cdlBlocks = container.querySelectorAll('.language-child-doc-list');
+        for (var ci = 0; ci < cdlBlocks.length; ci++) {
+            var cdlBlock = cdlBlocks[ci];
+            if (cdlBlock.getAttribute('data-rendered')) continue;
+            cdlBlock.setAttribute('data-rendered', '1');
+            (function(block) {
+                var docId = window.__ISPACEDOC__ && window.__ISPACEDOC__.docId;
+                if (!docId) { block.textContent = '子文档目录加载失败：无法获取文档ID'; return; }
+                fetch('/documents/' + docId + '/children/')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (!data.status || !data.has_children) {
+                        block.innerHTML = '<div class="ispace-child-doc-list ispace-child-doc-list--empty">暂无子文档</div>';
+                        return;
+                    }
+                    var html = '<div class="ispace-child-doc-list">' +
+                        '<div class="ispace-child-doc-list-header">子文档</div>' +
+                        '<ul>';
+                    var children = data.direct_children || [];
+                    for (var ci2 = 0; ci2 < children.length; ci2++) {
+                        var c = children[ci2];
+                        html += '<li><a href="/pages/' + c.id + '/">' +
+                            '<svg class="ispace-child-doc-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>' +
+                            escapeHTML(c.name || '未命名') + '</a></li>';
+                    }
+                    var total = data.total_children || children.length;
+                    html += '</ul>' +
+                        '<div class="ispace-child-doc-list-footer">共 ' + total + ' 篇</div>' +
+                        '</div>';
+                    block.innerHTML = html;
+                })
+                .catch(function() {
+                    block.innerHTML = '<div class="ispace-child-doc-list ispace-child-doc-list--empty">子文档加载失败</div>';
+                });
+            })(cdlBlocks[ci]);
+        }
+// PlantUML — encode and load from plantuml.com server
         if (typeof plantumlEncoder !== 'undefined') {
             var pumlBlocks = container.querySelectorAll('.language-plantuml');
             for (var j = 0; j < pumlBlocks.length; j++) {

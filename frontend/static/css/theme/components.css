@@ -3417,3 +3417,73 @@ body.ispace-auth-page {
   background-color: var(--ispace-color-brand-500, #d4843a);
   opacity: 0.5;
 }
+
+
+/* ============================================================
+   Child Doc List — 子文档目录组件
+   ============================================================ */
+
+.ispace-child-doc-list {
+  border: 1px solid var(--ispace-color-surface-200, #ebe3da);
+  border-radius: var(--ispace-radius-lg, 12px);
+  padding: 0;
+  margin: 16px 0;
+  background: var(--ispace-color-surface-0, #fff);
+  overflow: hidden;
+}
+
+.ispace-child-doc-list-header {
+  padding: 10px 16px;
+  font-size: var(--ispace-font-sm, 0.875rem);
+  font-weight: 600;
+  color: var(--ispace-color-text-primary, #1a1410);
+  border-bottom: 1px solid var(--ispace-color-surface-200, #ebe3da);
+  background: var(--ispace-color-surface-50, #faf8f5);
+}
+
+.ispace-child-doc-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+}
+
+.ispace-child-doc-list li {
+  padding: 0;
+  margin: 0;
+}
+
+.ispace-child-doc-list li a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: var(--ispace-font-sm, 0.875rem);
+  color: var(--ispace-color-text-primary, #1a1410);
+  text-decoration: none;
+  transition: background-color 150ms ease;
+}
+
+.ispace-child-doc-list li a:hover {
+  background: var(--ispace-color-surface-100, #f5f0eb);
+  color: var(--ispace-color-brand-500, #d4843a);
+}
+
+.ispace-child-doc-icon {
+  flex-shrink: 0;
+  color: var(--ispace-color-text-tertiary, #7a6f65);
+}
+
+.ispace-child-doc-list-footer {
+  padding: 8px 16px;
+  font-size: var(--ispace-font-xs, 0.75rem);
+  color: var(--ispace-color-text-tertiary, #7a6f65);
+  border-top: 1px solid var(--ispace-color-surface-200, #ebe3da);
+  text-align: right;
+}
+
+.ispace-child-doc-list--empty {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--ispace-color-text-tertiary, #7a6f65);
+  font-size: var(--ispace-font-sm, 0.875rem);
+}
