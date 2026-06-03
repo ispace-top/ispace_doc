@@ -1914,18 +1914,19 @@ def api_admin_trash(request):
         doc_ids = data.get('doc_ids', [])
         if not doc_ids:
             return JsonResponse({'status': False, 'message': '请选择要恢复的文档'})
+        from backend.apps.doc.services import DocService
         count = 0
+        errors = []
         for did in doc_ids:
-            try:
-                d = Doc.objects.get(pk=did, is_deleted=True)
-                d.is_deleted = False
-                d.deleted_at = None
-                d.deleted_by = None
-                d.save(update_fields=['is_deleted', 'deleted_at', 'deleted_by'])
+            result = DocService.restore(int(did))
+            if 'error' in result:
+                errors.append({'doc_id': did, 'error': result['error']})
+            else:
                 count += 1
-            except Doc.DoesNotExist:
-                pass
-        return JsonResponse({'status': True, 'message': f'已恢复 {count} 篇文档'})
+        msg = f'已恢复 {count} 篇文档'
+        if errors:
+            msg += f'，{len(errors)} 篇恢复失败'
+        return JsonResponse({'status': True, 'message': msg})
 
     if request.method == 'DELETE':
         data = json.loads(request.body)
