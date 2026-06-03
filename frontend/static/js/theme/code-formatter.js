@@ -21,6 +21,13 @@
     });
   }
 
+  // Languages that represent diagrams/charts/components, NOT real code
+  var DIAGRAM_LANGS = {
+    mermaid:1, markmap:1, mindmap:1, flowchart:1, sequence:1,
+    plantuml:1, graphviz:1, abc:1, echarts:1, excalidraw:1,
+    'child-doc-list':1, vega:1, vegalite:1, nomnoml:1, wavedrom:1,
+  };
+
   function formatFocusedCodeBlock() {
     if (!window._inlineEditor) {
       showToast('warning', '编辑器未就绪');
@@ -33,13 +40,15 @@
       return;
     }
 
-    // Parse fenced code blocks from Markdown: ```lang\n...\n```
+    // Parse fenced code blocks, skip diagram/component blocks
     var blocks = [];
-    var regex = /```(\w+)\n([\s\S]*?)```/g;
+    var regex = /```(\S+)\n([\s\S]*?)```/g;
     var match;
     while ((match = regex.exec(md)) !== null) {
+      var lang = match[1].toLowerCase();
+      if (DIAGRAM_LANGS[lang]) continue; // skip chart/diagram blocks
       blocks.push({
-        lang: match[1].toLowerCase(),
+        lang: lang,
         code: match[2],
         fullMatch: match[0],
         index: match.index,
@@ -47,7 +56,7 @@
     }
 
     if (blocks.length === 0) {
-      showToast('info', '未找到代码块');
+      showToast('info', '未找到可格式化的代码块');
       return;
     }
 
@@ -70,7 +79,6 @@
     Promise.all(fetches).then(function (results) {
       var changed = 0;
       var unchanged = 0;
-      // Apply from end to start to preserve indices
       results = results.filter(function (r) { return r; });
       results.sort(function (a, b) { return b.index - a.index; });
       results.forEach(function (r) {

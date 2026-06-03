@@ -41,29 +41,32 @@ def _format_python(code: str) -> str:
 
 
 def _format_js_like(code: str) -> str:
-    """基础格式化适用于 JS/Java/C/Go 等类C语言：大括号换行、运算符空格。"""
+    """基础格式化适用于 JS/Java/C/Go 等类C语言。"""
     lines = code.split('\n')
     result = []
     for line in lines:
+        indent = len(line) - len(line.lstrip())
         s = line.strip()
         if not s:
             result.append('')
             continue
-        # Add space after comma
-        s = re.sub(r',(?! )', ', ', s)
-        # Add spaces around operators = + - * / but not inside strings
-        s = re.sub(r'([=+\-*/%<>!&|^~])(?!=)', r' \1 ', s)
-        # Collapse multiple spaces
+        # comma spacing: x,y → x, y  (but not inside <generics>)
+        s = re.sub(r',(?!\s)', ', ', s)
+        # operator spacing: =+-*/  but not == != <= >= ++ --
+        s = re.sub(r'(?<![=+\-*/%<>&|^!])([=+\-*/%])(?!=)', r' \1 ', s)
+        s = re.sub(r'([=+\-*/%]) (?=[=+\-*/%])', r'\1', s)  # fix double-spaced ops
+        # brace spacing: keyword{ → keyword {  and }{ → } {
+        s = re.sub(r'(?<=\w)\{', ' {', s)
+        s = re.sub(r'\}(?=\w)', '} ', s)
+        # paren spacing: func( → func(  keep tight, but ( a ) → (a)
+        s = re.sub(r'\(\s+', '(', s)
+        s = re.sub(r'\s+\)', ')', s)
+        # foreach/if/while/for spacing
+        s = re.sub(r'\b(if|for|while|switch|catch|synchronized)\s*\(', r'\1 (', s)
+        # collapse multiple spaces
         s = re.sub(r' {2,}', ' ', s)
-        # Fix spacing around braces
-        s = s.replace('{ ', '{').replace(' }', '}')
-        s = s.replace('{', ' {').replace('}', '} ')
-        s = re.sub(r' {2,}', ' ', s)
-        # Clean up leading/trailing spaces on braces/parens
-        s = s.replace('( ', '(').replace(' )', ')')
-        s = s.replace('[ ', '[').replace(' ]', ']')
-        # Indent
-        indent = len(line) - len(line.lstrip())
+        # strip trailing space
+        s = s.rstrip()
         result.append(' ' * indent + s)
     return '\n'.join(result).strip() + '\n'
 
