@@ -1085,7 +1085,7 @@ function _initVditorWithMode(container, mode, val, vdHeight) {
             if (mode === 'ir') { _processCalloutsInlineEditor(); }
             if (mode === 'ir') { _initTableIRClickDetection(); }
             if (mode === 'ir') { _renderChildDocListPreviews(); }
-            if (mode === 'ir' && window.TableResize) { TableResize.init('.vditor-ir'); }
+            if (mode === 'ir' && window.TableResize) { TableResize.init('.vditor-ir', {persist: true}); }
         },
         input: function() {
             window._inlineMdChanged = true;

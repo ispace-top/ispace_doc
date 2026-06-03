@@ -12,7 +12,11 @@
 
   var state = null;
 
-  function init(containerSelector) {
+  var _persist = false;
+
+  function init(containerSelector, opts) {
+    opts = opts || {};
+    _persist = opts.persist === true;
     containerSelector = containerSelector || CONTAINER_SELECTOR;
     var containers = document.querySelectorAll(containerSelector);
     Array.prototype.forEach.call(containers, function (container) {
@@ -129,7 +133,7 @@
     document.removeEventListener('mousemove', onMouseMove);
     document.removeEventListener('mouseup', onMouseUp);
     hideWidthTooltip();
-    if (state && state.table && window._docId) {
+    if (state && state.table && window._docId && _persist) {
       persistWidths(state.table);
     }
     state = null;
