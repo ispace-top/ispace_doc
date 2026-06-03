@@ -3429,8 +3429,16 @@ body.ispace-auth-page {
   border-radius: var(--ispace-radius-lg, 12px);
   padding: 0;
   margin: 16px 0;
-  background: var(--ispace-color-surface-0, #fff);
+  background: var(--ispace-color-surface-0, #fff) !important;
   overflow: hidden;
+}
+
+/* 父容器代码块去除深色背景 */
+pre:has(.ispace-child-doc-list),
+pre:has(.ispace-child-doc-list--empty) {
+  background: transparent !important;
+  padding: 0 !important;
+  border: none !important;
 }
 
 .ispace-child-doc-list-header {
