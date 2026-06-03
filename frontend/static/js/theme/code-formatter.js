@@ -35,6 +35,7 @@
     }
 
     var md = window._inlineEditor.getValue();
+    var originalMd = md;
     if (!md) {
       showToast('warning', '文档内容为空');
       return;
@@ -91,7 +92,14 @@
       unchanged = blocks.length - changed - (blocks.length - results.length);
 
       if (changed > 0) {
-        window._inlineEditor.setValue(md);
+        // Safety: backtick count must match original (prevents corrupting diagrams)
+        var origBacktick = (originalMd.match(/```/g) || []).length;
+        var newBacktick = (md.match(/```/g) || []).length;
+        if (origBacktick === newBacktick) {
+          window._inlineEditor.setValue(md);
+        } else {
+          showToast('error', '格式化异常：代码块边界不匹配，操作已取消');
+        }
       }
       var msg = '格式化完成 ' + changed + ' 个';
       if (unchanged > 0) msg += '，' + unchanged + ' 个无需修改';

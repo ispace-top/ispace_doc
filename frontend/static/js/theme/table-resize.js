@@ -81,7 +81,8 @@
       resizer.className = 'ispace-col-resizer';
       resizer.style.cssText =
         'position:absolute;top:0;right:-4px;width:8px;height:100%;' +
-        'cursor:col-resize;z-index:10;background:transparent;';
+        'cursor:col-resize;z-index:10;' +
+        'border-right:2px solid var(--ispace-color-surface-200,#ddd);';
       cell.style.position = 'relative';
       resizer.addEventListener('mousedown', function (e) {
         e.preventDefault();

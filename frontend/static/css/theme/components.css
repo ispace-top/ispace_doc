@@ -3415,7 +3415,8 @@ body.ispace-auth-page {
 .ispace-col-resizer:hover,
 .ispace-col-resizer--active {
   background-color: var(--ispace-color-brand-500, #d4843a);
-  opacity: 0.5;
+  opacity: 0.4;
+  border-right-color: var(--ispace-color-brand-500, #d4843a);
 }
 
 
