@@ -105,7 +105,7 @@ class AuthAPITests(TestCase):
         # 退出登录返回 JsonResponse，状态码为 200
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.content)
-        self.assertTrue(data.get('status'))
+        self.assertEqual(data.get('code'), 0)
 
     # TC-AUTH-007: 未登录保护
     def test_unauthenticated_redirect(self):
@@ -152,7 +152,7 @@ class UserCenterAPITests(TestCase):
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.content)
-        self.assertTrue(data.get('status'))
+        self.assertEqual(data.get('code'), 0)
         self.user.refresh_from_db()
         self.assertEqual(self.user.first_name, '新名字')
 
@@ -168,7 +168,7 @@ class UserCenterAPITests(TestCase):
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.content)
-        self.assertTrue(data.get('status'))
+        self.assertEqual(data.get('code'), 0)
 
     # TC-USER-005: 修改密码-旧密码错误
     def test_change_password_wrong_old(self):
@@ -190,7 +190,7 @@ class UserCenterAPITests(TestCase):
         resp = self.client.get('/api/user/login-records/')
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.content)
-        self.assertTrue(data.get('status'))
+        self.assertEqual(data.get('code'), 0)
 
 
 # ================================================================
@@ -204,23 +204,22 @@ class DocumentAPITests(TestCase):
         cache.clear()
         self.client = Client()
         self.user = User.objects.create_user('writer', password='testpass')
-        self.project = Project.objects.create(name='TestProj', role=1, intro='',
-                                               create_user=self.user)
+        self.parent_doc = Doc.objects.create(name='TestParent', create_user=self.user, parent_doc=0, status=1)
         self.doc = Doc.objects.create(
-            name='TestDoc', top_doc=self.project.pk, create_user=self.user,
+            name='TestDoc', top_doc=self.parent_doc.pk, create_user=self.user,
             content='# Hello World\n\nThis is test content for inline comments.',
             pre_content='Hello World\nThis is test content for inline comments.',
             status=1,
         )
         self.child_doc = Doc.objects.create(
-            name='Child', top_doc=self.project.pk, create_user=self.user,
+            name='Child', top_doc=self.parent_doc.pk, create_user=self.user,
             parent_doc=self.doc.pk, status=1,
         )
 
     # TC-DOC-002: 获取文档内容
     def test_get_doc_page(self):
         self.client.login(username='writer', password='testpass')
-        resp = self.client.get(f'/pages/{self.project.pk}/{self.doc.pk}/')
+        resp = self.client.get(f'/pages/{self.parent_doc.pk}/{self.doc.pk}/')
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, 'TestDoc')
 
@@ -231,7 +230,7 @@ class DocumentAPITests(TestCase):
             'doc_name': 'NewDoc',
             'content': '# New Content',
             'editor_mode': 0,
-            'project': self.project.pk,
+            'parent_doc': self.parent_doc.pk,
             'parent_doc': self.doc.pk,
             'status': 1,
         })
@@ -248,7 +247,7 @@ class DocumentAPITests(TestCase):
             'doc_name': 'ModifiedDoc',
             'content': '# Modified Content',
             'editor_mode': 0,
-            'project': self.project.pk,
+            'parent_doc': self.parent_doc.pk,
             'parent_doc': 0,
             'status': 1,
         })
@@ -275,19 +274,19 @@ class DocumentAPITests(TestCase):
     def test_get_comments(self):
         self.client.login(username='writer', password='testpass')
         DocComment.objects.create(doc=self.doc, user=self.user, content='test comment')
-        resp = self.client.get(f'/pages/{self.project.pk}/{self.doc.pk}/comments/')
+        resp = self.client.get(f'/pages/{self.parent_doc.pk}/{self.doc.pk}/comments/')
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.content)
-        self.assertTrue(data.get('status'))
+        self.assertEqual(data.get('code'), 0)
 
     # TC-DOC-011: 发表评论
     def test_post_comment(self):
         self.client.login(username='writer', password='testpass')
-        resp = self.client.post(f'/pages/{self.project.pk}/{self.doc.pk}/comments/',
+        resp = self.client.post(f'/pages/{self.parent_doc.pk}/{self.doc.pk}/comments/',
             {'content': 'Great doc!'})
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.content)
-        self.assertTrue(data.get('status'))
+        self.assertEqual(data.get('code'), 0)
 
     # TC-DOC-015: 点赞
     def test_like_toggle(self):
@@ -295,7 +294,7 @@ class DocumentAPITests(TestCase):
         resp = self.client.post(f'/documents/{self.doc.pk}/like/')
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.content)
-        self.assertTrue(data.get('status'))
+        self.assertEqual(data.get('code'), 0)
         self.assertEqual(data.get('count'), 1)
 
     # TC-DOC-017: 划词评论-创建
@@ -305,7 +304,7 @@ class DocumentAPITests(TestCase):
         text = 'test content'
         ah = hashlib.md5(text.encode('utf-8')).hexdigest()
         resp = self.client.post(
-            f'/pages/{self.project.pk}/{self.doc.pk}/inline-comments/',
+            f'/pages/{self.parent_doc.pk}/{self.doc.pk}/inline-comments/',
             json.dumps({
                 'anchor_start': 0,
                 'anchor_end': 12,
@@ -316,7 +315,7 @@ class DocumentAPITests(TestCase):
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.content)
-        self.assertTrue(data.get('status'))
+        self.assertEqual(data.get('code'), 0)
 
     # TC-DOC-018: 划词评论-获取列表
     def test_get_inline_comments(self):
@@ -326,17 +325,17 @@ class DocumentAPITests(TestCase):
             anchor_hash='abc', selected_text='test text',
             user=self.user, content='a comment',
         )
-        resp = self.client.get(f'/pages/{self.project.pk}/{self.doc.pk}/inline-comments/')
+        resp = self.client.get(f'/pages/{self.parent_doc.pk}/{self.doc.pk}/inline-comments/')
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.content)
-        self.assertTrue(data.get('status'))
+        self.assertEqual(data.get('code'), 0)
         self.assertGreaterEqual(len(data.get('data', [])), 1)
 
     # TC-DOC-019: 划词评论-Hash校验
     def test_inline_comment_hash_mismatch(self):
         self.client.login(username='writer', password='testpass')
         resp = self.client.post(
-            f'/pages/{self.project.pk}/{self.doc.pk}/inline-comments/',
+            f'/pages/{self.parent_doc.pk}/{self.doc.pk}/inline-comments/',
             json.dumps({
                 'anchor_start': 0, 'anchor_end': 5,
                 'anchor_hash': 'wronghash123',
@@ -359,7 +358,7 @@ class DocumentAPITests(TestCase):
         resp = self.client.post(f'/inline-comment/{ic.pk}/delete/')
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.content)
-        self.assertTrue(data.get('status'))
+        self.assertEqual(data.get('code'), 0)
         ic.refresh_from_db()
         self.assertFalse(ic.is_active)
 
@@ -376,10 +375,9 @@ class PermissionAPITests(TestCase):
         self.client = Client()
         self.admin = User.objects.create_user('admin', password='pass')
         self.viewer = User.objects.create_user('viewer', password='pass')
-        self.project = Project.objects.create(name='PermProj', role=1, intro='',
-                                               create_user=self.admin)
+        self.parent_doc = Doc.objects.create(name='PermParent', create_user=self.user, parent_doc=0, status=1)
         self.doc = Doc.objects.create(
-            name='PermDoc', top_doc=self.project.pk, create_user=self.admin, status=1
+            name='PermDoc', top_doc=self.parent_doc.pk, create_user=self.admin, status=1
         )
 
     # TC-PERM-001: 授予用户权限
@@ -431,8 +429,7 @@ class PermissionAPITests(TestCase):
     # TC-PERM-012: 公开文档默认 view (已在单元测试覆盖)
     def test_public_doc_view_permission(self):
         self.client.login(username='viewer', password='pass')
-        proj = Project.objects.create(name='PublicProj', role=0, intro='',
-                                       create_user=self.admin)
+        proj = Doc.objects.create(name='PublicDoc', create_user=owner, parent_doc=0, status=1)
         doc = Doc.objects.create(name='PubDoc', top_doc=proj.pk,
                                   create_user=self.admin, status=1)
         from backend.apps.doc.services import PermissionService
@@ -518,7 +515,7 @@ class OrgAPITests(TestCase):
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.content)
-        self.assertTrue(data.get('status'))
+        self.assertEqual(data.get('code'), 0)
 
     # TC-ORG-003: 添加成员
     def test_add_org_member(self):
@@ -567,7 +564,7 @@ class NotificationAPITests(TestCase):
         resp = self.client.get('/api/notifications/')
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.content)
-        self.assertTrue(data.get('status'))
+        self.assertEqual(data.get('code'), 0)
 
     # TC-NOTIF-002: 标记已读
     def test_mark_read(self):
@@ -586,7 +583,7 @@ class NotificationAPITests(TestCase):
         resp = self.client.get('/api/notifications/unread-count/')
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.content)
-        self.assertTrue(data.get('status'))
+        self.assertEqual(data.get('code'), 0)
         self.assertEqual(data.get('unread_count'), 1)
 
 
@@ -647,10 +644,9 @@ class SecurityAPITests(TestCase):
         self.client = Client()
         self.victim = User.objects.create_user('victim', password='pass')
         self.attacker = User.objects.create_user('attacker', password='pass')
-        self.project = Project.objects.create(name='SecProj', role=1, intro='',
-                                               create_user=self.victim)
+        self.parent_doc = Doc.objects.create(name='SecParent', create_user=self.user, parent_doc=0, status=1)
         self.doc = Doc.objects.create(
-            name='SecDoc', top_doc=self.project.pk, create_user=self.victim, status=1
+            name='SecDoc', top_doc=self.parent_doc.pk, create_user=self.victim, status=1
         )
 
     # TC-SEC-001: CSRF 保护
@@ -668,7 +664,7 @@ class SecurityAPITests(TestCase):
         self.client.login(username='attacker', password='pass')
         resp = self.client.post(f'/modify_doc/{self.doc.pk}/', {
             'name': 'Hacked', 'content': '# Hacked',
-            'editor_mode': 0, 'top_doc': self.project.pk,
+            'editor_mode': 0, 'top_doc': self.parent_doc.pk,
             'parent_doc': 0, 'status': 1,
         })
         # 应被拒绝
