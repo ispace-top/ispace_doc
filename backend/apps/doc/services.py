@@ -381,8 +381,12 @@ class DocService:
         doc.sort = new_sort
         doc.save(update_fields=['parent_doc', 'sort', 'modify_time'])
 
-        # 如果间隙不足（差值 < 10），触发同级全量重排
-        if new_sort > 0 and abs(new_sort - (siblings[position - 1][1] if position > 0 else new_sort)) < 10:
+        # 检查相邻间隙：若存在任意相邻 sort 差值 < 10，触发全量重排
+        all_sorts = sorted([s[1] for s in siblings] + [new_sort])
+        if len(all_sorts) >= 2 and any(
+            all_sorts[i + 1] - all_sorts[i] < 10
+            for i in range(len(all_sorts) - 1)
+        ):
             DocService._rebalance_siblings(new_parent_id)
 
         return {'success': True, 'doc_id': doc_id, 'parent_id': new_parent_id, 'sort': new_sort}
