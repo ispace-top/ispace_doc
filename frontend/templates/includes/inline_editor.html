@@ -1141,7 +1141,7 @@ function _renderChildDocListPreviews() {
         if (preview.querySelector('.ispace-cdl-preview')) return;
         var div = document.createElement('div');
         div.className = 'ispace-cdl-preview';
-        div.style.cssText = 'padding:16px;text-align:center;color:var(--ispace-color-text-tertiary,#7a6f65);font-size:13px;border:1px dashed var(--ispace-color-surface-200,#ebe3da);border-radius:8px;margin:4px;';
+        div.style.cssText = 'padding:16px;text-align:center;color:var(--ispace-color-text-tertiary,#7a6f65);font-size:13px;border:1px dashed var(--ispace-color-surface-200,#ebe3da);border-radius:8px;margin:4px;background:var(--ispace-color-surface-0,#fff);';
         div.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:6px"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/><path d="M12 12v4"/><path d="M10 14h4"/></svg><span>子文档目录 — 保存后将在查看页自动渲染</span>';
         preview.innerHTML = '';
         preview.appendChild(div);
