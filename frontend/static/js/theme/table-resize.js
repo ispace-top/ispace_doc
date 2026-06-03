@@ -112,16 +112,21 @@
       });
     });
 
+    // Switch to fixed layout so browser respects explicit cell widths
+    table.style.tableLayout = 'fixed';
+    var totalW = 0;
+    for (var k in allWidths) totalW += allWidths[k];
+    table.style.width = totalW + 'px';
+
     // Apply explicit widths to ALL columns so no auto-stretching
     Array.prototype.forEach.call(rows, function (row) {
       var cells = row.querySelectorAll('th, td');
       Array.prototype.forEach.call(cells, function (cell, ci) {
         cell.style.width = allWidths[ci] + 'px';
-        cell.style.minWidth = MIN_COL_WIDTH + 'px';
       });
     });
 
-    state = { table: table, colIndex: colIndex, startX: startX, allWidths: allWidths, rows: rows };
+    state = { table: table, colIndex: colIndex, startX: startX, allWidths: allWidths, rows: rows, origLayout: table.style.tableLayout };
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
     document.addEventListener('mousemove', onMouseMove);
@@ -132,7 +137,12 @@
     if (!state) return;
     var delta = e.clientX - state.startX;
     var newWidth = Math.max(MIN_COL_WIDTH, state.allWidths[state.colIndex] + delta);
-    // Only update the dragged column, others stay locked
+    // Only update the dragged column + table total width
+    state.allWidths[state.colIndex] = newWidth;
+    var totalW = 0;
+    for (var k in state.allWidths) totalW += state.allWidths[k];
+    state.table.style.width = totalW + 'px';
+
     Array.prototype.forEach.call(state.rows, function (row) {
       var cells = row.querySelectorAll('th, td');
       if (cells[state.colIndex]) {
