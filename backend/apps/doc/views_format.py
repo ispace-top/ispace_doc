@@ -6,7 +6,6 @@ import textwrap
 
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
-from django.views.decorators.csrf import csrf_exempt
 from loguru import logger
 
 
@@ -52,7 +51,6 @@ LANGUAGE_FORMATTERS = {
 
 
 @require_POST
-@csrf_exempt
 def api_format_code(request):
     """格式化代码。
 

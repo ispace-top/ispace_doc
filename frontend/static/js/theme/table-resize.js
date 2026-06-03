@@ -145,6 +145,7 @@
     xhr.open('POST', '/api/docs/' + window._docId + '/table-widths/save/', true);
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.setRequestHeader('X-CSRFToken', (window.__ISPACEDOC__ && window.__ISPACEDOC__.csrfToken) || '');
+    xhr.onerror = function () { console.warn('[TableResize] 列宽保存失败'); };
     xhr.send(JSON.stringify({ widths: widths }));
   }
 

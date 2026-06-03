@@ -318,7 +318,7 @@ class DingTalkChannel(BaseNotificationChannel):
             raise RuntimeError('钉钉 app_key / app_secret 未配置')
 
         import requests
-        resp = requests.post(
+        resp = requests.get(
             'https://oapi.dingtalk.com/gettoken',
             params={'appkey': cfg['app_key'], 'appsecret': cfg['app_secret']},
             timeout=15,

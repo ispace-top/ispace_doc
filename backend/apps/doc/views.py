@@ -975,6 +975,8 @@ def get_document_children_count(request, doc_id):
 
 @login_required
 @require_POST
+@login_required()
+@require_POST
 def api_save_table_widths(request, doc_id):
     """保存表格列宽到文档的 content_json。"""
     import json
