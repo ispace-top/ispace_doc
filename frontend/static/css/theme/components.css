@@ -3407,3 +3407,13 @@ body.ispace-auth-page {
   margin-right: 6px;
   -webkit-text-stroke: 0.4px currentColor;
 }
+
+/* ============================================================
+   Table Column Resize — 表格列宽拖拽调整
+   ============================================================ */
+
+.ispace-col-resizer:hover,
+.ispace-col-resizer--active {
+  background-color: var(--ispace-color-brand-500, #d4843a);
+  opacity: 0.5;
+}
