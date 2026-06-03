@@ -92,8 +92,8 @@
       unchanged = blocks.length - changed - (blocks.length - results.length);
 
       if (changed > 0) {
-        // Fix: prevent adjacent ``` blocks from merging (```\n``` → ```\n\n```)
-        md = md.replace(/```\n```/g, '```\n\n```');
+        // Fix: Vditor merging adjacent fenced blocks. Add extra blank line
+        md = md.replace(/```\n```/g, '```\n\n\n```');
         // Safety: backtick count must match original (prevents corrupting diagrams)
         var origBacktick = (originalMd.match(/```/g) || []).length;
         var newBacktick = (md.match(/```/g) || []).length;
