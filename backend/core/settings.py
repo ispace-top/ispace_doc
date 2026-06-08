@@ -65,7 +65,7 @@ def _resolve_debug():
 
 DEBUG = _resolve_debug()
 
-VERSIONS = '0.9.3-dev'
+VERSIONS = '0.9.4-dev'
 
 ALLOWED_HOSTS = ['*']
 
