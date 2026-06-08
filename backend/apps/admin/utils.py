@@ -30,6 +30,8 @@ def send_email(to_email,vcode_str):
         username = SysSetting.objects.get(types='email', name='username').value
         pwd = SysSetting.objects.get(types='email', name='pwd').value
         ssl = SysSetting.objects.get(types='email',name='smtp_ssl').value
+        starttls = SysSetting.objects.filter(types='email',name='smtp_starttls').first()
+        use_starttls = starttls and starttls.value == 'on'
         # print(smtp_host,smtp_port,send_emailer,username,pwd)
 
         msg_from = send_emailer  # 发件人邮箱
@@ -51,6 +53,10 @@ def send_email(to_email,vcode_str):
                 s = smtplib.SMTP_SSL(smtp_host, int(smtp_port))  # 发件箱邮件服务器及端口号
             else:
                 s = smtplib.SMTP(smtp_host, int(smtp_port))
+                if use_starttls:
+                    s.ehlo()
+                    s.starttls()
+                    s.ehlo()
             s.login(username, passwd)
             s.sendmail(from_addr=msg_from, to_addrs=msg_to, msg=msg.as_string())
             return True

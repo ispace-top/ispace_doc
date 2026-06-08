@@ -61,11 +61,16 @@ class EmailService:
             smtp_host = config['smtp_host']
             smtp_port = int(config.get('smtp_port', 465))
             use_ssl = config.get('smtp_ssl') == 'on'
+            use_starttls = config.get('smtp_starttls') == 'on'
 
             if use_ssl:
                 server = smtplib.SMTP_SSL(smtp_host, smtp_port)
             else:
                 server = smtplib.SMTP(smtp_host, smtp_port)
+                if use_starttls:
+                    server.ehlo()
+                    server.starttls()
+                    server.ehlo()
 
             server.login(config['username'], config.get('pwd', ''))
             server.sendmail(from_addr=config['send_emailer'], to_addrs=to_email, msg=msg.as_string())

@@ -926,6 +926,16 @@
                         <span class="settings-form-hint">开启后使用 SSL 加密连接，端口通常为 465</span>
                     </div>
                 </div>
+                <div class="settings-form-row">
+                    <label class="settings-form-label">使用 STARTTLS</label>
+                    <div class="settings-form-control">
+                        <label class="ispace-switch">
+                            <input type="checkbox" name="smtp_starttls" {% if email_starttls.value %}checked{% endif %}>
+                            <span class="ispace-switch-slider"></span>
+                        </label>
+                        <span class="settings-form-hint">开启后使用 STARTTLS 加密升级，端口通常为 587（与 SSL 互斥）</span>
+                    </div>
+                </div>
             </form>
         </div>
         <div class="settings-card-footer">
@@ -1384,16 +1394,28 @@
     // ================================================================
     // Tab 2: 邮箱设置 handlers
     // ================================================================
+    // SSL 和 STARTTLS 互斥：开启其中一个时自动关闭另一个
+    const sslSwitch = document.querySelector('[name="smtp_ssl"]');
+    const starttlsSwitch = document.querySelector('[name="smtp_starttls"]');
+    if (sslSwitch && starttlsSwitch) {
+        sslSwitch.addEventListener('change', function() {
+            if (this.checked) starttlsSwitch.checked = false;
+        });
+        starttlsSwitch.addEventListener('change', function() {
+            if (this.checked) sslSwitch.checked = false;
+        });
+    }
+
     document.getElementById('updateEmailBtn').addEventListener('click', function() {
         const fb = document.getElementById('feedbackEmail');
         const form = document.getElementById('formEmailConfig');
         const formData = getFormData(form);
 
-        const data_list = buildSwitchData(form, ['smtp_ssl'], 'email');
+        const data_list = buildSwitchData(form, ['smtp_ssl', 'smtp_starttls'], 'email');
         data_list.push({ type: 'basic', name: 'enable_email', value: getSwitchValue(form, 'enable_email') });
 
         for (const key in formData) {
-            if (formData.hasOwnProperty(key) && key !== 'smtp_ssl' && key !== 'enable_email') {
+            if (formData.hasOwnProperty(key) && key !== 'smtp_ssl' && key !== 'smtp_starttls' && key !== 'enable_email') {
                 data_list.push({ type: 'email', name: key, value: formData[key] });
             }
         }
@@ -1416,6 +1438,8 @@
         if (enableEmail) emailData.enable_email = enableEmail;
         const smtpSsl = getSwitchValue(form, 'smtp_ssl');
         if (smtpSsl) emailData.smtp_ssl = smtpSsl;
+        const smtpStarttls = getSwitchValue(form, 'smtp_starttls');
+        if (smtpStarttls) emailData.smtp_starttls = smtpStarttls;
 
         const loadingOverlay = document.createElement('div');
         loadingOverlay.className = 'ispace-loading-overlay';

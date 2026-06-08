@@ -224,10 +224,14 @@ def api_setup_install(request):
                 SysSetting.objects.update_or_create(
                     name='pwd', defaults={'value': enctry(smtp_pwd), 'types': 'email'}
                 )
-                # 端口为465时默认启用SSL
+                # 端口为465时默认启用SSL，端口为587时默认启用STARTTLS
                 is_ssl = 'on' if smtp_port == '465' else 'off'
+                is_starttls = 'on' if smtp_port == '587' else 'off'
                 SysSetting.objects.update_or_create(
                     name='smtp_ssl', defaults={'value': is_ssl, 'types': 'email'}
+                )
+                SysSetting.objects.update_or_create(
+                    name='smtp_starttls', defaults={'value': is_starttls, 'types': 'email'}
                 )
                 # 启用邮件功能
                 SysSetting.objects.update_or_create(

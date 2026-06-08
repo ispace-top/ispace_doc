@@ -374,6 +374,7 @@ def send_email_test(request):
     username = data.get('username', '')
     pwd = data.get('pwd', '')
     ssl = data.get('smtp_ssl', False) in (True, 'true', 'on', 'True')
+    starttls = data.get('smtp_starttls', False) in (True, 'true', 'on', 'True')
     # print(smtp_host,smtp_port,send_emailer,username,pwd)
 
     msg_from = send_emailer  # 发件人邮箱
@@ -394,6 +395,10 @@ def send_email_test(request):
             s = smtplib.SMTP_SSL(smtp_host, int(smtp_port))  # 发件箱邮件服务器及端口号
         else:
             s = smtplib.SMTP(smtp_host, int(smtp_port))
+            if starttls:
+                s.ehlo()
+                s.starttls()
+                s.ehlo()
         # print(pwd)
         s.login(username, pwd)
         s.sendmail(from_addr=msg_from, to_addrs=msg_to, msg=msg.as_string())
@@ -1091,6 +1096,7 @@ def admin_setting(request):
     email_port = email_settings.filter(name='smtp_port').first()
     email_username = email_settings.filter(name="username").first()
     email_ssl = email_settings.filter(name="smtp_ssl").first()
+    email_starttls = email_settings.filter(name="smtp_starttls").first()
     email_pwd = email_settings.filter(name="pwd").first()
     try:
         email_dec_pwd = dectry(email_pwd.value) if email_pwd and email_pwd.value else ''
@@ -1234,6 +1240,7 @@ def admin_setting(request):
             username = request.POST.get("username",None)
             pwd = request.POST.get("pwd",None)
             ssl = request.POST.get("smtp_ssl",None)
+            starttls = request.POST.get("smtp_starttls",None)
             # 对密码进行加密
             pwd = enctry(pwd)
             if emailer != None:
@@ -1271,14 +1278,19 @@ def admin_setting(request):
                 name='smtp_ssl',
                 defaults={"value": ssl, "types": 'email'}
             )
+            # 更新STARTTLS
+            SysSetting.objects.update_or_create(
+                name='smtp_starttls',
+                defaults={"value": starttls, "types": 'email'}
+            )
             email_settings = SysSetting.objects.filter(types="email")
-            if email_settings.count() == 6:
-                emailer = email_settings.get(name='send_emailer')
-                email_host = email_settings.get(name='smtp_host')
-                email_port = email_settings.get(name='smtp_port')
-                email_username = email_settings.get(name="username")
-                email_ssl = email_settings.get(name="smtp_ssl")
-                email_pwd = email_settings.get(name="pwd")
+            emailer = email_settings.filter(name='send_emailer').first()
+            email_host = email_settings.filter(name='smtp_host').first()
+            email_port = email_settings.filter(name='smtp_port').first()
+            email_username = email_settings.filter(name="username").first()
+            email_ssl = email_settings.filter(name="smtp_ssl").first()
+            email_starttls = email_settings.filter(name="smtp_starttls").first()
+            email_pwd = email_settings.filter(name="pwd").first()
             return render(request, 'app_admin/admin_setting.html',locals())
         # 文档全局设置
         elif types == 'doc':
@@ -2404,12 +2416,17 @@ def api_admin_health(request):
             smtp_host = config.get('smtp_host', '')
             smtp_port = int(config.get('smtp_port', 465))
             use_ssl = config.get('smtp_ssl') == 'on'
+            use_starttls = config.get('smtp_starttls') == 'on'
             if use_ssl:
                 import smtplib
                 s = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=5)
             else:
                 import smtplib
                 s = smtplib.SMTP(smtp_host, smtp_port, timeout=5)
+                if use_starttls:
+                    s.ehlo()
+                    s.starttls()
+                    s.ehlo()
             s.login(config['username'], config.get('pwd', ''))
             s.quit()
             health['email'] = {'status': 'ok', 'message': f'SMTP 连接正常 ({smtp_host}:{smtp_port})'}
