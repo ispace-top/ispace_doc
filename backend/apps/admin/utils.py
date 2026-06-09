@@ -84,16 +84,41 @@ def _get_fernet():
     return Fernet(fernet_key)
 
 
-# 加密
+# 加密（始终使用 Fernet）
 def enctry(s):
     f = _get_fernet()
     return f.encrypt(s.encode()).decode()
 
 
-# 解密
+# 解密（兼容旧版 Vigenere 格式）
 def dectry(p):
-    f = _get_fernet()
-    return f.decrypt(p.encode()).decode()
+    from cryptography.fernet import InvalidToken
+    # 优先尝试新版 Fernet 解密
+    try:
+        f = _get_fernet()
+        return f.decrypt(p.encode()).decode()
+    except (InvalidToken, Exception):
+        pass
+    # 回退到旧版 Vigenere 解密（兼容升级前已存储的密码）
+    try:
+        k = _get_stable_key()
+        dec_str = ""
+        for i, j in zip(p.split("_")[:-1], k):
+            dec_str = dec_str + chr(int(i) - ord(j))
+        return dec_str
+    except Exception:
+        return ""
+
+
+def _get_stable_key():
+    """旧版 Vigenere 密钥派生（仅用于解密升级前已存储的密码）。"""
+    import hashlib
+    key = settings.SECRET_KEY or ''
+    if not os.environ.get('SECRET_KEY'):
+        key = hashlib.sha256(settings.BASE_DIR.encode()).hexdigest()
+    while len(key) < 128:
+        key = key + hashlib.sha256(key.encode()).hexdigest()
+    return key
 
 # 判断是否内部链接
 def is_internal_path(path):
