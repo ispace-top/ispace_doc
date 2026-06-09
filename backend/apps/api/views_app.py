@@ -44,19 +44,14 @@ import os
 # 生成Token的函数
 def get_token_code(username):
     """
-    根据用户名和时间戳来生成永不相同的token随机字符串
+    生成随机的API Token字符串
     :param username: 字符串格式的用户名
     :return: 字符串格式的Token
     """
 
-    import time
-    import hashlib
+    import secrets
 
-    timestamp = str(time.time())
-    m = hashlib.md5(username.encode("utf-8"))
-    # md5 要传入字节类型的数据
-    m.update(timestamp.encode("utf-8"))
-    return m.hexdigest()  # 将生成的随机字符串返回
+    return secrets.token_hex(32)
 
 
 # 登陆视图

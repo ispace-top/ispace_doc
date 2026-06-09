@@ -38,6 +38,7 @@ urlpatterns = [
     path('api/attachment/<int:id>/', views.AdminAttachmentDetail.as_view(), name="api_admin_attachment"),  # 附件详情接口
     # 站点备份
     path('system/backup/',views.admin_backup,name="admin_backup"),
+    path('system/backup/download/<str:filename>/', views.admin_download_backup, name='admin_download_backup'),
     # 站点数据管理
     path('system/cache/clear/', views.admin_clear_cache, name="admin_clear_cache"),  # 清除缓存
     path('system/index/rebuild/', views.admin_rebuild_index, name="admin_rebuild_index"),  # 重建索引

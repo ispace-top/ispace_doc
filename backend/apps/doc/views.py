@@ -68,7 +68,8 @@ def _sanitize_json(data):
         '\'':'&apos;',
         '"':'&quot;',
         '<':'&lt;',
-        '>':'&gt;'
+        '>':'&gt;',
+        '\\':'&#92;'
     }
     if type(data) == dict:
         new = {}
@@ -2589,7 +2590,6 @@ def manage_doc_tag(request):
                 if tag_name != "":
                     tag_id = request.POST.get('tag_id', '')
                     if tag_id != "":
-                        print(tag_id,tag_name)
                         Tag.objects.filter(id=tag_id, create_user=request.user).update(name=tag_name)
                         return JsonResponse({'status': True, 'data': _('修改成功')})
                     else:

@@ -27,13 +27,13 @@ services:
   redis:
     image: redis:7-alpine
     restart: always
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass "${REDIS_PASSWORD:-}"
     volumes:
       - redisdata:/data
     ports:
       - "6379:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli --no-auth-warning -a \"${REDIS_PASSWORD:-}\" ping | grep PONG"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -46,14 +46,14 @@ services:
     restart: always
     environment:
       - discovery.type=single-node
-      - xpack.security.enabled=false
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD:?请设置 ELASTIC_PASSWORD 环境变量}
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     volumes:
       - esdata:/usr/share/elasticsearch/data
     ports:
       - "9200:9200"
     healthcheck:
-      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -vq '\"status\":\"red\"'"]
+      test: ["CMD-SHELL", "curl -s -u elastic:${ELASTIC_PASSWORD} http://localhost:9200/_cluster/health | grep -vq '\"status\":\"red\"'"]
       interval: 10s
       timeout: 5s
       retries: 30
@@ -77,6 +77,8 @@ services:
       - DATABASE_URL=postgresql+asyncpg://${DB_USER:-ispace}:${DB_PASSWORD}@db:5432/${DB_NAME:-ispace}
       - REDIS_URL=redis://redis:6379/0
       - ES_HOSTS=http://elasticsearch:9200
+      - ES_USERNAME=elastic
+      - ES_PASSWORD=${ELASTIC_PASSWORD:-}
       - SECRET_KEY=${SECRET_KEY:?请设置 SECRET_KEY 环境变量}
       - DEBUG=${DEBUG:-false}
     volumes:
@@ -100,6 +102,8 @@ services:
       - DATABASE_URL=postgresql+asyncpg://${DB_USER:-ispace}:${DB_PASSWORD}@db:5432/${DB_NAME:-ispace}
       - REDIS_URL=redis://redis:6379/0
       - ES_HOSTS=http://elasticsearch:9200
+      - ES_USERNAME=elastic
+      - ES_PASSWORD=${ELASTIC_PASSWORD:-}
       - SECRET_KEY=${SECRET_KEY:?请设置 SECRET_KEY 环境变量}
       - DEBUG=${DEBUG:-false}
     volumes:
@@ -128,6 +132,8 @@ services:
       - DB_PASSWORD=${DB_PASSWORD:?请设置 DB_PASSWORD 环境变量}
       - DATABASE_URL=postgresql+asyncpg://${DB_USER:-ispace}:${DB_PASSWORD}@db:5432/${DB_NAME:-ispace}
       - REDIS_URL=redis://redis:6379/0
+      - ES_USERNAME=elastic
+      - ES_PASSWORD=${ELASTIC_PASSWORD:-}
       - SECRET_KEY=${SECRET_KEY:?请设置 SECRET_KEY 环境变量}
     volumes:
       - media:/app/iSpaceDoc/media
@@ -151,6 +157,8 @@ services:
       - DB_PASSWORD=${DB_PASSWORD:?请设置 DB_PASSWORD 环境变量}
       - DATABASE_URL=postgresql+asyncpg://${DB_USER:-ispace}:${DB_PASSWORD}@db:5432/${DB_NAME:-ispace}
       - REDIS_URL=redis://redis:6379/0
+      - ES_USERNAME=elastic
+      - ES_PASSWORD=${ELASTIC_PASSWORD:-}
       - SECRET_KEY=${SECRET_KEY:?请设置 SECRET_KEY 环境变量}
     command: celery -A backend.core.celery beat -l info
 

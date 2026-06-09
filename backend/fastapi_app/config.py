@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     # ---- 应用 ----
     app_name: str = "i·Space Doc"
     debug: bool = True
-    secret_key: str = "change-me-in-production"
+    secret_key: str = ""  # 必须通过环境变量 SECRET_KEY 设置
     base_dir: str = str(Path(__file__).resolve().parent.parent.parent)
 
     # ---- 数据库 ----

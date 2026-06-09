@@ -69,8 +69,8 @@ def build_search_backend(backend_name: str = None) -> SearchBackend:
         return cls(
             hosts=parser.get(section, "hosts", fallback="http://localhost:9200"),
             index=parser.get(section, "index", fallback="ispace_docs"),
-            username=parser.get(section, "username", fallback=None),
-            password=parser.get(section, "password", fallback=None),
+            username=os.environ.get("ES_USERNAME") or parser.get(section, "username", fallback=None),
+            password=os.environ.get("ES_PASSWORD") or parser.get(section, "password", fallback=None),
             verify_certs=parser.getboolean(section, "verify_certs", fallback=True),
         )
 

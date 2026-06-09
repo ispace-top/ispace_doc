@@ -67,7 +67,7 @@ DEBUG = _resolve_debug()
 
 VERSIONS = '0.9.5-dev'
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = CONFIG.get('site', 'allowed_hosts', fallback='localhost,127.0.0.1').split(',')
 
 # Application definition
 
@@ -327,7 +327,9 @@ except ImportError:
 
 X_FRAME_OPTIONS = CONFIG.get("x_frame","option",fallback='SAMEORIGIN')
 
-SECURE_CROSS_ORIGIN_OPENER_POLICY = 'unsafe-none'
+SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin'
+
+CSRF_COOKIE_SECURE = CONFIG.getboolean('session','cookie_secure',fallback=False)
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = None
 

@@ -24,7 +24,7 @@ class RegisterCodeSerializer(ModelSerializer):
 
     class Meta:
         model = RegisterCode
-        fields = ('__all__')
+        exclude = ('user_list',)
 
     def get_status(self,obj):
         current_date = timezone.now().date()
@@ -42,7 +42,7 @@ class DocSerializer(ModelSerializer):
 
     class Meta:
         model = Doc
-        fields = ('__all__')
+        exclude = ('access_password',)
 
 
 # 文档历史序列化器
@@ -50,7 +50,7 @@ class DocHistorySerializer(ModelSerializer):
     username = serializers.SerializerMethodField(label="用户名")
     class Meta:
         model = DocHistory
-        fields = ('__all__')
+        fields = ('id', 'doc', 'pre_content', 'content', 'create_user', 'create_time', 'modify_time', 'status')
 
     def get_username(self,obj):
         return obj.create_user.username
@@ -60,14 +60,14 @@ class DocHistorySerializer(ModelSerializer):
 class DocTempSerializer(ModelSerializer):
     class Meta:
         model = DocTemp
-        fields = ('__all__')
+        fields = ('id', 'name', 'pre_content', 'content', 'create_user', 'create_time', 'modify_time')
 
 # 图片序列化器
 class ImageSerializer(ModelSerializer):
     username = serializers.SerializerMethodField(label="用户名")
     class Meta:
         model = Image
-        fields = ('__all__')
+        fields = ('id', 'user', 'file_path', 'file_name', 'file_size', 'file_type', 'group', 'create_time')
 
     def get_username(self,obj):
         return obj.user.username
@@ -76,7 +76,7 @@ class ImageSerializer(ModelSerializer):
 class ImageGroupSerializer(ModelSerializer):
     class Meta:
         model = ImageGroup
-        fields = ('__all__')
+        fields = ('id', 'user', 'group_name', 'create_time')
 
 # 附件序列化器
 class AttachmentSerializer(ModelSerializer):
@@ -85,7 +85,7 @@ class AttachmentSerializer(ModelSerializer):
 
     class Meta:
         model = Attachment
-        fields = ('__all__')
+        fields = ('id', 'user', 'file_path', 'file_name', 'file_size', 'file_type', 'create_time')
 
     def get_username(self,obj):
         return obj.user.username

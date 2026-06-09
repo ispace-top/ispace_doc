@@ -53,6 +53,6 @@ class RequiredLoginMiddleware():
             # 否则，不理会
             else:
                 return None
-        except:
-            # 如果查询异常，说明数据库无此设置值，不理会
+        except SysSetting.DoesNotExist:
+            # 设置项不存在，不拦截
             return None

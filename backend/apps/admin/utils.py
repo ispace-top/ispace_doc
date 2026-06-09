@@ -72,37 +72,28 @@ def send_email(to_email,vcode_str):
         return False
 
 
-def _get_stable_key():
-    """获取稳定的加密密钥（基于安装路径哈希，重启不变）。"""
+def _get_fernet():
+    """获取 Fernet 加密实例（基于 SECRET_KEY 的稳定密钥派生）。"""
     import hashlib
-    key = settings.SECRET_KEY or ''
-    # 如果 SECRET_KEY 是临时生成的（无环境变量），用安装路径作为稳定种子
-    if not os.environ.get('SECRET_KEY'):
-        key = hashlib.sha256(settings.BASE_DIR.encode()).hexdigest()
-    # 确保密钥长度足够（至少128字符）
-    while len(key) < 128:
-        key = key + hashlib.sha256(key.encode()).hexdigest()
-    return key
+    import base64
+    from cryptography.fernet import Fernet
+    key_material = (settings.SECRET_KEY or '').encode()
+    # 通过 SHA256 派生 32 字节密钥，再 base64 编码为 Fernet 格式
+    derived = hashlib.sha256(key_material).digest()
+    fernet_key = base64.urlsafe_b64encode(derived)
+    return Fernet(fernet_key)
 
 
 # 加密
 def enctry(s):
-    k = _get_stable_key()
-    encry_str = ""
-    for i, j in zip(s, k):
-        temp = str(ord(i) + ord(j)) + '_'
-        encry_str = encry_str + temp
-    return encry_str
+    f = _get_fernet()
+    return f.encrypt(s.encode()).decode()
 
 
 # 解密
 def dectry(p):
-    k = _get_stable_key()
-    dec_str = ""
-    for i, j in zip(p.split("_")[:-1], k):
-        temp = chr(int(i) - ord(j))
-        dec_str = dec_str + temp
-    return dec_str
+    f = _get_fernet()
+    return f.decrypt(p.encode()).decode()
 
 # 判断是否内部链接
 def is_internal_path(path):

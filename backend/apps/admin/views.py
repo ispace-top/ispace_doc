@@ -1,6 +1,6 @@
 # coding:utf-8
 from django.shortcuts import render,redirect
-from django.http.response import JsonResponse,HttpResponse,Http404
+from django.http.response import JsonResponse,HttpResponse,Http404,FileResponse
 from django.contrib.auth import authenticate,login,logout # 认证相关方法
 from django.contrib.auth.models import User # Django默认用户模型
 from django.contrib.auth.decorators import login_required # 登录需求装饰器
@@ -86,22 +86,15 @@ def log_in(request):
                 if checkcode.lower() != request.session['CheckCode'].lower():
                     errormsg = _('验证码错误！')
                     return render(request, 'auth/login.html', locals())
-            # 验证登录次数
-            if 'LoginLock' not in request.session.keys():
-                request.session['LoginNum'] = 1 # 重试次数
-                request.session['LoginLock'] = False # 是否锁定
-                request.session['LoginTime'] = datetime.datetime.now().timestamp() # 解除锁定时间
-            verify_num = request.session['LoginNum']
-            if verify_num > 5:
-                request.session['LoginLock'] = True
-                request.session['LoginTime'] = (datetime.datetime.now() + datetime.timedelta(minutes=15)).timestamp()
-            verify_lock = request.session['LoginLock']
-            verify_time = request.session['LoginTime']
-
-            # 验证是否锁定
-            if verify_lock is True and datetime.datetime.now().timestamp() < verify_time:
+            # 验证登录次数（基于数据库记录，防止清除Session绕过）
+            lock_time = datetime.datetime.now() - datetime.timedelta(minutes=15)
+            failed_count = LoginRecord.objects.filter(
+                username=username,
+                success=False,
+                created_at__gte=lock_time
+            ).count()
+            if failed_count >= 5:
                 errormsg = _("操作过于频繁，请15分钟后再试！")
-                request.session['LoginNum'] = 0  # 重试次数清零
                 return render(request, 'auth/login.html', locals())
 
             if username != '' and pwd != '':
@@ -109,9 +102,6 @@ def log_in(request):
                 if user is not None:
                     if user.is_active:
                         login(request,user)
-                        request.session['LoginNum'] = 0  # 重试次数
-                        request.session['LoginLock'] = False  # 是否锁定
-                        request.session['LoginTime'] = datetime.datetime.now().timestamp()  # 解除锁定时间
                         LoginRecord.objects.create(
                             username=username, user=user, ip_address=_get_client_ip(request),
                             user_agent=request.META.get('HTTP_USER_AGENT', '')[:512],
@@ -133,7 +123,6 @@ def log_in(request):
                         success=False, failure_reason='用户名或密码错误',
                     )
                     errormsg = _('用户名或密码错误！')
-                    request.session['LoginNum'] += 1
                     return render(request, 'auth/login.html', locals())
             else:
                 errormsg = _('用户名或密码未输入！')
@@ -1473,8 +1462,8 @@ def admin_about(request):
 @require_POST
 def admin_backup(request):
     mode = request.POST.get('mode','data')
-    # 定义备份文件路径
-    backup_dir = os.path.join(settings.MEDIA_ROOT, 'backup')
+    # 定义备份文件路径（存储在 MEDIA_ROOT 之外的安全路径）
+    backup_dir = os.path.join(settings.BASE_DIR, '..', 'backups')
     if not os.path.exists(backup_dir):
         os.makedirs(backup_dir)
 
@@ -1511,7 +1500,7 @@ def admin_backup(request):
             for db_file, app_label in db_files.items():
                 os.remove(os.path.join(backup_dir,db_file))
 
-            backup_file_path = "/media/backup/" + zip_file_name
+            backup_file_path = reverse('admin_download_backup', kwargs={'filename': zip_file_name})
             return JsonResponse({'status':True,'data':backup_file_path})
         except Exception as e:
             return JsonResponse({'status':False,'data':f"An error occurred: {str(e)}"})
@@ -1529,12 +1518,25 @@ def admin_backup(request):
                         file_path = os.path.join(root, file)
                         arcname = os.path.relpath(file_path, settings.MEDIA_ROOT)
                         zipf.write(file_path, arcname)
-            backup_file_path = "/media/backup/" + zip_file_name
+            backup_file_path = reverse('admin_download_backup', kwargs={'filename': zip_file_name})
             return JsonResponse({'status': True, 'data': backup_file_path})
         except Exception as e:
             return JsonResponse({'status': False, 'data': f"导出媒体文件失败: {str(e)}"})
     else:
         return JsonResponse({'status':False,'data':_("不支持的类型")})
+
+
+# 备份文件下载（仅超级管理员可访问）
+@superuser_only
+def admin_download_backup(request, filename):
+    """通过认证视图下载备份文件，防止未授权直接访问静态URL。"""
+    backup_dir = os.path.join(settings.BASE_DIR, '..', 'backups')
+    file_path = os.path.join(backup_dir, os.path.basename(filename))
+    if not os.path.exists(file_path):
+        raise Http404(_("备份文件不存在"))
+    response = FileResponse(open(file_path, 'rb'), content_type='application/zip')
+    response['Content-Disposition'] = f'attachment; filename="{os.path.basename(filename)}"'
+    return response
 
 
 # 清除 Django 缓存
