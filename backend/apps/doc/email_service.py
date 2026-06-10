@@ -1,6 +1,7 @@
 # coding:utf-8
 """邮件发送服务 — 读取 SMTP 配置并通过 smtplib 发送 HTML 邮件。"""
 
+import socket
 import smtplib
 from email.mime.text import MIMEText
 from email.header import Header
@@ -64,9 +65,9 @@ class EmailService:
             use_starttls = config.get('smtp_starttls') == 'on'
 
             if use_ssl:
-                server = smtplib.SMTP_SSL(smtp_host, smtp_port)
+                server = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=10)
             else:
-                server = smtplib.SMTP(smtp_host, smtp_port)
+                server = smtplib.SMTP(smtp_host, smtp_port, timeout=10)
                 if use_starttls:
                     server.ehlo()
                     server.starttls()
@@ -77,16 +78,24 @@ class EmailService:
             server.quit()
             logger.info(f'邮件发送成功: {to_email} — {subject}')
             return True, None
+        except socket.gaierror:
+            err = f'无法解析邮件服务器地址 "{smtp_host}"，请检查 SMTP 主机名或 DNS 配置'
+            logger.error(f'邮件发送失败: {to_email} — {err}')
+            return False, err
+        except socket.timeout:
+            err = f'连接邮件服务器 {smtp_host}:{smtp_port} 超时，请检查地址和防火墙'
+            logger.error(f'邮件发送失败: {to_email} — {err}')
+            return False, err
         except smtplib.SMTPAuthenticationError:
             err = 'SMTP 认证失败，请检查用户名和密码'
             logger.error(f'邮件发送失败: {to_email} — {err}')
             return False, err
         except smtplib.SMTPException as e:
-            err = f'SMTP 错误: {repr(e)}'
+            err = f'SMTP 错误: {str(e)[:200]}'
             logger.error(f'邮件发送失败: {to_email} — {err}')
             return False, err
         except Exception as e:
-            err = f'发送异常: {repr(e)}'
+            err = f'发送异常: {str(e)[:200]}'
             logger.error(f'邮件发送失败: {to_email} — {err}')
             return False, err
 
