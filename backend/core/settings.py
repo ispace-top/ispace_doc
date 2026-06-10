@@ -65,7 +65,7 @@ def _resolve_debug():
 
 DEBUG = _resolve_debug()
 
-VERSIONS = '0.9.5-dev'
+VERSIONS = '0.9.6-dev'
 
 ALLOWED_HOSTS = CONFIG.get('site', 'allowed_hosts', fallback='localhost,127.0.0.1').split(',')
 
