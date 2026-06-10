@@ -1,4 +1,5 @@
 # coding:utf-8
+import socket
 from django.shortcuts import render,redirect
 from django.http.response import JsonResponse,HttpResponse,Http404,FileResponse
 from django.contrib.auth import authenticate,login,logout # 认证相关方法
@@ -379,20 +380,28 @@ def send_email_test(request):
     msg['From'] = Header(sitename, 'utf-8').encode() + " <{}>".format(msg_from)
     msg['To'] = msg_to
     try:
-        # print(smtp_host,smtp_port)
+        port_int = int(smtp_port)
         if ssl:
-            s = smtplib.SMTP_SSL(smtp_host, int(smtp_port))  # 发件箱邮件服务器及端口号
+            s = smtplib.SMTP_SSL(smtp_host, port_int, timeout=10)
         else:
-            s = smtplib.SMTP(smtp_host, int(smtp_port))
+            s = smtplib.SMTP(smtp_host, port_int, timeout=10)
             if starttls:
                 s.ehlo()
                 s.starttls()
                 s.ehlo()
-        # print(pwd)
         s.login(username, pwd)
         s.sendmail(from_addr=msg_from, to_addrs=msg_to, msg=msg.as_string())
         s.quit()
         return JsonResponse({'status': True, 'data': _('发送成功')})
+    except socket.gaierror:
+        logger.error("邮件测试 — DNS 解析失败，无法连接到 SMTP 服务器: {}".format(smtp_host))
+        return JsonResponse({'status': False, 'data': '无法解析邮件服务器地址 "{}"，请检查 SMTP 主机名是否正确，或确认容器/服务器 DNS 配置正常'.format(smtp_host)})
+    except socket.timeout:
+        logger.error("邮件测试 — 连接超时: {}:{}".format(smtp_host, smtp_port))
+        return JsonResponse({'status': False, 'data': '连接邮件服务器 {}:{} 超时，请检查主机地址和端口是否正确，以及防火墙是否放行'.format(smtp_host, smtp_port)})
+    except smtplib.SMTPAuthenticationError:
+        logger.error("邮件测试 — SMTP 认证失败")
+        return JsonResponse({'status': False, 'data': 'SMTP 认证失败，请检查用户名和密码是否正确'})
     except smtplib.SMTPException as e:
         logger.error("邮件发送异常:{}".format(repr(e)))
         return JsonResponse({'status': False, 'data': str(e)[:200]})
@@ -401,7 +410,7 @@ def send_email_test(request):
         return JsonResponse({'status': False, 'data': '邮箱密码解码失败，请在邮箱设置中重新输入密码后保存'})
     except Exception as e:
         logger.error("邮件发送异常:{}".format(repr(e)))
-        return JsonResponse({'status': False, 'data': repr(e)})
+        return JsonResponse({'status': False, 'data': '发送失败: {}'.format(str(e)[:200])})
 
 # 后台管理 - 仪表盘
 @superuser_only
