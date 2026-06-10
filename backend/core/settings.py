@@ -67,7 +67,14 @@ DEBUG = _resolve_debug()
 
 VERSIONS = '0.9.5-dev'
 
-ALLOWED_HOSTS = CONFIG.get('site', 'allowed_hosts', fallback='localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS_ENV = os.environ.get('ALLOWED_HOSTS')
+if ALLOWED_HOSTS_ENV:
+    if ALLOWED_HOSTS_ENV.strip() == '*':
+        ALLOWED_HOSTS = ['*']
+    else:
+        ALLOWED_HOSTS = [h.strip() for h in ALLOWED_HOSTS_ENV.split(',') if h.strip()]
+else:
+    ALLOWED_HOSTS = CONFIG.get('site', 'allowed_hosts', fallback='localhost,127.0.0.1').split(',')
 
 # Application definition
 

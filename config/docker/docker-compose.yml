@@ -80,6 +80,7 @@ services:
       - ES_PASSWORD=${ELASTIC_PASSWORD:-}
       - SECRET_KEY=${SECRET_KEY:?请设置 SECRET_KEY 环境变量}
       - DEBUG=${DEBUG:-false}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1}
     volumes:
       - media:/app/iSpaceDoc/media
       - log:/app/iSpaceDoc/log
