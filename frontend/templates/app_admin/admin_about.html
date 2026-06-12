@@ -141,29 +141,6 @@
         </div>
     </div>
 
-    {# ── 系统环境（仅超管可见） ── #}
-    {% if is_superuser %}
-    <div class="about-section">
-        <h2 class="about-section-title">
-            <span class="icon">🖥</span> {% trans "系统环境" %}
-        </h2>
-        <div class="about-info-card">
-            <div class="about-info-grid">
-                <span class="about-info-label">iSpaceDoc</span>
-                <span class="about-info-value">{% if app_version %}v{{ app_version }}{% else %}-{% endif %}</span>
-                <span class="about-info-label">Django</span>
-                <span class="about-info-value">{{ django_version }}</span>
-                <span class="about-info-label">Python</span>
-                <span class="about-info-value">{{ python_version }}</span>
-                <span class="about-info-label">{% trans "操作系统" %}</span>
-                <span class="about-info-value">{{ os_name }} {{ os_release }}</span>
-                <span class="about-info-label">{% trans "数据库引擎" %}</span>
-                <span class="about-info-value">{{ db_engine }}</span>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
     {# ── 版本信息 ── #}
     <div class="about-section">
         <h2 class="about-section-title">

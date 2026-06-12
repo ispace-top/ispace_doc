@@ -1428,7 +1428,8 @@ def _version_greater(a, b):
     """比较两个语义化版本号，a > b 返回 True。"""
     import re
     def _parse(v):
-        parts = re.split(r'[-+]', v)
+        v = v.lstrip('v').strip()
+        parts = re.split(r'[-+_]', v)
         nums = [int(x) for x in parts[0].split('.')]
         return nums
     try:
@@ -1440,15 +1441,8 @@ def _version_greater(a, b):
 
 def _about_context(request):
     """构建关于我们页面上下文。"""
-    from django import VERSION as django_version_tuple
-    import sys, platform
     return {
         'app_version': settings.VERSIONS,
-        'django_version': '.'.join(str(v) for v in django_version_tuple[:3]),
-        'python_version': sys.version.split()[0],
-        'os_name': platform.system(),
-        'os_release': platform.release(),
-        'db_engine': settings.DATABASES['default']['ENGINE'],
         'is_superuser': request.user.is_superuser if request.user.is_authenticated else False,
     }
 
