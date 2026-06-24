@@ -16,6 +16,7 @@ services:
     restart: always
     environment:
       - ISDOC_CONFIG=config-lite.ini
+      - ALLOWED_HOSTS=*
     volumes:
       - ispace_data:/app/iSpaceDoc/data            # SQLite 数据库文件
       - ispace_media:/app/iSpaceDoc/media         # 上传文件
