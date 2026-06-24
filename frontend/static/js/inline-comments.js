@@ -858,8 +858,8 @@
       });
   }
 
-  // 延迟初始化，等待 Vditor 渲染完成
-  setTimeout(init, 800);
+  // 延迟初始化（等待 Vditor 同步渲染完成后立即加载，减少白屏等待）
+  setTimeout(init, 200);
 
   // 导出 API
   window.InlineComments = {

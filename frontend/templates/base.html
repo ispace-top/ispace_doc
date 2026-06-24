@@ -138,13 +138,15 @@
 
     {# --- Core Scripts --- #}
     {% block core_scripts %}
-    <script src="{% static 'js/theme/theme-manager.js' %}?v={{ isdoc_version }}"></script>
-    <script src="{% static 'js/theme/core.js' %}?v={{ isdoc_version }}"></script>
-    <script src="{% static 'js/theme/components.js' %}?v={{ isdoc_version }}"></script>
+    {# theme/core/components 在 DOMContentLoaded 初始化，defer 不阻塞首屏 #}
+    <script src="{% static 'js/theme/theme-manager.js' %}?v={{ isdoc_version }}" defer></script>
+    <script src="{% static 'js/theme/core.js' %}?v={{ isdoc_version }}" defer></script>
+    <script src="{% static 'js/theme/components.js' %}?v={{ isdoc_version }}" defer></script>
+    {# spa-nav 注册 click/popstate 监听，需同步加载以捕获导航事件 #}
     <script src="{% static 'js/theme/spa-nav.js' %}?v={{ isdoc_version }}"></script>
-    <script src="{% static 'js/theme/notification.js' %}?v={{ isdoc_version }}"></script>
-    <script src="{% static 'js/theme/author-card.js' %}?v={{ isdoc_version }}"></script>
-    <script src="{% static 'js/theme/doc-settings.js' %}?v={{ isdoc_version }}"></script>
+    <script src="{% static 'js/theme/notification.js' %}?v={{ isdoc_version }}" defer></script>
+    <script src="{% static 'js/theme/author-card.js' %}?v={{ isdoc_version }}" defer></script>
+    <script src="{% static 'js/theme/doc-settings.js' %}?v={{ isdoc_version }}" defer></script>
     {% endblock %}
 
     {% block inline_bootstrap %}

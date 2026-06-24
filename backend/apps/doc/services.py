@@ -24,6 +24,20 @@ from .models import (
 _PERM_CACHE_TTL = 300
 
 
+def _get_user_org_ancestor_ids(user):
+    """利用 OrgNode.path 物化路径（格式 /1/2/3），直接提取祖先 ID。"""
+    org_nodes = OrgUser.objects.filter(user=user).select_related('org_node')
+    org_ids = set()
+    for ou in org_nodes:
+        org_ids.add(ou.org_node_id)
+        path = ou.org_node.path.strip('/')
+        if path:
+            for part in path.split('/'):
+                if part.isdigit():
+                    org_ids.add(int(part))
+    return org_ids
+
+
 # ---------------------------------------------------------------
 #  PermissionService
 # ---------------------------------------------------------------
@@ -141,15 +155,7 @@ class PermissionService:
 
     @staticmethod
     def _get_org_perm(user, doc):
-        org_nodes = OrgUser.objects.filter(user=user).select_related('org_node')
-        org_ids = set()
-        for ou in org_nodes:
-            org_ids.add(ou.org_node_id)
-            # 向上追溯所有父节点
-            node = ou.org_node
-            while node.parent_id:
-                org_ids.add(node.parent_id)
-                node = node.parent
+        org_ids = _get_user_org_ancestor_ids(user)
         if not org_ids:
             return -1
         perm = DocPermission.objects.filter(
@@ -179,15 +185,7 @@ class PermissionService:
 
         # 1) 收集用户身份信息（一次查询）
         user_group_ids = set(GroupMember.objects.filter(user=user).values_list('group_id', flat=True))
-
-        org_nodes = OrgUser.objects.filter(user=user).select_related('org_node')
-        user_org_ids = set()
-        for ou in org_nodes:
-            user_org_ids.add(ou.org_node_id)
-            node = ou.org_node
-            while node.parent_id:
-                user_org_ids.add(node.parent_id)
-                node = node.parent
+        user_org_ids = _get_user_org_ancestor_ids(user)
 
         # 2) 批量查询所有相关权限记录（一次查询）
         target_filters = Q(target_type='user', target_id=user.id)

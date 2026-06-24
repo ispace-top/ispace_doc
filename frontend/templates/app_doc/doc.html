@@ -653,22 +653,30 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{% static 'viewerjs/viewer.min.js' %}?version={{ isdoc_version }}"></script>
-<script src="{% static 'prismjs/prism.js' %}?version={{ isdoc_version }}"></script>
-<script src="{% static 'js/attachment-preview.js' %}?version={{ isdoc_version }}"></script>
-<script src="{% static 'js/theme/table-resize.js' %}?version={{ isdoc_version }}"></script>
-<script src="{% static 'js/theme/code-formatter.js' %}?version={{ isdoc_version }}"></script>
+{# 基础交互库 — defer 不阻塞首屏 #}
+<script src="{% static 'viewerjs/viewer.min.js' %}?version={{ isdoc_version }}" defer></script>
+<script src="{% static 'prismjs/prism.js' %}?version={{ isdoc_version }}" defer></script>
+<script src="{% static 'js/attachment-preview.js' %}?version={{ isdoc_version }}" defer></script>
+<script src="{% static 'js/theme/table-resize.js' %}?version={{ isdoc_version }}" defer></script>
+<script src="{% static 'js/theme/code-formatter.js' %}?version={{ isdoc_version }}" defer></script>
 {% if doc.editor_mode == 0 or doc.editor_mode == 2 or doc.editor_mode == 3 %}
+{# Vditor 必须同步加载，DOMContentLoaded 中立即使用 #}
 <script src="{% static 'vditor/dist/index.min.js' %}?version={{ isdoc_version }}"></script>
-<script src="{% static 'markdown-ext/marked/marked.min.js' %}?version={{ isdoc_version }}"></script>
-<script src="{% static 'markdown-ext/sequence/raphael.min.js' %}?version={{ isdoc_version }}"></script>
-<script src="{% static 'markdown-ext/sequence/sequence-diagram.min.js' %}?version={{ isdoc_version }}"></script>
-<script src="{% static 'markdown-ext/plantuml/plantuml-encoder.min.js' %}?version={{ isdoc_version }}"></script>
-<script src="{% static 'markdown-ext/echarts/echarts.min.js' %}?version={{ isdoc_version }}"></script>
-<script src="{% static 'js/icon-picker.js' %}?version={{ isdoc_version }}"></script>
+{# 图表/图形库按需加载：仅当文档内容包含对应代码块时才加载 #}
+{% if doc.pre_content and 'sequence' in doc.pre_content %}
+<script src="{% static 'markdown-ext/sequence/raphael.min.js' %}?version={{ isdoc_version }}" defer></script>
+<script src="{% static 'markdown-ext/sequence/sequence-diagram.min.js' %}?version={{ isdoc_version }}" defer></script>
+{% endif %}
+{% if doc.pre_content and 'plantuml' in doc.pre_content %}
+<script src="{% static 'markdown-ext/plantuml/plantuml-encoder.min.js' %}?version={{ isdoc_version }}" defer></script>
+{% endif %}
+{% if doc.pre_content and 'echarts' in doc.pre_content %}
+<script src="{% static 'markdown-ext/echarts/echarts.min.js' %}?version={{ isdoc_version }}" defer></script>
+{% endif %}
+<script src="{% static 'js/icon-picker.js' %}?version={{ isdoc_version }}" defer></script>
 {% elif doc.editor_mode == 1 %}
-<script src="{% static 'luckysheet/dist/plugins/js/plugin.js' %}?version={{ isdoc_version }}"></script>
-<script src="{% static 'luckysheet/dist/luckysheet.umd.js' %}?version={{ isdoc_version }}"></script>
+<script src="{% static 'luckysheet/dist/plugins/js/plugin.js' %}?version={{ isdoc_version }}" defer></script>
+<script src="{% static 'luckysheet/dist/luckysheet.umd.js' %}?version={{ isdoc_version }}" defer></script>
 {% endif %}
 
 <script>
@@ -1260,6 +1268,19 @@ document.addEventListener('DOMContentLoaded',function(){
 
 //
 
+    // Callout pattern/icon mappings — must be initialized before processCallouts() is called
+    var CALLOUT_ICONS = {
+        'info': 'about', 'warning': 'notice', 'danger': 'auz',
+        'success': 'star', 'tip': 'light'
+    };
+    var CALLOUT_PATTERNS = {
+        'i': 'info', 'info': 'info',
+        'w': 'warning', 'warning': 'warning',
+        'e': 'danger', 'error': 'danger',
+        's': 'success', 'success': 'success',
+        't': 'tip', 'tip': 'tip'
+    };
+
     // Only render view mode when inline editor is not active
     var inlineEditorEl = document.getElementById('inline-editor');
     if (!inlineEditorEl || inlineEditorEl.style.display === 'none') {
@@ -1269,11 +1290,8 @@ document.addEventListener('DOMContentLoaded',function(){
         {# Drawing editors are self-initializing #}
         {% else %}
         Vditor.preview(document.getElementById('vditor-doc-content'),'{{ doc.pre_content|escapejs }}',{cdn:'{% static "vditor" %}',mode:'light',hljs:{style:'github'}});
-        setTimeout(function() {
-            var vc = document.getElementById('vditor-doc-content');
-            processCallouts(vc);
-            processDocMentions(vc);
-        }, 200);
+        var vc = document.getElementById('vditor-doc-content');
+        setTimeout(function() { processCallouts(vc); processDocMentions(vc); }, 0);
         {% endif %}
     }
 
@@ -1285,22 +1303,6 @@ document.addEventListener('DOMContentLoaded',function(){
         if (docContentEl) window.AttachmentPreview.init(docContentEl);
     }
 
-    // ---- Outline Navigation Panel ----
-    // ---- Callout post-processing: convert `>i`, `>w` etc. prefixes to styled blockquotes ----
-    var CALLOUT_ICONS = {
-        'info': 'about',    // ℹ 信息
-        'warning': 'notice', // 🔔 提醒
-        'danger': 'auz',     // ⚠ 关键
-        'success': 'star',   // ⭐ 关注
-        'tip': 'light'       // 💡 技巧
-    };
-    var CALLOUT_PATTERNS = {
-        'i': 'info', 'info': 'info',
-        'w': 'warning', 'warning': 'warning',
-        'e': 'danger', 'error': 'danger',
-        's': 'success', 'success': 'success',
-        't': 'tip', 'tip': 'tip'
-    };
     function processCallouts(container) {
         if (!container) return;
         var blockquotes = container.querySelectorAll('blockquote');
@@ -1603,14 +1605,6 @@ document.addEventListener('DOMContentLoaded',function(){
 // 服务端预生成的大纲目录数据
 window.__docOutline = {{ doc.outline|default:'null'|safe }};
 
-// 确保 @mention 渲染（放在脚本末尾作为兜底，延迟执行以确保 Vditor 渲染完成）
-setTimeout(function() {
-    var c = document.getElementById('vditor-doc-content');
-    if (c && c.children.length > 0 && typeof processDocMentions === 'function') {
-        processDocMentions(c);
-    }
-}, 200);
-
 /**
  * 初始化右侧大纲导航面板：优先使用服务端预生成的 outline JSON，
  * 降级到 DOM 扫描（兼容未重新保存的旧文档）。
@@ -1856,5 +1850,5 @@ setTimeout(initOutlinePanel, 10);
     });
 })();
 </script>
-<script src="{% static 'js/inline-comments.js' %}?v={{ isdoc_version }}"></script>
+<script src="{% static 'js/inline-comments.js' %}?v={{ isdoc_version }}" defer></script>
 {% endblock %}

@@ -128,68 +128,88 @@ def _strip_markdown_preview(docs):
 
 # 获取文档目录树
 def _build_doc_tree(doc_id=None):
-    """构建文档树并返回 (层次化树列表, 扁平化列表, 总数)。
-    若传入 doc_id，则仅构建该文档所属的子树范围。
+    """构建文档树并返回 (层次化树列表, 扁平化列表, 总数, 祖先链列表)。
+
+    若传入 doc_id，只加载该文档的路径子树（根→当前文档路径 + 兄弟节点 + 子节点），
+    不再拉取整棵大树。同时返回 ancestor_chain 供面包屑复用，避免重复的祖先查询。
     """
-    # 获取所有已发布的可见文档
-    base_qs = Doc.objects.filter(status=1, is_deleted=False)
+    base_qs = Doc.objects.filter(status__in=[0,1], is_deleted=False).only(
+        'id', 'parent_doc', 'name', 'open_children', 'editor_mode'
+    )
+
     if doc_id:
-        # 找到根节点：向上追溯到 parent_doc=0
-        root_id = doc_id
-        current = Doc.objects.only('parent_doc').get(pk=doc_id)
-        while current.parent_doc and current.parent_doc != 0:
-            root_id = current.parent_doc
-            current = Doc.objects.only('parent_doc').get(pk=root_id)
-        # 从根节点获取整个子树
-        root_docs = Doc.objects.filter(pk=root_id)
-    else:
-        root_docs = base_qs.filter(parent_doc=0)
+        # 收集从当前文档到根的祖先链（链尾为当前文档，链头为根）
+        chain_ids = [doc_id]
+        pid = base_qs.filter(pk=doc_id).values_list('parent_doc', flat=True).first() or 0
+        while pid and pid != 0:
+            chain_ids.append(pid)
+            pid = base_qs.filter(pk=pid).values_list('parent_doc', flat=True).first() or 0
 
-    parent_ids = set(base_qs.exclude(parent_doc=0).values_list('parent_doc', flat=True))
+        root_id = chain_ids[-1]
 
-    def _build_children(parent_id):
-        children = list(
-            base_qs.filter(parent_doc=parent_id)
-            .values('id', 'name', 'open_children', 'editor_mode')
-            .order_by('sort')
-        )
-        result = []
-        for c in children:
+        # 只加载路径上相关的文档：链上节点的子节点（含兄弟） + 链上节点本身
+        docs = list(base_qs.filter(parent_doc__in=chain_ids).order_by('sort'))
+        chain_docs = list(base_qs.filter(pk__in=chain_ids))
+        all_docs_by_id = {d.id: d for d in docs + chain_docs}
+
+        # 构建 parent→children 映射
+        doc_map = {}
+        for d in docs:
+            doc_map.setdefault(d.parent_doc, []).append(d)
+        for d in chain_docs:
+            doc_map.setdefault(d.parent_doc, [])
+
+        def build_node(doc):
             item = {
-                'id': c['id'],
-                'name': c['name'],
-                'open_children': c['open_children'],
-                'editor_mode': c['editor_mode'],
+                'id': doc.id, 'name': doc.name,
+                'open_children': doc.open_children,
+                'editor_mode': doc.editor_mode,
             }
-            if c['id'] in parent_ids:
-                item['children'] = _build_children(c['id'])
+            item['children'] = [build_node(c) for c in doc_map.get(doc.id, [])]
+            return item
+
+        root_doc = all_docs_by_id.get(root_id)
+        tree = [build_node(root_doc)] if root_doc else []
+
+        # 祖先链（从根到当前文档，供面包屑使用）
+        ancestor_chain = []
+        for aid in reversed(chain_ids):
+            ad = all_docs_by_id.get(aid)
+            if ad:
+                ancestor_chain.append(ad)
+    else:
+        # 无 doc_id 时构建整棵树（首页）
+        root_docs = list(base_qs.filter(parent_doc=0).order_by('sort'))
+        parent_ids = set(base_qs.exclude(parent_doc=0).values_list('parent_doc', flat=True))
+
+        doc_map = {}
+        for d in base_qs.filter(parent_doc__in=parent_ids).order_by('sort'):
+            doc_map.setdefault(d.parent_doc, []).append(d)
+
+        def build_node(doc):
+            item = {
+                'id': doc.id, 'name': doc.name,
+                'open_children': doc.open_children,
+                'editor_mode': doc.editor_mode,
+            }
+            if doc.id in parent_ids:
+                item['children'] = [build_node(c) for c in doc_map.get(doc.id, [])]
             else:
                 item['children'] = []
-            result.append(item)
-        return result
+            return item
 
-    tree = []
+        tree = [build_node(d) for d in root_docs]
+        ancestor_chain = []
+
+    # 扁平化列表（用于上一篇/下一篇导航）
     flat_list = []
-    for d in root_docs.values('id', 'name', 'open_children', 'editor_mode').order_by('sort'):
-        item = {
-            'id': d['id'],
-            'name': d['name'],
-            'open_children': d['open_children'],
-            'editor_mode': d['editor_mode'],
-        }
-        if d['id'] in parent_ids:
-            item['children'] = _build_children(d['id'])
-        else:
-            item['children'] = []
-        tree.append(item)
-
     def _flatten(items):
         for it in items:
             flat_list.append({'id': it['id'], 'name': it['name']})
             _flatten(it.get('children', []))
-
     _flatten(tree)
-    return tree, flat_list, len(flat_list)
+
+    return tree, flat_list, len(flat_list), ancestor_chain
 
 
 # 文档首页
@@ -357,252 +377,134 @@ def doc_home(request):
 
     return render(request, 'app_doc/doc_home.html', locals())
 
-# 文档浏览页
+# 文档浏览页 — 共享渲染逻辑
+def _render_doc_page(request, doc):
+    """doc() 和 doc_id() 的统一渲染逻辑。返回 HttpResponse。"""
+    # 草稿检查
+    if doc.status == 0 and doc.create_user != request.user:
+        raise Http404
+    if doc.status == 0 and doc.create_user == request.user:
+        if not doc.name.startswith(str(_('【预览草稿】'))):
+            doc.name = _('【预览草稿】') + doc.name
+
+    doc_tags = DocTag.objects.filter(doc=doc)
+    doc_tags_str = ','.join([i.tag.name for i in doc_tags])
+
+    # 目录树 + 面包屑祖先链
+    toc_tree, toc_list, toc_cnt, ancestor_chain = _build_doc_tree(doc.id)
+
+    # 收藏状态
+    is_collect_doc = False
+    if request.user.is_authenticated:
+        is_collect_doc = MyCollect.objects.filter(
+            collect_type=1, collect_id=doc.id, create_user=request.user).exists()
+
+    # 权限检查
+    from backend.apps.doc.services import PermissionService
+    effective_perm = PermissionService.get_effective_permission(request.user, doc)
+    if effective_perm is None:
+        effective_perm = 'none'
+    doc_effective_perm = effective_perm
+
+    if not doc.is_public and effective_perm == 'none':
+        if request.user.is_authenticated:
+            from backend.apps.doc.views_permission import _get_doc_admins
+            admins = _get_doc_admins(doc)
+            admin_list = [{'id': a.id, 'display_name': a.first_name or a.username} for a in admins]
+            from django.utils import timezone
+            from datetime import timedelta
+            from backend.apps.doc.models import Notification
+            already_requested = Notification.objects.filter(
+                recipient=request.user, notification_type='perm_apply',
+                link__contains=f'/pages/{doc.id}',
+                created_at__gte=timezone.now() - timedelta(hours=24),
+            ).exists()
+            return render(request, 'app_doc/access_denied.html', {
+                'doc_id': doc.id, 'doc_name': doc.name,
+                'admins': admin_list, 'already_requested': already_requested,
+            })
+        raise Http404
+
+    # @mention 解析
+    import re, json
+    mention_pattern = r'@([\w.@+-]+)'
+    mentioned_usernames = re.findall(mention_pattern, doc.pre_content or '')
+    doc_mention_users_json = '{}'
+    if mentioned_usernames:
+        mentioned_set = set(mentioned_usernames)
+        mentioned_users = User.objects.filter(
+            username__in=mentioned_set, is_active=True).values('id', 'username')
+        doc_mention_users = {u['username']: u['id'] for u in mentioned_users}
+        doc_mention_users_json = json.dumps(doc_mention_users)
+
+    # 分享信息
+    try:
+        doc_share = DocShare.objects.get(doc=doc)
+        is_share = True
+    except ObjectDoesNotExist:
+        is_share = False
+
+    # 面包屑
+    breadcrumb_items = []
+    for ad in ancestor_chain[:-1]:
+        breadcrumb_items.append({'name': ad.name, 'url': '/pages/{}/'.format(ad.id)})
+    breadcrumb_items.append({'name': doc.name, 'url': ''})
+
+    # 编辑历史
+    doc_history = list(DocHistory.objects
+        .filter(doc=doc)
+        .order_by('-create_time')[:10]
+        .values('id', 'create_user__username', 'create_user__first_name', 'create_time'))
+
+    # 点赞
+    like_count = DocLike.objects.filter(doc=doc).count()
+    user_liked = DocLike.objects.filter(
+        doc=doc, user=request.user).exists() if request.user.is_authenticated else False
+
+    # 上一篇/下一篇（基于路径树扁平列表）
+    prev_doc = None
+    next_doc = None
+    for i, item in enumerate(toc_list):
+        if item['id'] == doc.id:
+            if i > 0:
+                prev_doc = toc_list[i - 1]
+            if i < len(toc_list) - 1:
+                next_doc = toc_list[i + 1]
+            break
+
+    # 浏览记录
+    _record_browse_history(request, 'doc', doc.id, doc.top_doc)
+
+    return render(request, 'app_doc/doc.html', locals())
+
+
 @require_http_methods(['GET'])
-def doc(request,pro_id,doc_id):
+def doc(request, pro_id, doc_id):
     try:
         if pro_id != '' and doc_id != '':
-            # 获取文档信息
-            doc = Doc.objects.get(id=int(doc_id),status__in=[0,1],is_deleted=False) # 文档信息
-            # 获取文档目录树（基于文档ID构建子树）
-            toc_tree, toc_list, toc_cnt = _build_doc_tree(doc.id)
-
-            # 获取文档收藏状态
-            if request.user.is_authenticated:
-                is_collect_doc = MyCollect.objects.filter(collect_type=1, collect_id=doc_id,
-                                                          create_user=request.user).exists()
-            else:
-                is_collect_doc = False
-
-            # v1.0 权限检查：调用 PermissionService 三线合并计算
-            from backend.apps.doc.services import PermissionService
-            effective_perm = PermissionService.get_effective_permission(request.user, doc)
-            if effective_perm is None:
-                effective_perm = 'none'
-            doc_effective_perm = effective_perm
-
-            # 非公开文档且无权限的用户不能访问
-            if not doc.is_public and effective_perm == 'none':
-                if request.user.is_authenticated:
-                    # Show no-permission page with doc info and apply button
-                    from backend.apps.doc.views_permission import _get_doc_admins
-                    admins = _get_doc_admins(doc)
-                    admin_list = [{'id': a.id, 'display_name': a.first_name or a.username} for a in admins]
-                    # Check if user already applied in last 24h
-                    from django.utils import timezone
-                    from datetime import timedelta
-                    from backend.apps.doc.models import Notification
-                    already_requested = Notification.objects.filter(
-                        recipient=request.user, notification_type='perm_apply',
-                        link__contains=f'/pages/{doc.id}',
-                        created_at__gte=timezone.now() - timedelta(hours=24),
-                    ).exists()
-                    return render(request, 'app_doc/access_denied.html', {
-                        'doc_id': doc.id, 'doc_name': doc.name,
-                        'admins': admin_list, 'already_requested': already_requested,
-                    })
-                return render(request, '404.html')
-
-            # 获取文档内容
-            try:
-                doc = Doc.objects.get(id=int(doc_id),status__in=[0,1],is_deleted=False) # 文档信息
-                doc_tags = DocTag.objects.filter(doc=doc) # 文档标签信息
-                doc_tags_str = ','.join([i.tag.name for i in doc_tags])
-                # 提取文档中的 @mention 并解析为 {username: user_id} 映射（v1.1.2）
-                import re, json
-                mention_pattern = r'@([\w.@+-]+)'
-                mentioned_usernames = re.findall(mention_pattern, doc.pre_content or '')
-                doc_mention_users_json = '{}'
-                if mentioned_usernames:
-                    mentioned_set = set(mentioned_usernames)
-                    mentioned_users = User.objects.filter(username__in=mentioned_set, is_active=True).values('id', 'username')
-                    doc_mention_users = {u['username']: u['id'] for u in mentioned_users}
-                    doc_mention_users_json = json.dumps(doc_mention_users)
-                if doc.status == 0 and doc.create_user != request.user:
-                    raise ObjectDoesNotExist
-                elif doc.status == 0 and doc.create_user == request.user:
-                    if not doc.name.startswith(str(_('【预览草稿】'))):
-                        doc.name  = _('【预览草稿】')+ doc.name
-
-            except ObjectDoesNotExist:
-                return render(request, '404.html')
-            # 获取文档分享信息
-            try:
-                doc_share = DocShare.objects.get(doc=doc)
-                is_share = True
-            except ObjectDoesNotExist:
-                is_share = False
-            # 获取文集下一级文档
-            # project_docs = Doc.objects.filter(top_doc=doc.top_doc, parent_doc=0, status=1).order_by('sort')
-            # 计算上一篇/下一篇文档
-            prev_doc = None
-            next_doc = None
-            for i, item in enumerate(toc_list):
-                if item['id'] == doc.id:
-                    if i > 0:
-                        prev_doc = toc_list[i - 1]
-                    if i < len(toc_list) - 1:
-                        next_doc = toc_list[i + 1]
-                    break
-            # 构建完整面包屑：根文档 → 祖先文档链 → 当前文档
-            ancestor_ids = []
-            pid = doc.parent_doc
-            while pid and pid != 0:
-                ancestor_ids.append(pid)
-                pid = Doc.objects.filter(id=pid).values_list('parent_doc', flat=True).first() or 0
-            breadcrumb_items = []
-            if ancestor_ids:
-                ancestor_docs = Doc.objects.filter(id__in=ancestor_ids).in_bulk()
-                for aid in reversed(ancestor_ids):
-                    ad = ancestor_docs.get(aid)
-                    if ad:
-                        breadcrumb_items.append({
-                            'name': ad.name,
-                            'url': '/pages/{}/'.format(ad.id)
-                        })
-            if doc.parent_doc and doc.parent_doc != 0:
-                breadcrumb_items.append({'name': doc.name, 'url': ''})
-            else:
-                breadcrumb_items.append({'name': doc.name, 'url': ''})
-            # 获取文档编辑历史（最近10条）
-            doc_history = list(DocHistory.objects
-                .filter(doc=doc)
-                .select_related('create_user')
-                .order_by('-create_time')[:10]
-                .values('id', 'create_user__username', 'create_user__first_name', 'create_time'))
-            # 获取文档点赞状态
-            like_count = DocLike.objects.filter(doc=doc).count()
-            user_liked = DocLike.objects.filter(doc=doc, user=request.user).exists() if request.user.is_authenticated else False
-            # 记录最近浏览
-            _record_browse_history(request, 'doc', doc.id, doc.top_doc)
-            return render(request,'app_doc/doc.html',locals())
-        else:
-            return HttpResponse(_('请求参数不正确'))
+            doc = Doc.objects.get(id=int(doc_id), status__in=[0,1], is_deleted=False)
+            return _render_doc_page(request, doc)
+        return HttpResponse(_('请求参数不正确'))
+    except Http404:
+        return render(request, '404.html')
     except Exception as e:
         logger.exception("文档页面访问异常")
-        return render(request,'404.html')
+        raise Http404("文档不存在或无权访问")
 
 
 # 文档浏览页，可通过文档ID 访问
 @require_http_methods(['GET'])
-def doc_id(request,doc_id):
+def doc_id(request, doc_id):
     try:
-        # 获取文档内容
-        try:
-            doc = Doc.objects.get(id=int(doc_id),status__in=[0,1],is_deleted=False) # 文档信息
-            doc_tags = DocTag.objects.filter(doc=doc) # 文档标签信息
-            doc_tags_str = ','.join([i.tag.name for i in doc_tags])
-            pro_id = 0
-            if doc.status == 0 and doc.create_user != request.user:
-                raise ObjectDoesNotExist
-            elif doc.status == 0 and doc.create_user == request.user:
-                if not doc.name.startswith(str(_('【预览草稿】'))):
-                    doc.name  = _('【预览草稿】')+ doc.name
-
-        except ObjectDoesNotExist:
-            return render(request, '404.html')
-
-        # 获取文档目录树（基于文档ID构建子树）
-        toc_tree, toc_list, toc_cnt = _build_doc_tree(doc.id)
-
-        # 获取文档收藏状态
-        if request.user.is_authenticated:
-            is_collect_doc = MyCollect.objects.filter(collect_type=1, collect_id=doc_id,
-                                                      create_user=request.user).exists()
-        else:
-            is_collect_doc = False
-
-        # v1.0 权限检查
-        from backend.apps.doc.services import PermissionService
-        effective_perm = PermissionService.get_effective_permission(request.user, doc)
-        if effective_perm is None:
-            effective_perm = 'none'
-        doc_effective_perm = effective_perm
-
-        # 非公开文档且无权限的用户不能访问
-        if not doc.is_public and effective_perm == 'none':
-            if request.user.is_authenticated:
-                from backend.apps.doc.views_permission import _get_doc_admins
-                admins = _get_doc_admins(doc)
-                admin_list = [{'id': a.id, 'display_name': a.first_name or a.username} for a in admins]
-                from django.utils import timezone
-                from datetime import timedelta
-                from backend.apps.doc.models import Notification
-                already_requested = Notification.objects.filter(
-                    recipient=request.user, notification_type='perm_apply',
-                    link__contains=f'/pages/{doc.id}',
-                    created_at__gte=timezone.now() - timedelta(hours=24),
-                ).exists()
-                return render(request, 'app_doc/access_denied.html', {
-                    'doc_id': doc.id, 'doc_name': doc.name,
-                    'admins': admin_list, 'already_requested': already_requested,
-                })
-            return render(request, '404.html')
-
-        # 获取文档内容
-        try:
-            doc = Doc.objects.get(id=int(doc_id),status__in=[0,1],is_deleted=False) # 文档信息
-            doc_tags = DocTag.objects.filter(doc=doc) # 文档标签信息
-            doc_tags_str = ','.join([i.tag.name for i in doc_tags])
-            # 提取文档中的 @mention 并解析为 {username: user_id} 映射
-            import re, json
-            mention_pattern = r'@([\w.@+-]+)'
-            mentioned_usernames = re.findall(mention_pattern, doc.pre_content or '')
-            doc_mention_users_json = '{}'
-            if mentioned_usernames:
-                mentioned_set = set(mentioned_usernames)
-                mentioned_users = User.objects.filter(username__in=mentioned_set, is_active=True).values('id', 'username')
-                doc_mention_users = {u['username']: u['id'] for u in mentioned_users}
-                doc_mention_users_json = json.dumps(doc_mention_users)
-            if doc.status == 0 and doc.create_user != request.user:
-                raise ObjectDoesNotExist
-            elif doc.status == 0 and doc.create_user == request.user:
-                if not doc.name.startswith(str(_('【预览草稿】'))):
-                    doc.name  = _('【预览草稿】')+ doc.name
-
-        except ObjectDoesNotExist:
-            return render(request, '404.html')
-        # 获取文档分享信息
-        try:
-            doc_share = DocShare.objects.get(doc=doc)
-            is_share = True
-        except ObjectDoesNotExist:
-            is_share = False
-        # 构建完整面包屑：根文档 → 祖先文档链 → 当前文档
-        ancestor_ids = []
-        pid = doc.parent_doc
-        while pid and pid != 0:
-            ancestor_ids.append(pid)
-            pid = Doc.objects.filter(id=pid).values_list('parent_doc', flat=True).first() or 0
-        breadcrumb_items = []
-        if ancestor_ids:
-            ancestor_docs = Doc.objects.filter(id__in=ancestor_ids).in_bulk()
-            for aid in reversed(ancestor_ids):
-                ad = ancestor_docs.get(aid)
-                if ad:
-                    breadcrumb_items.append({
-                        'name': ad.name,
-                        'url': '/pages/{}/'.format(ad.id)
-                    })
-        if doc.parent_doc and doc.parent_doc != 0:
-            breadcrumb_items.append({'name': doc.name, 'url': ''})
-        else:
-            breadcrumb_items.append({'name': doc.name, 'url': ''})
-        # 获取文档编辑历史（最近10条）
-        doc_history = list(DocHistory.objects
-            .filter(doc=doc)
-            .select_related('create_user')
-            .order_by('-create_time')[:10]
-            .values('id', 'create_user__username', 'create_user__first_name', 'create_time'))
-        # 获取文档点赞状态
-        like_count = DocLike.objects.filter(doc=doc).count()
-        user_liked = DocLike.objects.filter(doc=doc, user=request.user).exists() if request.user.is_authenticated else False
-        # 记录最近浏览
-        _record_browse_history(request, 'doc', doc.id, doc.top_doc)
-        return render(request,'app_doc/doc.html',locals())
+        doc = Doc.objects.get(id=int(doc_id), status__in=[0,1], is_deleted=False)
+        return _render_doc_page(request, doc)
+    except ObjectDoesNotExist:
+        return render(request, '404.html')
+    except Http404:
+        return render(request, '404.html')
     except Exception as e:
         logger.exception("文档页面访问异常")
-        return render(request,'404.html')
+        raise Http404("文档不存在或无权访问")
 
 
 # 创建文档
@@ -1170,12 +1072,16 @@ def manage_doc(request):
         except EmptyPage:
             docs = paginator.page(paginator.num_pages)
 
+        # 批量预加载 parent_doc 信息，避免 N+1 查询
+        parent_ids = {doc.parent_doc for doc in docs if doc.parent_doc and doc.parent_doc != 0}
+        parent_map = {d.id: d.name for d in Doc.objects.filter(id__in=parent_ids).only('id', 'name')} if parent_ids else {}
+
         table_data = []
         for doc in docs:
             item = {
                 'id': doc.id,
                 'name': doc.name,
-                'parent': Doc.objects.get(id=doc.parent_doc).name if doc.parent_doc and doc.parent_doc != 0 else '--',
+                'parent': parent_map.get(doc.parent_doc, '--'),
                 'project_id': doc.top_doc,
                 'project_name': '--',
                 'status':doc.status,

@@ -177,8 +177,9 @@ if db_engine == 'sqlite':
             'ENGINE': DATABASE_MAP[db_engine],
             'NAME': os.path.join(BASE_DIR, 'data', 'db.sqlite3'),
             'OPTIONS':{
-                'timeout':20,
-            }
+                'timeout': 20,
+            },
+            'CONN_MAX_AGE': 300,
         }
     }
 else:
@@ -279,6 +280,11 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, 'frontend', 'static'), ]
 # Whitenoise — 静态文件服务（Docker uWSGI 生产环境；本地 runserver 由 Django 自带处理）
 MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
 
+# 生产环境启用 GZip / Brotli 压缩（不重命名文件，兼容硬编码路径）
+if not DEBUG:
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+    WHITENOISE_MAX_AGE = 604800  # 静态文件缓存 7 天（?version= 参数保证部署时刷新）
+
 # 媒体文件
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR,'media')
@@ -378,3 +384,18 @@ if extend_root_txt == []:
     EXTEND_ROOT_TXT = extend_root_txt
 else:
     EXTEND_ROOT_TXT = extend_root_txt.split(',')
+
+# SQLite 性能优化：通过连接信号设置 WAL 模式和内存缓存等 pragmas
+if db_engine == 'sqlite':
+    from django.db.backends.signals import connection_created
+
+    def _set_sqlite_pragmas(sender, connection, **kwargs):
+        if connection.vendor == 'sqlite':
+            cursor = connection.cursor()
+            cursor.execute('PRAGMA journal_mode=WAL;')
+            cursor.execute('PRAGMA synchronous=NORMAL;')
+            cursor.execute('PRAGMA cache_size=-8000;')
+            cursor.execute('PRAGMA mmap_size=8589934592;')
+            cursor.execute('PRAGMA temp_store=MEMORY;')
+
+    connection_created.connect(_set_sqlite_pragmas)

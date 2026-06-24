@@ -17,8 +17,8 @@
 {# ---- Context Menu ---- #}
 <div class="ispace-context-menu" id="sidebarContextMenu" style="display:none;"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-<script src="{% static 'js/sidebar-tree.js' %}?v={{ isdoc_version }}"></script>
+<script src="{% static 'js/sortable/Sortable.min.js' %}?v={{ isdoc_version }}" defer></script>
+<script src="{% static 'js/sidebar-tree.js' %}?v={{ isdoc_version }}" defer></script>
 
 <style>
 /* ---- 侧边栏水平滚动条可见性增强 ---- */
