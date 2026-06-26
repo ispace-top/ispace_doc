@@ -417,6 +417,7 @@ def modify_doc(request):
             doc_title = json_data.get('title', '')
             doc_content = json_data.get('doc', '')
             parent_doc = json_data.get('parent_doc', '')
+            editor_mode = json_data.get('editor_mode', None)
         except json.JSONDecodeError:
             return JsonResponse({'data': 'Invalid JSON data', 'status': False})
     else:
@@ -425,6 +426,7 @@ def modify_doc(request):
         doc_title = request.POST.get('title', '')
         doc_content = request.POST.get('doc', '')
         parent_doc = request.POST.get('parent_doc', '')
+        editor_mode = request.POST.get('editor_mode', None)
     try:
         # 验证Token
         token = UserToken.objects.get(token=token)
@@ -435,19 +437,23 @@ def modify_doc(request):
             pre_content=doc.pre_content,
             create_user=token.user
         )
-        outline = parse_outline(doc_content, doc.editor_mode)
-        if doc.editor_mode == 4:
+        em = int(editor_mode) if editor_mode is not None else doc.editor_mode
+        if em in (1, 4):
+            # spreadsheet modes: no outline parsing
             Doc.objects.filter(id=int(doc_id)).update(
                 name=doc_title,
                 pre_content=doc_content,
                 parent_doc=parent_id,
+                editor_mode=em,
                 modify_time=datetime.datetime.now(),
             )
         else:
+            outline = parse_outline(doc_content, em)
             Doc.objects.filter(id=int(doc_id)).update(
                 name=doc_title,
                 pre_content=doc_content,
                 parent_doc=parent_id,
+                editor_mode=em,
                 modify_time=datetime.datetime.now(),
                 outline=outline
             )
