@@ -402,11 +402,9 @@
 
 /* 分页 */
 .ispace-pagination { display: flex; align-items: center; justify-content: center; gap: var(--ispace-space-1); padding: var(--ispace-space-4) 0 var(--ispace-space-2); }
-.ispace-pagination button { min-width: 32px; height: 32px; padding: 0 8px; border: 1px solid var(--ispace-color-border-light); border-radius: var(--ispace-radius-sm); background: var(--ispace-color-surface-0); color: var(--ispace-color-text-secondary); font-size: var(--ispace-font-sm); cursor: pointer; transition: all 0.15s; }
-.ispace-pagination button:hover { border-color: var(--ispace-color-brand-500); color: var(--ispace-color-brand-500); }
-.ispace-pagination button.active { background: var(--ispace-color-brand-500); color: #fff; border-color: var(--ispace-color-brand-500); }
-.ispace-pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
-.ispace-pagination .ispace-pg-info { font-size: var(--ispace-font-xs); color: var(--ispace-color-text-tertiary); margin: 0 var(--ispace-space-2); }
+/* 每页条数选择器 */
+.ispace-page-size { display: flex; align-items: center; gap: var(--ispace-space-2); font-size: var(--ispace-font-sm); color: var(--ispace-color-text-tertiary); }
+.ispace-page-size select { height: 30px; padding: 0 6px; font-size: var(--ispace-font-sm); border: 1px solid var(--ispace-color-border-medium); border-radius: var(--ispace-radius-sm); background: var(--ispace-color-surface-0); color: var(--ispace-color-text-primary); }
 
 /* Token 卡片 */
 .ispace-token-card { display: flex; align-items: center; gap: var(--ispace-space-3); padding: var(--ispace-space-4); background: var(--ispace-color-surface-100); border-radius: var(--ispace-radius-lg); border: 1px solid var(--ispace-color-border-light); }
@@ -716,6 +714,14 @@
                     <span class="ispace-spinner"></span>{% trans "加载中..." %}
                 </p>
             </div>
+            <div class="ispace-flex-between" style="margin-top:var(--ispace-space-4);display:none" id="loginRecordsPagerRow">
+                <div id="loginRecordsPagination" class="ispace-pagination" style="padding:0"></div>
+                <div class="ispace-page-size">
+                    <span>每页</span>
+                    <select id="loginRecordsPageSize"><option value="10">10</option><option value="20">20</option><option value="50">50</option></select>
+                    <span>条</span>
+                </div>
+            </div>
         </div>
 
         <!-- ====== 站内通知 Tab ====== -->
@@ -747,8 +753,15 @@
             </div>
 
             <div id="uc-notification-list"></div>
-            <div id="uc-notification-loading" style="text-align:center;padding:24px;color:var(--ispace-color-text-tertiary);">{% trans "加载中..." %}</div>
-            <div id="uc-notification-end" style="text-align:center;padding:16px;color:var(--ispace-color-text-quaternary);font-size:12px;display:none;">{% trans "已加载全部通知" %}</div>
+            <div id="uc-notification-loading" style="text-align:center;padding:24px;color:var(--ispace-color-text-tertiary);display:none;">{% trans "加载中..." %}</div>
+            <div class="ispace-flex-between" style="margin-top:var(--ispace-space-4)">
+                <div id="notifPagination" class="ispace-pagination" style="padding:0"></div>
+                <div class="ispace-page-size">
+                    <span>每页</span>
+                    <select id="notifPageSize"><option value="10">10</option><option value="20" selected>20</option><option value="50">50</option></select>
+                    <span>条</span>
+                </div>
+            </div>
         </div>
 
         <!-- ====== 通知设置 Tab ====== -->
@@ -809,6 +822,14 @@
                 <h2 class="ispace-section-title">{% trans "最近浏览" %}</h2>
             </div>
             <div id="historyContainer"></div>
+            <div class="ispace-flex-between" style="margin-top:var(--ispace-space-4)">
+                <div id="historyPagination" class="ispace-pagination" style="padding:0"></div>
+                <div class="ispace-page-size">
+                    <span>每页</span>
+                    <select id="historyPageSize"><option value="10">10</option><option value="20" selected>20</option><option value="50">50</option></select>
+                    <span>条</span>
+                </div>
+            </div>
         </div>
 
         <!-- ====== 我的文档 Tab ====== -->
@@ -828,7 +849,14 @@
                 <span class="ispace-section-toolbar-count" id="myDocsCount"></span>
             </div>
             <div id="myDocsContainer"></div>
-            <div id="myDocsPagination" class="ispace-pagination"></div>
+            <div class="ispace-flex-between" style="margin-top:var(--ispace-space-4)">
+                <div id="myDocsPagination" class="ispace-pagination" style="padding:0"></div>
+                <div class="ispace-page-size">
+                    <span>每页</span>
+                    <select id="myDocsPageSize"><option value="10">10</option><option value="20">20</option><option value="50">50</option></select>
+                    <span>条</span>
+                </div>
+            </div>
         </div>
 
         <!-- ====== 文档模板 Tab ====== -->
@@ -843,7 +871,14 @@
                 <span class="ispace-section-toolbar-count" id="myTemplatesCount"></span>
             </div>
             <div id="myTemplatesContainer"></div>
-            <div id="myTemplatesPagination" class="ispace-pagination"></div>
+            <div class="ispace-flex-between" style="margin-top:var(--ispace-space-4)">
+                <div id="myTemplatesPagination" class="ispace-pagination" style="padding:0"></div>
+                <div class="ispace-page-size">
+                    <span>每页</span>
+                    <select id="myTemplatesPageSize"><option value="10">10</option><option value="20">20</option><option value="50">50</option></select>
+                    <span>条</span>
+                </div>
+            </div>
             {# Template create/edit modal #}
             <div id="doctemp-form-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:10002;align-items:center;justify-content:center;" onclick="if(event.target===this)closeDoctempForm()">
                 <div style="background:var(--ispace-color-surface-0,#fff);border-radius:var(--ispace-radius-xl);padding:var(--ispace-space-6);max-width:520px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
@@ -878,7 +913,14 @@
                 <span class="ispace-section-toolbar-count" id="myCollectsCount"></span>
             </div>
             <div id="myCollectsContainer"></div>
-            <div id="myCollectsPagination" class="ispace-pagination"></div>
+            <div class="ispace-flex-between" style="margin-top:var(--ispace-space-4)">
+                <div id="myCollectsPagination" class="ispace-pagination" style="padding:0"></div>
+                <div class="ispace-page-size">
+                    <span>每页</span>
+                    <select id="myCollectsPageSize"><option value="10">10</option><option value="20">20</option><option value="50">50</option></select>
+                    <span>条</span>
+                </div>
+            </div>
         </div>
 
         <!-- ====== Token管理 Tab ====== -->
@@ -1260,33 +1302,53 @@
     }
 
     // ========== 登录记录 ==========
-    var loginRecordsLoaded = false;
+    var loginRecordsPage = 1, loginRecordsLoaded = false;
     function loadLoginRecords() {
         if (loginRecordsLoaded) return;
         loginRecordsLoaded = true;
         var container = document.getElementById('loginRecordsContainer');
+        var paginationEl = document.getElementById('loginRecordsPagination');
+        var pagerRow = document.getElementById('loginRecordsPagerRow');
         var csrf = getCSRF();
-        fetch('/api/user/login-records/', {
-            headers: { 'X-CSRFToken': csrf }
-        })
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-            if (!data.status || !data.records.length) {
-                container.innerHTML = '<p style="color:var(--ispace-color-text-tertiary);font-size:var(--ispace-font-sm)">{% trans "暂无登录记录" %}</p>';
-                return;
-            }
-            var html = '<div style="overflow-x:auto"><table class="ispace-login-table"><thead><tr><th>{% trans "时间" %}</th><th>{% trans "IP 地址" %}</th><th>{% trans "设备/浏览器" %}</th><th>{% trans "状态" %}</th><th>{% trans "详情" %}</th></tr></thead><tbody>';
-            data.records.forEach(function(r) {
-                var statusCls = r.success ? 'ispace-login-success' : 'ispace-login-fail';
-                var statusText = r.success ? '{% trans "成功" %}' : '{% trans "失败" %}';
-                html += '<tr><td>' + r.time + '</td><td>' + r.ip + '</td><td>' + r.ua + '</td><td class="' + statusCls + '">' + statusText + '</td><td>' + (r.reason || '-') + '</td></tr>';
+
+        function getPageSize() {
+            var sel = document.getElementById('loginRecordsPageSize');
+            return sel ? parseInt(sel.value) : 10;
+        }
+
+        function fetchRecords(page) {
+            loginRecordsPage = page;
+            var pageSize = getPageSize();
+            container.innerHTML = '<p style="text-align:center;padding:24px;color:var(--ispace-color-text-tertiary)"><span class="ispace-spinner"></span></p>';
+            fetch('/api/user/login-records/?page=' + page + '&page_size=' + pageSize, {
+                headers: { 'X-CSRFToken': csrf }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!data.status || !data.records.length) {
+                    container.innerHTML = '<p style="color:var(--ispace-color-text-tertiary);font-size:var(--ispace-font-sm)">{% trans "暂无登录记录" %}</p>';
+                    pagerRow.style.display = 'none';
+                    return;
+                }
+                var totalPages = Math.ceil(data.total / pageSize);
+                var html = '<div style="overflow-x:auto"><table class="ispace-login-table"><thead><tr><th>{% trans "时间" %}</th><th>{% trans "IP 地址" %}</th><th>{% trans "设备/浏览器" %}</th><th>{% trans "状态" %}</th><th>{% trans "详情" %}</th></tr></thead><tbody>';
+                data.records.forEach(function(r) {
+                    var statusCls = r.success ? 'ispace-login-success' : 'ispace-login-fail';
+                    var statusText = r.success ? '{% trans "成功" %}' : '{% trans "失败" %}';
+                    html += '<tr><td>' + r.time + '</td><td>' + r.ip + '</td><td>' + r.ua + '</td><td class="' + statusCls + '">' + statusText + '</td><td>' + (r.reason || '-') + '</td></tr>';
+                });
+                html += '</tbody></table></div>';
+                container.innerHTML = html;
+                renderPagination(paginationEl, page, totalPages, data.total, fetchRecords);
+                pagerRow.style.display = '';
+            })
+            .catch(function() {
+                container.innerHTML = '<p style="color:#E74C3C">{% trans "加载失败" %}</p>';
             });
-            html += '</tbody></table></div>';
-            container.innerHTML = html;
-        })
-        .catch(function() {
-            container.innerHTML = '<p style="color:#E74C3C">{% trans "加载失败" %}</p>';
-        });
+        }
+
+        document.getElementById('loginRecordsPageSize').addEventListener('change', function() { fetchRecords(1); });
+        fetchRecords(1);
     }
 
     // ========== 通知设置 ==========
@@ -1303,114 +1365,101 @@
 
     // ========== 站内通知列表 ==========
     var notifPage = 1;
-    var notifLoading = false;
-    var notifHasMore = true;
     var notifCurrentType = '';
     var notifUnreadOnly = false;
+    var notifFetchFn = null;
 
     function loadNotificationList() {
         if (tabLoaded['notifications']) return;
         tabLoaded['notifications'] = true;
-        notifPage = 1; notifHasMore = true;
         notifCurrentType = ''; notifUnreadOnly = false;
-        // Clear existing state
         document.getElementById('uc-notification-list').innerHTML = '';
-        document.getElementById('uc-notification-end').style.display = 'none';
-        document.getElementById('uc-notification-loading').style.display = '';
         document.querySelectorAll('#uc-notif-type-tabs .ispace-notification-tab').forEach(function(t, i) {
             t.classList.toggle('ispace-active', i === 0);
         });
         document.getElementById('toggle-uc-unread-only').checked = false;
         document.getElementById('btn-uc-mark-all-read').style.display = 'none';
         document.getElementById('btn-uc-clear-all').style.display = 'none';
-        loadNotifs();
-    }
 
-    function loadNotifs() {
-        if (notifLoading || !notifHasMore) return;
-        notifLoading = true;
-        var url = '/api/notifications/?page=' + notifPage + '&page_size=20';
-        if (notifCurrentType) url += '&notification_type=' + encodeURIComponent(notifCurrentType);
-        if (notifUnreadOnly) url += '&unread_only=true';
-        var csrf = getCSRF();
-        fetch(url, { headers: { 'X-CSRFToken': csrf } })
-            .then(function(r) { return r.json(); })
-            .then(function(resp) {
-                document.getElementById('uc-notification-loading').style.display = 'none';
-                if (resp.code !== 0) return;
-                var data = resp.data;
-                if (!data || !data.items || !data.items.length) {
-                    notifHasMore = false;
-                    document.getElementById('uc-notification-end').style.display = '';
-                    if (notifPage === 1) {
-                        document.getElementById('uc-notification-list').innerHTML = '<div class="ispace-empty-state" style="padding:48px 16px;"><div style="font-size:var(--ispace-font-base);color:var(--ispace-color-text-tertiary);">{% trans "暂无通知" %}</div></div>';
+        function getPageSize() {
+            var sel = document.getElementById('notifPageSize');
+            return sel ? parseInt(sel.value) : 20;
+        }
+
+        function fetchNotifs(page) {
+            notifPage = page;
+            var pageSize = getPageSize();
+            var loadingEl = document.getElementById('uc-notification-loading');
+            loadingEl.style.display = '';
+            var url = '/api/notifications/?page=' + page + '&page_size=' + pageSize;
+            if (notifCurrentType) url += '&notification_type=' + encodeURIComponent(notifCurrentType);
+            if (notifUnreadOnly) url += '&unread_only=true';
+            var csrf = getCSRF();
+            fetch(url, { headers: { 'X-CSRFToken': csrf } })
+                .then(function(r) { return r.json(); })
+                .then(function(resp) {
+                    loadingEl.style.display = 'none';
+                    if (resp.code !== 0) return;
+                    var data = resp.data;
+                    var listEl = document.getElementById('uc-notification-list');
+                    if (!data || !data.items || !data.items.length) {
+                        if (page === 1) {
+                            listEl.innerHTML = '<div class="ispace-empty-state" style="padding:48px 16px;"><div style="font-size:var(--ispace-font-base);color:var(--ispace-color-text-tertiary);">{% trans "暂无通知" %}</div></div>';
+                        }
+                        return;
                     }
-                    return;
-                }
-                if (data.unread_count > 0) {
-                    document.getElementById('btn-uc-mark-all-read').style.display = '';
-                }
-                if (data.total > 0) {
-                    document.getElementById('btn-uc-clear-all').style.display = '';
-                }
-                data.items.forEach(function(n) {
-                    var avatarHtml = n.sender_avatar_url
-                        ? '<img src="' + escHtml(n.sender_avatar_url) + '" alt="">'
-                        : (n.sender_initial || '?');
-                    var avatarBg = n.sender_avatar_url ? '' : 'background:' + (n.sender_color || '#4A90D9') + ';';
-                    var isHighlighted = (notifHighlightId && String(n.id) === String(notifHighlightId));
-                    var item = document.createElement('div');
-                    item.className = 'ispace-nlist-item' + (n.is_read ? '' : ' ispace-unread') + (isHighlighted ? ' ispace-highlighted' : '');
-                    item.setAttribute('data-nid', n.id);
-                    item.innerHTML =
-                        '<div class="ispace-nlist-avatar" data-user-id="' + (n.sender_id || '') + '" style="' + avatarBg + '">' + avatarHtml + '</div>'
-                        + '<div class="ispace-nlist-body">'
-                        + '<div class="ispace-nlist-title">' + escHtml(n.title) + '</div>'
-                        + '<div class="ispace-nlist-text">' + escHtml(n.body) + '</div>'
-                        + '<div class="ispace-nlist-time">' + escHtml(n.relative_time) + '</div>'
-                        + (isHighlighted ? '<div class="ispace-nlist-action"><a href="' + escHtml(n.link || '#') + '" class="ispace-btn ispace-btn-sm ispace-btn-primary" style="font-size:var(--ispace-font-xs);">{% trans "查看详情" %}</a></div>' : '')
-                        + '</div>'
-                        + (n.is_read ? '' : '<span class="ispace-nlist-dot"></span>');
-                    item.addEventListener('click', function(e) {
-                        // Don't navigate if clicking the action button
-                        if (e.target.closest('.ispace-btn')) return;
-                        if (n.link) window.location.href = n.link;
-                        fetch('/api/notifications/read/', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
-                            body: JSON.stringify({ id: n.id })
+                    if (data.unread_count > 0) {
+                        document.getElementById('btn-uc-mark-all-read').style.display = '';
+                    }
+                    if (data.total > 0) {
+                        document.getElementById('btn-uc-clear-all').style.display = '';
+                    }
+                    listEl.innerHTML = '';
+                    data.items.forEach(function(n) {
+                        var avatarHtml = n.sender_avatar_url
+                            ? '<img src="' + escHtml(n.sender_avatar_url) + '" alt="">'
+                            : (n.sender_initial || '?');
+                        var avatarBg = n.sender_avatar_url ? '' : 'background:' + (n.sender_color || '#4A90D9') + ';';
+                        var isHighlighted = (notifHighlightId && String(n.id) === String(notifHighlightId));
+                        var item = document.createElement('div');
+                        item.className = 'ispace-nlist-item' + (n.is_read ? '' : ' ispace-unread') + (isHighlighted ? ' ispace-highlighted' : '');
+                        item.setAttribute('data-nid', n.id);
+                        item.innerHTML =
+                            '<div class="ispace-nlist-avatar" data-user-id="' + (n.sender_id || '') + '" style="' + avatarBg + '">' + avatarHtml + '</div>'
+                            + '<div class="ispace-nlist-body">'
+                            + '<div class="ispace-nlist-title">' + escHtml(n.title) + '</div>'
+                            + '<div class="ispace-nlist-text">' + escHtml(n.body) + '</div>'
+                            + '<div class="ispace-nlist-time">' + escHtml(n.relative_time) + '</div>'
+                            + (isHighlighted ? '<div class="ispace-nlist-action"><a href="' + escHtml(n.link || '#') + '" class="ispace-btn ispace-btn-sm ispace-btn-primary" style="font-size:var(--ispace-font-xs);">{% trans "查看详情" %}</a></div>' : '')
+                            + '</div>'
+                            + (n.is_read ? '' : '<span class="ispace-nlist-dot"></span>');
+                        item.addEventListener('click', function(e) {
+                            if (e.target.closest('.ispace-btn')) return;
+                            if (n.link) window.location.href = n.link;
+                            fetch('/api/notifications/read/', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                                body: JSON.stringify({ id: n.id })
+                            });
                         });
+                        listEl.appendChild(item);
+                        if (isHighlighted) {
+                            setTimeout(function() { item.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 200);
+                            notifHighlightId = null;
+                        }
                     });
-                    document.getElementById('uc-notification-list').appendChild(item);
-                    // Scroll to highlighted item
-                    if (isHighlighted) {
-                        setTimeout(function() { item.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 200);
-                        notifHighlightId = null;
-                    }
+                    var totalPages = Math.ceil(data.total / pageSize);
+                    renderPagination(document.getElementById('notifPagination'), page, totalPages, data.total, fetchNotifs);
+                })
+                .catch(function() {
+                    loadingEl.textContent = '{% trans "加载失败，请刷新重试" %}';
                 });
-                notifPage++;
-                notifHasMore = data.has_next;
-                if (!notifHasMore) document.getElementById('uc-notification-end').style.display = '';
-            })
-            .catch(function() {
-                document.getElementById('uc-notification-loading').textContent = '{% trans "加载失败，请刷新重试" %}';
-            })
-            .finally(function() { notifLoading = false; });
+        }
+
+        document.getElementById('notifPageSize').addEventListener('change', function() { fetchNotifs(1); });
+        notifFetchFn = fetchNotifs;
+        fetchNotifs(1);
     }
-
-    // Infinite scroll inside the tab
-    var _notifScrollHandler = function() {
-        var list = document.getElementById('uc-notification-list');
-        var end = document.getElementById('uc-notification-end');
-        if (!list || !end || list.children.length === 0) return;
-        var lastItem = list.lastElementChild;
-        if (!lastItem) return;
-        var rect = lastItem.getBoundingClientRect();
-        if (rect.top < window.innerHeight + 400) loadNotifs();
-    };
-
-
-
 
     // Esc HTML
     function escHtml(s) { var d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
@@ -1422,21 +1471,17 @@
         document.querySelectorAll('#uc-notif-type-tabs .ispace-notification-tab').forEach(function(t) { t.classList.remove('ispace-active'); });
         tab.classList.add('ispace-active');
         notifCurrentType = tab.getAttribute('data-type');
-        notifPage = 1; notifHasMore = true;
         document.getElementById('uc-notification-list').innerHTML = '';
-        document.getElementById('uc-notification-end').style.display = 'none';
         document.getElementById('uc-notification-loading').style.display = '';
-        loadNotifs();
+        if (notifFetchFn) notifFetchFn(1);
     });
 
     // Unread-only toggle
     document.getElementById('toggle-uc-unread-only').addEventListener('change', function() {
         notifUnreadOnly = this.checked;
-        notifPage = 1; notifHasMore = true;
         document.getElementById('uc-notification-list').innerHTML = '';
-        document.getElementById('uc-notification-end').style.display = 'none';
         document.getElementById('uc-notification-loading').style.display = '';
-        loadNotifs();
+        if (notifFetchFn) notifFetchFn(1);
     });
 
     // Mark all read
@@ -1476,16 +1521,13 @@
                 document.getElementById('uc-notification-list').innerHTML = '<div class="ispace-empty-state" style="padding:48px 16px;"><div style="font-size:var(--ispace-font-base);color:var(--ispace-color-text-tertiary);">{% trans "暂无通知" %}</div></div>';
                 document.getElementById('btn-uc-clear-all').style.display = 'none';
                 document.getElementById('btn-uc-mark-all-read').style.display = 'none';
-                document.getElementById('uc-notification-end').style.display = 'none';
+                document.getElementById('notifPagination').innerHTML = '';
                 if (window.iSpaceDoc && window.iSpaceDoc.Notification) {
                     window.iSpaceDoc.Notification.updateBadge(0);
                 }
             });
         });
     });
-
-    // Infinite scroll
-    window.addEventListener('scroll', _notifScrollHandler);
 
     function loadNotifySettings() {
         if (notifySettingsLoaded) return;
@@ -2623,50 +2665,72 @@
     };
 
     // ========== 浏览记录（使用共享模块）==========
-    var historyLoaded = false;
+    var historyPage = 1, historyLoaded = false;
     function loadHistory() {
         if (historyLoaded) return;
         historyLoaded = true;
         var container = document.getElementById('historyContainer');
+        var paginationEl = document.getElementById('historyPagination');
         if (!container) return;
 
-        // 文档图标
         var docIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>';
+        var emptyHTML = '<div class="ispace-empty-state" style="padding:var(--ispace-space-8)"><svg class="ispace-empty-state-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg><h3 class="ispace-empty-state-title">{% trans "暂无浏览记录" %}</h3><p class="ispace-empty-state-description">{% trans "浏览文档后将在此处显示。" %}</p></div>';
 
-        RecentViews.init({
-            container: container,
-            listClassName: 'ispace-history-list',
-            loadingText: '{% trans "加载中..." %}',
-            endText: '',
-            emptyHTML: '<div class="ispace-empty-state" style="padding:var(--ispace-space-8)"><svg class="ispace-empty-state-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg><h3 class="ispace-empty-state-title">{% trans "暂无浏览记录" %}</h3><p class="ispace-empty-state-description">{% trans "浏览文档后将在此处显示。" %}</p></div>',
-            renderItem: function(item) {
-                if (item.is_deleted) {
-                    var div = document.createElement('div');
-                    div.className = 'home-doc-card home-doc-card-deleted';
-                    div.innerHTML = '<div class="home-doc-card-icon">' + docIcon + '</div>'
-                        + '<div class="home-doc-card-body">'
-                        + '<span class="home-doc-card-title">' + escapeHTML(item.name) + '</span>'
-                        + '<span class="home-doc-card-meta">' + escapeHTML(item.modify_time ? item.modify_time.substring(0, 16) : '') + '</span>'
-                        + '</div>'
-                        + '<span class="home-doc-card-deleted-badge">{% trans "已删除" %}</span>';
-                    return div;
+        function getPageSize() {
+            var sel = document.getElementById('historyPageSize');
+            return sel ? parseInt(sel.value) : 20;
+        }
+
+        function fetchHistory(page) {
+            historyPage = page;
+            var pageSize = getPageSize();
+            container.innerHTML = '<p style="text-align:center;padding:24px;color:var(--ispace-color-text-tertiary)"><span class="ispace-spinner"></span></p>';
+            var csrf = getCSRF();
+            fetch('/api/user/browse-history/?page=' + page + '&page_size=' + pageSize, {
+                headers: { 'X-CSRFToken': csrf }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!data.status || !data.items || !data.items.length) {
+                    container.innerHTML = emptyHTML;
+                    return;
                 }
-                var a = document.createElement('a');
-                a.href = item.url;
-                a.className = 'home-doc-card';
-                a.setAttribute('data-spa', '');
-                a.innerHTML = '<div class="home-doc-card-icon">' + docIcon + '</div>'
-                    + '<div class="home-doc-card-body">'
-                    + '<span class="home-doc-card-title">' + escapeHTML(item.name) + '</span>'
-                    + '<span class="home-doc-card-meta">'
-                    + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> '
-                    + '<span data-user-id="' + (item.user_id || '') + '">' + escapeHTML(item.user_name) + '</span>'
-                    + ' <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> '
-                    + escapeHTML(item.modify_time.substring(0, 16))
-                    + '</span></div>';
-                return a;
-            }
-        });
+                var html = '<div class="ispace-history-list">';
+                data.items.forEach(function(item) {
+                    if (item.is_deleted) {
+                        html += '<div class="home-doc-card home-doc-card-deleted">'
+                            + '<div class="home-doc-card-icon">' + docIcon + '</div>'
+                            + '<div class="home-doc-card-body">'
+                            + '<span class="home-doc-card-title">' + escapeHTML(item.name) + '</span>'
+                            + '<span class="home-doc-card-meta">' + escapeHTML(item.modify_time ? item.modify_time.substring(0, 16) : '') + '</span>'
+                            + '</div>'
+                            + '<span class="home-doc-card-deleted-badge">{% trans "已删除" %}</span>'
+                            + '</div>';
+                    } else {
+                        html += '<a href="' + item.url + '" class="home-doc-card" data-spa>'
+                            + '<div class="home-doc-card-icon">' + docIcon + '</div>'
+                            + '<div class="home-doc-card-body">'
+                            + '<span class="home-doc-card-title">' + escapeHTML(item.name) + '</span>'
+                            + '<span class="home-doc-card-meta">'
+                            + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> '
+                            + '<span data-user-id="' + (item.user_id || '') + '">' + escapeHTML(item.user_name) + '</span>'
+                            + ' <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> '
+                            + escapeHTML(item.modify_time.substring(0, 16))
+                            + '</span></div></a>';
+                    }
+                });
+                html += '</div>';
+                container.innerHTML = html;
+                var totalPages = Math.ceil(data.total / pageSize);
+                renderPagination(paginationEl, page, totalPages, data.total, fetchHistory);
+            })
+            .catch(function() {
+                container.innerHTML = '<p style="text-align:center;padding:24px;color:#E74C3C">{% trans "加载失败" %}</p>';
+            });
+        }
+
+        document.getElementById('historyPageSize').addEventListener('change', function() { fetchHistory(1); });
+        fetchHistory(1);
     }
 
     // ========== 我的文档 ==========
@@ -2679,8 +2743,14 @@
         var paginationEl = document.getElementById('myDocsPagination');
         var csrf = getCSRF();
 
+        function getPageSize() {
+            var sel = document.getElementById('myDocsPageSize');
+            return sel ? parseInt(sel.value) : 10;
+        }
+
         function fetchDocs(page) {
             myDocsPage = page;
+            var pageSize = getPageSize();
             var kw = document.getElementById('myDocsSearch').value.trim();
             var status = document.querySelector('#myDocsStatusFilter .ispace-toggle-tab.active').getAttribute('data-status');
             container.innerHTML = '<p style="text-align:center;padding:24px;color:var(--ispace-color-text-tertiary)"><span class="ispace-spinner"></span></p>';
@@ -2688,12 +2758,12 @@
             fetch('{% url "manage_doc" %}', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': csrf },
-                body: new URLSearchParams({ kw: kw, status: status, page: String(page), limit: '10' })
+                body: new URLSearchParams({ kw: kw, status: status, page: String(page), limit: String(pageSize) })
             }).then(function(r) { return r.json(); }).then(function(data) {
                 if (data.code !== 0) { container.innerHTML = '<p style="text-align:center;padding:24px;color:#E74C3C">{% trans "加载失败" %}</p>'; return; }
                 countEl.textContent = '{% trans "共" %} ' + data.count + ' {% trans "篇文档" %}';
-                myDocsPages = Math.ceil(data.count / 10);
-                renderPagination(paginationEl, myDocsPage, myDocsPages, fetchDocs);
+                var totalPages = Math.ceil(data.count / pageSize);
+                renderPagination(paginationEl, page, totalPages, data.count, fetchDocs);
                 renderDocTable(container, data.data);
             }).catch(function() { container.innerHTML = '<p style="text-align:center;padding:24px;color:#E74C3C">{% trans "加载失败" %}</p>'; });
         }
@@ -2726,6 +2796,7 @@
             });
         });
 
+        document.getElementById('myDocsPageSize').addEventListener('change', function() { fetchDocs(1); });
         myDocsFetchFn = fetchDocs;
         fetchDocs(1);
     }
@@ -2788,26 +2859,33 @@
         var paginationEl = document.getElementById('myTemplatesPagination');
         var csrf = getCSRF();
 
+        function getPageSize() {
+            var sel = document.getElementById('myTemplatesPageSize');
+            return sel ? parseInt(sel.value) : 10;
+        }
+
         function fetchTemplates(page) {
             myTemplatesPage = page;
+            var pageSize = getPageSize();
             var kw = document.getElementById('myTemplatesSearch').value.trim();
             container.innerHTML = '<p style="text-align:center;padding:24px;color:var(--ispace-color-text-tertiary)"><span class="ispace-spinner"></span></p>';
 
             fetch('/api/user/doctemp-list/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': csrf },
-                body: new URLSearchParams({ kw: kw, page: String(page), page_size: '10' })
+                body: new URLSearchParams({ kw: kw, page: String(page), page_size: String(pageSize) })
             }).then(function(r) { return r.json(); }).then(function(data) {
                 if (!data.status) { container.innerHTML = '<p style="text-align:center;padding:24px;color:#E74C3C">{% trans "加载失败" %}</p>'; return; }
                 countEl.textContent = '{% trans "共" %} ' + data.total + ' {% trans "个模板" %}';
-                myTemplatesPages = Math.ceil(data.total / 10);
-                renderPagination(paginationEl, myTemplatesPage, myTemplatesPages, fetchTemplates);
+                var totalPages = Math.ceil(data.total / pageSize);
+                renderPagination(paginationEl, page, totalPages, data.total, fetchTemplates);
                 renderDoctempList(container, data.items);
             }).catch(function() { container.innerHTML = '<p style="text-align:center;padding:24px;color:#E74C3C">{% trans "加载失败" %}</p>'; });
         }
 
         document.getElementById('myTemplatesSearch').addEventListener('keyup', function(e) { if (e.key === 'Enter') fetchTemplates(1); });
         document.getElementById('myTemplatesSearchBtn').addEventListener('click', function() { fetchTemplates(1); });
+        document.getElementById('myTemplatesPageSize').addEventListener('change', function() { fetchTemplates(1); });
         myTemplatesFetchFn = fetchTemplates;
         fetchTemplates(1);
     }
@@ -2915,26 +2993,33 @@
         var paginationEl = document.getElementById('myCollectsPagination');
         var csrf = getCSRF();
 
+        function getPageSize() {
+            var sel = document.getElementById('myCollectsPageSize');
+            return sel ? parseInt(sel.value) : 10;
+        }
+
         function fetchCollects(page) {
             myCollectsPage = page;
+            var pageSize = getPageSize();
             var kw = document.getElementById('myCollectsSearch').value.trim();
             container.innerHTML = '<p style="text-align:center;padding:24px;color:var(--ispace-color-text-tertiary)"><span class="ispace-spinner"></span></p>';
 
             fetch('{% url "manage_collect" %}', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': csrf },
-                body: new URLSearchParams({ kw: kw, page: String(page), limit: '10' })
+                body: new URLSearchParams({ kw: kw, page: String(page), limit: String(pageSize) })
             }).then(function(r) { return r.json(); }).then(function(data) {
                 if (data.code !== 0) { container.innerHTML = '<p style="text-align:center;padding:24px;color:#E74C3C">{% trans "加载失败" %}</p>'; return; }
                 countEl.textContent = '{% trans "共" %} ' + data.count + ' {% trans "项收藏" %}';
-                myCollectsPages = Math.ceil(data.count / 10);
-                renderPagination(paginationEl, myCollectsPage, myCollectsPages, fetchCollects);
+                var totalPages = Math.ceil(data.count / pageSize);
+                renderPagination(paginationEl, page, totalPages, data.count, fetchCollects);
                 renderCollectTable(container, data.data);
             }).catch(function() { container.innerHTML = '<p style="text-align:center;padding:24px;color:#E74C3C">{% trans "加载失败" %}</p>'; });
         }
 
         document.getElementById('myCollectsSearch').addEventListener('keyup', function(e) { if (e.key === 'Enter') { myCollectsChecked = {}; fetchCollects(1); } });
         document.getElementById('myCollectsSearchBtn').addEventListener('click', function() { myCollectsChecked = {}; fetchCollects(1); });
+        document.getElementById('myCollectsPageSize').addEventListener('change', function() { fetchCollects(1); });
         document.getElementById('myCollectsBatchDel').addEventListener('click', function() {
             var ids = Object.keys(myCollectsChecked).filter(function(k) { return myCollectsChecked[k]; });
             if (!ids.length) { showToast('{% trans "请先选择收藏" %}', 'error'); return; }
@@ -3062,21 +3147,34 @@
     };
 
     // ========== 分页渲染（共享） ==========
-    function renderPagination(el, page, pages, fetchFn) {
-        if (pages <= 1) { el.innerHTML = ''; return; }
-        var html = '';
-        html += '<button ' + (page <= 1 ? 'disabled' : '') + ' onclick="void(0)" data-pg="' + (page - 1) + '">&laquo;</button>';
-        for (var i = 1; i <= pages; i++) {
-            if (pages > 7 && i > 2 && i < pages - 1 && Math.abs(i - page) > 2) {
-                if (i === 3 || i === pages - 2) html += '<span class="ispace-pg-info">...</span>';
-                continue;
-            }
-            html += '<button class="' + (i === page ? 'active' : '') + '" data-pg="' + i + '">' + i + '</button>';
+    function renderPagination(el, page, totalPages, totalCount, fetchFn) {
+        if (totalPages <= 1) {
+            el.innerHTML = '<span class="ispace-pagination-info">共 ' + totalCount + ' 条</span>';
+            return;
         }
-        html += '<button ' + (page >= pages ? 'disabled' : '') + '" data-pg="' + (page + 1) + '">&raquo;</button>';
+        var html = '';
+        html += '<button class="ispace-pagination-btn" data-page="' + (page - 1) + '" ' + (page <= 1 ? 'disabled' : '') + '>上一页</button>';
+        var startPage = Math.max(1, page - 2);
+        var endPage = Math.min(totalPages, page + 2);
+        if (startPage > 1) {
+            html += '<button class="ispace-pagination-btn" data-page="1">1</button>';
+            if (startPage > 2) html += '<span class="ispace-pagination-info">...</span>';
+        }
+        for (var i = startPage; i <= endPage; i++) {
+            html += '<button class="ispace-pagination-btn ' + (i === page ? 'ispace-active' : '') + '" data-page="' + i + '">' + i + '</button>';
+        }
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) html += '<span class="ispace-pagination-info">...</span>';
+            html += '<button class="ispace-pagination-btn" data-page="' + totalPages + '">' + totalPages + '</button>';
+        }
+        html += '<button class="ispace-pagination-btn" data-page="' + (page + 1) + '" ' + (page >= totalPages ? 'disabled' : '') + '>下一页</button>';
+        html += '<span class="ispace-pagination-info">共 ' + totalCount + ' 条</span>';
         el.innerHTML = html;
-        el.querySelectorAll('button[data-pg]').forEach(function(btn) {
-            btn.addEventListener('click', function() { fetchFn(parseInt(this.getAttribute('data-pg'))); });
+        el.querySelectorAll('.ispace-pagination-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var p = parseInt(this.dataset.page);
+                if (p >= 1 && p <= totalPages && p !== page) fetchFn(p);
+            });
         });
     }
 

@@ -345,9 +345,17 @@ def api_change_password(request):
 def api_login_records(request):
     """获取当前用户的最近登录记录。"""
     from backend.apps.admin.models import LoginRecord
-    records = LoginRecord.objects.filter(user=request.user).order_by('-created_at')[:20]
+    from django.core.paginator import Paginator
+
+    page = int(request.GET.get('page', 1))
+    page_size = min(int(request.GET.get('page_size', 10)), 50)
+
+    qs = LoginRecord.objects.filter(user=request.user).order_by('-created_at')
+    paginator = Paginator(qs, page_size)
+    page_obj = paginator.page(page)
+
     result = []
-    for r in records:
+    for r in page_obj:
         result.append({
             'ip': r.ip_address or '',
             'ua': _parse_ua_brief(r.user_agent or ''),
@@ -355,7 +363,13 @@ def api_login_records(request):
             'reason': r.failure_reason,
             'time': r.created_at.strftime('%Y-%m-%d %H:%M:%S'),
         })
-    return JsonResponse({'status': True, 'records': result})
+    return JsonResponse({
+        'status': True,
+        'records': result,
+        'total': paginator.count,
+        'page': page,
+        'has_next': page_obj.has_next(),
+    })
 
 
 def _parse_ua_brief(ua_string):
