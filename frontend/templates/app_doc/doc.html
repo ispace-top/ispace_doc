@@ -1123,11 +1123,13 @@ function refreshDocView() {
                 Vditor.preview(vdEl, window._docPreContent, {
                     cdn: '{% static "vditor" %}',
                     mode: 'light',
-                    hljs: { style: 'github' }
+                    hljs: { style: 'github' },
+                    after: function() {
+                        processCallouts(vdEl);
+                        processDocMentions(vdEl);
+                    }
                 });
                 setTimeout(function() {
-                    processCallouts(vdEl);
-                    processDocMentions(vdEl);
                     processCustomCodeBlocks(vdEl);
                     fixLeakedECharts(vdEl);
                     if (window.AttachmentPreview) window.AttachmentPreview.init(vdEl);
@@ -1289,9 +1291,18 @@ document.addEventListener('DOMContentLoaded',function(){
         {% elif doc.editor_mode == 5 or doc.editor_mode == 6 or doc.editor_mode == 7 %}
         {# Drawing editors are self-initializing #}
         {% else %}
-        Vditor.preview(document.getElementById('vditor-doc-content'),'{{ doc.pre_content|escapejs }}',{cdn:'{% static "vditor" %}',mode:'light',hljs:{style:'github'}});
+        Vditor.preview(document.getElementById('vditor-doc-content'),'{{ doc.pre_content|escapejs }}',{
+            cdn:'{% static "vditor" %}',
+            mode:'light',
+            hljs:{style:'github'},
+            after: function() {
+                var vc = document.getElementById('vditor-doc-content');
+                processCallouts(vc);
+                processDocMentions(vc);
+            }
+        });
         var vc = document.getElementById('vditor-doc-content');
-        setTimeout(function() { processCallouts(vc); processDocMentions(vc); }, 0);
+        setTimeout(function() { processCustomCodeBlocks(vc); fixLeakedECharts(vc); }, 200);
         {% endif %}
     }
 
@@ -1577,12 +1588,15 @@ document.addEventListener('DOMContentLoaded',function(){
     window.fixLeakedECharts = fixLeakedECharts;
 
     // Process callouts after Vditor renders (both initial and refresh)
+    // Vditor.preview 是异步的，需要延迟处理
     var _vc = document.getElementById('vditor-doc-content');
-    if (_vc && _vc.children.length > 0) { processCallouts(_vc); processCustomCodeBlocks(_vc); fixLeakedECharts(_vc); }
+    if (_vc) {
+        setTimeout(function() { processCallouts(_vc); processCustomCodeBlocks(_vc); fixLeakedECharts(_vc); }, 200);
+    }
     // Also run after full page load (sequence/plantuml libraries may need time)
     window.addEventListener('load', function() {
         var vc = document.getElementById('vditor-doc-content');
-        if (vc) { processCustomCodeBlocks(vc); fixLeakedECharts(vc); }
+        if (vc) { processCallouts(vc); processDocMentions(vc); processCustomCodeBlocks(vc); fixLeakedECharts(vc); }
     });
 
     // 初始化表格列宽拖拽
@@ -1596,9 +1610,10 @@ document.addEventListener('DOMContentLoaded',function(){
     initOutlinePanel();
 
     // 始终处理 @mention 渲染（无论哪种渲染路径）
+    // Vditor.preview 是异步的，需要延迟处理
     var _mentionContainer = document.getElementById('vditor-doc-content');
-    if (_mentionContainer && _mentionContainer.children.length > 0) {
-        processDocMentions(_mentionContainer);
+    if (_mentionContainer) {
+        setTimeout(function() { processDocMentions(_mentionContainer); }, 200);
     }
 });
 

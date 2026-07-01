@@ -642,19 +642,38 @@ var favMoreCard = document.getElementById('favMoreCard');
 var favExpanded = false;
 var favAllCards = [];
 var favCardsPerRow = 0;
-var favMaxCards5Rows = 0;
+var _favCardW = 220;
+var _favCardH = 42;
+var _favGap = 8;
+var _favPadTop = 4;
+var _favResizeTimer = null;
+
+// Measure actual card dimensions from DOM (call once at init when cards are visible)
+function favMeasureMetrics() {
+    var card = favAllCards[0];
+    if (card) {
+        _favCardW = card.offsetWidth;
+        _favCardH = card.offsetHeight;
+    }
+    var gridStyle = getComputedStyle(favGrid);
+    _favGap = parseFloat(gridStyle.rowGap) || parseFloat(gridStyle.gap) || 8;
+    _favPadTop = parseFloat(gridStyle.paddingTop) || 0;
+}
+
+function favCalcCardsPerRow() {
+    var gridWidth = favGrid.clientWidth;
+    if (!gridWidth || !_favCardW) return 1;
+    return Math.max(1, Math.floor((gridWidth + _favGap) / (_favCardW + _favGap)));
+}
 
 function initFavExpand() {
     if (!favGrid || !favExpandBtn) return;
     favAllCards = Array.from(favGrid.querySelectorAll('.home-card:not(#favMoreCard)'));
     if (favAllCards.length === 0) { favExpandBtn.style.display = 'none'; return; }
 
-    // Calculate cards per row based on container width
-    var gridWidth = favGrid.clientWidth;
-    var cardWidth = 220;
-    var gap = 8;
-    favCardsPerRow = Math.max(1, Math.floor((gridWidth + gap) / (cardWidth + gap)));
-    favMaxCards5Rows = favCardsPerRow * 5;
+    // Cache card metrics before any cards get hidden
+    favMeasureMetrics();
+    favCardsPerRow = favCalcCardsPerRow();
 
     // Show toggle button if content exceeds 2 rows
     var cards2Rows = favCardsPerRow * 2;
@@ -664,6 +683,15 @@ function initFavExpand() {
 
     // Apply initial visibility (collapsed: 2 rows, no "查看更多")
     updateFavVisibility();
+
+    // Recalculate on resize
+    window.addEventListener('resize', function() {
+        clearTimeout(_favResizeTimer);
+        _favResizeTimer = setTimeout(function() {
+            favCardsPerRow = favCalcCardsPerRow();
+            updateFavVisibility();
+        }, 150);
+    });
 }
 
 function updateFavVisibility() {
@@ -674,7 +702,8 @@ function updateFavVisibility() {
     var total = favAllCards.length;
 
     if (favExpanded) {
-        favGrid.style.maxHeight = '21rem';
+        var expandedMaxH = _favPadTop + expandedRows * _favCardH + (expandedRows - 1) * _favGap + 4;
+        favGrid.style.maxHeight = Math.ceil(expandedMaxH) + 'px';
         favExpandText.textContent = '{% trans "收起" %}';
         favExpandIcon.style.transform = 'rotate(180deg)';
         // 展开后超过4行时，最后一个位置显示"查看更多"
@@ -685,7 +714,8 @@ function updateFavVisibility() {
         });
         favMoreCard.style.display = showMore ? '' : 'none';
     } else {
-        favGrid.style.maxHeight = '8.5rem';
+        var collapsedMaxH = _favPadTop + collapsedRows * _favCardH + (collapsedRows - 1) * _favGap + 4;
+        favGrid.style.maxHeight = Math.ceil(collapsedMaxH) + 'px';
         favExpandText.textContent = '{% trans "展开" %}';
         favExpandIcon.style.transform = '';
         // 收起态仅显示2行，不显示"查看更多"

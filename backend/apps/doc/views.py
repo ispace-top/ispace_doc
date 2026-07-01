@@ -279,7 +279,7 @@ def doc_home(request):
     if is_auth:
         collects = MyCollect.objects.filter(
             create_user=request.user, collect_type=1
-        ).order_by('-create_time')[:20]
+        ).order_by('-create_time')[:30]
         doc_ids = [c.collect_id for c in collects]
         doc_map = {}
         if doc_ids:
@@ -2287,6 +2287,12 @@ def search(request):
             datas = paginator.page(1)
         except EmptyPage:
             datas = paginator.page(paginator.num_pages)
+
+        # 构建分页查询字符串（排除 page 参数）
+        query_params = request.GET.copy()
+        query_params.pop('page', None)
+        query_string = query_params.urlencode()
+
         return render(request, 'app_doc/search_result.html', locals())
 
     # 否则跳转到搜索首页
