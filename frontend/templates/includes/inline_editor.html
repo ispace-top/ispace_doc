@@ -312,6 +312,14 @@
             </div>
         </div>
     </div>
+
+    {# --- Save Loading Overlay --- #}
+    <div class="ispace-loading-overlay ispace-hidden" id="save-loading-overlay">
+        <div style="text-align:center;">
+            <div class="ispace-spinner"></div>
+            <p style="margin-top:var(--ispace-space-4);font-size:var(--ispace-font-sm);color:rgba(255,255,255,0.9);" id="save-loading-text">{% trans '保存中...' %}</p>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -327,6 +335,18 @@ window._inlineSubmitFn = null;  // set by doc.html
 window._inlineCancelFn = null;  // set by doc.html
 window._isSubmitting = false;
 
+// 全局保存加载遮罩
+function _showSaveLoading(msg) {
+    var overlay = document.getElementById('save-loading-overlay');
+    var text = document.getElementById('save-loading-text');
+    if (overlay) overlay.classList.remove('ispace-hidden');
+    if (text) text.textContent = msg || '{% trans "保存中..." %}';
+}
+function _hideSaveLoading() {
+    var overlay = document.getElementById('save-loading-overlay');
+    if (overlay) overlay.classList.add('ispace-hidden');
+}
+
 // 带防重复提交守卫的提交包装函数
 function _guardedSubmit(status) {
     if (window._isSubmitting) return;
@@ -336,23 +356,18 @@ function _guardedSubmit(status) {
     window._isSubmitting = true;
     var draftBtn = document.getElementById('inline-draft-btn');
     var publishBtn = document.getElementById('inline-publish-btn');
-    var draftText = document.getElementById('inline-draft-btn-text');
-    var publishText = document.getElementById('inline-publish-btn-text');
 
-    // 禁用按钮 + 显示加载状态
+    // 禁用按钮
     if (draftBtn) { draftBtn.disabled = true; draftBtn.style.opacity = '0.6'; draftBtn.style.cursor = 'not-allowed'; }
     if (publishBtn) { publishBtn.disabled = true; publishBtn.style.opacity = '0.6'; publishBtn.style.cursor = 'not-allowed'; }
-    if (status === 0 && draftText) {
-        draftBtn._origHTML = draftBtn.innerHTML;
-        draftBtn.innerHTML = '<span class="ispace-spinner"></span> 保存中...';
-    } else if (status === 1 && publishText) {
-        publishBtn._origHTML = publishBtn.innerHTML;
-        publishBtn.innerHTML = '<span class="ispace-spinner"></span> 发布中...';
-    }
+
+    // 显示全局遮罩层加载动画（与登录注册一致）
+    _showSaveLoading(status === 0 ? '{% trans "保存草稿中..." %}' : '{% trans "发布中..." %}');
 
     // 超时安全阀：15秒后自动恢复按钮（防止异常情况下按钮永久禁用）
     var timeoutId = setTimeout(function() {
         _resetSubmitButtons();
+        _hideSaveLoading();
         window._isSubmitting = false;
     }, 15000);
 
@@ -362,6 +377,7 @@ function _guardedSubmit(status) {
         fn(status);
     } catch(e) {
         _resetSubmitButtons();
+        _hideSaveLoading();
         window._isSubmitting = false;
         clearTimeout(timeoutId);
     }
@@ -372,17 +388,16 @@ function _resetSubmitButtons() {
     var draftBtn = document.getElementById('inline-draft-btn');
     var publishBtn = document.getElementById('inline-publish-btn');
     if (draftBtn) {
-        if (draftBtn._origHTML) draftBtn.innerHTML = draftBtn._origHTML;
         draftBtn.disabled = false;
         draftBtn.style.opacity = '';
         draftBtn.style.cursor = '';
     }
     if (publishBtn) {
-        if (publishBtn._origHTML) publishBtn.innerHTML = publishBtn._origHTML;
         publishBtn.disabled = false;
         publishBtn.style.opacity = '';
         publishBtn.style.cursor = '';
     }
+    _hideSaveLoading();
 }
 
 function _updateDocStatusBadge(status) {
@@ -1082,6 +1097,46 @@ function _initVditorWithMode(container, mode, val, vdHeight) {
         outline: { enable: true },
         counter: { enable: true },
         cache: { enable: false },
+        hint: {
+            emoji: {
+                "+1": "👍", "-1": "👎", "100": "💯", "1234": "🔢",
+                "smile": "😄", "laughing": "😆", "blush": "😊", "smiley": "😃", "relaxed": "☺️",
+                "wink": "😉", "grin": "😁", "joy": "😂", "rofl": "🤣", "sweat_smile": "😅",
+                "heart_eyes": "😍", "kissing_heart": "😘", "yum": "😋", "stuck_out_tongue": "😛",
+                "stuck_out_tongue_wink": "😜", "stuck_out_tongue_closed_eyes": "😝",
+                "innocent": "😇", "thinking": "🤔", "neutral_face": "😐", "expressionless": "😑",
+                "no_mouth": "😶", "smirk": "😏", "unamused": "😒", "relieved": "😌", "pensive": "😔",
+                "sleepy": "😪", "sleeping": "😴", "mask": "😷", "sunglasses": "😎",
+                "confused": "😕", "worried": "😟", "frowning": "😦", "anguished": "😧",
+                "open_mouth": "😮", "hushed": "😯", "astonished": "😲", "flushed": "😳",
+                "cry": "😢", "sob": "😭", "tired_face": "😫", "angry": "😠", "rage": "😡",
+                "triumph": "😤", "disappointed": "😞", "fearful": "😨", "cold_sweat": "😰",
+                "scream": "😱", "skull": "💀", "poop": "💩", "clown": "🤡", "ghost": "👻",
+                "alien": "👽", "robot": "🤖", "thumbsup": "👍", "thumbsdown": "👎",
+                "clap": "👏", "wave": "👋", "raised_hands": "🙌", "pray": "🙏",
+                "muscle": "💪", "point_up": "☝️", "point_down": "👇", "point_left": "👈",
+                "point_right": "👉", "ok_hand": "👌", "v": "✌️", "fist": "✊", "hand": "✋",
+                "heart": "❤️", "broken_heart": "💔", "heartpulse": "💗", "sparkling_heart": "💖",
+                "star": "⭐", "star2": "🌟", "fire": "🔥", "zap": "⚡", "boom": "💥",
+                "sweat_drops": "💦", "dash": "💨", "rocket": "🚀", "tada": "🎉",
+                "confetti": "🎊", "gift": "🎁", "bulb": "💡", "check": "✅", "x": "❌",
+                "warning": "⚠️", "question": "❓", "exclamation": "❗",
+                "sunny": "☀️", "cloud": "☁️", "rain": "🌧️", "snowman": "⛄", "zap_weather": "🌩️",
+                "earth_asia": "🌏", "moon": "🌙", "ocean": "🌊",
+                "cat": "🐱", "dog": "🐶", "mouse": "🐭", "rabbit": "🐰", "bear": "🐻",
+                "panda_face": "🐼", "monkey_face": "🐵", "pig": "🐷", "frog": "🐸",
+                "apple": "🍎", "pizza": "🍕", "hamburger": "🍔", "coffee": "☕", "beer": "🍺",
+                "cake": "🎂", "grapes": "🍇", "watermelon": "🍉", "banana": "🍌",
+                "soccer": "⚽", "basketball": "🏀", "football": "🏈", "tennis": "🎾",
+                "music": "🎵", "art": "🎨", "camera": "📷", "movie_camera": "🎥",
+                "book": "📖", "pencil": "✏️", "paperclip": "📎", "lock": "🔒", "key": "🔑",
+                "eyes": "👀", "ear": "👂", "nose": "👃", "lips": "👄",
+                "rainbow": "🌈", "crown": "👑", "diamond": "💎", "ring": "💍",
+                "hourglass": "⏳", "watch": "⌚", "alarm_clock": "⏰", "calendar": "📅",
+                "chart": "📊", "email": "📧", "phone": "📱", "computer": "💻",
+                "airplane": "✈️", "car": "🚗", "bus": "🚌", "ship": "🚢", "bike": "🚲",
+            }
+        },
         preview: { markdown: { autoSpace: true, chinesePunct: true, mark: true }, hljs: { lineNumber: true } },
         after: function() {
             if (mode === 'ir' && window._initEditorMention) { window._initEditorMention(); }

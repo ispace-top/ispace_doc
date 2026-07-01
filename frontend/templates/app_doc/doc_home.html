@@ -661,6 +661,9 @@ function initFavExpand() {
     if (favAllCards.length > cards2Rows) {
         favExpandBtn.style.display = '';
     }
+
+    // Apply initial visibility (collapsed: 2 rows, no "查看更多")
+    updateFavVisibility();
 }
 
 function updateFavVisibility() {
@@ -674,7 +677,7 @@ function updateFavVisibility() {
         favGrid.style.maxHeight = '21rem';
         favExpandText.textContent = '{% trans "收起" %}';
         favExpandIcon.style.transform = 'rotate(180deg)';
-        // Show "more" arrow in last slot of 4th row when total > 4 rows
+        // 展开后超过4行时，最后一个位置显示"查看更多"
         var showMore = total > cards4Rows;
         var limit = showMore ? cards4Rows - 1 : total;
         favAllCards.forEach(function(card, i) {
@@ -685,13 +688,12 @@ function updateFavVisibility() {
         favGrid.style.maxHeight = '8.5rem';
         favExpandText.textContent = '{% trans "展开" %}';
         favExpandIcon.style.transform = '';
-        // Show "more" arrow in last slot of 2nd row when total > 2 rows
-        var showMore2 = total > cards2Rows;
-        var limit2 = showMore2 ? cards2Rows - 1 : total;
+        // 收起态仅显示2行，不显示"查看更多"
+        var limit2 = Math.min(total, cards2Rows);
         favAllCards.forEach(function(card, i) {
             card.style.display = i < limit2 ? '' : 'none';
         });
-        favMoreCard.style.display = showMore2 ? '' : 'none';
+        favMoreCard.style.display = 'none';
     }
 
     // Update scroll arrows after layout change
