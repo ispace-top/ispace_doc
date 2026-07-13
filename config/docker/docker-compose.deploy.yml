@@ -64,6 +64,9 @@ services:
   app:
     image: ${DOCKER_IMAGE:-wapedkj/ispace-doc}:${IMAGE_TAG:-latest}
     restart: always
+    dns:
+      - 223.5.5.5
+      - 114.114.114.114
     depends_on:
       db:
         condition: service_healthy
@@ -93,6 +96,9 @@ services:
   fastapi:
     image: ${DOCKER_IMAGE:-wapedkj/ispace-doc}:${IMAGE_TAG:-latest}
     restart: always
+    dns:
+      - 223.5.5.5
+      - 114.114.114.114
     depends_on:
       db:
         condition: service_healthy
@@ -120,6 +126,9 @@ services:
   celery-worker:
     image: ${DOCKER_IMAGE:-wapedkj/ispace-doc}:${IMAGE_TAG:-latest}
     restart: always
+    dns:
+      - 223.5.5.5
+      - 114.114.114.114
     depends_on:
       db:
         condition: service_healthy
@@ -145,6 +154,9 @@ services:
   celery-beat:
     image: ${DOCKER_IMAGE:-wapedkj/ispace-doc}:${IMAGE_TAG:-latest}
     restart: always
+    dns:
+      - 223.5.5.5
+      - 114.114.114.114
     depends_on:
       db:
         condition: service_healthy

@@ -8,6 +8,7 @@
   flex-direction: column;
   min-height: 100vh;
   font-size: var(--ispace-font-base);
+  overflow-x: hidden;
 }
 
 .ispace-main-content {
@@ -49,6 +50,7 @@
 
 .ispace-app-layout.has-sidebar .ispace-main-content {
   grid-area: main;
+  min-width: 0;
 }
 
 .ispace-app-layout.has-sidebar .ispace-footer {
@@ -66,6 +68,11 @@
   display: flex;
   align-items: center;
   padding: 0 var(--ispace-space-6);
+}
+
+/* Hamburger: hidden on desktop, shown on mobile via media query */
+.ispace-mobile-menu-btn {
+  display: none;
 }
 
 .ispace-header-container {
@@ -305,13 +312,86 @@
 
 @media (max-width: 768px) {
   .ispace-app-layout.has-sidebar {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "main";
+    display: flex;
+    flex-direction: column;
+    grid-template-columns: none;
+    grid-template-areas: none;
+    grid-template-rows: none;
+    padding-top: var(--ispace-header-height);
   }
 
   .ispace-app-layout.has-sidebar .ispace-sidebar {
+    position: fixed;
+    top: var(--ispace-header-height);
+    left: 0;
+    width: 280px;
+    max-width: 85vw;
+    height: calc(100vh - var(--ispace-header-height));
+    z-index: 2000;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: none;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  /* Override collapsed state on mobile */
+  .ispace-app-layout.has-sidebar .ispace-sidebar.ispace-sidebar--collapsed {
+    width: 280px;
+    max-width: 85vw;
+  }
+
+  .ispace-app-layout.has-sidebar .ispace-sidebar.ispace-sidebar--collapsed .ispace-tree-row,
+  .ispace-app-layout.has-sidebar .ispace-sidebar.ispace-sidebar--collapsed .ispace-sidebar-empty-state {
+    display: flex;
+  }
+
+  .ispace-app-layout.has-sidebar .ispace-sidebar.ispace-mobile-open {
+    transform: translateX(0);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.18);
+  }
+
+  /* Sidebar mobile backdrop */
+  .ispace-sidebar-backdrop {
     display: none;
+    position: fixed;
+    top: var(--ispace-header-height);
+    left: 0;
+    width: 100%;
+    height: calc(100vh - var(--ispace-header-height));
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 1999;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .ispace-sidebar-backdrop.ispace-active {
+    display: block;
+    opacity: 1;
+  }
+
+  /* Hamburger menu button */
+  .ispace-mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: var(--ispace-color-text-secondary);
+    border-radius: var(--ispace-radius-md);
+    flex-shrink: 0;
+    margin-right: 2px;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .ispace-mobile-menu-btn:hover {
+    background: var(--ispace-color-surface-100);
+    color: var(--ispace-color-text-primary);
   }
 
   .ispace-footer-inner {
@@ -346,6 +426,8 @@
 
   .ispace-main-content {
     padding: var(--ispace-space-4) var(--ispace-space-3);
+    overflow-x: hidden;
+    word-break: break-word;
   }
 
   .ispace-logo {

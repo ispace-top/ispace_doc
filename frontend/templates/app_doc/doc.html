@@ -136,7 +136,45 @@
     }
     .ispace-header-search-center { display: none; }
     .ispace-outline-tab,
-    .ispace-outline-panel { display: none; }
+    .ispace-outline-panel { display: none !important; }
+
+    /* ---- 文档头部移动端堆叠布局 ---- */
+    .ispace-doc-header {
+        flex-wrap: wrap;
+        gap: var(--ispace-space-2);
+        padding-bottom: var(--ispace-space-3);
+    }
+    .ispace-doc-header-center {
+        order: 1;
+        flex-basis: 100%;
+    }
+    .ispace-doc-header-right {
+        order: 2;
+        flex-basis: 100%;
+        justify-content: center;
+        gap: 4px;
+    }
+    .ispace-doc-header-title {
+        font-size: var(--ispace-font-lg);
+    }
+    .ispace-doc-header-meta-row {
+        font-size: var(--ispace-font-xs);
+    }
+
+    /* ---- 面包屑移动端修正 ---- */
+    #doc-view-wrap .ispace-breadcrumb {
+        margin-left: 0;
+        padding: var(--ispace-space-1) var(--ispace-space-2);
+    }
+
+    /* ---- 底部导航文档名截断 ---- */
+    .ispace-flex-between .ispace-btn-ghost {
+        max-width: 42vw;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        display: inline-flex;
+    }
 }
 
 /* ---- 右侧大纲导航面板 ---- */
@@ -335,6 +373,29 @@
 /* 移动端适配 */
 @media (max-width: 1024px) {
     .ispace-outline-panel { width: 220px; }
+}
+
+/* ---- 小屏手机 (<480px) ---- */
+@media (max-width: 480px) {
+    .ispace-doc-header-right .ispace-btn-icon-sm {
+        width: 34px;
+        height: 34px;
+    }
+    .ispace-doc-engagement {
+        gap: var(--ispace-space-3);
+    }
+    .ispace-doc-content-wrapper {
+        padding: var(--ispace-space-3) 0;
+    }
+    .ispace-doc-header-meta-row {
+        gap: 2px;
+    }
+    .ispace-doc-header-author {
+        font-size: var(--ispace-font-xs);
+    }
+    .ispace-doc-header-meta-item {
+        font-size: 0.625rem;
+    }
 }
 </style>
 {% endblock %}

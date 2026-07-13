@@ -28,6 +28,7 @@ body {
   background-color: var(--ispace-color-surface-50);
   min-height: 100vh;
   overscroll-behavior: none;
+  overflow-wrap: break-word;
 }
 
 /* 恢复所有 body 直接子元素的字号（body { font-size:0 } 用于消除空白文本节点间距） */

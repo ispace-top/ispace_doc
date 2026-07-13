@@ -63,7 +63,31 @@
 </aside>
 {% endblock %}
 
+{% block layout %}
+{{ block.super }}
+
+<div class="ispace-admin-mobile-notice">
+    <div class="ispace-admin-mobile-notice-bar">
+        <a href="/" class="ispace-admin-mobile-notice-back">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <polyline points="15 18 9 12 15 6"/>
+            </svg>
+            <span>{% trans "返回首页" %}</span>
+        </a>
+        <span class="ispace-admin-mobile-notice-bar-title">{% trans "后台管理" %}</span>
+    </div>
+    <div class="ispace-admin-mobile-notice-body">
+        <svg class="ispace-admin-mobile-notice-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+        <p class="ispace-admin-mobile-notice-title">{% trans "请在电脑端访问后台管理" %}</p>
+        <p class="ispace-admin-mobile-notice-desc">{% trans "后台管理功能较为复杂，建议使用电脑浏览器操作以获得最佳体验" %}</p>
+    </div>
+</div>
+{% endblock %}
+
 {% block content %}
+
 <main id="main-content" class="ispace-page-main">
     <div class="ispace-content-body" id="contentBody">
         <div class="ispace-empty-state">
@@ -252,6 +276,77 @@
     cursor: default;
     vertical-align: middle;
     margin-left: var(--ispace-space-2);
+}
+
+/* ---- 移动端：提示仅可PC端使用 ---- */
+.ispace-admin-mobile-notice {
+    display: none;
+}
+@media (max-width: 768px) {
+    .ispace-admin-mobile-notice {
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: var(--ispace-color-surface-0, #fff);
+        z-index: 9999;
+    }
+    .ispace-admin-mobile-notice-bar {
+        display: flex;
+        align-items: center;
+        height: 48px;
+        padding: 0 var(--ispace-space-3);
+        border-bottom: 1px solid var(--ispace-color-border-light);
+        flex-shrink: 0;
+    }
+    .ispace-admin-mobile-notice-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        color: var(--ispace-color-brand-500);
+        font-size: 14px;
+        text-decoration: none;
+        flex-shrink: 0;
+    }
+    .ispace-admin-mobile-notice-bar-title {
+        flex: 1;
+        text-align: center;
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--ispace-color-text-primary);
+        margin-right: 56px; /* balance the back button width */
+    }
+    .ispace-admin-mobile-notice-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        text-align: center;
+        padding: 24px;
+    }
+    .ispace-admin-mobile-notice-icon {
+        color: var(--ispace-color-text-tertiary, #9ca3af);
+        margin-bottom: 4px;
+    }
+    .ispace-admin-mobile-notice-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--ispace-color-text-primary);
+    }
+    .ispace-admin-mobile-notice-desc {
+        font-size: 13px;
+        color: var(--ispace-color-text-tertiary);
+        max-width: 260px;
+        line-height: 1.6;
+    }
+    .ispace-app-layout.has-sidebar .ispace-header,
+    .ispace-app-layout.has-sidebar .ispace-sidebar,
+    .ispace-app-layout.has-sidebar .ispace-main-content,
+    .ispace-app-layout.has-sidebar .ispace-footer {
+        display: none !important;
+    }
 }
 </style>
 {% endblock %}

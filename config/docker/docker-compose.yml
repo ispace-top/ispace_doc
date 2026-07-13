@@ -66,6 +66,9 @@ services:
       context: ../..
       dockerfile: config/docker/Dockerfile
     restart: always
+    dns:
+      - 223.5.5.5
+      - 114.114.114.114
     depends_on:
       db:
         condition: service_healthy
@@ -95,6 +98,9 @@ services:
       context: ../..
       dockerfile: config/docker/Dockerfile
     restart: always
+    dns:
+      - 223.5.5.5
+      - 114.114.114.114
     depends_on:
       db:
         condition: service_healthy
@@ -124,6 +130,9 @@ services:
       context: ../..
       dockerfile: config/docker/Dockerfile
     restart: always
+    dns:
+      - 223.5.5.5
+      - 114.114.114.114
     depends_on:
       db:
         condition: service_healthy
@@ -148,6 +157,9 @@ services:
       context: ../..
       dockerfile: config/docker/Dockerfile
     restart: always
+    dns:
+      - 223.5.5.5
+      - 114.114.114.114
     depends_on:
       db:
         condition: service_healthy

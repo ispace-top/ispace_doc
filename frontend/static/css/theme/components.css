@@ -2039,6 +2039,12 @@ body.ispace-auth-page {
   .ispace-footer-brand-desc {
     text-align: center;
   }
+
+  /* Doc engagement center */
+  .ispace-doc-engagement {
+    justify-content: center;
+    gap: var(--ispace-space-4);
+  }
 }
 
 /* Extra small (≤480px) */

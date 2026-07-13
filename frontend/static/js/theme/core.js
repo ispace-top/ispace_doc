@@ -64,16 +64,83 @@ const CoreUI = (() => {
     }
   }
 
-  /* ---- Mobile Menu ---- */
+  /* ---- Mobile Sidebar Drawer ---- */
+  var _mobileMenuInited = false;
   function initMobileMenu() {
-    const toggle = document.querySelector('[data-ispace-mobile-menu-toggle]');
-    const menu = document.querySelector('[data-ispace-mobile-menu]');
-    if (!toggle || !menu) return;
+    if (_mobileMenuInited) return;
+    var btn = document.getElementById('mobileMenuBtn');
+    // Support all sidebar IDs (doc tree, user center, admin)
+    var sidebar = document.getElementById('globalSidebar')
+               || document.getElementById('userCenterSidebar')
+               || document.getElementById('adminSidebar');
+    if (!btn || !sidebar) return;
 
-    toggle.addEventListener('click', () => {
-      menu.classList.toggle('ispace-open');
-      toggle.setAttribute('aria-expanded', menu.classList.contains('ispace-open'));
+    // Create backdrop element (only once)
+    var backdrop = document.querySelector('.ispace-sidebar-backdrop');
+    if (!backdrop) {
+      backdrop = document.createElement('div');
+      backdrop.className = 'ispace-sidebar-backdrop';
+      document.body.appendChild(backdrop);
+    }
+
+    var isOpen = false;
+
+    var _savedScrollY = 0;
+
+    function open() {
+      isOpen = true;
+      _savedScrollY = window.scrollY;
+      sidebar.classList.add('ispace-mobile-open');
+      backdrop.classList.add('ispace-active');
+      btn.setAttribute('aria-expanded', 'true');
+      document.body.style.position = 'fixed';
+      document.body.style.top = '-' + _savedScrollY + 'px';
+      document.body.style.width = '100%';
+    }
+
+    function close() {
+      isOpen = false;
+      sidebar.classList.remove('ispace-mobile-open');
+      backdrop.classList.remove('ispace-active');
+      btn.setAttribute('aria-expanded', 'false');
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      window.scrollTo(0, _savedScrollY);
+    }
+
+    btn.addEventListener('click', function() {
+      isOpen ? close() : open();
     });
+
+    backdrop.addEventListener('click', close);
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && isOpen) {
+        close();
+      }
+    });
+
+    // Close on window resize back to desktop
+    window.addEventListener('resize', function() {
+      if (isOpen && window.innerWidth > 768) {
+        close();
+      }
+    });
+
+    // Close when SPA navigation happens (back/forward)
+    window.addEventListener('popstate', function() {
+      if (isOpen) close();
+    });
+
+    // Close when clicking a link inside the sidebar drawer
+    sidebar.addEventListener('click', function(e) {
+      if (e.target.closest('a') && isOpen) {
+        setTimeout(close, 100); // delay to let navigation start
+      }
+    });
+
+    _mobileMenuInited = true;
   }
 
   /* ---- Tooltips ---- */
