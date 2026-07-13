@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/i%C2%B7Space_Doc-v0.9.0_dev-d4843a?style=flat-square" alt="i·Space Doc v0.9.0-dev" />
+  <img src="https://img.shields.io/badge/i%C2%B7Space_Doc-v1.0.0-d4843a?style=flat-square" alt="i·Space Doc v1.0.0v" />
   <img src="https://img.shields.io/badge/Python-3.9_%7C_3.10_%7C_3.11_%7C_3.12-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python" />
   <img src="https://img.shields.io/badge/Django-4.2-092E20?style=flat-square&logo=django&logoColor=white" alt="Django" />
   <img src="https://img.shields.io/badge/Docker-Supported-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker" />
