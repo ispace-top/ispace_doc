@@ -65,7 +65,7 @@ def _resolve_debug():
 
 DEBUG = _resolve_debug()
 
-VERSIONS = '1.0.0'
+VERSIONS = '1.0.1'
 
 ALLOWED_HOSTS_ENV = os.environ.get('ALLOWED_HOSTS')
 if ALLOWED_HOSTS_ENV:
