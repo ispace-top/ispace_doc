@@ -58,29 +58,6 @@
 		}
 	});
 
-	// ---- Sidebar collapse toggle ----
-	var collapseBtn = document.getElementById('sidebarCollapse');
-	var sidebar = document.getElementById('globalSidebar');
-	var appLayout = document.querySelector('.ispace-app-layout.has-sidebar');
-	if (collapseBtn && sidebar) {
-		function _applySidebarState(collapsed) {
-			if (collapsed) {
-				sidebar.classList.add('ispace-sidebar--collapsed');
-				if (appLayout) appLayout.classList.add('ispace-layout--sidebar-collapsed');
-			} else {
-				sidebar.classList.remove('ispace-sidebar--collapsed');
-				if (appLayout) appLayout.classList.remove('ispace-layout--sidebar-collapsed');
-			}
-		}
-		if (localStorage.getItem('sidebar-collapsed') === '1') {
-			_applySidebarState(true);
-		}
-		collapseBtn.addEventListener('click', function(){
-			var collapsed = !sidebar.classList.contains('ispace-sidebar--collapsed');
-			_applySidebarState(collapsed);
-			localStorage.setItem('sidebar-collapsed', collapsed ? '1' : '0');
-		});
-	}
 
 	// ---- Highlight current document & expand ancestor tree nodes ----
 	(function(){

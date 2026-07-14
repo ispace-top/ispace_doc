@@ -28,6 +28,8 @@
   grid-template-areas:
     "sidebar main"
     "sidebar footer";
+  height: 100vh;
+  overflow: hidden;
   padding-top: var(--ispace-header-height);
   transition: grid-template-columns var(--ispace-duration-normal) var(--ispace-ease-out);
 }
@@ -51,6 +53,8 @@
 .ispace-app-layout.has-sidebar .ispace-main-content {
   grid-area: main;
   min-width: 0;
+  max-width: none;
+  overflow-y: auto;
 }
 
 .ispace-app-layout.has-sidebar .ispace-footer {
@@ -70,9 +74,25 @@
   padding: 0 var(--ispace-space-6);
 }
 
-/* Hamburger: hidden on desktop, shown on mobile via media query */
+/* Hamburger: always visible — toggles sidebar on all screen sizes */
 .ispace-mobile-menu-btn {
-  display: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--ispace-color-text-secondary);
+  border-radius: var(--ispace-radius-md);
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.ispace-mobile-menu-btn:hover {
+  background: var(--ispace-color-surface-100);
+  color: var(--ispace-color-text-primary);
 }
 
 .ispace-header-container {
@@ -114,19 +134,46 @@
 
 /* ---- Sidebar ---- */
 .ispace-sidebar {
-  position: sticky;
-  top: var(--ispace-header-height);
-  height: calc(100vh - var(--ispace-header-height));
-  overflow-y: auto;
-  overflow-x: auto;
+  height: 100%;
+  overflow: visible;
+  position: relative;
   background: var(--ispace-color-surface-0);
   border-right: 1px solid var(--ispace-color-border-light);
-  padding: var(--ispace-space-4);
   z-index: var(--ispace-z-sidebar);
 }
 
+/* ---- Sidebar Resizer ---- */
+.ispace-sidebar-resizer {
+  position: absolute;
+  right: -4px;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  z-index: 15;
+  transition: background var(--ispace-duration-fast);
+}
+.ispace-sidebar-resizer::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  transform: translateX(-50%);
+  background: transparent;
+  border-radius: var(--ispace-radius-full);
+  transition: background var(--ispace-duration-fast);
+}
+.ispace-sidebar-resizer:hover::after {
+  background: var(--ispace-color-brand-300, #93c5fd);
+}
+.ispace-sidebar-resizer.ispace-resizing::after {
+  background: var(--ispace-color-brand-500);
+}
+
 .ispace-sidebar-nav {
-  position: relative;
+  position: static;
   display: flex;
   flex-direction: column;
   gap: var(--ispace-space-1);
@@ -164,34 +211,6 @@
 
 .ispace-sidebar-item {
   margin-bottom: 1px;
-}
-
-.ispace-sidebar-toggle {
-  position: absolute;
-  right: -8px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 20px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  color: var(--ispace-color-text-quaternary, #9ca3af);
-  border-radius: var(--ispace-radius-md);
-  opacity: 0.35;
-  transition: opacity var(--ispace-duration-fast), color var(--ispace-duration-fast);
-  z-index: 1;
-}
-.ispace-sidebar-toggle:hover {
-  opacity: 1;
-  color: var(--ispace-color-text-secondary, #374151);
-  background: var(--ispace-color-surface-100, #f1f5f9);
-}
-.ispace-sidebar-toggle svg {
-  transition: transform var(--ispace-duration-normal) var(--ispace-ease-out);
 }
 
 .ispace-sidebar-empty-state {
@@ -304,12 +323,6 @@
 }
 
 /* ---- Responsive ---- */
-@media (max-width: 1024px) and (min-width: 769px) {
-  .ispace-sidebar-toggle {
-    display: flex;
-  }
-}
-
 @media (max-width: 768px) {
   .ispace-app-layout.has-sidebar {
     display: flex;
@@ -317,7 +330,13 @@
     grid-template-columns: none;
     grid-template-areas: none;
     grid-template-rows: none;
+    height: auto;
+    overflow: visible;
     padding-top: var(--ispace-header-height);
+  }
+
+  .ispace-app-layout.has-sidebar .ispace-main-content {
+    overflow-y: visible;
   }
 
   .ispace-app-layout.has-sidebar .ispace-sidebar {
@@ -333,6 +352,12 @@
     box-shadow: none;
     display: flex;
     flex-direction: column;
+  }
+
+  /* Mobile: scroll wrapper fills remaining space */
+  .ispace-app-layout.has-sidebar .ispace-sidebar .ispace-sidebar-scroll {
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
   }
@@ -341,6 +366,10 @@
   .ispace-app-layout.has-sidebar .ispace-sidebar.ispace-sidebar--collapsed {
     width: 280px;
     max-width: 85vw;
+  }
+
+  .ispace-app-layout.has-sidebar .ispace-sidebar.ispace-sidebar--collapsed .ispace-sidebar-scroll {
+    display: flex;
   }
 
   .ispace-app-layout.has-sidebar .ispace-sidebar.ispace-sidebar--collapsed .ispace-tree-row,
@@ -372,26 +401,9 @@
     opacity: 1;
   }
 
-  /* Hamburger menu button */
+  /* Hamburger: keep right margin on mobile for tighter header */
   .ispace-mobile-menu-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    color: var(--ispace-color-text-secondary);
-    border-radius: var(--ispace-radius-md);
-    flex-shrink: 0;
     margin-right: 2px;
-    transition: background 0.15s, color 0.15s;
-  }
-
-  .ispace-mobile-menu-btn:hover {
-    background: var(--ispace-color-surface-100);
-    color: var(--ispace-color-text-primary);
   }
 
   .ispace-footer-inner {

@@ -11,6 +11,7 @@ const CoreUI = (() => {
     initMobileMenu();
     initTooltips();
     initScrollToTop();
+    initSidebarResizer();
   }
 
   /* ---- Dropdowns ---- */
@@ -64,16 +65,19 @@ const CoreUI = (() => {
     }
   }
 
-  /* ---- Mobile Sidebar Drawer ---- */
-  var _mobileMenuInited = false;
+  /* ---- Sidebar Toggle (desktop collapse + mobile drawer) ---- */
+  var _menuBtnInited = false;
   function initMobileMenu() {
-    if (_mobileMenuInited) return;
+    if (_menuBtnInited) return;
     var btn = document.getElementById('mobileMenuBtn');
     // Support all sidebar IDs (doc tree, user center, admin)
     var sidebar = document.getElementById('globalSidebar')
                || document.getElementById('userCenterSidebar')
                || document.getElementById('adminSidebar');
     if (!btn || !sidebar) return;
+
+    var appLayout = document.querySelector('.ispace-app-layout.has-sidebar');
+    var isMobile = window.innerWidth <= 768;
 
     // Create backdrop element (only once)
     var backdrop = document.querySelector('.ispace-sidebar-backdrop');
@@ -84,9 +88,50 @@ const CoreUI = (() => {
     }
 
     var isOpen = false;
-
     var _savedScrollY = 0;
 
+    // SVG icons for hamburger state
+    var ICON_MENU = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>';
+    var ICON_CLOSE = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
+
+    function updateHamburgerIcon(collapsed) {
+      btn.innerHTML = collapsed ? ICON_MENU : ICON_CLOSE;
+      btn.setAttribute('aria-label', collapsed ? '展开侧边栏' : '折叠侧边栏');
+    }
+
+    // ---- Desktop: collapse sidebar in grid ----
+    function toggleDesktopSidebar() {
+      var collapsed = !sidebar.classList.contains('ispace-sidebar--collapsed');
+      if (collapsed) {
+        sidebar.classList.add('ispace-sidebar--collapsed');
+        if (appLayout) appLayout.classList.add('ispace-layout--sidebar-collapsed');
+        btn.setAttribute('aria-expanded', 'false');
+      } else {
+        sidebar.classList.remove('ispace-sidebar--collapsed');
+        if (appLayout) appLayout.classList.remove('ispace-layout--sidebar-collapsed');
+        btn.setAttribute('aria-expanded', 'true');
+      }
+      updateHamburgerIcon(collapsed);
+      localStorage.setItem('sidebar-collapsed', collapsed ? '1' : '0');
+    }
+
+    // Sync hamburger icon with initial sidebar state
+    var initCollapsed = sidebar.classList.contains('ispace-sidebar--collapsed');
+    if (!isMobile) {
+      // Restore collapsed state from localStorage on first load
+      if (!initCollapsed && localStorage.getItem('sidebar-collapsed') === '1') {
+        sidebar.classList.add('ispace-sidebar--collapsed');
+        if (appLayout) appLayout.classList.add('ispace-layout--sidebar-collapsed');
+        initCollapsed = true;
+      }
+      updateHamburgerIcon(initCollapsed);
+      btn.setAttribute('aria-expanded', initCollapsed ? 'false' : 'true');
+    } else {
+      // Mobile always shows menu icon
+      btn.setAttribute('aria-expanded', 'false');
+    }
+
+    // ---- Mobile: drawer overlay ----
     function open() {
       isOpen = true;
       _savedScrollY = window.scrollY;
@@ -110,25 +155,40 @@ const CoreUI = (() => {
     }
 
     btn.addEventListener('click', function() {
-      isOpen ? close() : open();
+      if (window.innerWidth <= 768) {
+        isOpen ? close() : open();
+      } else {
+        toggleDesktopSidebar();
+      }
     });
 
     backdrop.addEventListener('click', close);
 
     document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape' && isOpen) {
-        close();
+      if (e.key === 'Escape') {
+        if (isOpen) close();
       }
     });
 
-    // Close on window resize back to desktop
+    // Handle resize: close mobile drawer, sync desktop state
     window.addEventListener('resize', function() {
-      if (isOpen && window.innerWidth > 768) {
-        close();
+      var nowMobile = window.innerWidth <= 768;
+      if (nowMobile !== isMobile) {
+        if (isOpen) close();
+        isMobile = nowMobile;
+        if (!nowMobile) {
+          var c = sidebar.classList.contains('ispace-sidebar--collapsed');
+          updateHamburgerIcon(c);
+          btn.setAttribute('aria-expanded', c ? 'false' : 'true');
+        } else {
+          btn.innerHTML = ICON_MENU;
+          btn.setAttribute('aria-label', '展开菜单');
+          btn.setAttribute('aria-expanded', 'false');
+        }
       }
     });
 
-    // Close when SPA navigation happens (back/forward)
+    // Close when SPA navigation happens
     window.addEventListener('popstate', function() {
       if (isOpen) close();
     });
@@ -136,11 +196,11 @@ const CoreUI = (() => {
     // Close when clicking a link inside the sidebar drawer
     sidebar.addEventListener('click', function(e) {
       if (e.target.closest('a') && isOpen) {
-        setTimeout(close, 100); // delay to let navigation start
+        setTimeout(close, 100);
       }
     });
 
-    _mobileMenuInited = true;
+    _menuBtnInited = true;
   }
 
   /* ---- Tooltips ---- */
@@ -225,15 +285,116 @@ const CoreUI = (() => {
     `;
     document.body.appendChild(btn);
 
-    window.addEventListener('scroll', () => {
-      const visible = window.scrollY > 300;
-      btn.style.opacity = visible ? '1' : '0';
-      btn.style.visibility = visible ? 'visible' : 'hidden';
+    function getScrollContainer() {
+      var main = document.querySelector('.ispace-app-layout.has-sidebar .ispace-main-content');
+      if (main) {
+        var style = getComputedStyle(main);
+        if (style.overflowY === 'auto' || style.overflowY === 'scroll') return main;
+      }
+      return window;
+    }
+
+    var _scrollTicking = false;
+    function onScroll() {
+      if (!_scrollTicking) {
+        requestAnimationFrame(function() {
+          var container = getScrollContainer();
+          var top = (container === window) ? window.scrollY : container.scrollTop;
+          var visible = top > 300;
+          btn.style.opacity = visible ? '1' : '0';
+          btn.style.visibility = visible ? 'visible' : 'hidden';
+          _scrollTicking = false;
+        });
+        _scrollTicking = true;
+      }
+    }
+
+    // Attach to both — scroll events don't bubble, so bind directly
+    window.addEventListener('scroll', onScroll, { passive: true });
+    var mainEl = document.querySelector('.ispace-app-layout.has-sidebar .ispace-main-content');
+    if (mainEl) {
+      mainEl.addEventListener('scroll', onScroll, { passive: true });
+    }
+
+    btn.addEventListener('click', function() {
+      var container = getScrollContainer();
+      if (container === window) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        container.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+  }
+
+  /* ---- Sidebar Resizer (drag to adjust width) ---- */
+  function initSidebarResizer() {
+    var resizer = document.getElementById('sidebarResizer');
+    var sidebar = document.getElementById('globalSidebar');
+    var layout = document.querySelector('.ispace-app-layout.has-sidebar');
+    if (!resizer || !sidebar || !layout) return;
+
+    var MIN_WIDTH = 180;
+    var MAX_WIDTH = Math.floor(window.innerWidth * 0.45);
+    var _dragging = false;
+    var _startX = 0;
+    var _startWidth = 0;
+
+    function clampWidth(w) {
+      return Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, w));
+    }
+
+    // Restore saved width
+    var savedWidth = localStorage.getItem('sidebar-width');
+    if (savedWidth) {
+      var w = parseInt(savedWidth, 10);
+      if (w >= MIN_WIDTH && w <= MAX_WIDTH) {
+        layout.style.setProperty('--ispace-sidebar-width', w + 'px');
+      }
+    }
+
+    // Update max width on resize
+    window.addEventListener('resize', function() {
+      MAX_WIDTH = Math.floor(window.innerWidth * 0.45);
+      // Clamp current width to new max
+      var cur = sidebar.offsetWidth;
+      var clamped = clampWidth(cur);
+      if (clamped !== cur) {
+        layout.style.setProperty('--ispace-sidebar-width', clamped + 'px');
+      }
     });
 
-    btn.addEventListener('click', () => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
+    function onMouseDown(e) {
+      if (sidebar.classList.contains('ispace-sidebar--collapsed')) return;
+      e.preventDefault();
+      _dragging = true;
+      _startX = e.clientX;
+      _startWidth = sidebar.offsetWidth;
+      resizer.classList.add('ispace-resizing');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    }
+
+    function onMouseMove(e) {
+      if (!_dragging) return;
+      var delta = e.clientX - _startX;
+      var newWidth = clampWidth(_startWidth + delta);
+      layout.style.setProperty('--ispace-sidebar-width', newWidth + 'px');
+    }
+
+    function onMouseUp() {
+      if (!_dragging) return;
+      _dragging = false;
+      resizer.classList.remove('ispace-resizing');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      // Save width
+      var currentWidth = sidebar.offsetWidth;
+      localStorage.setItem('sidebar-width', currentWidth);
+    }
+
+    resizer.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
   }
 
   return { init };

@@ -126,6 +126,12 @@
 }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+/* Admin sidebar — independent scroll (no scroll wrapper) */
+#adminSidebar {
+    overflow-y: auto;
+    padding: var(--ispace-space-4);
+}
+
 /* Sidebar link active state */
 .ispace-sidebar-link.active {
     background: var(--ispace-color-brand-50);
@@ -167,7 +173,7 @@
 
 /* Content area */
 .ispace-page-main {
-    min-height: calc(100vh - var(--ispace-header-height) - var(--ispace-space-4));
+    min-height: 100%;
 }
 
 .ispace-content-body {

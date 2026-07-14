@@ -1,17 +1,17 @@
 {% load i18n %}{% load static %}
 <aside class="ispace-sidebar" id="globalSidebar">
-    <nav class="ispace-sidebar-nav" id="sidebarNav">
-        <button class="ispace-sidebar-toggle" id="sidebarCollapse" title="{% trans '折叠侧边栏' %}" aria-label="折叠侧边栏">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-        </button>
-        {% if sidebar_tree %}
-            {% include "includes/sidebar_doc_node.html" with docs=sidebar_tree %}
-        {% else %}
-        <div class="ispace-sidebar-empty-state">
-            <p class="ispace-text-sm ispace-text-quaternary">{% trans "暂无文档" %}</p>
-        </div>
-        {% endif %}
-    </nav>
+    <div class="ispace-sidebar-scroll">
+        <nav class="ispace-sidebar-nav" id="sidebarNav">
+            {% if sidebar_tree %}
+                {% include "includes/sidebar_doc_node.html" with docs=sidebar_tree %}
+            {% else %}
+            <div class="ispace-sidebar-empty-state">
+                <p class="ispace-text-sm ispace-text-quaternary">{% trans "暂无文档" %}</p>
+            </div>
+            {% endif %}
+        </nav>
+    </div>
+    <div class="ispace-sidebar-resizer" id="sidebarResizer" title="拖动调整侧边栏宽度"></div>
 </aside>
 
 {# ---- Context Menu ---- #}
@@ -21,52 +21,29 @@
 <script src="{% static 'js/sidebar-tree.js' %}?v={{ isdoc_version }}" defer></script>
 
 <style>
-/* ---- 侧边栏水平滚动条可见性增强 ---- */
-#globalSidebar::-webkit-scrollbar { height: 8px; }
-#globalSidebar::-webkit-scrollbar-track {
-    background: var(--ispace-color-surface-100);
-    border-radius: var(--ispace-radius-full);
-}
-#globalSidebar::-webkit-scrollbar-thumb {
-    background: var(--ispace-color-text-quaternary);
-    border-radius: var(--ispace-radius-full);
-}
-#globalSidebar::-webkit-scrollbar-thumb:hover {
-    background: var(--ispace-color-text-tertiary);
+/* ---- 侧边栏滚动容器 ---- */
+.ispace-sidebar-scroll {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: auto;
+    padding: var(--ispace-space-4);
 }
 
-/* ---- 侧边栏抽屉折叠按钮（边缘标签式）---- */
-.ispace-sidebar-toggle {
-    position: absolute;
-    right: -8px;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 20px;
-    height: 44px;
-    border: 1px solid var(--ispace-color-border-medium);
-    background: var(--ispace-color-surface-0);
-    cursor: pointer;
-    color: var(--ispace-color-text-quaternary);
-    border-radius: var(--ispace-radius-md) 0 0 var(--ispace-radius-md);
-    padding: 0;
-    z-index: 10;
-    opacity: 0.35;
-    box-shadow: var(--ispace-shadow-xs);
-    transition: opacity var(--ispace-duration-normal) var(--ispace-ease-out),
-                color var(--ispace-duration-fast),
-                background var(--ispace-duration-fast),
-                box-shadow var(--ispace-duration-normal) var(--ispace-ease-out);
+/* ---- 侧边栏水平滚动条可见性增强 ---- */
+.ispace-sidebar-scroll::-webkit-scrollbar { height: 7px; }
+.ispace-sidebar-scroll::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: var(--ispace-radius-full);
 }
-.ispace-sidebar-toggle svg { width: 16px; height: 16px; flex-shrink: 0; }
-.ispace-sidebar-toggle:hover {
-    opacity: 1;
-    color: var(--ispace-color-text-primary);
-    background: var(--ispace-color-surface-100);
-    border-color: var(--ispace-color-border-strong);
-    box-shadow: var(--ispace-shadow-sm);
+.ispace-sidebar-scroll::-webkit-scrollbar-thumb {
+    background: var(--ispace-color-border-strong);
+    border-radius: var(--ispace-radius-full);
+    border: 1.5px solid transparent;
+    background-clip: padding-box;
+}
+.ispace-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+    background: var(--ispace-color-text-quaternary);
+    background-clip: padding-box;
 }
 
 /* ---- 文档树节点 ---- */
@@ -125,19 +102,12 @@
     width: var(--ispace-sidebar-collapsed-width) !important;
     overflow: visible;
 }
+.ispace-sidebar--collapsed .ispace-sidebar-scroll {
+    display: none;
+}
+.ispace-sidebar--collapsed .ispace-sidebar-resizer,
 .ispace-sidebar--collapsed .ispace-tree-row,
 .ispace-sidebar--collapsed .ispace-sidebar-empty-state { display: none; }
-.ispace-sidebar--collapsed .ispace-sidebar-toggle {
-    right: 50%;
-    transform: translate(50%, -50%);
-    border-radius: var(--ispace-radius-md);
-    opacity: 0.7;
-    width: 28px;
-    height: 40px;
-    border: 1px solid var(--ispace-color-border-light);
-}
-.ispace-sidebar--collapsed .ispace-sidebar-toggle:hover { opacity: 1; }
-.ispace-sidebar--collapsed .ispace-sidebar-toggle svg { transform: rotate(180deg); }
 
 /* 右键上下文菜单 */
 .ispace-context-menu {
