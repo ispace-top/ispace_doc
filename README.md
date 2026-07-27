@@ -342,5 +342,5 @@ python manage.py sync_ldap                           # 正式同步
 ---
 
 <p align="center">
-  <sub>Made with ❤️ by i·Space Doc Team · <strong>v0.9.0-dev</strong> · 爱要春风化雨，思必汇流成渊</sub>
+  <sub>Made with ❤️ by i·Space Doc Team · <strong>v1.0.0</strong> · 爱要春风化雨，思必汇流成渊</sub>
 </p>
